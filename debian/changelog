@@ -1,3 +1,15 @@
+mono (2.10.8.1-7) unstable; urgency=high
+
+  [ Jo Shields ]
+  * [4a46aae] Remove armhf from mono-archs.make - It should have been 
+    removed in 2.10.8.1-6 but was overlooked (Closes: #695743)
+
+  [ Marek Habersack ]
+  * [226b326] Fix for Novell bug #739119 (Closes: #686562, CVE-2012-3543)
+  * [6983b45] Update to fix for Novell bug #739119
+
+ -- Jo Shields <directhex@apebox.org>  Mon, 28 Jan 2013 10:27:00 +0000
+
 mono (2.10.8.1-6) unstable; urgency=low
 
   * [da2fc97] Remove armhf from list of supported architectures. It 
