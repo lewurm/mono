@@ -1,3 +1,15 @@
+mono (2.10.8.1-8) unstable; urgency=high
+
+  * [b9108c7] Dirty patch to introduce a new System.Windows.Forms.WebBrowser 
+    back-end, which does absolutely nothing. This is to allow applications 
+    which create a WebBrowser object to continue to run without crashing, 
+    in the absence of a working browser back-end (which we lack right now). 
+    This patch is sufficient for 
+    http://www.java2s.com/Tutorial/CSharp/0460__GUI-Windows-Forms/AsimpleBrowser.htm 
+    to run without crashing. (Closes: #683289, #694948)
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 03 Mar 2013 17:36:38 +0000
+
 mono (2.10.8.1-7) unstable; urgency=high
 
   [ Jo Shields ]
