@@ -1,3 +1,14 @@
+mono (3.0.6+dfsg2-2) experimental; urgency=low
+
+  [ Jo Shields ]
+  * [f46cef1] Ensure GetVolumeInformation is defined on kfreebsd, by adding to
+    the #define
+  * [88cfd6f] Remove duplicated definition of mini_gc_enable_gc_maps_for_aot -
+    fixed build on PowerPC, Itanium, SPARC
+    (cherry picked from commit 998373afb6cb164767d2dc7cc62610e1dbf4a161)
+
+ -- Mirco Bauer <meebey@debian.org>  Thu, 18 Apr 2013 20:21:12 +0200
+
 mono (3.0.6+dfsg2-1) experimental; urgency=low
 
   * The "From Mirco Bauer with Love" release
