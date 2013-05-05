@@ -1,3 +1,9 @@
+mono (3.0.6+dfsg2-3) unstable; urgency=low
+
+  * Upload to unstable
+
+ -- Mirco Bauer <meebey@debian.org>  Sun, 05 May 2013 09:07:45 +0200
+
 mono (3.0.6+dfsg2-2) experimental; urgency=low
 
   [ Jo Shields ]
