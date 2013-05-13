@@ -1,3 +1,18 @@
+mono (3.0.6+dfsg2-4) unstable; urgency=low
+
+  [ Iain Lane ]
+  * [2a84a9f] Install Mono.Posix and System.Data.OracleClient into 4.5 too
+
+  [ Neale Ferguson ]
+  * [a4118b9] Add lazy rgctx support to s390x
+    (cherry picked from commit 3cbc51a82063f879680eab3c99415028e9c80c00)
+  * [8f533d3] Correct call parameter processing for GENERICINST types
+    (cherry picked from commit efa707b468967f1fa57bb39c642109439dc03c84)
+  * [a99f491] Remove unneeded call - lazy support
+    (cherry picked from commit 89cbc62dee8e694b1d80157d254322523bbce411)
+
+ -- Mirco Bauer <meebey@debian.org>  Mon, 13 May 2013 12:22:42 +0200
+
 mono (3.0.6+dfsg2-3) unstable; urgency=low
 
   * Upload to unstable
