@@ -11,3 +11,4 @@
 /usr/lib/pkgconfig/mono.web.pc
 /usr/lib/pkgconfig/dotnet.pc
 /usr/lib/pkgconfig/dotnet35.pc
+/usr/lib/pkgconfig/reactive.pc
