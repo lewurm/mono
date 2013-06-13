@@ -302,6 +302,16 @@ Depends: ${misc:Depends},
          libmono-system-net-http4.0-cil (= ${source:Version}),
          libmono-system-net-http-formatting4.0-cil (= ${source:Version}),
          libmono-system-numerics4.0-cil (= ${source:Version}),
+         libmono-system-reactive-core2.1-cil (= ${source:Version}),
+         libmono-system-reactive-debugger2.1-cil (= ${source:Version}),
+         libmono-system-reactive-experimental2.1-cil (= ${source:Version}),
+         libmono-system-reactive-interfaces2.1-cil (= ${source:Version}),
+         libmono-system-reactive-linq2.1-cil (= ${source:Version}),
+         libmono-system-reactive-platformservices2.1-cil (= ${source:Version}),
+         libmono-system-reactive-providers2.1-cil (= ${source:Version}),
+         libmono-system-reactive-runtime-remoting2.1-cil (= ${source:Version}),
+         libmono-system-reactive-windows-forms2.1-cil (= ${source:Version}),
+         libmono-system-reactive-windows-threading2.1-cil (= ${source:Version}),
          libmono-system-runtime2.0-cil (= ${source:Version}),
          libmono-system-runtime4.0-cil (= ${source:Version}),
          libmono-system-runtime-caching4.0-cil (= ${source:Version}),
@@ -1499,6 +1509,157 @@ Description: Mono System.IdentityModel.Selectors Library (for CLI 4.0)
  of the Windows Communication Foundation (WCF) libraries of Mono for CLI 4.0.
  The WFC stack is for building SOA-based applications.
  Its development is in early stages.
+
+Package: libmono-system-reactive-core2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Core Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Core library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-debugger2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Debugger Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Debugger library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-experimental2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Experimental Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Experimental library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-interfaces2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Interfaces Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Interfaces library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-linq2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Linq Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Linq library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-platformservices2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.PlatformServices Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.PlatformServices library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-providers2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Providers Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Providers library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-runtime-remoting2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Runtime.Remoting Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Runtime.Remoting library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-windows-forms2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Windows.Forms Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.Windows.Forms library which is part
+ of Reactive Extensions.
+
+Package: libmono-system-reactive-windows-threading2.1-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://rx.codeplex.com
+Description: Mono System.Reactive.Windows.Threading Library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reactive.windows.Threading library which is part
+ of Reactive Extensions.
+
 
 Package: libmono-system-runtime-serialization4.0-cil
 Architecture: all
