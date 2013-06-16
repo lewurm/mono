@@ -1,6 +1,8 @@
 #include "libmono-2.0-1.symbols"
  mono_arm_emit_load_imm@VER_1 2.10.1
  mono_arm_is_rotated_imm8@VER_1 2.10.1
+ mono_arm_patchable_b@VER_1 3.0.5
+ mono_arm_patchable_bl@VER_1 3.0.5
  mono_arm_resume_unwind@VER_1 2.10.1
  mono_arm_throw_exception@VER_1 2.10.1
  mono_arm_throw_exception_by_token@VER_1 2.10.1
