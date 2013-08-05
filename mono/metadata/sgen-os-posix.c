@@ -66,8 +66,6 @@ suspend_thread (SgenThreadInfo *info, void *context)
 	if (0 && info->stop_count == stop_count)
 		return;
 
-	sgen_fill_thread_info_for_suspend (info);
-
 	stack_start = context ? (char*) ARCH_SIGCTX_SP (context) - REDZONE_SIZE : NULL;
 	/* If stack_start is not within the limits, then don't set it
 	   in info and we will be restarted. */
@@ -234,7 +232,7 @@ sgen_thread_handshake (BOOL suspend)
 			g_assert (info->doing_handshake);
 			info->doing_handshake = FALSE;
 		}
-		result = pthread_kill (mono_thread_info_get_tid (info), signum);
+		result = mono_threads_pthread_kill (info, signum);
 		if (result == 0) {
 			count++;
 		} else {

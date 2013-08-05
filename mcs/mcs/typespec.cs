@@ -98,6 +98,20 @@ namespace Mono.CSharp
 		//
 		public virtual IList<TypeSpec> Interfaces {
 			get {
+				if ((state & StateFlags.InterfacesImported) == 0) {
+					state |= StateFlags.InterfacesImported;
+
+					//
+					// Delay interfaces expansion to save memory and once all
+					// base types has been imported to avoid problems where
+					// interface references type before its base was imported
+					//
+					var imported = MemberDefinition as ImportedTypeDefinition;
+					if (imported != null && Kind != MemberKind.MissingType)
+						imported.DefineInterfaces (this);
+
+				}
+
 				return ifaces;
 			}
 			set {
@@ -636,6 +650,20 @@ namespace Mono.CSharp
 				return t == InternalType.NullLiteral || t.BuiltinType == BuiltinTypeSpec.Type.Dynamic;
 			default:
 				return true;
+			}
+		}
+
+		public static bool IsNonNullableValueType (TypeSpec t)
+		{
+			switch (t.Kind) {
+			case MemberKind.TypeParameter:
+				return ((TypeParameterSpec) t).IsValueType;
+			case MemberKind.Struct:
+				return !t.IsNullableType;
+			case MemberKind.Enum:
+				return true;
+			default:
+				return false;
 			}
 		}
 

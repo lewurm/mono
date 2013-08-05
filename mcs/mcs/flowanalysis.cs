@@ -394,7 +394,7 @@ namespace Mono.CSharp
 		// <summary>
 		//   Creates a sibling of the current usage vector.
 		// </summary>
-		public virtual void CreateSibling (Block block, SiblingType type)
+		public void CreateSibling (Block block, SiblingType type)
 		{
 			UsageVector vector = new UsageVector (
 				type, Parent.CurrentUsageVector, block, Location);
@@ -800,7 +800,7 @@ namespace Mono.CSharp
 		}
 	}
 
-	public  class FlowBranchingAsync : FlowBranchingBlock
+	public class FlowBranchingAsync : FlowBranchingBlock
 	{
 		readonly AsyncInitializer async_init;
 

@@ -21,6 +21,9 @@ MINI_OP(OP_ICOMPARE_IMM,	"icompare_imm", NONE, IREG, NONE)
 MINI_OP(OP_LCOMPARE_IMM,	"lcompare_imm", NONE, LREG, NONE)
 MINI_OP(OP_LOCAL,	"local", NONE, NONE, NONE)
 MINI_OP(OP_ARG,		"arg", NONE, NONE, NONE)
+/* inst_imm contains the local index */
+MINI_OP(OP_GSHAREDVT_LOCAL, "gsharedvt_local", NONE, NONE, NONE)
+MINI_OP(OP_GSHAREDVT_ARG_REGOFFSET, "gsharedvt_arg_regoffset", NONE, NONE, NONE)
 /*
  * Represents passing a valuetype argument which has not been decomposed yet.
  * inst_p0 points to the call.
@@ -573,6 +576,11 @@ MINI_OP(OP_SUB_OVF_CARRY,   "sub_ovf_carry", IREG, IREG, IREG)
 MINI_OP(OP_ADD_OVF_UN_CARRY,   "add_ovf_un_carry", IREG, IREG, IREG)
 MINI_OP(OP_SUB_OVF_UN_CARRY,   "sub_ovf_un_carry", IREG, IREG, IREG)
 
+/* instructions with explicit long arguments to deal with 64-bit ilp32 machines */
+MINI_OP(OP_LADDCC,   "laddcc", LREG, LREG, LREG)
+MINI_OP(OP_LSUBCC,   "lsubcc", LREG, LREG, LREG)
+
+
 /* FP functions usually done by the CPU */
 MINI_OP(OP_SIN,     "sin", FREG, FREG, NONE)
 MINI_OP(OP_COS,     "cos", FREG, FREG, NONE)
@@ -600,6 +608,7 @@ MINI_OP(OP_CARD_TABLE_WBARRIER, "card_table_wbarrier", NONE, IREG, IREG)
 
 /* arch-dep tls access */
 MINI_OP(OP_TLS_GET,            "tls_get", IREG, NONE, NONE)
+MINI_OP(OP_TLS_GET_REG,            "tls_get_reg", IREG, IREG, NONE)
 
 MINI_OP(OP_LOAD_GOTADDR, "load_gotaddr", IREG, NONE, NONE)
 MINI_OP(OP_DUMMY_USE, "dummy_use", NONE, IREG, NONE)
@@ -920,7 +929,7 @@ MINI_OP(OP_GC_PARAM_SLOT_LIVENESS_DEF, "gc_param_slot_liveness_def", NONE, NONE,
 /* #if defined(__native_client_codegen__) || defined(__native_client__) */
 /* We have to define these in terms of the TARGET defines, not NaCl defines */
 /* because genmdesc.pl doesn't have multiple defines per platform.          */
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM)
 MINI_OP(OP_NACL_GC_SAFE_POINT,     "nacl_gc_safe_point", IREG, NONE, NONE)
 #endif
 
@@ -1151,30 +1160,6 @@ MINI_OP(OP_IA64_LOADR4_MEMBASE_INC,"ia64_loadr4_membase_inc", IREG, IREG, NONE)
 MINI_OP(OP_IA64_LOADR8_MEMBASE_INC,"ia64_loadr8_membase_inc", IREG, IREG, NONE)
 #endif
 
-#if defined(__alpha__)
-MINI_OP(OP_ALPHA_CMP_EQ, "alpha_cmp_eq")
-MINI_OP(OP_ALPHA_CMP_IMM_EQ, "alpha_cmp_imm_eq")
-MINI_OP(OP_ALPHA_CMP_ULT, "alpha_cmp_ult")
-MINI_OP(OP_ALPHA_CMP_IMM_ULT, "alpha_cmp_imm_ult")
-MINI_OP(OP_ALPHA_CMP_ULE, "alpha_cmp_ule")
-MINI_OP(OP_ALPHA_CMP_IMM_ULE, "alpha_cmp_imm_ule")
-MINI_OP(OP_ALPHA_CMP_LT, "alpha_cmp_lt")
-MINI_OP(OP_ALPHA_CMP_IMM_LT, "alpha_cmp_imm_lt")
-MINI_OP(OP_ALPHA_CMP_LE, "alpha_cmp_le")
-MINI_OP(OP_ALPHA_CMP_IMM_LE, "alpha_cmp_imm_le")
-
-MINI_OP(OP_ALPHA_CMPT_EQ, "alpha_cmpt_eq")
-MINI_OP(OP_ALPHA_CMPT_EQ_SU, "alpha_cmpt_eq_su")
-MINI_OP(OP_ALPHA_CMPT_LT, "alpha_cmpt_lt")
-MINI_OP(OP_ALPHA_CMPT_LT_SU, "alpha_cmpt_lt_su")
-MINI_OP(OP_ALPHA_CMPT_LE, "alpha_cmpt_le")
-MINI_OP(OP_ALPHA_CMPT_LE_SU, "alpha_cmpt_le_su")
-MINI_OP(OP_ALPHA_CMPT_UN, "alpha_cmpt_un")
-MINI_OP(OP_ALPHA_CMPT_UN_SU, "alpha_cmpt_un_su")
-MINI_OP(OP_ALPHA_TRAPB, "alpha_trapb")
-
-#endif
-
 #if defined(__mips__)
 MINI_OP(OP_MIPS_BEQ,   "mips_beq", NONE, IREG, IREG)
 MINI_OP(OP_MIPS_BGEZ,  "mips_bgez", NONE, IREG, NONE)
@@ -1245,3 +1230,4 @@ MINI_OP(OP_MIPS_COND_EXC_INC, "mips_cond_exc_inc", NONE, IREG, IREG)
 #ifdef ENABLE_LLVM
 MINI_OP(OP_LLVM_OUTARG_VT,	"llvm_outarg_vt", IREG, VREG, NONE)
 #endif
+

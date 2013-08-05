@@ -3,10 +3,11 @@
 .\" Copyright 2003 Ximian, Inc. 
 .\" Copyright 2004-2011 Novell, Inc. 
 .\" Copyright 2011-2012 Xamarin Inc
+.\" Copyright 2013 7digital Media Ltd.
 .\" Author:
 .\"   Miguel de Icaza (miguel@gnu.org)
 .\"
-.TH Mono "Mono 2.11"
+.TH Mono "Mono 3.0"
 .SH NAME
 mono \- Mono's ECMA-CLI native code generator (Just-in-Time and Ahead-of-Time)
 .SH SYNOPSIS
@@ -143,6 +144,12 @@ Defaults to 128.
 .TP
 .I nodebug
 Instructs the AOT compiler to not output any debugging information.
+.TP
+.I dwarfdebug
+Instructs the AOT compiler to emit DWARF debugging information. When
+used together with the nodebug option, only DWARF debugging
+information is emitted, but not the information that can be used at
+runtime.
 .TP
 .I nrgctx-trampolines=[number]
 When compiling in full aot mode, the generic sharing trampolines must be precreated
@@ -564,7 +571,8 @@ itself, and not typically of interest to runtime users or developers.
 \fB--break method\fR
 Inserts a breakpoint before the method whose name is `method'
 (namespace.class:methodname).  Use `Main' as method name to insert a
-breakpoint on the application's main method.
+breakpoint on the application's main method.  You can use it also with
+generics, for example "System.Collections.Generic.Queue`1:Peek"
 .TP
 \fB--breakonex\fR
 Inserts a breakpoint on exceptions.  This allows you to debug your
@@ -891,6 +899,18 @@ above locations. If you don't want the mapping to be performed you can set this
 variable in your environment before starting the application and no action will
 be taken.
 .TP
+\fBMONO_ASPNET_WEBCONFIG_CACHESIZE\fR
+Mono has a cache of ConfigSection objects for speeding up WebConfigurationManager
+queries. Its default size is 100 items, and when more items are needed, cache
+evictions start happening. If evictions are too frequent this could impose
+unnecessary overhead, which could be avoided by using this environment variable
+to set up a higher cache size (or to lower memory requirements by decreasing it).
+.TP
+\fBMONO_CAIRO_DEBUG_DISPOSE\fR
+If set, causes Mono.Cairo to collect stack traces when objects are allocated,
+so that the finalization/Dispose warnings include information about the
+instance's origin.
+.TP
 \fBMONO_CFG_DIR\fR
 If set, this variable overrides the default system configuration directory
 ($PREFIX/etc). It's used to locate machine.config file.
@@ -1068,15 +1088,6 @@ Once the heap size gets larger than this size, ignore what the default
 major collection trigger metric says and only allow four nursery size's
 of major heap growth between major collections.
 .TP
-\fBwbarrier=\fIwbarrier\fR
-Specifies which write barrier to use.  Options are `cardtable' and
-`remset'.  The card table barrier is faster but less precise, and only
-supported for the Mark&Sweep major collector on 32 bit platforms.  The
-default is `cardtable' if it is supported, otherwise `remset'. The cardtable
-write barrier is faster and has a more stable and usually smaller
-memory footprint. If the program causes too much pinning during
-thread scan, it might be faster to enable remset.
-.TP
 \fBevacuation-threshold=\fIthreshold\fR
 Sets the evacuation threshold in percent.  This option is only available
 on the Mark&Sweep major collectors.  The value must be an
@@ -1178,6 +1189,11 @@ the nursery at collection time, instead of the default, when buffers
 are allocated (clear-at-gc).   The consistency check ensures that
 there are no major to minor references that are not on the remembered
 sets. 
+.TP
+\fBmod-union-consistency-check\fR
+Checks that the mod-union cardtable is consistent before each
+finishing major collection pause.  This check is only applicable to
+concurrent major collectors.
 .TP
 \fBcheck-mark-bits\fR
 Checks that mark bits in the major heap are consistent at the end of

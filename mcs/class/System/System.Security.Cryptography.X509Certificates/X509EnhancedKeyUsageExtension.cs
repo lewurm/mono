@@ -28,9 +28,14 @@
 
 #if SECURITY_DEP
 
-using System.Text;
-
+#if MONOTOUCH
 using Mono.Security;
+#else
+extern alias MonoSecurity;
+using MonoSecurity::Mono.Security;
+#endif
+
+using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates {
 

@@ -710,12 +710,12 @@ namespace System
 
 		public static bool Equals (string a, string b, StringComparison comparisonType)
 		{
-			return String.Compare (a, b, comparisonType) == 0;
+			return Compare (a, b, comparisonType) == 0;
 		}
 
 		public bool Equals (string value, StringComparison comparisonType)
 		{
-			return String.Compare (value, this, comparisonType) == 0;
+			return Compare (value, this, comparisonType) == 0;
 		}
 
 		public static int Compare (string strA, string strB, CultureInfo culture, CompareOptions options)
@@ -823,6 +823,14 @@ namespace System
 				}
 				return lengthA - lengthB;
 			}
+		}
+
+		//
+		// Fastest method for internal case insensitive comparison
+		//
+		internal static int CompareOrdinalCaseInsensitiveUnchecked (string strA, string strB)
+		{
+			return CompareOrdinalCaseInsensitiveUnchecked (strA, 0, int.MaxValue, strB, 0, int.MaxValue);
 		}
 
 		internal static unsafe int CompareOrdinalCaseInsensitiveUnchecked (String strA, int indexA, int lenA, String strB, int indexB, int lenB)
@@ -1004,6 +1012,11 @@ namespace System
 			if (options == CompareOptions.Ordinal)
 				return IndexOfOrdinalUnchecked (value, startIndex, count);
 			return IndexOfOrdinalIgnoreCaseUnchecked (value, startIndex, count);
+		}
+
+		internal unsafe int IndexOfOrdinalUnchecked (string value)
+		{
+			return IndexOfOrdinalUnchecked (value, 0, length);
 		}
 
 		internal unsafe int IndexOfOrdinalUnchecked (string value, int startIndex, int count)
@@ -1265,11 +1278,11 @@ namespace System
 		{
 			if (value == null)
 				throw new ArgumentNullException ("value");
-			if (value.length == 0)
+			if (value.Length == 0)
 				return 0;
 			if (this.length == 0)
 				return -1;
-			return CultureInfo.CurrentCulture.CompareInfo.IndexOf (this, value, 0, length, CompareOptions.Ordinal);
+			return CultureInfo.CurrentCulture.CompareInfo.IndexOf (this, value, 0, length, CompareOptions.None);
 		}
 
 		public int IndexOf (String value, int startIndex)
@@ -1503,7 +1516,10 @@ namespace System
 
 		public bool Contains (String value)
 		{
-			return IndexOf (value) != -1;
+			if (value == null)
+				throw new ArgumentNullException ("value");
+
+			return IndexOfOrdinalUnchecked (value, 0, Length) != -1;
 		}
 
 		public static bool IsNullOrEmpty (String value)
@@ -1643,13 +1659,23 @@ namespace System
 			case StringComparison.InvariantCultureIgnoreCase:
 				return CultureInfo.InvariantCulture.CompareInfo.IsPrefix (this, value, CompareOptions.IgnoreCase);
 			case StringComparison.Ordinal:
-				return CultureInfo.CurrentCulture.CompareInfo.IsPrefix (this, value, CompareOptions.Ordinal);
+				return StartsWithOrdinalUnchecked (value);
 			case StringComparison.OrdinalIgnoreCase:
-				return CultureInfo.CurrentCulture.CompareInfo.IsPrefix (this, value, CompareOptions.OrdinalIgnoreCase);
+				return StartsWithOrdinalCaseInsensitiveUnchecked (value);
 			default:
 				string msg = Locale.GetText ("Invalid value '{0}' for StringComparison", comparisonType);
 				throw new ArgumentException (msg, "comparisonType");
 			}
+		}
+
+		internal bool StartsWithOrdinalUnchecked (string value)
+		{
+			return length >= value.length && CompareOrdinalUnchecked (this, 0, value.length, value, 0, value.length) == 0;
+		}
+
+		internal bool StartsWithOrdinalCaseInsensitiveUnchecked (string value)
+		{
+			return length >= value.Length && CompareOrdinalCaseInsensitiveUnchecked (this, 0, value.length, value, 0, value.length) == 0;
 		}
 
 		[ComVisible (false)]
@@ -1668,9 +1694,9 @@ namespace System
 			case StringComparison.InvariantCultureIgnoreCase:
 				return CultureInfo.InvariantCulture.CompareInfo.IsSuffix (this, value, CompareOptions.IgnoreCase);
 			case StringComparison.Ordinal:
-				return CultureInfo.CurrentCulture.CompareInfo.IsSuffix (this, value, CompareOptions.Ordinal);
+				return CultureInfo.InvariantCulture.CompareInfo.IsSuffix (this, value, CompareOptions.Ordinal);
 			case StringComparison.OrdinalIgnoreCase:
-				return CultureInfo.CurrentCulture.CompareInfo.IsSuffix (this, value, CompareOptions.OrdinalIgnoreCase);
+				return CultureInfo.InvariantCulture.CompareInfo.IsSuffix (this, value, CompareOptions.OrdinalIgnoreCase);
 			default:
 				string msg = Locale.GetText ("Invalid value '{0}' for StringComparison", comparisonType);
 				throw new ArgumentException (msg, "comparisonType");
@@ -3057,6 +3083,43 @@ namespace System
 			}
 			memcpy4 (dest, src, size);
 		}
+
+		/* Used by the runtime */
+		internal static unsafe void bzero (byte *dest, int len) {
+			memset (dest, 0, len);
+		}
+
+		internal static unsafe void bzero_aligned_1 (byte *dest, int len) {
+			((byte*)dest) [0] = 0;
+		}
+
+		internal static unsafe void bzero_aligned_2 (byte *dest, int len) {
+			((short*)dest) [0] = 0;
+		}
+
+		internal static unsafe void bzero_aligned_4 (byte *dest, int len) {
+			((int*)dest) [0] = 0;
+		}
+
+		internal static unsafe void bzero_aligned_8 (byte *dest, int len) {
+			((long*)dest) [0] = 0;
+		}
+
+		internal static unsafe void memcpy_aligned_1 (byte *dest, byte *src, int size) {
+			((byte*)dest) [0] = ((byte*)src) [0];
+		}			
+
+		internal static unsafe void memcpy_aligned_2 (byte *dest, byte *src, int size) {
+			((short*)dest) [0] = ((short*)src) [0];
+		}			
+
+		internal static unsafe void memcpy_aligned_4 (byte *dest, byte *src, int size) {
+			((int*)dest) [0] = ((int*)src) [0];
+		}			
+
+		internal static unsafe void memcpy_aligned_8 (byte *dest, byte *src, int size) {
+			((long*)dest) [0] = ((long*)src) [0];
+		}			
 
 		internal static unsafe void CharCopy (char *dest, char *src, int count) {
 			// Same rules as for memcpy, but with the premise that 

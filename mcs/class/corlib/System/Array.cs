@@ -105,14 +105,16 @@ namespace System
 				T value;
 				GetGenericValueImpl (i, out value);
 				if (item == null){
-					if (value == null)
+					if (value == null) {
 						return true;
+					}
 
 					continue;
 				}
-				
-				if (item.Equals (value))
+
+				if (item.Equals (value)) {
 					return true;
+				}
 			}
 
 			return false;
@@ -2808,8 +2810,14 @@ namespace System
 				return;
 			
 			T [] a = new T [newSize];
-			if (length != 0)
-				FastCopy (arr, 0, a, 0, Math.Min (newSize, length));
+			int tocopy = Math.Min (newSize, length);
+
+			if (tocopy < 9) {
+				for (int i = 0; i < tocopy; ++i)
+					UnsafeStore (a, i, UnsafeLoad (arr, i));
+			} else {
+				FastCopy (arr, 0, a, 0, tocopy);
+			}
 			array = a;
 		}
 		

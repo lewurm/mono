@@ -29,8 +29,14 @@
 
 #if SECURITY_DEP
 
-using System.Security.Permissions;
+#if MONOTOUCH
 using MX = Mono.Security.X509;
+#else
+extern alias MonoSecurity;
+using MX = MonoSecurity::Mono.Security.X509;
+#endif
+
+using System.Security.Permissions;
 
 namespace System.Security.Cryptography.X509Certificates {
 

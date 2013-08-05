@@ -19,6 +19,7 @@ read_entry (FILE *in, void **data)
 	if (fread (&type, 1, 1, in) != 1)
 		return SGEN_PROTOCOL_EOF;
 	switch (type) {
+	case SGEN_PROTOCOL_COLLECTION_FORCE: size = sizeof (SGenProtocolCollectionForce); break;
 	case SGEN_PROTOCOL_COLLECTION_BEGIN: size = sizeof (SGenProtocolCollection); break;
 	case SGEN_PROTOCOL_COLLECTION_END: size = sizeof (SGenProtocolCollection); break;
 	case SGEN_PROTOCOL_ALLOC: size = sizeof (SGenProtocolAlloc); break;
@@ -27,6 +28,8 @@ read_entry (FILE *in, void **data)
 	case SGEN_PROTOCOL_COPY: size = sizeof (SGenProtocolCopy); break;
 	case SGEN_PROTOCOL_PIN: size = sizeof (SGenProtocolPin); break;
 	case SGEN_PROTOCOL_MARK: size = sizeof (SGenProtocolMark); break;
+	case SGEN_PROTOCOL_SCAN_BEGIN: size = sizeof (SGenProtocolScanBegin); break;
+	case SGEN_PROTOCOL_SCAN_VTYPE_BEGIN: size = sizeof (SGenProtocolScanVTypeBegin); break;
 	case SGEN_PROTOCOL_WBARRIER: size = sizeof (SGenProtocolWBarrier); break;
 	case SGEN_PROTOCOL_GLOBAL_REMSET: size = sizeof (SGenProtocolGlobalRemset); break;
 	case SGEN_PROTOCOL_PTR_UPDATE: size = sizeof (SGenProtocolPtrUpdate); break;
@@ -59,6 +62,11 @@ static void
 print_entry (int type, void *data)
 {
 	switch (type) {
+	case SGEN_PROTOCOL_COLLECTION_FORCE: {
+		SGenProtocolCollectionForce *entry = data;
+		printf ("collection force generation %d\n", entry->generation);
+		break;
+	}
 	case SGEN_PROTOCOL_COLLECTION_BEGIN: {
 		SGenProtocolCollection *entry = data;
 		printf ("collection begin %d generation %d\n", entry->index, entry->generation);
@@ -97,6 +105,16 @@ print_entry (int type, void *data)
 	case SGEN_PROTOCOL_MARK: {
 		SGenProtocolMark *entry = data;
 		printf ("mark obj %p vtable %p size %d\n", entry->obj, entry->vtable, entry->size);
+		break;
+	}
+	case SGEN_PROTOCOL_SCAN_BEGIN: {
+		SGenProtocolScanBegin *entry = data;
+		printf ("scan_begin obj %p vtable %p size %d\n", entry->obj, entry->vtable, entry->size);
+		break;
+	}
+	case SGEN_PROTOCOL_SCAN_VTYPE_BEGIN: {
+		SGenProtocolScanVTypeBegin *entry = data;
+		printf ("scan_vtype_begin obj %p size %d\n", entry->obj, entry->size);
 		break;
 	}
 	case SGEN_PROTOCOL_WBARRIER: {
@@ -164,6 +182,7 @@ print_entry (int type, void *data)
 	case SGEN_PROTOCOL_CEMENT_RESET: {
 		printf ("cement_reset\n");
 		break;
+	}
 	case SGEN_PROTOCOL_DISLINK_UPDATE: {
 		SGenProtocolDislinkUpdate *entry = data;
 		printf ("dislink_update link %p obj %p", entry->link, entry->obj);
@@ -188,6 +207,7 @@ static gboolean
 is_match (gpointer ptr, int type, void *data)
 {
 	switch (type) {
+	case SGEN_PROTOCOL_COLLECTION_FORCE:
 	case SGEN_PROTOCOL_COLLECTION_BEGIN:
 	case SGEN_PROTOCOL_COLLECTION_END:
 	case SGEN_PROTOCOL_THREAD_SUSPEND:
@@ -212,6 +232,14 @@ is_match (gpointer ptr, int type, void *data)
 	}
 	case SGEN_PROTOCOL_MARK: {
 		SGenProtocolMark *entry = data;
+		return matches_interval (ptr, entry->obj, entry->size);
+	}
+	case SGEN_PROTOCOL_SCAN_BEGIN: {
+		SGenProtocolScanBegin *entry = data;
+		return matches_interval (ptr, entry->obj, entry->size);
+	}
+	case SGEN_PROTOCOL_SCAN_VTYPE_BEGIN: {
+		SGenProtocolScanVTypeBegin *entry = data;
 		return matches_interval (ptr, entry->obj, entry->size);
 	}
 	case SGEN_PROTOCOL_WBARRIER: {
@@ -257,17 +285,26 @@ is_match (gpointer ptr, int type, void *data)
 	}
 }
 
+static gboolean dump_all = FALSE;
+
 int
 main (int argc, char *argv[])
 {
 	int type;
 	void *data;
-	int num_nums = argc - 1;
+	int num_args = argc - 1;
+	int num_nums = 0;
 	int i;
-	long nums [num_nums];
+	long nums [num_args];
 
-	for (i = 0; i < num_nums; ++i)
-		nums [i] = strtoul (argv [i + 1], NULL, 16);
+	for (i = 0; i < num_args; ++i) {
+		char *arg = argv [i + 1];
+		if (!strcmp (arg, "--all")) {
+			dump_all = TRUE;
+		} else {
+			nums [num_nums++] = strtoul (arg, NULL, 16);
+		}
+	}
 
 	while ((type = read_entry (stdin, &data)) != SGEN_PROTOCOL_EOF) {
 		gboolean match = FALSE;
@@ -277,7 +314,9 @@ main (int argc, char *argv[])
 				break;
 			}
 		}
-		if (match)
+		if (dump_all)
+			printf (match ? "* " : "  ");
+		if (match || dump_all)
 			print_entry (type, data);
 		free (data);
 	}
