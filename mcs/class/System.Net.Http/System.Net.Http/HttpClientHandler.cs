@@ -58,7 +58,7 @@ namespace System.Net.Http
 			useProxy = true;
 		}
 
-		void EnsureModifiability ()
+		internal void EnsureModifiability ()
 		{
 			if (sentRequest)
 				throw new InvalidOperationException (
@@ -219,7 +219,7 @@ namespace System.Net.Http
 			base.Dispose (disposing);
 		}
 
-		HttpWebRequest CreateWebRequest (HttpRequestMessage request)
+		internal virtual HttpWebRequest CreateWebRequest (HttpRequestMessage request)
 		{
 			var wr = new HttpWebRequest (request.RequestUri);
 			wr.ThrowOnError = false;
@@ -308,12 +308,26 @@ namespace System.Net.Http
 					}
 				}
 
-				var stream = wrequest.GetRequestStream ();
+				var stream = await wrequest.GetRequestStreamAsync ().ConfigureAwait (false);
 				await request.Content.CopyToAsync (stream).ConfigureAwait (false);
 			}
 
-			// FIXME: GetResponseAsync does not accept cancellationToken
-			var wresponse = (HttpWebResponse) await wrequest.GetResponseAsync ().ConfigureAwait (false);
+			HttpWebResponse wresponse = null;
+			using (cancellationToken.Register (l => ((HttpWebRequest) l).Abort (), wrequest)) {
+				try {
+					wresponse = (HttpWebResponse) await wrequest.GetResponseAsync ().ConfigureAwait (false);
+				} catch (WebException we) {
+					if (we.Status != WebExceptionStatus.RequestCanceled)
+						throw;
+				}
+
+				if (cancellationToken.IsCancellationRequested) {
+					var cancelled = new TaskCompletionSource<HttpResponseMessage> ();
+					cancelled.SetCanceled ();
+					return await cancelled.Task;
+				}
+			}
+			
 			return CreateResponseMessage (wresponse, request);
 		}
 	}

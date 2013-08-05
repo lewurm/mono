@@ -12,6 +12,9 @@
 /* Disable AOT Compiler */
 #undef DISABLE_AOT_COMPILER
 
+/* Disable support for multiple appdomains. */
+#undef DISABLE_APPDOMAINS
+
 /* Disable assembly remapping. */
 #undef DISABLE_ASSEMBLY_REMAPPING
 
@@ -48,6 +51,9 @@
 /* Disable String normalization support. */
 #undef DISABLE_NORMALIZATION
 
+/* Disable Performance Counters. */
+#undef DISABLE_PERFCOUNTERS
+
 /* Disable P/Invoke support */
 #undef DISABLE_PINVOKE
 
@@ -62,6 +68,28 @@
 
 /* Disable assembly saving support in reflection emit */
 #undef DISABLE_REFLECTION_EMIT_SAVE
+
+/* Disable remoting support (This disables type proxies and make com
+   non-functional) */
+#undef DISABLE_REMOTING
+
+/* Disable CAS/CoreCLR security */
+#undef DISABLE_SECURITY
+
+/* Disable major=copying support in SGEN. */
+#undef DISABLE_SGEN_MAJOR_COPYING
+
+/* Disable major=marksweep-fixed support in SGEN. */
+#undef DISABLE_SGEN_MAJOR_MARKSWEEP_FIXED
+
+/* Disable major=marksweep-fixed-par support in SGEN. */
+#undef DISABLE_SGEN_MAJOR_MARKSWEEP_FIXED_PAR
+
+/* Disable major=marksweep-par support in SGEN. */
+#undef DISABLE_SGEN_MAJOR_MARKSWEEP_PAR
+
+/* Disable wbarrier=remset support in SGEN. */
+#undef DISABLE_SGEN_REMSET
 
 /* Disable Shadow Copy for AppDomains */
 #undef DISABLE_SHADOW_COPY
@@ -89,6 +117,9 @@
 
 /* Enable DTrace probes */
 #undef ENABLE_DTRACE
+
+/* Extension module enabled */
+#undef ENABLE_EXTENSION_MODULE
 
 /* Icall export enabled */
 #undef ENABLE_ICALL_EXPORT
@@ -131,6 +162,9 @@
 
 /* Define to 1 if you have the <checklist.h> header file. */
 #undef HAVE_CHECKLIST_H
+
+/* Define to 1 if you have the <CommonCrypto/CommonDigest.h> header file. */
+#undef HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
 /* Define to 1 if you have the `confstr' function. */
 #undef HAVE_CONFSTR
@@ -195,11 +229,17 @@
 /* Define to 1 if you have the <fstab.h> header file. */
 #undef HAVE_FSTAB_H
 
+/* Define to 1 if you have the `fstatat' function. */
+#undef HAVE_FSTATAT
+
 /* Define to 1 if you have the `fstatfs' function. */
 #undef HAVE_FSTATFS
 
 /* Define to 1 if you have the `fstatvfs' function. */
 #undef HAVE_FSTATVFS
+
+/* Define to 1 if you have the `futimens' function. */
+#undef HAVE_FUTIMENS
 
 /* Define to 1 if you have the `futimes' function. */
 #undef HAVE_FUTIMES
@@ -282,8 +322,20 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Have IPPROTO_IP */
+#undef HAVE_IPPROTO_IP
+
+/* Have IPPROTO_IPV6 */
+#undef HAVE_IPPROTO_IPV6
+
+/* Have IPPROTO_TCP */
+#undef HAVE_IPPROTO_TCP
+
 /* Have IPV6_PKTINFO */
 #undef HAVE_IPV6_PKTINFO
+
+/* Have IP_DONTFRAG */
+#undef HAVE_IP_DONTFRAG
 
 /* Have IP_DONTFRAGMENT */
 #undef HAVE_IP_DONTFRAGMENT
@@ -293,6 +345,9 @@
 
 /* Have IP_PKTINFO */
 #undef HAVE_IP_PKTINFO
+
+/* Have IP_PMTUDISC_DO */
+#undef HAVE_IP_PMTUDISC_DO
 
 /* Define to 1 if you have the `isfinite' function. */
 #undef HAVE_ISFINITE
@@ -342,6 +397,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define to 1 if you have the `mknodat' function. */
+#undef HAVE_MKNODAT
+
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
 
@@ -353,6 +411,9 @@
 
 /* Have MSG_NOSIGNAL */
 #undef HAVE_MSG_NOSIGNAL
+
+/* Define to 1 if you have the <nacl/nacl_dyncode.h> header file. */
+#undef HAVE_NACL_NACL_DYNCODE_H
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
@@ -390,6 +451,9 @@
 /* Define to 1 if you have the `posix_madvise' function. */
 #undef HAVE_POSIX_MADVISE
 
+/* Define to 1 if you have the `preadv' function. */
+#undef HAVE_PREADV
+
 /* Define to 1 if you have the `psignal' function. */
 #undef HAVE_PSIGNAL
 
@@ -423,8 +487,20 @@
 /* Define to 1 if you have the `pthread_mutex_timedlock' function. */
 #undef HAVE_PTHREAD_MUTEX_TIMEDLOCK
 
+/* Define to 1 if you have the <pthread_np.h> header file. */
+#undef HAVE_PTHREAD_NP_H
+
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
+
+/* Define to 1 if you have the `pwritev' function. */
+#undef HAVE_PWRITEV
+
+/* Define to 1 if you have the `readlinkat' function. */
+#undef HAVE_READLINKAT
+
+/* Define to 1 if you have the `readv' function. */
+#undef HAVE_READV
 
 /* Define to 1 if you have the `remap_file_pages' function. */
 #undef HAVE_REMAP_FILE_PAGES
@@ -546,6 +622,9 @@
 /* Define to 1 if the system has the type `struct flock'. */
 #undef HAVE_STRUCT_FLOCK
 
+/* Define to 1 if the system has the type `struct iovec'. */
+#undef HAVE_STRUCT_IOVEC
+
 /* Have struct ip_mreq */
 #undef HAVE_STRUCT_IP_MREQ
 
@@ -566,6 +645,15 @@
 
 /* Define to 1 if `f_flags' is a member of `struct statfs'. */
 #undef HAVE_STRUCT_STATFS_F_FLAGS
+
+/* Define to 1 if `st_atim' is a member of `struct stat'. */
+#undef HAVE_STRUCT_STAT_ST_ATIM
+
+/* Define to 1 if `st_ctim' is a member of `struct stat'. */
+#undef HAVE_STRUCT_STAT_ST_CTIM
+
+/* Define to 1 if `st_mtim' is a member of `struct stat'. */
+#undef HAVE_STRUCT_STAT_ST_MTIM
 
 /* Define to 1 if the system has the type `struct timespec'. */
 #undef HAVE_STRUCT_TIMESPEC
@@ -699,7 +787,7 @@
 /* Have timezone variable */
 #undef HAVE_TIMEZONE
 
-/* tld_model available */
+/* tls_model available */
 #undef HAVE_TLS_MODEL_ATTR
 
 /* Have tm_gmtoff */
@@ -720,6 +808,9 @@
 /* Define to 1 if you have /usr/include/malloc.h. */
 #undef HAVE_USR_INCLUDE_MALLOC_H
 
+/* Define to 1 if you have the `utimensat' function. */
+#undef HAVE_UTIMENSAT
+
 /* Define to 1 if you have the <utime.h> header file. */
 #undef HAVE_UTIME_H
 
@@ -738,6 +829,9 @@
 /* Have a working sigaltstack */
 #undef HAVE_WORKING_SIGALTSTACK
 
+/* Define to 1 if you have the `writev' function. */
+#undef HAVE_WRITEV
+
 /* Have system zlib */
 #undef HAVE_ZLIB
 
@@ -746,6 +840,9 @@
 
 /* Define as const if the declaration of iconv() needs const. */
 #undef ICONV_CONST
+
+/* Enable lazy gc thread creation by the embedding host. */
+#undef LAZY_GC_THREAD_CREATION
 
 /* Major version of LLVM libraries */
 #undef LLVM_MAJOR_VERSION
@@ -847,6 +944,9 @@
 /* byte order of target */
 #undef TARGET_BYTE_ORDER
 
+/* The JIT/AOT targets iOS */
+#undef TARGET_IOS
+
 /* The JIT/AOT targets Apple platforms */
 #undef TARGET_MACH
 
@@ -855,6 +955,9 @@
 
 /* ... */
 #undef TARGET_NACL
+
+/* The JIT/AOT targets OSX */
+#undef TARGET_OSX
 
 /* ... */
 #undef TARGET_POWERPC
@@ -877,20 +980,29 @@
 /* ... */
 #undef TARGET_XBOX360
 
+/* Use jump tables in JIT */
+#undef USE_JUMP_TABLES
+
+/* Use kqueue for the threadpool */
+#undef USE_KQUEUE_FOR_THREADPOOL
+
 /* ... */
 #undef USE_MACH_SEMA
 
 /* Use malloc for each single mempool allocation */
 #undef USE_MALLOC_FOR_MEMPOOLS
 
-/* Use mono_mutex_t */
-#undef USE_MONO_MUTEX
-
 /* Version number of package */
 #undef VERSION
+
+/* ... */
+#undef __default_codegen__
 
 /* 64 bit mode with 4 byte longs and pointers */
 #undef __mono_ilp32__
 
 /* ... */
 #undef __mono_ppc64__
+
+/* ... */
+#undef __native_client_codegen__

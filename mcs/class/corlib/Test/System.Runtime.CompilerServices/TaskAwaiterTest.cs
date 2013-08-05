@@ -39,14 +39,12 @@ namespace MonoTests.System.Runtime.CompilerServices
 	[TestFixture]
 	public class TaskAwaiterTest
 	{
-		Task task;
-
 		[Test]
 		public void GetResultFaulted ()
 		{
 			TaskAwaiter awaiter;
 
-			task = new Task (() => { throw new ApplicationException (); });
+			var task = new Task (() => { throw new ApplicationException (); });
 			awaiter = task.GetAwaiter ();
 			task.RunSynchronously (TaskScheduler.Current);
 
@@ -61,27 +59,12 @@ namespace MonoTests.System.Runtime.CompilerServices
 		}
 
 		[Test]
-		public void GetResultNotCompleted ()
-		{
-			TaskAwaiter awaiter;
-
-			task = new Task (() => { });
-			awaiter = task.GetAwaiter ();
-
-			try {
-				awaiter.GetResult ();
-				Assert.Fail ();
-			} catch (InvalidOperationException) {
-			}
-		}
-
-		[Test]
 		public void GetResultCanceled ()
 		{
 			TaskAwaiter awaiter;
 
 			var token = new CancellationToken (true);
-			task = new Task (() => { }, token);
+			var task = new Task (() => { }, token);
 			awaiter = task.GetAwaiter ();
 
 			try {

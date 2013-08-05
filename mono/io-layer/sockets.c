@@ -902,6 +902,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	if (fd == -1 && domain == AF_INET && type == SOCK_RAW &&
 	    protocol == 0) {
 		/* Retry with protocol == 4 (see bug #54565) */
+		// https://bugzilla.novell.com/show_bug.cgi?id=MONO54565
 		socket_handle.protocol = 4;
 		fd = socket (AF_INET, SOCK_RAW, 4);
 	}
@@ -927,6 +928,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 
 	/* .net seems to set this by default for SOCK_STREAM, not for
 	 * SOCK_DGRAM (see bug #36322)
+	 * https://bugzilla.novell.com/show_bug.cgi?id=MONO36322
 	 *
 	 * It seems winsock has a rather different idea of what
 	 * SO_REUSEADDR means.  If it's set, then a new socket can be
@@ -937,6 +939,7 @@ guint32 _wapi_socket(int domain, int type, int protocol, void *unused,
 	 * behaves as though any other system would when SO_REUSEADDR
 	 * is true, so we don't need to do anything else here.  See
 	 * bug 53992.
+	 * https://bugzilla.novell.com/show_bug.cgi?id=MONO53992
 	 */
 	{
 		int ret, true = 1;
@@ -1291,13 +1294,13 @@ WSAIoctl (guint32 fd, gint32 command,
 			keepalivetime /= 1000;
 			if (keepalivetime == 0 || rem >= 500)
 				keepalivetime++;
-			ret = setsockopt (fd, SOL_TCP, TCP_KEEPIDLE, &keepalivetime, sizeof (uint32_t));
+			ret = setsockopt (fd, IPPROTO_TCP, TCP_KEEPIDLE, &keepalivetime, sizeof (uint32_t));
 			if (ret == 0) {
 				rem = keepaliveinterval % 1000;
 				keepaliveinterval /= 1000;
 				if (keepaliveinterval == 0 || rem >= 500)
 					keepaliveinterval++;
-				ret = setsockopt (fd, SOL_TCP, TCP_KEEPINTVL, &keepaliveinterval, sizeof (uint32_t));
+				ret = setsockopt (fd, IPPROTO_TCP, TCP_KEEPINTVL, &keepaliveinterval, sizeof (uint32_t));
 			}
 			if (ret != 0) {
 				gint errnum = errno;

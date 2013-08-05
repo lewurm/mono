@@ -1,25 +1,23 @@
 /*
+ * sgen-protocol.c: Binary protocol of internal activity, to aid
+ * debugging.
+ *
  * Copyright 2001-2003 Ximian, Inc
  * Copyright 2003-2010 Novell, Inc.
- * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Copyright (C) 2012 Xamarin Inc
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License 2.0 as published by the Free Software Foundation;
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License 2.0 along with this library; if not, write to the Free
+ * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 #ifdef HAVE_SGEN_GC
@@ -35,18 +33,19 @@
 /* If not null, dump binary protocol to this file */
 static FILE *binary_protocol_file = NULL;
 
-static int binary_protocol_use_count = 0;
+/* We set this to -1 to indicate an exclusive lock */
+static volatile int binary_protocol_use_count = 0;
 
 #define BINARY_PROTOCOL_BUFFER_SIZE	(65536 - 2 * 8)
 
 typedef struct _BinaryProtocolBuffer BinaryProtocolBuffer;
 struct _BinaryProtocolBuffer {
-	BinaryProtocolBuffer *next;
-	int index;
+	BinaryProtocolBuffer * volatile next;
+	volatile int index;
 	unsigned char buffer [BINARY_PROTOCOL_BUFFER_SIZE];
 };
 
-static BinaryProtocolBuffer *binary_protocol_buffers = NULL;
+static BinaryProtocolBuffer * volatile binary_protocol_buffers = NULL;
 
 void
 binary_protocol_init (const char *filename)
@@ -58,6 +57,53 @@ gboolean
 binary_protocol_is_enabled (void)
 {
 	return binary_protocol_file != NULL;
+}
+
+static gboolean
+try_lock_exclusive (void)
+{
+	do {
+		if (binary_protocol_use_count)
+			return FALSE;
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, -1, 0) != 0);
+	mono_memory_barrier ();
+	return TRUE;
+}
+
+static void
+unlock_exclusive (void)
+{
+	mono_memory_barrier ();
+	SGEN_ASSERT (0, binary_protocol_use_count == -1, "Exclusively locked count must be -1");
+	if (InterlockedCompareExchange (&binary_protocol_use_count, 0, -1) != -1)
+		SGEN_ASSERT (0, FALSE, "Somebody messed with the exclusive lock");
+}
+
+static void
+lock_recursive (void)
+{
+	int old_count;
+	do {
+	retry:
+		old_count = binary_protocol_use_count;
+		if (old_count < 0) {
+			/* Exclusively locked - retry */
+			/* FIXME: short back-off */
+			goto retry;
+		}
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
+	mono_memory_barrier ();
+}
+
+static void
+unlock_recursive (void)
+{
+	int old_count;
+	mono_memory_barrier ();
+	do {
+		old_count = binary_protocol_use_count;
+		SGEN_ASSERT (0, old_count > 0, "Locked use count must be at least 1");
+	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
 }
 
 static void
@@ -80,11 +126,14 @@ binary_protocol_flush_buffers (gboolean force)
 	if (!binary_protocol_file)
 		return;
 
-	if (!force && binary_protocol_use_count != 0)
+	if (!force && !try_lock_exclusive ())
 		return;
 
 	binary_protocol_flush_buffers_rec (binary_protocol_buffers);
 	binary_protocol_buffers = NULL;
+
+	if (!force)
+		unlock_exclusive ();
 
 	fflush (binary_protocol_file);
 }
@@ -117,15 +166,11 @@ protocol_entry (unsigned char type, gpointer data, int size)
 {
 	int index;
 	BinaryProtocolBuffer *buffer;
-	int old_count;
 
 	if (!binary_protocol_file)
 		return;
 
-	do {
-		old_count = binary_protocol_use_count;
-		g_assert (old_count >= 0);
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count + 1, old_count) != old_count);
+	lock_recursive ();
 
  retry:
 	buffer = binary_protocol_get_buffer (size + 1);
@@ -146,18 +191,31 @@ protocol_entry (unsigned char type, gpointer data, int size)
 
 	g_assert (index <= BINARY_PROTOCOL_BUFFER_SIZE);
 
-	do {
-		old_count = binary_protocol_use_count;
-		g_assert (old_count > 0);
-	} while (InterlockedCompareExchange (&binary_protocol_use_count, old_count - 1, old_count) != old_count);
+	unlock_recursive ();
 }
 
 void
-binary_protocol_collection (int index, int generation)
+binary_protocol_collection_force (int generation)
+{
+	SGenProtocolCollectionForce entry = { generation };
+	binary_protocol_flush_buffers (FALSE);
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_FORCE, &entry, sizeof (SGenProtocolCollectionForce));
+}
+
+void
+binary_protocol_collection_begin (int index, int generation)
 {
 	SGenProtocolCollection entry = { index, generation };
 	binary_protocol_flush_buffers (FALSE);
-	protocol_entry (SGEN_PROTOCOL_COLLECTION, &entry, sizeof (SGenProtocolCollection));
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_BEGIN, &entry, sizeof (SGenProtocolCollection));
+}
+
+void
+binary_protocol_collection_end (int index, int generation)
+{
+	SGenProtocolCollection entry = { index, generation };
+	binary_protocol_flush_buffers (FALSE);
+	protocol_entry (SGEN_PROTOCOL_COLLECTION_END, &entry, sizeof (SGenProtocolCollection));
 }
 
 void
@@ -200,6 +258,20 @@ binary_protocol_mark (gpointer obj, gpointer vtable, int size)
 {
 	SGenProtocolMark entry = { obj, vtable, size };
 	protocol_entry (SGEN_PROTOCOL_MARK, &entry, sizeof (SGenProtocolMark));
+}
+
+void
+binary_protocol_scan_begin (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolScanBegin entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_SCAN_BEGIN, &entry, sizeof (SGenProtocolScanBegin));
+}
+
+void
+binary_protocol_scan_vtype_begin (gpointer obj, int size)
+{
+	SGenProtocolScanVTypeBegin entry = { obj, size };
+	protocol_entry (SGEN_PROTOCOL_SCAN_VTYPE_BEGIN, &entry, sizeof (SGenProtocolScanVTypeBegin));
 }
 
 void
@@ -273,6 +345,33 @@ binary_protocol_missing_remset (gpointer obj, gpointer obj_vtable, int offset, g
 	SGenProtocolMissingRemset entry = { obj, obj_vtable, offset, value, value_vtable, value_pinned };
 	protocol_entry (SGEN_PROTOCOL_MISSING_REMSET, &entry, sizeof (SGenProtocolMissingRemset));
 
+}
+
+void
+binary_protocol_card_scan (gpointer start, int size)
+{
+	SGenProtocolCardScan entry = { start, size };
+	protocol_entry (SGEN_PROTOCOL_CARD_SCAN, &entry, sizeof (SGenProtocolCardScan));
+}
+
+void
+binary_protocol_cement (gpointer obj, gpointer vtable, int size)
+{
+	SGenProtocolCement entry = { obj, vtable, size };
+	protocol_entry (SGEN_PROTOCOL_CEMENT, &entry, sizeof (SGenProtocolCement));
+}
+
+void
+binary_protocol_cement_reset (void)
+{
+	protocol_entry (SGEN_PROTOCOL_CEMENT_RESET, NULL, 0);
+}
+
+void
+binary_protocol_dislink_update (gpointer link, gpointer obj, int track)
+{
+	SGenProtocolDislinkUpdate entry = { link, obj, track };
+	protocol_entry (SGEN_PROTOCOL_DISLINK_UPDATE, &entry, sizeof (SGenProtocolDislinkUpdate));
 }
 
 #endif
