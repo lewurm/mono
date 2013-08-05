@@ -5,6 +5,7 @@
  *   Paolo Molaro (lupus@ximian.com)
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  */
 
 #include <config.h>
@@ -12,9 +13,11 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/utils/atomic.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <glib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -63,6 +66,8 @@
 
 /* the architecture needs a memory fence */
 #if defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "perf_event.h"
 #define USE_PERF_EVENTS 1
 static int read_perf_mmap (MonoProfiler* prof);
@@ -277,7 +282,7 @@ typedef struct _LogBuffer LogBuffer;
  * 	[object: sleb128] the object as a difference from obj_base
  * 	[root_type: uleb128] the root_type: MonoProfileGCRootType (profiler.h)
  * 	[extra_info: uleb128] the extra_info value
- * 	object, root_type_extra_info are repeated num_roots times
+ * 	object, root_type and extra_info are repeated num_roots times
  *
  * type sample format
  * type: TYPE_SAMPLE
@@ -563,6 +568,7 @@ dump_header (MonoProfiler *profiler)
 	}
 #else
 	fwrite (hbuf, p - hbuf, 1, profiler->file);
+	fflush (profiler->file);
 #endif
 }
 
@@ -588,6 +594,7 @@ dump_buffer (MonoProfiler *profiler, LogBuffer *buf)
 #endif
 		fwrite (hbuf, p - hbuf, 1, profiler->file);
 		fwrite (buf->buf, buf->data - buf->buf, 1, profiler->file);
+		fflush (profiler->file);
 #if defined (HAVE_SYS_ZLIB)
 	}
 #endif
@@ -667,8 +674,8 @@ heap_walk (MonoProfiler *profiler)
 		do_walk = 1;
 	else if (hs_mode_gc && (gc_count % hs_mode_gc) == 0)
 		do_walk = 1;
-	else if (hs_mode_ondemand && heapshot_requested)
-		do_walk = 1;
+	else if (hs_mode_ondemand)
+		do_walk = heapshot_requested;
 	else if (!hs_mode_ms && !hs_mode_gc && profiler->last_gc_gen_started == mono_gc_max_generation ())
 		do_walk = 1;
 
@@ -1133,7 +1140,7 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 }
 
 #ifndef HOST_WIN32
-#include "mono/io-layer/atomic.h"
+#include "mono/utils/atomic.h"
 #endif
 #define cmp_exchange InterlockedCompareExchangePointer
 /*#else
@@ -1538,7 +1545,7 @@ dump_sample_hits (MonoProfiler *prof, StatBuffer *sbuf, int recurse)
 		logbuffer = ensure_logbuf (20 + count * 8);
 		emit_byte (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT);
 		emit_value (logbuffer, type);
-		emit_uvalue (logbuffer, (prof->startup_time + sample [2]) * 10000);
+		emit_uvalue (logbuffer, prof->startup_time + (uint64_t)sample [2] * (uint64_t)10000);
 		emit_value (logbuffer, count);
 		for (i = 0; i < count; ++i) {
 			emit_ptr (logbuffer, (void*)sample [i + 3]);
@@ -1855,6 +1862,15 @@ helper_thread (void* arg)
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
+		
+		if (len < 0) {
+			if (errno == EINTR)
+				continue;
+			
+			g_warning ("Error in proflog server: %s", strerror (errno));
+			return NULL;
+		}
+		
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
 			char c;
 			int r = read (prof->pipes [0], &c, 1);
@@ -1950,6 +1966,7 @@ start_helper_thread (MonoProfiler* prof)
 		close (prof->server_socket);
 		return 0;
 	}
+	slen = sizeof (server_address);
 	if (getsockname (prof->server_socket, (struct sockaddr *)&server_address, &slen) == 0) {
 		prof->command_port = ntohs (server_address.sin_port);
 		/*fprintf (stderr, "Assigned server port: %d\n", prof->command_port);*/
@@ -1997,6 +2014,9 @@ create_profiler (const char *filename)
 	if (*nf == '|') {
 		prof->file = popen (nf + 1, "w");
 		prof->pipe_output = 1;
+	} else if (*nf == '#') {
+		int fd = strtol (nf + 1, NULL, 10);
+		prof->file = fdopen (fd, "a");
 	} else {
 		FILE *f;
 		if (force_delete)
@@ -2197,6 +2217,19 @@ set_hsmode (char* val, int allow_empty)
  */
 extern void
 mono_profiler_startup (const char *desc);
+
+extern void
+mono_profiler_startup_log (const char *desc);
+
+/*
+ * this is the entry point that will be used when the profiler
+ * is embedded inside the main executable.
+ */
+void
+mono_profiler_startup_log (const char *desc)
+{
+	mono_profiler_startup (desc);
+}
 
 void
 mono_profiler_startup (const char *desc)
