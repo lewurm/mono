@@ -99,7 +99,7 @@ namespace Microsoft.Build.Tasks
 					moniker, base_path);
 			string framework_path = Path.Combine (base_path, Path.Combine (moniker.Identifier, moniker.Version));
 			if (!String.IsNullOrEmpty (moniker.Profile))
-				framework_path = Path.Combine (framework_path, moniker.Profile);
+				framework_path = Path.Combine (framework_path, "Profile", moniker.Profile);
 
 			string redistlist_dir = Path.Combine (framework_path, "RedistList");
 			string framework_list = Path.Combine (redistlist_dir, "FrameworkList.xml");
@@ -227,18 +227,9 @@ namespace Microsoft.Build.Tasks
 
 		static string DefaultFrameworksBasePath {
 			get {
-				if (framework_base_path == null) {
-					// NOTE: code from mcs/tools/gacutil/driver.cs
-					PropertyInfo gac = typeof (System.Environment).GetProperty (
-							"GacPath", BindingFlags.Static | BindingFlags.NonPublic);
-
-					if (gac != null) {
-						MethodInfo get_gac = gac.GetGetMethod (true);
-						string gac_path = (string) get_gac.Invoke (null, null);
-						framework_base_path = Path.GetFullPath (Path.Combine (
-									gac_path, Path.Combine ("..", "xbuild-frameworks")));
-					}
-				}
+				if (framework_base_path == null)
+					framework_base_path = Path.Combine (Path.GetDirectoryName (typeof (object).Assembly.Location),
+								Path.Combine ("..", "xbuild-frameworks"));
 				return framework_base_path;
 			}
 		}
