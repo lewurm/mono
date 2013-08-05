@@ -11,7 +11,7 @@
 #ifndef _MONO_IOLAYER_IOLAYER_H_
 #define _MONO_IOLAYER_IOLAYER_H_
 
-#if defined(__WIN32__)
+#if defined(__WIN32__) || defined(_WIN32)
 /* Native win32 */
 #define __USE_W32_SOCKETS
 #if (_WIN32_WINNT < 0x0502)
@@ -35,5 +35,9 @@
 #include "mono/io-layer/wapi.h"
 #include "mono/io-layer/uglify.h"
 #endif /* HOST_WIN32 */
+
+#ifdef __native_client__
+#include "mono/metadata/nacl-stub.h"
+#endif
 
 #endif /* _MONO_IOLAYER_IOLAYER_H_ */

@@ -1,5 +1,5 @@
 //
-// HttpRequestChannel.cs
+// HttpRequestChannel.cs 
 //
 // Author:
 //	Atsushi Enomoto <atsushi@ximian.com>
@@ -90,20 +90,13 @@ namespace System.ServiceModel.Channels
 			result.WebRequest = web_request;
 			web_request.Method = "POST";
 			web_request.ContentType = Encoder.ContentType;
-#if NET_2_1
+#if NET_2_1 || NET_4_0
 			HttpWebRequest hwr = (web_request as HttpWebRequest);
-#if MOONLIGHT
-			if (hwr.SupportsCookieContainer) {
-#endif
-				var cmgr = source.GetProperty<IHttpCookieContainerManager> ();
-				if (cmgr != null)
-					hwr.CookieContainer = cmgr.CookieContainer;
-#if MOONLIGHT
-			}
-#endif
+			var cmgr = source.GetProperty<IHttpCookieContainerManager> ();
+			if (cmgr != null)
+				hwr.CookieContainer = cmgr.CookieContainer;
 #endif
 
-#if !MOONLIGHT // until we support NetworkCredential like SL4 will do.
 			// client authentication (while SL3 has NetworkCredential class, it is not implemented yet. So, it is non-SL only.)
 			var httpbe = (HttpTransportBindingElement) source.Transport;
 			string authType = null;
@@ -133,7 +126,6 @@ namespace System.ServiceModel.Channels
 				// FIXME: it is said required in SL4, but it blocks full WCF.
 				//web_request.UseDefaultCredentials = false;
 			}
-#endif
 
 #if !NET_2_1 // FIXME: implement this to not depend on Timeout property
 			web_request.Timeout = (int) timeout.TotalMilliseconds;
@@ -153,16 +145,21 @@ namespace System.ServiceModel.Channels
 			string pname = HttpRequestMessageProperty.Name;
 			if (message.Properties.ContainsKey (pname)) {
 				HttpRequestMessageProperty hp = (HttpRequestMessageProperty) message.Properties [pname];
-#if !NET_2_1 // FIXME: how can this be done?
 				foreach (var key in hp.Headers.AllKeys)
 					if (!WebHeaderCollection.IsRestricted (key))
 						web_request.Headers [key] = hp.Headers [key];
-#endif
 				web_request.Method = hp.Method;
 				// FIXME: do we have to handle hp.QueryString ?
 				if (hp.SuppressEntityBody)
 					suppressEntityBody = true;
 			}
+#if !NET_2_1
+			if (source.ClientCredentials != null) {
+				var cred = source.ClientCredentials;
+				if ((cred.ClientCertificate != null) && (cred.ClientCertificate.Certificate != null))
+					((HttpWebRequest)web_request).ClientCertificates.Add (cred.ClientCertificate.Certificate);
+			}
+#endif
 
 			if (!suppressEntityBody && String.Compare (web_request.Method, "GET", StringComparison.OrdinalIgnoreCase) != 0) {
 				MemoryStream buffer = new MemoryStream ();
@@ -218,6 +215,29 @@ namespace System.ServiceModel.Channels
 					channelResult.Complete (we);
 					return;
 				}
+
+
+				var hrr2 = (HttpWebResponse) res;
+				
+				if ((int) hrr2.StatusCode >= 400 && (int) hrr2.StatusCode < 500) {
+					Exception exception = new WebException (
+						String.Format ("There was an error on processing web request: Status code {0}({1}): {2}",
+							       (int) hrr2.StatusCode, hrr2.StatusCode, hrr2.StatusDescription), null,
+						WebExceptionStatus.ProtocolError, hrr2); 
+					
+					if ((int) hrr2.StatusCode == 404) {
+						// Throw the same exception .NET does
+						exception = new EndpointNotFoundException (
+							"There was no endpoint listening at {0} that could accept the message. This is often caused by an incorrect address " +
+							"or SOAP action. See InnerException, if present, for more details.",
+							exception);
+					}
+					
+					channelResult.Complete (exception);
+					return;
+				}
+
+
 				try {
 					// The response might contain SOAP fault. It might not.
 					resstr = res.GetResponseStream ();
@@ -260,15 +280,8 @@ namespace System.ServiceModel.Channels
 				}
 
 				var rp = new HttpResponseMessageProperty () { StatusCode = hrr.StatusCode, StatusDescription = hrr.StatusDescription };
-#if MOONLIGHT
-				if (hrr.SupportsHeaders) {
-					foreach (string key in hrr.Headers)
-						rp.Headers [key] = hrr.Headers [key];
-				}
-#else
 				foreach (var key in hrr.Headers.AllKeys)
 					rp.Headers [key] = hrr.Headers [key];
-#endif
 				ret.Properties.Add (HttpResponseMessageProperty.Name, rp);
 
 				channelResult.Response = ret;

@@ -6,6 +6,7 @@
 //
 // (C) 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2006 Novell Inc. (http://www.novell.com)
+// Copyright (C) 2011 Xamarin Inc. (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -27,12 +28,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if SECURITY_DEP || MOONLIGHT
+#if SECURITY_DEP
+
+#if MONOTOUCH
+using MX = Mono.Security.X509;
+#else
+extern alias MonoSecurity;
+using MX = MonoSecurity::Mono.Security.X509;
+#endif
 
 using System.Collections;
 using System.Text;
-
-using MX = Mono.Security.X509;
 
 namespace System.Security.Cryptography.X509Certificates {
 
@@ -232,7 +238,11 @@ namespace System.Security.Cryptography.X509Certificates {
 
 		public static X509Chain Create ()
 		{
+#if FULL_AOT_RUNTIME
+			return new X509Chain ();
+#else
 			return (X509Chain) CryptoConfig.CreateFromName ("X509Chain");
+#endif
 		}
 
 		// private stuff
@@ -601,7 +611,7 @@ namespace System.Security.Cryptography.X509Certificates {
 			// TODO 6.1.4.g-j
 
 			// 6.1.4.k - Verify that the certificate is a CA certificate
-			X509BasicConstraintsExtension bce = (X509BasicConstraintsExtension) certificate.Extensions["2.5.29.19"];
+			X509BasicConstraintsExtension bce = (certificate.Extensions["2.5.29.19"] as X509BasicConstraintsExtension);
 			if (bce != null) {
 				if (!bce.CertificateAuthority) {
 					element.StatusFlags |= X509ChainStatusFlags.InvalidBasicConstraints;
@@ -636,7 +646,7 @@ namespace System.Security.Cryptography.X509Certificates {
 			}
 
 			// 6.1.4.n - if key usage extension is present...
-			X509KeyUsageExtension kue = (X509KeyUsageExtension) certificate.Extensions["2.5.29.15"];
+			X509KeyUsageExtension kue = (certificate.Extensions["2.5.29.15"] as X509KeyUsageExtension);
 			if (kue != null) {
 				// ... verify keyCertSign is set
 				X509KeyUsageFlags success = X509KeyUsageFlags.KeyCertSign;
@@ -703,7 +713,7 @@ namespace System.Security.Cryptography.X509Certificates {
 
 		private string GetSubjectKeyIdentifier (X509Certificate2 certificate)
 		{
-			X509SubjectKeyIdentifierExtension ski = (X509SubjectKeyIdentifierExtension) certificate.Extensions["2.5.29.14"];
+			X509SubjectKeyIdentifierExtension ski = (certificate.Extensions["2.5.29.14"] as X509SubjectKeyIdentifierExtension);
 			return (ski == null) ? String.Empty : ski.SubjectKeyIdentifier;
 		}
 
@@ -816,7 +826,7 @@ namespace System.Security.Cryptography.X509Certificates {
 		private X509ChainStatusFlags CheckRevocation (X509Certificate2 certificate, X509Certificate2 ca_cert, bool online)
 		{
 			// change this if/when we support OCSP
-			X509KeyUsageExtension kue = (X509KeyUsageExtension) ca_cert.Extensions["2.5.29.15"];
+			X509KeyUsageExtension kue = (ca_cert.Extensions["2.5.29.15"] as X509KeyUsageExtension);
 			if (kue != null) {
 				// ... verify CrlSign is set
 				X509KeyUsageFlags success = X509KeyUsageFlags.CrlSign;
@@ -834,7 +844,7 @@ namespace System.Security.Cryptography.X509Certificates {
 				// crl = FindCrl (ca_cert, ref valid, ref out_of_date);
 
 				// We need to get the subjectAltName and an URI from there (or use OCSP)	
-				// X509KeyUsageExtension subjectAltName = (X509KeyUsageExtension) ca_cert.Extensions["2.5.29.17"];
+				// X509KeyUsageExtension subjectAltName = (ca_cert.Extensions["2.5.29.17"] as X509KeyUsageExtension);
 			}
 
 			if (crl != null) {
@@ -875,8 +885,12 @@ namespace System.Security.Cryptography.X509Certificates {
 			return X509ChainStatusFlags.NoError;
 		}
 
-		static MX.X509Crl CheckCrls (string subject, string ski, ArrayList crls)
+		static MX.X509Crl CheckCrls (string subject, string ski, MX.X509Store store)
 		{
+			if (store == null)
+				return null;
+
+			var crls = store.Crls;
 			foreach (MX.X509Crl crl in crls) {
 				if (crl.IssuerName == subject && (ski.Length == 0 || ski == GetAuthorityKeyIdentifier (crl)))
 					return crl;
@@ -890,21 +904,21 @@ namespace System.Security.Cryptography.X509Certificates {
 			string ski = GetSubjectKeyIdentifier (caCertificate);
 
 			// consider that the LocalMachine directories could not exists... and cannot be created by the user
-			MX.X509Crl result = (LMCAStore.Store == null) ? null : CheckCrls (subject, ski, LMCAStore.Store.Crls);
+			MX.X509Crl result = CheckCrls (subject, ski, LMCAStore.Store);
 			if (result != null)
 				return result;
 			if (location == StoreLocation.CurrentUser) {
-				result = CheckCrls (subject, ski, UserCAStore.Store.Crls);
+				result = CheckCrls (subject, ski, UserCAStore.Store);
 				if (result != null)
 					return result;
 			}
 
 			// consider that the LocalMachine directories could not exists... and cannot be created by the user
-			result = (LMRootStore.Store == null) ? null : CheckCrls (subject, ski, LMRootStore.Store.Crls);
+			result = CheckCrls (subject, ski, LMRootStore.Store);
 			if (result != null)
 				return result;
 			if (location == StoreLocation.CurrentUser) {
-				result = CheckCrls (subject, ski, UserRootStore.Store.Crls);
+				result = CheckCrls (subject, ski, UserRootStore.Store);
 				if (result != null)
 					return result;
 			}

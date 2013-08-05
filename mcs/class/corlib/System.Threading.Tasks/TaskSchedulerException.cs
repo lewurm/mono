@@ -22,7 +22,7 @@
 //
 //
 
-#if NET_4_0 || MOBILE
+#if NET_4_0
 using System;
 using System.Runtime.Serialization;
 
@@ -30,7 +30,7 @@ namespace System.Threading.Tasks
 {
 	public class TaskSchedulerException : Exception
 	{
-		const string exceptionDefaultMessage = "TaskScheduler exception";
+		const string exceptionDefaultMessage = "An exception was thrown by a TaskScheduler";
 	  
 		public TaskSchedulerException () : base (exceptionDefaultMessage)
 		{
