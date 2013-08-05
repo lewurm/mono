@@ -21,20 +21,39 @@ Homepage: http://www.mono-project.com/
 Vcs-Git: git://git.debian.org/git/pkg-mono/packages/mono.git
 Vcs-Browser: http://git.debian.org/?p=pkg-mono/packages/mono.git
 
-Package: mono-runtime
+Package: mono-runtime-common
 Provides: cli-runtime, cli-virtual-machine
 Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
-Replaces: mono-common (<< 2.4), mono-jit (<< 2.4), libmono0 (<< 2.4)
+Replaces: mono-common (<< 2.4), mono-jit (<< 2.4), libmono0 (<< 2.4), mono-runtime (<< 3.2.1)
 Conflicts: mono-common (<< 2.4),
            mono-jit (<< 2.4),
            mono-1.0-runtime (<< 2.4),
-           mono-2.0-runtime (<< 2.4)
+           mono-2.0-runtime (<< 2.4),
+           mono-runtime (<< 3.2.1)
 Suggests: xdg-utils | libgnome2-0 | konqueror
 Recommends: binfmt-support (>= 1.1.2)
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          mono-gac (= ${source:Version})
-Description: Mono runtime
+Description: Mono runtime - common files
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains common files for the Virtual Machine, JIT (Just-in-Time) and
+ AOT (Ahead-of-Time) code generator "mono".
+ "mono" executes applications for the CLI (Common Language Infrastructure).
+ Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
+ MIPS architectures. Optionally this package configures BINFMT support.
+
+Package: mono-runtime
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         mono-runtime-sgen (= ${binary:Version})
+Description: Mono runtime - default version
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Novell.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
@@ -42,18 +61,20 @@ Description: Mono runtime
  bytecode (aka assemblies), and a class library.
  .
  This package contains the Virtual Machine, JIT (Just-in-Time) and
- AOT (Ahead-of-Time) code generator "mono".
- "mono" executes applications for the CLI (Common Language Infrastructure).
+ AOT (Ahead-of-Time) code generator "mono-sgen".
+ mono-sgen executes applications for the CLI (Common Language Infrastructure).
  Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
- MIPS architectures. Optionally this package configures BINFMT support.
+ MIPS architectures.
+ .
+ This package installs this architecture's default runtime version.
 
 Package: mono-runtime-sgen
-Architecture: amd64 armel i386 kfreebsd-amd64 kfreebsd-i386 s390x
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         mono-runtime (= ${binary:Version})
+         mono-runtime-common (= ${binary:Version})
 Homepage: http://www.mono-project.com/Compacting_GC
-Description: Mono runtime - SGen (experimental)
+Description: Mono runtime - SGen
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Novell.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
@@ -67,8 +88,27 @@ Description: Mono runtime - SGen (experimental)
  MIPS architectures.
  .
  This package uses SGen which is Mono's new simple generational garbage
- collector instead of Boehm's conservative garbage collector. SGen is
- currently only for testing and thus should not be used in production.
+ collector.
+
+Package: mono-runtime-boehm
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         mono-runtime-common (= ${binary:Version})
+Description: Mono runtime - Boehm
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Virtual Machine, JIT (Just-in-Time) and
+ AOT (Ahead-of-Time) code generator "mono-sgen".
+ mono-sgen executes applications for the CLI (Common Language Infrastructure).
+ Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
+ MIPS architectures.
+ .
+ This package uses Boehm's conservative garbage collector.
 
 Package: mono-runtime-dbg
 Priority: extra
@@ -76,7 +116,7 @@ Section: debug
 Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Replaces: mono-jit-dbg (<< 2.4)
 Conflicts: mono-jit-dbg (<< 2.4)
-Depends: ${misc:Depends}, mono-runtime (= ${binary:Version})
+Depends: ${misc:Depends}, mono-runtime-sgen (= ${binary:Version}), mono-runtime-boehm (= ${binary:Version})
 Recommends: gdb
 Description: Mono runtime, debugging symbols
  Mono is a platform for running and developing applications based on the
