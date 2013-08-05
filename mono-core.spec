@@ -12,7 +12,7 @@ License:        LGPL v2.1 only
 Group:          Development/Languages/Mono
 Summary:        A .NET Runtime Environment
 Url:            http://www.mono-project.com
-Version:        3.0.0
+Version:        3.2.1
 Release:        0
 Source0:        mono-%{version}.tar.bz2
 BuildRequires:  bison
@@ -174,6 +174,7 @@ rm -rf %buildroot
 %if %sgen == yes
 %_bindir/mono-sgen
 %endif
+%_bindir/mono-boehm
 %_bindir/mono-test-install
 %_bindir/mozroots
 %_bindir/peverify
@@ -217,6 +218,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/2.0/System.Xml.Linq.dll
 %_prefix/lib/mono/2.0/System.Xml.dll
 %_prefix/lib/mono/2.0/System.dll
+%_prefix/lib/mono/2.0/System.Json.dll
 %_prefix/lib/mono/2.0/al.exe*
 %_prefix/lib/mono/2.0/cscompmgd.dll
 %_prefix/lib/mono/2.0/gacutil.exe*
@@ -244,6 +246,7 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.0/System.Drawing.dll
 %_prefix/lib/mono/4.0/System.Dynamic.dll
 %_prefix/lib/mono/4.0/System.Json.dll
+%_prefix/lib/mono/4.0/System.Json.Microsoft.dll
 %_prefix/lib/mono/4.0/System.Net.dll
 %_prefix/lib/mono/4.0/System.Numerics.dll
 %_prefix/lib/mono/4.0/System.Security.dll
@@ -289,9 +292,13 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.Core.dll
 %_prefix/lib/mono/4.5/System.Drawing.dll
 %_prefix/lib/mono/4.5/System.Dynamic.dll
+%_prefix/lib/mono/4.5/System.IO.Compression.dll
+%_prefix/lib/mono/4.5/System.IO.Compression.FileSystem.dll
 %_prefix/lib/mono/4.5/System.Json.dll
+%_prefix/lib/mono/4.5/System.Json.Microsoft.dll
 %_prefix/lib/mono/4.5/System.Net.dll
 %_prefix/lib/mono/4.5/System.Net.Http.dll
+%_prefix/lib/mono/4.5/System.Net.Http.WebRequest.dll
 %_prefix/lib/mono/4.5/System.Numerics.dll
 %_prefix/lib/mono/4.5/System.Security.dll
 %_prefix/lib/mono/4.5/System.Threading.Tasks.Dataflow.dll
@@ -300,6 +307,9 @@ rm -rf %buildroot
 %_prefix/lib/mono/4.5/System.dll
 %_prefix/lib/mono/4.5/cscompmgd.dll
 %_prefix/lib/mono/4.5/mscorlib.dll*
+%_prefix/lib/mono/4.5/System.Windows.dll
+%_prefix/lib/mono/4.5/System.Xml.Serialization.dll
+%_prefix/lib/mono/4.5/Facades/*.dll
 %_prefix/lib/mono/compat-2.0/ICSharpCode.SharpZipLib.dll
 %_prefix/lib/mono/gac/Commons.Xml.Relaxng
 %_prefix/lib/mono/gac/CustomMarshalers
@@ -326,14 +336,20 @@ rm -rf %buildroot
 %_prefix/lib/mono/gac/System.Core
 %_prefix/lib/mono/gac/System.Drawing
 %_prefix/lib/mono/gac/System.Dynamic
+%_prefix/lib/mono/gac/System.IO.Compression
+%_prefix/lib/mono/gac/System.IO.Compression.FileSystem
 %_prefix/lib/mono/gac/System.Net
 %_prefix/lib/mono/gac/System.Net.Http
+%_prefix/lib/mono/gac/System.Net.Http.WebRequest
 %_prefix/lib/mono/gac/System.Numerics
 %_prefix/lib/mono/gac/System.Security
 %_prefix/lib/mono/gac/System.Threading.Tasks.Dataflow
 %_prefix/lib/mono/gac/System.Xml
 %_prefix/lib/mono/gac/System.Xml.Linq
 %_prefix/lib/mono/gac/System.Json
+%_prefix/lib/mono/gac/System.Json.Microsoft
+%_prefix/lib/mono/gac/System.Windows
+%_prefix/lib/mono/gac/System.Xml.Serialization
 %_prefix/lib/mono/gac/cscompmgd
 %_prefix/lib/mono/mono-configuration-crypto
 
@@ -383,12 +399,12 @@ Development files for libmono.
 %_libdir/pkgconfig/mono-2.pc
 
 %if %sgen == yes
-%package -n libmonosgen-2_0-0
+%package -n libmonosgen-2_0-1
 License:        LGPL v2.1 only
 Summary:	A Library for embedding Mono in your Application (sgen version)
 Group:          Development/Libraries/C and C++
 
-%description -n libmonosgen-2_0-0
+%description -n libmonosgen-2_0-1
 The Mono Project is an open development initiative that is working to
 develop an open source, Unix version of the .NET development platform.
 Its objective is to enable Unix developers to build and deploy
@@ -397,13 +413,13 @@ technologies that have been submitted to the ECMA for standardization.
 
 A Library for embedding Mono in your Application (sgen version).
 
-%files -n libmonosgen-2_0-0
+%files -n libmonosgen-2_0-1
 %defattr(-, root, root)
-%_libdir/libmonosgen-2.0.so.0*
+%_libdir/libmonosgen-2.0.so.1*
 
-%post -n libmonosgen-2_0-0 -p /sbin/ldconfig
+%post -n libmonosgen-2_0-1 -p /sbin/ldconfig
 
-%postun -n libmonosgen-2_0-0 -p /sbin/ldconfig
+%postun -n libmonosgen-2_0-1 -p /sbin/ldconfig
 
 %package -n libmonosgen-2_0-devel
 License:        LGPL v2.1 only
@@ -428,6 +444,49 @@ Development files for libmonosgen.
 %_libdir/libmonosgen-2.0.so
 %_libdir/pkgconfig/monosgen-2.pc
 %endif
+
+%package -n libmonoboehm-2_0-1
+License:        LGPL v2.1 only
+Summary:	A Library for embedding Mono in your Application (boehm version)
+Group:          Development/Libraries/C and C++
+
+%description -n libmonoboehm-2_0-1
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+A Library for embedding Mono in your Application (boehm version).
+
+%files -n libmonoboehm-2_0-1
+%defattr(-, root, root)
+%_libdir/libmonoboehm-2.0.so.1*
+
+%post -n libmonoboehm-2_0-1 -p /sbin/ldconfig
+
+%postun -n libmonoboehm-2_0-1 -p /sbin/ldconfig
+
+%package -n libmonoboehm-2_0-devel
+License:        LGPL v2.1 only
+Summary:	Development files for libmonosgen
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+Requires:       libmono-2_0-devel
+
+%description -n libmonoboehm-2_0-devel
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Development files for libmonoboehm.
+
+%files -n libmonoboehm-2_0-devel
+%defattr(-, root, root)
+%_libdir/libmonoboehm-2.0.a
+%_libdir/libmonoboehm-2.0.so
 
 %if %llvm == yes
 %package -n libmono-llvm0
@@ -895,6 +954,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/4.5/System.Web.ApplicationServices.dll
 %_prefix/lib/mono/4.5/System.Web.Http.dll
 %_prefix/lib/mono/4.5/System.Web.Http.SelfHost.dll
+%_prefix/lib/mono/4.5/System.Web.Http.WebHost.dll
 %_prefix/lib/mono/4.5/System.Web.Routing.dll
 %_prefix/lib/mono/4.5/System.Web.Razor.dll
 %_prefix/lib/mono/4.5/System.Web.Services.dll
@@ -921,6 +981,7 @@ Mono implementation of ASP.NET, Remoting and Web Services.
 %_prefix/lib/mono/gac/System.Web.ApplicationServices
 %_prefix/lib/mono/gac/System.Web.Http
 %_prefix/lib/mono/gac/System.Web.Http.SelfHost
+%_prefix/lib/mono/gac/System.Web.Http.WebHost
 %_prefix/lib/mono/gac/System.Web.Routing
 %_prefix/lib/mono/gac/System.Web.Razor
 %_prefix/lib/mono/gac/System.Web.Services
@@ -1016,6 +1077,68 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.0/Npgsql.dll
 %_prefix/lib/mono/4.5/Npgsql.dll
 %_prefix/lib/mono/gac/Npgsql
+
+%package -n mono-rx-core
+License:        MIT License (or similar) ; Apache License 2.0
+Summary:        Reactive Extensions for Mono core libraries
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+Provides:       mono(System.Reactive.Interfaces) = 1.0.5000.0
+
+%description -n mono-rx-core
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Reactive Extensions for Mono, core packages, which don't depend on
+desktop-specific features.
+
+%files -n mono-rx-core
+%defattr(-, root, root)
+%_libdir/pkgconfig/reactive.pc
+%_prefix/lib/mono/4.5/System.Reactive.Core.dll
+%_prefix/lib/mono/4.5/System.Reactive.Debugger.dll
+%_prefix/lib/mono/4.5/System.Reactive.Experimental.dll
+%_prefix/lib/mono/4.5/System.Reactive.Interfaces.dll
+%_prefix/lib/mono/4.5/System.Reactive.Linq.dll
+%_prefix/lib/mono/4.5/System.Reactive.PlatformServices.dll
+%_prefix/lib/mono/4.5/System.Reactive.Providers.dll
+%_prefix/lib/mono/4.5/System.Reactive.Runtime.Remoting.dll
+%_prefix/lib/mono/gac/System.Reactive.Core
+%_prefix/lib/mono/gac/System.Reactive.Debugger
+%_prefix/lib/mono/gac/System.Reactive.Experimental
+%_prefix/lib/mono/gac/System.Reactive.Interfaces
+%_prefix/lib/mono/gac/System.Reactive.Linq
+%_prefix/lib/mono/gac/System.Reactive.PlatformServices
+%_prefix/lib/mono/gac/System.Reactive.Providers
+%_prefix/lib/mono/gac/System.Reactive.Runtime.Remoting
+
+%package -n mono-rx-desktop
+License:        MIT License (or similar) ; Apache License 2.0
+Summary:        Reactive Extensions for Mono desktop-specific libraries
+Group:          Development/Languages/Mono
+Requires:       mono-core == %version-%release
+Requires:       mono-rx-core == %version-%release
+Provides:       mono(System.Reactive.Interfaces) = 1.0.5000.0
+
+%description -n mono-rx-desktop
+The Mono Project is an open development initiative that is working to
+develop an open source, Unix version of the .NET development platform.
+Its objective is to enable Unix developers to build and deploy
+cross-platform .NET applications. The project will implement various
+technologies that have been submitted to the ECMA for standardization.
+
+Reactive Extensions for Mono, desktop-specific packages (winforms,
+windows threading).
+
+%files -n mono-rx-desktop
+%defattr(-, root, root)
+%_prefix/lib/mono/4.5/System.Reactive.Windows.Forms.dll
+%_prefix/lib/mono/4.5/System.Reactive.Windows.Threading.dll
+%_prefix/lib/mono/gac/System.Reactive.Windows.Forms
+%_prefix/lib/mono/gac/System.Reactive.Windows.Threading
 
 %package -n mono-nunit
 License:        LGPL v2.1 only
@@ -1139,6 +1262,7 @@ Mono development tools.
 %_bindir/sgen
 %_bindir/signcode
 %_bindir/xbuild
+%_bindir/mdbrebase
 %dir %_datadir/mono-2.0
 %dir %_datadir/mono-2.0/mono
 %dir %_datadir/mono-2.0/mono/cil
@@ -1223,6 +1347,7 @@ Mono development tools.
 %_prefix/lib/mono/4.0/Microsoft.Common.targets
 %_prefix/lib/mono/4.0/Microsoft.Common.tasks
 %_prefix/lib/mono/4.0/Microsoft.VisualBasic.targets
+%_prefix/lib/mono/4.0/Microsoft.Portable.CSharp.targets
 %_prefix/lib/mono/4.0/Mono.Debugger.Soft.dll
 %_prefix/lib/mono/4.0/PEAPI.dll
 %_prefix/lib/mono/4.5/Microsoft.Build.dll
@@ -1262,6 +1387,7 @@ Mono development tools.
 %_prefix/lib/mono/4.5/signcode.exe*
 %_prefix/lib/mono/4.5/xbuild.exe*
 %_prefix/lib/mono/4.5/xbuild.rsp
+%_prefix/lib/mono/4.5/mdbrebase.exe*
 %_prefix/lib/mono/gac/Microsoft.Build
 %_prefix/lib/mono/gac/Microsoft.Build.Engine
 %_prefix/lib/mono/gac/Microsoft.Build.Framework
@@ -1318,6 +1444,7 @@ Monodoc-core contains documentation tools for C#.
 %_mandir/man5/mdoc.5%ext_man
 %_prefix/lib/mono/4.5/mdoc.exe*
 %_prefix/lib/mono/4.5/mod.exe*
+%_prefix/lib/mono/4.0/monodoc.dll*
 %_prefix/lib/mono/gac/monodoc
 %_prefix/lib/mono/monodoc
 %_prefix/lib/monodoc
@@ -1334,7 +1461,7 @@ Requires:       libmono-2_0-devel = %version-%release
 Requires:       libmono-llvm0 = %version-%release
 %endif
 %if %sgen == yes
-Requires:       libmonosgen-2_0-0 = %version-%release
+Requires:       libmonosgen-2_0-1 = %version-%release
 Requires:       libmonosgen-2_0-devel = %version-%release
 %endif
 Requires:       mono-data = %version-%release

@@ -47,7 +47,7 @@ sgenstatic_libs = \
 
 CLASS=$(mcs_topdir)/class/lib/net_4_5
 
-RUNTIME_EXECUTABLE = $(if $(SGEN),$(top_builddir)/mono/mini/mono-sgen,$(top_builddir)/runtime/mono-wrapper)
+RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_builddir)/runtime/mono-wrapper)
 
 RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
 RUNTIME_AOTCHECK = MONO_PATH=$(CLASS):. $(RUNTIME_EXECUTABLE)
@@ -75,16 +75,20 @@ genmdesc_CFLAGS = $(AM_CFLAGS)
 
 if NO_VERSION_SCRIPT
 monoldflags=$(export_ldflags)
-monobinldflags=$(export_ldflags)
+monobinldflags=$(export_ldflags) $(extra_runtime_ldflags)
 else
 monoldflags=-Wl,-version-script=$(srcdir)/ldscript $(export_ldflags)
-monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags)
+monobinldflags=-Wl,-version-script=$(srcdir)/ldscript.mono $(export_ldflags) $(extra_runtime_ldflags)
 endif
 
 if HOST_WIN32
-libmono_2_0_la_LDFLAGS=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
+libmonoldflags=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
 else
-libmono_2_0_la_LDFLAGS=$(monoldflags) -version-info 1:0:0
+if PLATFORM_ANDROID
+libmonoldflags= -avoid-version $(monoldflags)
+else
+libmonoldflags=$(monoldflags) -version-info 1:0:0
+endif
 endif
 
 if JIT_SUPPORTED
@@ -96,9 +100,26 @@ sgen_static_libraries = libmini-static.la $(sgenstatic_libs)
 endif
 
 if SUPPORT_BOEHM
-boehm_libraries = libmono-2.0.la
+boehm_libraries = libmonoboehm-2.0.la
 boehm_static_libraries = libmini-static.la $(static_libs)
-boehm_binaries  = mono
+boehm_binaries  = mono-boehm
+endif
+
+#The mono uses sgen, while libmono remains boehm
+mono_bin_suffix = sgen
+libmono_suffix = boehm
+
+if DISABLE_EXECUTABLES
+else
+bin_SCRIPTS = mono
+noinst_SCRIPTS = mono
+
+mono: mono-$(mono_bin_suffix)
+	ln -sf $< $@
+
+install-exec-hook:
+	ln -sf $(DESTDIR)$(bindir)/mono-$(mono_bin_suffix) $(DESTDIR)$(bindir)/mono
+	(cd $(DESTDIR)$(libdir); for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
 endif
 
 if DISABLE_EXECUTABLES
@@ -110,18 +131,32 @@ bin_PROGRAMS = $(boehm_binaries) $(sgen_binaries)
 endif
 endif
 
+if DISABLE_EXECUTABLES
 noinst_PROGRAMS = genmdesc
+else
+noinst_PROGRAMS = genmdesc mono
+endif
 
+if DISABLE_EXECUTABLES
+shared_libraries = $(boehm_libraries) $(sgen_libraries)
+else
 if SHARED_MONO
 shared_libraries = $(boehm_libraries) $(sgen_libraries)
+endif
 endif
 
 lib_LTLIBRARIES = $(shared_libraries)
 
-if DISABLE_EXECUTABLES
-noinst_LTLIBRARIES = libmini.la
+if SHARED_MONO
+mini_common_lib = libmini.la
 else
-noinst_LTLIBRARIES = libmini.la libmini-static.la
+mini_common_lib = 
+endif
+
+if DISABLE_EXECUTABLES
+noinst_LTLIBRARIES = $(mini_common_lib)
+else
+noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la
 endif
 
 if MOONLIGHT
@@ -145,27 +180,42 @@ endif
 
 endif
 
-mono_SOURCES = \
+mono_boehm_SOURCES = \
 	main.c
 
 mono_CFLAGS = $(AM_CFLAGS)
 
+mono_boehm_CFLAGS = $(AM_CFLAGS)
+
 AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 
-mono_sgen_SOURCES = $(mono_SOURCES)
+mono_sgen_SOURCES = \
+	main-sgen.c
+
+mono_SOURCES = \
+	main-sgen.c
+
 mono_sgen_CFLAGS = $(AM_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
-buildver.h: libmini-static.la
-	@echo "const char *build_date;" > buildver.h
-mono-main.$(OBJEXT): buildver.h
+if DISABLE_EXECUTABLES
+buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime.la
+else
+buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-static.la
+endif
+	@echo "const char *build_date;" > buildver-boehm.h
+mono_boehm-main.$(OBJEXT): buildver-boehm.h
 endif
 
-buildver-sgen.h: libmini-static.la
+if DISABLE_EXECUTABLES
+buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.la
+else
+buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la
+endif
 	@echo "const char *build_date;" > buildver-sgen.h
-mono_sgen-main.$(OBJEXT): buildver-sgen.h
+mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
@@ -185,8 +235,8 @@ if STATIC_MONO
 MONO_LIB=$(boehm_static_libraries)
 MONO_SGEN_LIB=$(sgen_static_libraries)
 else 
-MONO_LIB=libmono-2.0.la
-MONO_SGEN_LIB=libmonosgen-2.0.la
+MONO_LIB=libmonoboehm-2.0.la
+MONO_LIBLIB=libmonosgen-2.0.la
 endif
 
 if LOADED_LLVM
@@ -195,7 +245,7 @@ else
 LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
 endif
 
-mono_LDADD = \
+mono_boehm_LDADD = \
 	$(MONO_LIB)		\
 	$(GLIB_LIBS)		\
 	$(LLVMMONOF)		\
@@ -203,7 +253,7 @@ mono_LDADD = \
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 
-mono_LDFLAGS = \
+mono_boehm_LDFLAGS = \
 	$(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
 
 mono_sgen_LDADD = \
@@ -215,6 +265,14 @@ mono_sgen_LDADD = \
 	$(MONO_DTRACE_OBJECT)
 
 mono_sgen_LDFLAGS = $(static_flags) -export-dynamic $(monobinldflags) $(monobin_platform_ldflags)
+
+# if SUPPORT_SGEN
+# 
+# mono_LDADD = $(mono_sgen_LDADD)
+# mono_LDFLAGS = $(mono_sgen_LDFLAGS)
+# 
+# endif
+
 
 if DTRACE_G_REQUIRED
 
@@ -230,9 +288,9 @@ endif
 
 # Create monow.exe, linked for the 'windows' subsystem
 if HOST_WIN32
-monow_LDADD = $(mono_LDADD)
-monow_LDFLAGS = $(mono_LDFLAGS) -mwindows
-monow_SOURCES = $(mono_SOURCES)
+monow_LDADD = $(mono_boehm_LDADD)
+monow_LDFLAGS = $(mono_boehm_LDFLAGS) -mwindows
+monow_SOURCES = $(mono_boehm_SOURCES)
 endif
 
 genmdesc_SOURCES = \
@@ -283,12 +341,6 @@ sparc_sources = \
 	exceptions-sparc.c	\
 	tramp-sparc.c
 
-s390_sources = \
-	mini-s390.c		\
-	mini-s390.h		\
-	exceptions-s390.c	\
-	tramp-s390.c
-
 s390x_sources = \
 	mini-s390x.c		\
 	mini-s390x.h		\
@@ -300,18 +352,6 @@ ia64_sources = \
 	mini-ia64.h		\
 	exceptions-ia64.c	\
 	tramp-ia64.c
-
-alpha_sources = \
-	mini-alpha.c		\
-	mini-alpha.h		\
-	exceptions-alpha.c	\
-	tramp-alpha.c
-
-hppa_sources = \
-	mini-hppa.c		\
-	mini-hppa.h		\
-	exceptions-hppa.c	\
-	tramp-hppa.c
 
 darwin_sources = \
 	mini-darwin.c
@@ -412,9 +452,14 @@ test_sources = 			\
 	generics-variant-types.il\
 	basic-simd.cs \
 	aot-tests.cs \
-	gc-test.cs
+	gc-test.cs \
+	gshared.cs
 
 regtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe
+if NACL_CODEGEN
+test_sources += nacl.cs
+regtests += nacl.exe
+endif
 
 if X86
 if MONO_DEBUGGER_SUPPORTED
@@ -460,7 +505,7 @@ arch_define=__mips__
 endif
 
 if ARM
-# pick up arm_dpimacros.h and arm_fpamacros.h
+# pick up arm_dpimacros.h
 ARCH_CFLAGS = -I../arch/arm
 arch_sources = $(arm_sources)
 arch_built=cpu-arm.h
@@ -479,12 +524,6 @@ arch_built=cpu-sparc.h
 arch_define=__sparc__
 endif
 
-if S390
-arch_sources = $(s390_sources)
-arch_built=cpu-s390.h
-arch_define=__s390__
-endif
-
 if S390x
 arch_sources = $(s390x_sources)
 arch_built=cpu-s390x.h
@@ -495,19 +534,6 @@ if IA64
 arch_sources = $(ia64_sources)
 arch_built = cpu-ia64.h
 arch_define=__ia64__
-endif
-
-if ALPHA
-arch_sources = $(alpha_sources) $(mono_debugger_sources)
-arch_built = cpu-alpha.h
-arch_define=__alpha__
-endif
-
-if HPPA
-# Only support 32-bit targets for now
-arch_sources = $(hppa_sources)
-arch_built = cpu-hppa.h
-arch_define=__hppa__
 endif
 
 if HOST_WIN32
@@ -529,13 +555,15 @@ endif
 libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(arch_sources) $(os_sources)
 libmini_la_CFLAGS = $(mono_CFLAGS)
 
-libmono_2_0_la_SOURCES =
-libmono_2_0_la_CFLAGS = $(mono_CFLAGS)
-libmono_2_0_la_LIBADD = libmini.la $(libs) $(LIBMONO_DTRACE_OBJECT)
+libmonoboehm_2_0_la_SOURCES =
+libmonoboehm_2_0_la_CFLAGS = $(mono_boehm_CFLAGS)
+libmonoboehm_2_0_la_LIBADD = libmini.la $(libs) $(LIBMONO_DTRACE_OBJECT)
+libmonoboehm_2_0_la_LDFLAGS = $(libmonoldflags)
 
 libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
+libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags)
 
 if MOONLIGHT
 libmono_moon_la_SOURCES = $(libmini_la_SOURCES)
@@ -563,10 +591,10 @@ libmonoinclude_HEADERS = jit.h
 
 CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649
 
-basic-simd.exe: basic-simd.cs
+basic-simd.exe: basic-simd.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:Mono.Simd.dll
 
-nacl.exe: nacl.cs
+nacl.exe: nacl.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:Mono.Simd.dll
 
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
@@ -601,7 +629,11 @@ endif !NACL_CODEGEN
 if CROSS_COMPILING
 GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
 else !CROSS_COMPILING
+if NACL_CODEGEN
+GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
+else
 GENMDESC_PRG=./genmdesc $(GENMDESC_OPTS)
+endif
 endif !CROSS_COMPILING
 
 cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)
@@ -622,20 +654,11 @@ cpu-arm.h: cpu-arm.md genmdesc$(EXEEXT)
 cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-sparc.h sparc_desc $(srcdir)/cpu-sparc.md
 
-cpu-s390.h: cpu-s390.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-s390.h s390_cpu_desc $(srcdir)/cpu-s390.md
-
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-s390x.h s390x_cpu_desc $(srcdir)/cpu-s390x.md
 
 cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-ia64.h ia64_desc $(srcdir)/cpu-ia64.md
-
-cpu-alpha.h: cpu-alpha.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-alpha.h alpha_desc $(srcdir)/cpu-alpha.md
-
-cpu-hppa.h: cpu-hppa.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-hppa.h hppa_desc $(srcdir)/cpu-hppa.md
 
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
@@ -648,23 +671,31 @@ checktests: $(regtests)
 	for i in $(regtests); do $(RUNTIME) $$i; done
 
 rcheck: mono $(regtests)
+if NACL_CODEGEN
+	for i in $(regtests); do echo "running test $$i"; $(RUNTIME) $$i --exclude 'NaClDisable' || exit 1; done
+else
 	$(RUNTIME) --regression $(regtests)
+endif
 
 gctest: mono gc-test.exe
 	MONO_DEBUG_OPTIONS=clear-nursery-at-gc $(RUNTIME) --regression gc-test.exe
 
 LLVM_AOT_RUNTIME_OPTS=$(if $(LLVM),--llvm,)
+GSHAREDVT_RUNTIME_OPTS=$(if $(GSHAREDVT),-O=gsharedvt,)
 
 aotcheck: mono $(regtests)
-	rm -f *.exe.so *.exe.dylib *.exe.dylib.dSYM
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
 	$(RUNTIME) $(LLVM_AOT_RUNTIME_OPTS) --aot $(regtests) || exit 1
 	for i in $(regtests); do $(RUNTIME_AOTCHECK) --regression $$i || exit 1; done
-	rm -f *.exe.so *.exe.dylib *.exe.dylib.dSYM
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM
 
 llvmaotcheck:
 	$(MAKE) aotcheck LLVM=1
 
-fullaot_regtests = $(regtests) aot-tests.exe
+gsharedvtcheck:
+	$(MAKE) fullaotcheck GSHAREDVT=1
+
+fullaot_regtests = $(regtests) aot-tests.exe $(if $(GSHAREDVT),gshared.exe)
 
 # This currently only works on amd64/arm
 fullaotcheck: mono $(fullaot_regtests)
@@ -672,7 +703,7 @@ fullaotcheck: mono $(fullaot_regtests)
 	mkdir fullaot-tmp
 	cp $(CLASS)/mscorlib.dll $(CLASS)/System.Core.dll $(CLASS)/System.dll $(CLASS)/Mono.Posix.dll $(CLASS)/System.Configuration.dll $(CLASS)/System.Security.dll $(CLASS)/System.Xml.dll $(CLASS)/Mono.Security.dll $(CLASS)/Mono.Simd.dll $(regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
 	cp $(fullaot_regtests) fullaot-tmp/
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) --aot=full fullaot-tmp/* || exit 1
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot=full fullaot-tmp/* || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
 	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper --full-aot fullaot-tmp/$$i --exclude '!FULLAOT' || exit 1; done
 
@@ -706,7 +737,7 @@ docu: mini.sgm
 check-local: rcheck
 
 clean-local:
-	rm -f mono a.out gmon.out *.o buildver.h buildver-sgen.h test.exe
+	rm -f mono a.out gmon.out *.o buildver-boehm.h buildver-sgen.h test.exe
 
 pkgconfigdir = $(libdir)/pkgconfig
 
@@ -726,14 +757,12 @@ EXTRA_DIST = TestDriver.cs ldscript ldscript.mono \
 	$(arm_sources) cpu-arm.md 		\
 	$(mips_sources) cpu-mips.md 		\
 	$(sparc_sources) cpu-sparc.md 		\
-	$(s390_sources) cpu-s390.md 		\
 	$(s390x_sources) cpu-s390x.md 		\
 	$(ia64_sources) cpu-ia64.md 		\
-	$(alpha_sources) cpu-alpha.md 		\
-	$(hppa_sources) cpu-hppa.md 		\
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
-	$(posix_sources)
+	$(posix_sources)					\
+	Makefile.am.in
 
 version.h: Makefile
 	if test -d $(top_srcdir)/.git; then \
@@ -751,6 +780,10 @@ version.h: Makefile
 patch-libtool:
 	sed -e 's,if (for obj in $$oldobjs,if (for obj in "",g' < ../../libtool > 2; mv 2 ../../libtool
 	chmod a+x ../../libtool
+
+# Utility target to patch automake to generate the same format silent output as the old mono silent build did
+patch-automake:
+	src="@echo \"  '. \$$name . ' ' x (8 - length (\$$name)) . '\""; dst="@echo \"'. \$$name . ' ' x (7 - length (\$$name)) .'\""; sed -e "s/$$src/$$dst/g" < $$EXE > 2 && cp 2 $$EXE && rm -f 2
 
 tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`

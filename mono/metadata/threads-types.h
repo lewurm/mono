@@ -58,7 +58,7 @@ gpointer mono_create_thread (WapiSecurityAttributes *security,
 							 guint32 stacksize, WapiThreadStart start,
 							 gpointer param, guint32 create, gsize *tid) MONO_INTERNAL;
 
-MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size) MONO_INTERNAL;
+MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, gboolean no_detach, guint32 stack_size) MONO_INTERNAL;
 
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func) MONO_INTERNAL;
 
@@ -152,6 +152,9 @@ void ves_icall_System_Threading_Thread_VolatileWriteObject (void *ptr, void *) M
 void ves_icall_System_Threading_Thread_VolatileWriteFloat (void *ptr, float) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_VolatileWriteDouble (void *ptr, double) MONO_INTERNAL;
 
+MonoObject* ves_icall_System_Threading_Volatile_Read_T (void *ptr) MONO_INTERNAL;
+void ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value) MONO_INTERNAL;
+
 void ves_icall_System_Threading_Thread_MemoryBarrier (void) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_Interrupt_internal (MonoInternalThread *this_obj) MONO_INTERNAL;
 void ves_icall_System_Threading_Thread_SpinWait_nop (void) MONO_INTERNAL;
@@ -181,7 +184,6 @@ void mono_thread_init_apartment_state (void) MONO_INTERNAL;
 void mono_thread_cleanup_apartment_state (void) MONO_INTERNAL;
 
 void mono_threads_set_shutting_down (void) MONO_INTERNAL;
-gboolean mono_threads_is_shutting_down (void) MONO_INTERNAL;
 
 gunichar2* mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len) MONO_INTERNAL;
 
@@ -223,5 +225,8 @@ gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, gu
 
 MonoException* mono_thread_resume_interruption (void) MONO_INTERNAL;
 void mono_threads_perform_thread_dump (void) MONO_INTERNAL;
+MonoThread *mono_thread_attach_full (MonoDomain *domain, gboolean force_attach) MONO_INTERNAL;
+
+void mono_thread_init_tls (void) MONO_INTERNAL;
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

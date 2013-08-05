@@ -1062,6 +1062,7 @@ namespace MonoTests.System.IO
 		Assert.AreEqual (0L, m.Length, "#1");
 		var t = w.WriteLineAsync ();
 		Assert.IsTrue (t.Wait (1000), "#2");
+		Assert.IsTrue (w.FlushAsync ().Wait (1000), "#3");
 	}
 
 	[Test]
@@ -1073,6 +1074,28 @@ namespace MonoTests.System.IO
 		}
 
 		Assert.AreEqual (1, ms.Length);
+	}
+
+	[Test]
+	public void WriteAsync ()
+	{
+		var m = new MockStream(true, false, true);
+		var w = new StreamWriter (m);
+
+		var t = w.WriteAsync ("v");
+		Assert.IsTrue (t.Wait (1000), "#1");
+
+		t = w.WriteAsync ((string) null);
+		Assert.IsTrue (t.Wait (1000), "#2");
+
+		t = w.WriteLineAsync ("line");
+		Assert.IsTrue (t.Wait (1000), "#3");
+
+		t = w.WriteLineAsync ((string) null);
+		Assert.IsTrue (t.Wait (1000), "#4");
+
+		t = w.WriteLineAsync ('c');
+		Assert.IsTrue (t.Wait (1000), "#5");
 	}
 
 #endif
