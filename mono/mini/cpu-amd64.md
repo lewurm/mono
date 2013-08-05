@@ -292,6 +292,7 @@ amd64_set_xmmreg_r4: dest:f src1:f len:14 clob:m
 amd64_set_xmmreg_r8: dest:f src1:f len:14 clob:m
 amd64_save_sp_to_lmf: len:16
 tls_get: dest:i len:16
+tls_get_reg: dest:i src1:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:32
 atomic_add_new_i4: src1:b src2:i dest:i len:32
 atomic_exchange_i4: src1:b src2:i dest:a len:32
@@ -317,6 +318,9 @@ sqrt: dest:f src1:f len:32
 sext_i1: dest:i src1:i len:4
 sext_i2: dest:i src1:i len:4
 sext_i4: dest:i src1:i len:8
+
+laddcc: dest:i src1:i src2:i len:3 clob:1
+lsubcc: dest:i src1:i src2:i len:3 clob:1
 
 # 32 bit opcodes
 int_add: dest:i src1:i src2:i clob:1 len:4 nacl:7

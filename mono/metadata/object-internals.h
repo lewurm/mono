@@ -83,7 +83,7 @@
 #endif
 
 #define MONO_CHECK_ARG(arg, expr)		G_STMT_START{		  \
-     if (!(expr))							  \
+		if (G_UNLIKELY (!(expr)))							  \
        {								  \
 		MonoException *ex;					  \
 		char *msg = g_strdup_printf ("assertion `%s' failed",	  \
@@ -95,7 +95,7 @@
        };				}G_STMT_END
 
 #define MONO_CHECK_ARG_NULL(arg)	    G_STMT_START{		  \
-     if (arg == NULL)							  \
+		if (G_UNLIKELY (arg == NULL))						  \
        {								  \
 		MonoException *ex;					  \
 		if (arg) {} /* check if the name exists */		  \
@@ -414,13 +414,13 @@ struct _MonoInternalThread {
 	gpointer android_tid;
 	gpointer thread_pinning_ref;
 	gint32 ignore_next_signal;
+	MonoMethod *async_invoke_method;
 	/* 
 	 * These fields are used to avoid having to increment corlib versions
 	 * when a new field is added to this structure.
 	 * Please synchronize any changes with InternalThread in Thread.cs, i.e. add the
 	 * same field there.
 	 */
-	gpointer unused0;
 	gpointer unused1;
 	gpointer unused2;
 };
@@ -578,12 +578,14 @@ typedef struct {
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
+typedef gboolean (*MonoInternalExceptionFrameWalk) (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data);
 
 typedef struct {
 	void (*mono_walk_stack_with_ctx) (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 	void (*mono_walk_stack_with_state) (MonoInternalStackWalk func, MonoThreadUnwindState *state, MonoUnwindOptions options, void *user_data);
 	void (*mono_raise_exception) (MonoException *ex);
 	void (*mono_raise_exception_with_ctx) (MonoException *ex, MonoContext *ctx);
+	gboolean (*mono_exception_walk_trace) (MonoException *ex, MonoInternalExceptionFrameWalk func, gpointer user_data);
 	gboolean (*mono_install_handler_block_guard) (MonoThreadUnwindState *unwind_state);
 } MonoRuntimeExceptionHandlingCallbacks;
 
@@ -611,10 +613,6 @@ mono_wait_handle_get_handle (MonoWaitHandle *handle) MONO_INTERNAL;
 void
 mono_message_init	    (MonoDomain *domain, MonoMethodMessage *this_obj, 
 			     MonoReflectionMethod *method, MonoArray *out_args) MONO_INTERNAL;
-
-MonoObject *
-mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
-			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
 
 MonoObject *
 mono_message_invoke	    (MonoObject *target, MonoMethodMessage *msg, 
@@ -1228,6 +1226,21 @@ typedef struct {
 
 typedef struct {
 	MonoObject object;
+	MonoString *marshal_cookie;
+	MonoString *marshal_type;
+	MonoReflectionType *marshal_type_ref;
+	MonoReflectionType *marshal_safe_array_user_defined_subtype;
+	guint32 utype;
+	guint32 array_subtype;
+	gint32 safe_array_subtype;
+	gint32 size_const;
+	gint32 IidParameterIndex;
+	gint16 size_param_index;
+} MonoReflectionMarshalAsAttribute;
+
+
+typedef struct {
+	MonoObject object;
 	gint32 call_conv;
 	gint32 charset;
 	MonoString *dll;
@@ -1398,7 +1411,7 @@ MonoArray  *mono_reflection_sighelper_get_signature_local (MonoReflectionSigHelp
 
 MonoArray  *mono_reflection_sighelper_get_signature_field (MonoReflectionSigHelper *sig) MONO_INTERNAL;
 
-MonoReflectionMarshal* mono_reflection_marshal_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
+MonoReflectionMarshalAsAttribute* mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, MonoClass *klass, MonoMarshalSpec *spec) MONO_INTERNAL;
 
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context) MONO_INTERNAL;
@@ -1443,11 +1456,17 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest) MONO_INTERNAL;
 gboolean
 mono_array_calc_byte_len (MonoClass *class, uintptr_t len, uintptr_t *res) MONO_INTERNAL;
 
+#ifndef DISABLE_REMOTING
+MonoObject *
+mono_remoting_invoke	    (MonoObject *real_proxy, MonoMethodMessage *msg, 
+			     MonoObject **exc, MonoArray **out_args) MONO_INTERNAL;
+
 gpointer
 mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, MonoRealProxy *real_proxy) MONO_INTERNAL;
 
 void
 mono_upgrade_remote_class (MonoDomain *domain, MonoObject *tproxy, MonoClass *klass) MONO_INTERNAL;
+#endif
 
 gpointer
 mono_create_ftnptr (MonoDomain *domain, gpointer addr) MONO_INTERNAL;
@@ -1585,6 +1604,9 @@ mono_exception_get_native_backtrace (MonoException *exc) MONO_INTERNAL;
 
 MonoString *
 ves_icall_Mono_Runtime_GetNativeStackTrace (MonoException *exc) MONO_INTERNAL;
+
+char *
+mono_exception_get_managed_backtrace (MonoException *exc) MONO_INTERNAL;
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */
 

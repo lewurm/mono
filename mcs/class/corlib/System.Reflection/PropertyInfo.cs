@@ -38,11 +38,24 @@ namespace System.Reflection {
 	[ComDefaultInterfaceAttribute (typeof (_PropertyInfo))]
 	[Serializable]
 	[ClassInterface(ClassInterfaceType.None)]
+#if MOBILE
+	public abstract class PropertyInfo : MemberInfo {
+#else
 	public abstract class PropertyInfo : MemberInfo, _PropertyInfo {
-
+#endif
 		public abstract PropertyAttributes Attributes { get; }
 		public abstract bool CanRead { get; }
 		public abstract bool CanWrite { get; }
+		
+#if NET_4_5
+		public virtual MethodInfo GetMethod {
+			get { return GetGetMethod(true); }
+		}
+
+		public virtual MethodInfo SetMethod {
+			get { return GetSetMethod(true); }
+		}
+#endif
 
 		public bool IsSpecialName {
 			get {return (Attributes & PropertyAttributes.SpecialName) != 0;}
@@ -164,10 +177,17 @@ namespace System.Reflection {
 		}
 #endif
 
+#if !MOBILE
 		void _PropertyInfo.GetIDsOfNames ([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
 		{
 			throw new NotImplementedException ();
 		}
+
+		Type _PropertyInfo.GetType ()
+		{
+			// Required or object::GetType becomes virtual final
+			return base.GetType ();
+		}		
 
 		void _PropertyInfo.GetTypeInfo (uint iTInfo, uint lcid, IntPtr ppTInfo)
 		{
@@ -183,5 +203,6 @@ namespace System.Reflection {
 		{
 			throw new NotImplementedException ();
 		}
+#endif
 	}
 }
