@@ -1635,6 +1635,28 @@ namespace MonoTests.System.XmlSerialization
 			var xs = new XmlSerializer (typeof (Bug704813Type));
 			xs.Serialize (TextWriter.Null, new Bug704813Type ());
 		}
+
+		[Test]
+		public void Bug708178Type()
+		{
+			string file = Path.Combine (Path.GetTempPath (), "Bug708178Type.xml");
+			XmlSerializer xmlSerializer = new XmlSerializer (typeof(Bug708178Type));
+			Bug708178Type bugType = new Bug708178Type ();
+			bugType.Foo.Add ("test");
+			Assert.AreEqual (1, bugType.Foo.Count);
+		 
+			//xml Serialize
+			TextWriter WriteFileStream = new StreamWriter (file, false);
+			xmlSerializer.Serialize (WriteFileStream, bugType);
+			WriteFileStream.Close ();
+		 
+			//xml Deserialize
+			FileStream ReadFileStream = new FileStream (file, FileMode.Open, FileAccess.Read, FileShare.Read);
+			Bug708178Type bugTypeReload = (Bug708178Type)xmlSerializer.Deserialize (ReadFileStream);
+		 
+			//should have deserialized the relationship
+			Assert.AreEqual(1, bugTypeReload.Foo.Count);
+	       }
 #endif
 
 		public class Employee : IXmlSerializable

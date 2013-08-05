@@ -25,15 +25,15 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#if NET_2_0
-
 using System;
+using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using Mono.XBuild.Utilities;
 
 namespace Microsoft.Build.BuildEngine {
 	public class Target : IEnumerable {
@@ -46,7 +46,7 @@ namespace Microsoft.Build.BuildEngine {
 		Project		project;
 		XmlElement	targetElement;
 		List <XmlElement>	onErrorElements;
-		List <BuildTask>	buildTasks;
+		List <IBuildTask>	buildTasks;
 		
 		internal Target (XmlElement targetElement, Project project, ImportedProject importedProject)
 		{
@@ -64,7 +64,7 @@ namespace Microsoft.Build.BuildEngine {
 
 			this.onErrorElements  = new List <XmlElement> ();
 			this.buildState = BuildState.NotStarted;
-			this.buildTasks = new List <BuildTask> ();
+			this.buildTasks = new List <IBuildTask> ();
 			this.batchingImpl = new TargetBatchingImpl (project, this.targetElement);
 
 			bool onErrorFound = false;
@@ -77,12 +77,22 @@ namespace Microsoft.Build.BuildEngine {
 					} else if (onErrorFound)
 						throw new InvalidProjectFileException (
 							"The element <OnError> must be last under element <Target>. Found element <Error> instead.");
+#if NET_3_5
+					else if (xe.Name == "ItemGroup") {
+						var group = new BuildTaskItemGroup (xe, this);
+						buildTasks.AddRange (group.Items);
+						continue;
+					} else if (xe.Name == "PropertyGroup") {
+						buildTasks.Add (new BuildTaskPropertyGroup (xe, this));
+						continue;
+					}
+#endif
 					else
 						buildTasks.Add (new BuildTask (xe, this));
 				}
 			}
 		}
-		
+
 		[MonoTODO]
 		public BuildTask AddNewTask (string taskName)
 		{
@@ -99,8 +109,7 @@ namespace Microsoft.Build.BuildEngine {
 
 		public IEnumerator GetEnumerator ()
 		{
-			foreach (BuildTask bt in buildTasks)
-				yield return bt;
+			return buildTasks.ToArray ().GetEnumerator ();
 		}
 
 		// FIXME: shouldn't we remove it from XML?
@@ -375,7 +384,7 @@ namespace Microsoft.Build.BuildEngine {
 		internal List<string> AfterThisTargets { get; set; }
 #endif
 
-		internal List<BuildTask> BuildTasks {
+		internal List<IBuildTask> BuildTasks {
 			get { return buildTasks; }
 		}
 
@@ -413,5 +422,3 @@ namespace Microsoft.Build.BuildEngine {
 		Skipped
 	}
 }
-
-#endif

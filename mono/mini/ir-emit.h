@@ -58,10 +58,8 @@ alloc_ireg_ref (MonoCompile *cfg)
 {
 	int vreg = alloc_ireg (cfg);
 
-#ifdef HAVE_SGEN_GC
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_ref (cfg, vreg);
-#endif
 
 	return vreg;
 }
@@ -71,10 +69,8 @@ alloc_ireg_mp (MonoCompile *cfg)
 {
 	int vreg = alloc_ireg (cfg);
 
-#ifdef HAVE_SGEN_GC
 	if (cfg->compute_gc_maps)
 		mono_mark_vreg_as_mp (cfg, vreg);
-#endif
 
 	return vreg;
 }
@@ -265,7 +261,16 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class)
 
-#define NEW_LDTOKENCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), NULL, STACK_PTR, NULL)
+#define NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL)
+
+#define NEW_TLS_OFFSETCONST(cfg,dest,key) do { \
+	if (cfg->compile_aot) { \
+		NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_TLS_OFFSET, GINT_TO_POINTER (key)); \
+	} else {															\
+		int _offset = mini_get_tls_offset ((key));							\
+		NEW_PCONST ((cfg), (dest), GINT_TO_POINTER (_offset)); \
+		} \
+	} while (0)
 
 #define NEW_DECLSECCONST(cfg,dest,image,entry) do { \
 		if (cfg->compile_aot) { \
@@ -295,6 +300,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		} \
 	} while (0)
 
+#define NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (name))
+
 #define GET_VARINFO_INST(cfg,num) ((cfg)->varinfo [(num)]->inst)
 
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
@@ -313,6 +320,20 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 #define DECOMPOSE_INTO_REGPAIR(stack_type) ((stack_type) == STACK_I8)
 #endif
 
+static inline void
+handle_gsharedvt_ldaddr (MonoCompile *cfg)
+{
+	/* The decomposition of ldaddr makes use of these two variables, so add uses for them */
+	MonoInst *use;
+
+	MONO_INST_NEW (cfg, use, OP_DUMMY_USE);
+	use->sreg1 = cfg->gsharedvt_info_var->dreg;
+	MONO_ADD_INS (cfg->cbb, use);
+	MONO_INST_NEW (cfg, use, OP_DUMMY_USE);
+	use->sreg1 = cfg->gsharedvt_locals_var->dreg;
+	MONO_ADD_INS (cfg->cbb, use);
+}
+
 #define NEW_VARLOADA(cfg,dest,var,vartype) do {	\
         MONO_INST_NEW ((cfg), (dest), OP_LDADDR); \
 		(dest)->inst_p0 = (var); \
@@ -320,6 +341,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (var)->klass;	\
         (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
+			  if (G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_type ((cfg), (var)->inst_vtype)) { handle_gsharedvt_ldaddr ((cfg)); } \
 		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
 	} while (0)
 
@@ -387,10 +409,10 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         (dest)->klass = mono_class_from_mono_type (ltype); \
 	} while (0)
 
-#define NEW_SEQ_POINT(cfg,dest,il_offset,ss_loc) do {	 \
+#define NEW_SEQ_POINT(cfg,dest,il_offset,intr_loc) do {	 \
 	MONO_INST_NEW ((cfg), (dest), OP_SEQ_POINT); \
 	(dest)->inst_imm = (il_offset); \
-	(dest)->flags = ss_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
+	(dest)->flags = intr_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
 	} while (0)
 
 #define NEW_GC_PARAM_SLOT_LIVENESS_DEF(cfg,dest,offset,type) do { \
@@ -428,7 +450,9 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define EMIT_NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_LDTOKENCONST(cfg,dest,image,token) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), NULL, STACK_PTR, NULL); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+#define EMIT_NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
+#define EMIT_NEW_TLS_OFFSETCONST(cfg,dest,key) do { NEW_TLS_OFFSETCONST ((cfg), (dest), (key)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_DOMAINCONST(cfg,dest) do { NEW_DOMAINCONST ((cfg), (dest)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
@@ -436,12 +460,13 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define EMIT_NEW_METHOD_RGCTX_CONST(cfg,dest,method) do { NEW_METHOD_RGCTX_CONST ((cfg), (dest), (method)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
+#define EMIT_NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) do { NEW_JIT_ICALL_ADDRCONST ((cfg), (dest), (name)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
 #define EMIT_NEW_VARLOAD(cfg,dest,var,vartype) do { NEW_VARLOAD ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_VARSTORE(cfg,dest,var,vartype,inst) do { NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_VARLOADA(cfg,dest,var,vartype) do { NEW_VARLOADA ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
-
 
 #ifdef MONO_ARCH_SOFT_FLOAT
 
@@ -563,7 +588,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define	MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,type) do { \
         MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), OP_AOTCONST); \
+        MONO_INST_NEW ((cfg), (inst), cfg->compile_aot ? OP_AOTCONST : OP_PCONST); \
         inst->dreg = dr; \
         inst->inst_p0 = imm; \
         inst->inst_c1 = type; \
@@ -574,6 +599,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define	MONO_EMIT_NEW_CLASSCONST(cfg,dr,imm) MONO_EMIT_NEW_AOTCONST(cfg,dr,imm,MONO_PATCH_INFO_CLASS)
 #define MONO_EMIT_NEW_VTABLECONST(cfg,dest,vtable) MONO_EMIT_NEW_AOTCONST ((cfg), (dest), (cfg)->compile_aot ? (gpointer)((vtable)->klass) : (vtable), MONO_PATCH_INFO_VTABLE)
+#define MONO_EMIT_NEW_SIGNATURECONST(cfg,dr,sig) MONO_EMIT_NEW_AOTCONST ((cfg), (dr), (sig), MONO_PATCH_INFO_SIGNATURE)
 
 #define MONO_EMIT_NEW_VZERO(cfg,dr,kl) do {	\
         MonoInst *inst; \
