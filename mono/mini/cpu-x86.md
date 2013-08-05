@@ -300,6 +300,7 @@ bigmul_un: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:y len:3
 sext_i2: dest:i src1:y len:3
 tls_get: dest:i len:20
+tls_get_reg: dest:i src1:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:16
 atomic_add_new_i4: src1:b src2:i dest:i len:16
 atomic_exchange_i4: src1:b src2:i dest:a len:24
@@ -379,7 +380,7 @@ cmov_ilt_un: dest:i src1:i src2:i len:16 clob:1
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:30
 long_conv_to_r8_2: dest:f src1:i src2:i len:14 
 long_conv_to_r4_2: dest:f src1:i src2:i len:14
-long_conv_to_r_un_2: dest:f src1:i src2:i len:26 
+long_conv_to_r_un_2: dest:f src1:i src2:i len:40
 
 fmove: dest:f src1:f
 float_conv_to_r4: dest:f src1:f  len:12

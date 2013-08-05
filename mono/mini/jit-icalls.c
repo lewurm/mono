@@ -765,6 +765,37 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
 }
 
+MonoArray *
+mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3, guint32 length4)
+{
+	MonoDomain *domain = mono_domain_get ();
+	uintptr_t lengths [4];
+	intptr_t *lower_bounds;
+	int pcount;
+	int rank;
+
+	MONO_ARCH_SAVE_REGS;
+
+	pcount = mono_method_signature (cm)->param_count;
+	rank = cm->klass->rank;
+
+	lengths [0] = length1;
+	lengths [1] = length2;
+	lengths [2] = length3;
+	lengths [3] = length4;
+
+	g_assert (rank == pcount);
+
+	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
+	} else {
+		lower_bounds = NULL;
+	}
+
+	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+}
+
 gpointer
 mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 {
@@ -1121,4 +1152,84 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 	m = mono_marshal_get_native_func_wrapper (image, sig, &piinfo, mspecs, func);
 
 	return mono_compile_method (m);
+}
+
+static MonoMethod*
+constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gpointer *this_arg)
+{
+	MonoMethod *m;
+	int vt_slot;
+
+	/* Lookup the virtual method */
+	mono_class_setup_vtable (klass);
+	g_assert (klass->vtable);
+	vt_slot = mono_method_get_vtable_slot (cmethod);
+	m = klass->vtable [vt_slot];
+	if (klass->valuetype && (m->klass == mono_defaults.object_class || m->klass == mono_defaults.enum_class->parent || m->klass == mono_defaults.enum_class))
+		/*
+		 * Calling a non-vtype method with a vtype receiver, has to box.
+		 */
+		*this_arg = mono_value_box (mono_domain_get (), klass, mp);
+	else if (klass->valuetype)
+		/*
+		 * Calling a vtype method with a vtype receiver
+		 */
+		*this_arg = mp;
+	else
+		/*
+		 * Calling a non-vtype method
+		 */
+		*this_arg = *(gpointer*)mp;
+	return m;
+}
+
+MonoObject*
+mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	gpointer this_arg;
+
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
+	return mono_runtime_invoke (m, this_arg, NULL, NULL);
+}
+
+int
+mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	gpointer this_arg;
+	MonoObject *res;
+	gpointer p;
+
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
+	// FIXME: This boxes the result
+	res = mono_runtime_invoke (m, this_arg, NULL, NULL);
+	p = mono_object_unbox (res);
+	return *(int*)p;
+}
+
+MonoBoolean
+mono_object_equals_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass, MonoObject *arg)
+{
+	MonoMethod *m;
+	gpointer this_arg;
+	MonoObject *res;
+	gpointer p;
+	void **args;
+
+	m = constrained_gsharedvt_call_setup (mp, cmethod, klass, &this_arg);
+	// FIXME: This boxes the result
+	args = (void**)&arg;
+	res = mono_runtime_invoke (m, this_arg, args, NULL);
+	p = mono_object_unbox (res);
+	return *(MonoBoolean*)p;
+}
+
+void
+mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass)
+{
+	if (klass->valuetype)
+		mono_value_copy (dest, src, klass);
+	else
+        mono_gc_wbarrier_generic_store (dest, *(MonoObject**)src);
 }
