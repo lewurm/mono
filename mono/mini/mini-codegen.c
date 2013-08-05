@@ -410,6 +410,37 @@ typedef struct {
 } RegTrack;
 
 #ifndef DISABLE_LOGGING
+
+static const char* const patch_info_str[] = {
+#define PATCH_INFO(a,b) "" #a,
+#include "patch-info.h"
+#undef PATCH_INFO
+};
+
+void
+mono_print_ji (const MonoJumpInfo *ji)
+{
+	switch (ji->type) {
+	case MONO_PATCH_INFO_RGCTX_FETCH: {
+		MonoJumpInfoRgctxEntry *entry = ji->data.rgctx_entry;
+
+		printf ("[RGCTX_FETCH ");
+		mono_print_ji (entry->data);
+		printf (" - %s]", mono_rgctx_info_type_to_str (entry->info_type));
+		break;
+	}
+	case MONO_PATCH_INFO_METHODCONST: {
+		char *s = mono_method_full_name (ji->data.method, TRUE);
+		printf ("[METHODCONST - %s]", s);
+		g_free (s);
+		break;
+	}
+	default:
+		printf ("[%s]", patch_info_str [ji->type]);
+		break;
+	}
+}
+
 void
 mono_print_ins_index (int i, MonoInst *ins)
 {
@@ -467,6 +498,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 			printf (" R%d", ((MonoInst*)ins->inst_p0)->dreg);
 			break;
 		case OP_REGOFFSET:
+		case OP_GSHAREDVT_ARG_REGOFFSET:
 			printf (" + 0x%lx", (long)ins->inst_offset);
 			break;
 		default:
@@ -532,6 +564,7 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_IAND_IMM:
 	case OP_IOR_IMM:
 	case OP_IXOR_IMM:
+	case OP_SUB_IMM:
 		printf (" [%d]", (int)ins->inst_imm);
 		break;
 	case OP_ADD_IMM:
@@ -563,7 +596,8 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_VCALL2_MEMBASE:
 	case OP_VOIDCALL:
 	case OP_VOIDCALL_MEMBASE:
-	case OP_VOIDCALLVIRT: {
+	case OP_VOIDCALLVIRT:
+	case OP_TAILCALL: {
 		MonoCallInst *call = (MonoCallInst*)ins;
 		GSList *list;
 
@@ -580,6 +614,11 @@ mono_print_ins_index (int i, MonoInst *ins)
 			char *full_name = mono_method_full_name (call->method, TRUE);
 			printf (" [%s]", full_name);
 			g_free (full_name);
+		} else if (call->fptr_is_patch) {
+			MonoJumpInfo *ji = (MonoJumpInfo*)call->fptr;
+
+			printf (" ");
+			mono_print_ji (ji);
 		} else if (call->fptr) {
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
 			if (info)
@@ -636,6 +675,9 @@ mono_print_ins_index (int i, MonoInst *ins)
 	case OP_GC_LIVENESS_USE:
 		printf (" R%d", (int)ins->inst_c1);
 		break;
+	case OP_SEQ_POINT:
+		printf (" il: %x", (int)ins->inst_imm);
+		break;
 	default:
 		break;
 	}
@@ -664,6 +706,12 @@ print_regtrack (RegTrack *t, int num)
 	}
 }
 #else
+
+void
+mono_print_ji (const MonoJumpInfo *ji)
+{
+}
+
 void
 mono_print_ins_index (int i, MonoInst *ins)
 {
@@ -773,7 +821,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 
 	g_assert (bank < MONO_NUM_REGBANKS);
 
-	DEBUG (printf ("\tstart regmask to assign R%d: 0x%08" G_GUINT64_FORMAT " (R%d <- R%d R%d R%d)\n", reg, (guint64)regmask, ins->dreg, ins->sreg1, ins->sreg2, ins->sreg3));
+	DEBUG (printf ("\tstart regmask to assign R%d: 0x%08llu (R%d <- R%d R%d R%d)\n", reg, (unsigned long long)regmask, ins->dreg, ins->sreg1, ins->sreg2, ins->sreg3));
 	/* exclude the registers in the current instruction */
 	num_sregs = mono_inst_get_src_registers (ins, sregs);
 	for (i = 0; i < num_sregs; ++i) {
@@ -790,7 +838,7 @@ get_register_spilling (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **last, Mo
 		DEBUG (printf ("\t\texcluding dreg %s\n", mono_regname_full (ins->dreg, bank)));
 	}
 
-	DEBUG (printf ("\t\tavailable regmask: 0x%08" G_GUINT64_FORMAT "\n", (guint64)regmask));
+	DEBUG (printf ("\t\tavailable regmask: 0x%08llu\n", (unsigned long long)regmask));
 	g_assert (regmask); /* need at least a register we can free */
 	sel = 0;
 	/* we should track prev_use and spill the register that's farther */
@@ -2170,8 +2218,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 					fxch->inst_imm = sp - 1 - i;
 
-					prev->next = fxch;
-					fxch->next = ins;
+					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
 					tmp = fpstack [sp - 1];
@@ -2185,8 +2232,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 				MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 				fxch->inst_imm = 1;
 
-				prev->next = fxch;
-				fxch->next = ins;
+				mono_bblock_insert_after_ins (bb, prev, fxch);
 				prev = fxch;
 
 				tmp = fpstack [sp - 1];
@@ -2210,8 +2256,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 					fxch->inst_imm = sp - 1 - i;
 
-					prev->next = fxch;
-					fxch->next = ins;
+					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
 					tmp = fpstack [sp - 1];
@@ -2238,8 +2283,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_INST_NEW (cfg, fxch, OP_X86_FXCH);
 					fxch->inst_imm = sp - 1 - i;
 
-					prev->next = fxch;
-					fxch->next = ins;
+					mono_bblock_insert_after_ins (bb, prev, fxch);
 					prev = fxch;
 
 					tmp = fpstack [sp - 1];
@@ -2439,9 +2483,6 @@ mono_opcode_to_type (int opcode, int cmp_opcode)
 		switch (cmp_opcode) {
 		case OP_ICOMPARE:
 		case OP_ICOMPARE_IMM:
-#if !defined(__ia64__)
-		case OP_LCOMPARE_IMM:
-#endif
 			return CMP_TYPE_I;
 		default:
 			return CMP_TYPE_L;
@@ -2490,8 +2531,9 @@ mono_is_regsize_var (MonoType *t)
 		return FALSE;
 	case MONO_TYPE_VALUETYPE:
 		return FALSE;
+	default:
+		return FALSE;
 	}
-	return FALSE;
 }
 
 #ifndef DISABLE_JIT
