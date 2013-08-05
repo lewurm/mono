@@ -66,12 +66,15 @@
     --> Macro replaced by USE_COMPILER_TLS
 # endif
 
+#ifndef USE_COMPILER_TLS
 # if (defined(GC_DGUX386_THREADS) || defined(GC_OSF1_THREADS) || \
       defined(GC_DARWIN_THREADS) || defined(GC_AIX_THREADS)) || \
       defined(GC_NETBSD_THREADS) && !defined(USE_PTHREAD_SPECIFIC) || \
+      defined(GC_FREEBSD_THREADS) && !defined(USE_PTHREAD_SPECIFIC) || \
       defined(GC_OPENBSD_THREADS)
 #   define USE_PTHREAD_SPECIFIC
 # endif
+#endif
 
 # if defined(GC_DGUX386_THREADS) && !defined(_POSIX4A_DRAFT10_SOURCE)
 #   define _POSIX4A_DRAFT10_SOURCE 1
@@ -181,6 +184,10 @@ void GC_thr_init();
 static GC_bool parallel_initialized = FALSE;
 
 void GC_init_parallel();
+
+static pthread_t main_pthread_self;
+static void *main_stack, *main_altstack;
+static int main_stack_size, main_altstack_size;
 
 # if defined(THREAD_LOCAL_ALLOC) && !defined(DBG_HDRS_ALL)
 
@@ -680,17 +687,32 @@ void GC_mark_thread_local_free_lists(void)
 static struct GC_Thread_Rep first_thread;
 
 #ifdef NACL
-extern int nacl_thread_parked[MAX_NACL_GC_THREADS];
-extern int nacl_thread_used[MAX_NACL_GC_THREADS];
-extern int nacl_thread_parking_inited;
-extern int nacl_num_gc_threads;
+extern volatile int nacl_thread_parked[MAX_NACL_GC_THREADS];
+extern volatile int nacl_thread_used[MAX_NACL_GC_THREADS];
+extern volatile int nacl_thread_parking_inited;
+extern volatile int nacl_num_gc_threads;
 extern pthread_mutex_t nacl_thread_alloc_lock;
 extern __thread int nacl_thread_idx;
 extern __thread GC_thread nacl_gc_thread_self;
 
+extern void nacl_pre_syscall_hook();
+extern void nacl_post_syscall_hook();
+extern void nacl_register_gc_hooks(void (*pre)(), void (*post)());
+
+#include <stdio.h>
+
+struct nacl_irt_blockhook {
+  int (*register_block_hooks)(void (*pre)(void), void (*post)(void));
+};
+
+extern size_t nacl_interface_query(const char *interface_ident,
+                            void *table, size_t tablesize);
+
 void nacl_initialize_gc_thread()
 {
     int i;
+    static struct nacl_irt_blockhook gc_hook;
+
     pthread_mutex_lock(&nacl_thread_alloc_lock);
     if (!nacl_thread_parking_inited)
     {
@@ -698,6 +720,10 @@ void nacl_initialize_gc_thread()
             nacl_thread_used[i] = 0;
             nacl_thread_parked[i] = 0;
         }
+        // TODO: replace with public 'register hook' function when
+        // available from glibc
+        nacl_interface_query("nacl-irt-blockhook-0.1", &gc_hook, sizeof(gc_hook));
+        gc_hook.register_block_hooks(nacl_pre_syscall_hook, nacl_post_syscall_hook);
         nacl_thread_parking_inited = 1;
     }
     GC_ASSERT(nacl_num_gc_threads <= MAX_NACL_GC_THREADS);
@@ -843,6 +869,30 @@ int GC_thread_is_registered (void)
 	return ptr ? 1 : 0;
 }
 
+void GC_register_altstack (void *stack, int stack_size, void *altstack, int altstack_size)
+{
+	GC_thread thread;
+
+	LOCK();
+	thread = (void *)GC_lookup_thread(pthread_self());
+	if (thread) {
+		thread->stack = stack;
+		thread->stack_size = stack_size;
+		thread->altstack = altstack;
+		thread->altstack_size = altstack_size;
+	} else {
+		/*
+		 * This happens if we are called before GC_thr_init ().
+		 */
+		main_pthread_self = pthread_self ();
+		main_stack = stack;
+		main_stack_size = stack_size;
+		main_altstack = altstack;
+		main_altstack_size = altstack_size;
+	}
+	UNLOCK();
+}
+
 #ifdef HANDLE_FORK
 /* Remove all entries from the GC_threads table, except the	*/
 /* one for the current thread.  We need to do this in the child	*/
@@ -906,6 +956,7 @@ int GC_segment_is_thread_stack(ptr_t lo, ptr_t hi)
 /* Return the number of processors, or i<= 0 if it can't be determined.	*/
 int GC_get_nprocs()
 {
+#ifndef NACL
     /* Should be "return sysconf(_SC_NPROCESSORS_ONLN);" but that	*/
     /* appears to be buggy in many cases.				*/
     /* We look for lines "cpu<n>" in /proc/stat.			*/
@@ -935,6 +986,9 @@ int GC_get_nprocs()
     }
     close(f);
     return result;
+#else /* NACL */
+    return sysconf(_SC_NPROCESSORS_ONLN);
+#endif
 }
 #endif /* GC_LINUX_THREADS */
 
@@ -1078,6 +1132,12 @@ void GC_thr_init()
          gc_thread_vtable->thread_created (pthread_self (), &t->stop_info.stack_ptr);
 #     endif
 #endif
+		 if (pthread_self () == main_pthread_self) {
+			 t->stack = main_stack;
+			 t->stack_size = main_stack_size;
+			 t->altstack = main_altstack;
+			 t->altstack_size = main_altstack_size;
+		 }
 
     GC_stop_init();
 
@@ -1320,12 +1380,10 @@ int WRAP_FUNC(pthread_join)(pthread_t thread, void **retval)
 }
 
 #ifdef NACL
-/* Native Client doesn't support pthread cleanup functions, */
-/* so wrap pthread_exit and manually cleanup the thread.    */
+/* TODO: remove, NaCl glibc now supports pthread cleanup functions. */
 void
 WRAP_FUNC(pthread_exit)(void *status)
 {
-    GC_thread_exit_proc(0); 
     REAL_FUNC(pthread_exit)(status);
 }
 #endif

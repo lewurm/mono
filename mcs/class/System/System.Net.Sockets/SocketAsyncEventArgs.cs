@@ -2,9 +2,10 @@
 //
 // Authors:
 //	Marek Habersack (mhabersack@novell.com)
-//	Gonzalo Paniagua Javier (gonzalo@novell.com)
+//	Gonzalo Paniagua Javier (gonzalo@xamarin.com)
 //
 // Copyright (c) 2008,2010 Novell, Inc. (http://www.novell.com)
+// Copyright (c) 2011 Xamarin, Inc. (http://xamarin.com)
 //
 
 //
@@ -37,9 +38,11 @@ namespace System.Net.Sockets
 {
 	public class SocketAsyncEventArgs : EventArgs, IDisposable
 	{
+		bool disposed;
+		int in_progress;
 		internal Socket.Worker Worker;
 		EndPoint remote_ep;
-#if MOONLIGHT || NET_4_0
+#if NET_4_0
 		public Exception ConnectByNameError { get; internal set; }
 #endif
 
@@ -60,7 +63,7 @@ namespace System.Net.Sockets
 		}
 
 		public int BytesTransferred { get; internal set; }
-		public int Count { get; private set; }
+		public int Count { get; internal set; }
 		public bool DisconnectReuseSocket { get; set; }
 		public SocketAsyncOperation LastOperation { get; private set; }
 		public int Offset { get; private set; }
@@ -78,20 +81,6 @@ namespace System.Net.Sockets
 		public SocketError SocketError { get; set; }
 		public SocketFlags SocketFlags { get; set; }
 		public object UserToken { get; set; }
-
-#if MOONLIGHT && !INSIDE_SYSTEM
-		private SocketClientAccessPolicyProtocol policy_protocol;
-
-		public SocketClientAccessPolicyProtocol SocketClientAccessPolicyProtocol {
-			get { return policy_protocol; }
-			set {
-				if ((value != SocketClientAccessPolicyProtocol.Tcp) && (value != SocketClientAccessPolicyProtocol.Http))
-					throw new ArgumentException ("Invalid value");
-				policy_protocol = value;
-			}
-		}
-#endif
-
 		internal Socket curSocket;
 #if NET_2_1
 		public Socket ConnectSocket {
@@ -134,10 +123,6 @@ namespace System.Net.Sockets
 			SocketError = SocketError.Success;
 			SocketFlags = SocketFlags.None;
 			UserToken = null;
-
-#if MOONLIGHT && !INSIDE_SYSTEM
-			policy_protocol = SocketClientAccessPolicyProtocol.Tcp;
-#endif
 		}
 
 		~SocketAsyncEventArgs ()
@@ -147,7 +132,11 @@ namespace System.Net.Sockets
 
 		void Dispose (bool disposing)
 		{
+			disposed = true;
+
 			if (disposing) {
+				if (disposed || Interlocked.CompareExchange (ref in_progress, 0, 0) != 0)
+					return;
 				if (Worker != null) {
 					Worker.Dispose ();
 					Worker = null;
@@ -171,6 +160,10 @@ namespace System.Net.Sockets
 
 		internal void SetLastOperation (SocketAsyncOperation op)
 		{
+			if (disposed)
+				throw new ObjectDisposedException ("System.Net.Sockets.SocketAsyncEventArgs");
+			if (Interlocked.Exchange (ref in_progress, 1) != 0)
+				throw new InvalidOperationException ("Operation already in progress");
 			LastOperation = op;
 		}
 
@@ -219,6 +212,8 @@ namespace System.Net.Sockets
 		static void DispatcherCB (IAsyncResult ares)
 		{
 			SocketAsyncEventArgs args = (SocketAsyncEventArgs) ares.AsyncState;
+			if (Interlocked.Exchange (ref args.in_progress, 0) != 1)
+				throw new InvalidOperationException ("No operation in progress");
 			SocketAsyncOperation op = args.LastOperation;
 			// Notes;
 			// 	-SocketOperation.AcceptReceive not used in SocketAsyncEventArgs
@@ -227,7 +222,6 @@ namespace System.Net.Sockets
 				args.ReceiveCallback (ares);
 			else if (op == SocketAsyncOperation.Send)
 				args.SendCallback (ares);
-#if !MOONLIGHT
 			else if (op == SocketAsyncOperation.ReceiveFrom)
 				args.ReceiveFromCallback (ares);
 			else if (op == SocketAsyncOperation.SendTo)
@@ -236,7 +230,6 @@ namespace System.Net.Sockets
 				args.AcceptCallback (ares);
 			else if (op == SocketAsyncOperation.Disconnect)
 				args.DisconnectCallback (ares);
-#endif
 			else if (op == SocketAsyncOperation.Connect)
 				args.ConnectCallback ();
 			/*
@@ -283,7 +276,6 @@ namespace System.Net.Sockets
 			}
 		}
 
-#if !MOONLIGHT
 		internal void AcceptCallback (IAsyncResult ares)
 		{
 			try {
@@ -337,8 +329,6 @@ namespace System.Net.Sockets
 				OnCompleted (this);
 			}
 		}
-
-#endif
 #endregion
 	}
 }

@@ -24,8 +24,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if !MOONLIGHT
-
 using System;
 using System.IO;
 using System.Text;
@@ -336,7 +334,7 @@ namespace System.Xml.Linq
 		public override bool MoveToNext ()
 		{
 			XNode xn = node.NextNode;
-			if (node is XText)
+			if (xn is XText)
 				for (; xn != null; xn = xn.NextNode)
 					if (!(xn.NextNode is XText))
 						break;
@@ -413,10 +411,12 @@ namespace System.Xml.Linq
 
 		public override void MoveToRoot ()
 		{
-			node = node.Document ?? node;
 			attr = null;
+			if (node.Document != null)
+				node = node.Document;
+			else
+				while (node.Owner != null)
+					node = node.Owner;
 		}
 	}
 }
-
-#endif

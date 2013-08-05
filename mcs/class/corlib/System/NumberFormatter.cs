@@ -108,6 +108,9 @@ namespace System
 
 		private NumberFormatInfo _nfi;
 
+		//part of the private stringbuffer
+		private char[] _cbuf;
+
 		private bool _NaN;
 		private bool _infinity;
 		private bool _isCustomFormat;
@@ -318,7 +321,7 @@ namespace System
 		//   _isCustomFormat, _specifierIsUpper, _specifier & _precision.
 		public NumberFormatter (Thread current)
 		{
-			_cbuf = new char [0];
+			_cbuf = EmptyArray<char>.Value;
 			if (current == null)
 				return;
 			CurrentCulture = current.CurrentCulture;
@@ -542,7 +545,7 @@ namespace System
 
 		#region Inner String Buffer
 
-		private char[] _cbuf;
+		//_cbuf moved to before other fields to improve layout
 		private int _ind;
 
 		private void ResetCharBuf (int size)
@@ -1953,19 +1956,19 @@ namespace System
 				int[] lens = new int [3];
 				int index = 0;
 				int lastPos = 0;
-				char literal = '\0';
+				bool quoted = false;
+
 				for (int i = 0; i < format.Length; i++) {
 					char c = format [i];
 
-					if (c == literal || (literal == '\0' && (c == '\"' || c == '\''))) {
-						if (literal == '\0')
-							literal = c;
-						else
-							literal = '\0';
+					if (c == '\"' || c == '\'') {
+						if (i == 0 || format [i - 1] != '\\')
+							quoted = !quoted;
+
 						continue;
 					}
 
-					if (literal == '\0' && format [i] == ';' && (i == 0 || format [i - 1] != '\\')) {
+					if (c == ';' && !quoted && (i == 0 || format [i - 1] != '\\')) {
 						lens [index++] = i - lastPos;
 						lastPos = i + 1;
 						if (index == 3)

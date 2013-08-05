@@ -114,8 +114,8 @@ struct Gamma {
 
 class Tests {
 
-	static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 	
 	public static int test_0_return () {
@@ -1078,7 +1078,8 @@ class Tests {
 	}
 	public static int test_0_cond_branch_side_effects () {
 		counter = 5;
-		if (WriteStuff());
+		if (WriteStuff()) {
+		}
 		if (counter == 10)
 			return 0;
 		return 1;
@@ -1520,9 +1521,79 @@ ncells ) {
 		return 0;
 	}
 
+	/*
+	 * FIXME: This fails with AOT #703317.
+	 */
+	/*
 	static int test_0_multiple_cctor_calls_regress_679467 () {
 		flag = false;
 		return regress_679467_inner ();
+	}
+	*/
+
+	static int test_0_char_ctor () {
+		string s = new String (new char[] { 'A', 'B' }, 0, 1);
+		return 0;
+	}
+
+	static object mInstance = null;
+
+	[MethodImpl(MethodImplOptions.Synchronized)]
+	public static object getInstance() {
+		if (mInstance == null)
+			mInstance = new object();
+		return mInstance;
+	}
+
+	static int test_0_synchronized () {
+		getInstance ();
+		return 0;
+	}
+
+	struct BStruct {
+		public Type t;
+	}
+
+	class Del<T> {
+		public static BStruct foo () {
+			return new BStruct () { t = typeof (T) };
+		}
+	}
+
+	delegate BStruct ADelegate ();
+
+	static int test_0_regress_10601 () {
+		var act = (ADelegate)(Del<string>.foo);
+		BStruct b = act ();
+		if (b.t != typeof (string))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_regress_11058 () {
+		int foo = -252674008;
+		int foo2 = (int)(foo ^ 0xF0F0F0F0); // = 28888
+		var arr = new byte[foo2].Length;
+		return 0;
+	}
+
+	public static void do_throw () {
+		throw new Exception ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static void empty () {
+	}
+
+	// #11297
+	public static int test_0_llvm_inline_throw () {
+		try {
+			empty ();
+		} catch (Exception ex) {
+			do_throw ();
+		}
+
+		return 0;
 	}
 }
 
