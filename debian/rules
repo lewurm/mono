@@ -367,16 +367,19 @@ binary-arch: build-stamp install-stamp test-stamp
 	dh_installexamples -s
 	dh_installexamples -pmono-jay $(CURDIR)/mcs/jay/skeleton.cs
 	dh_strip -pmono-runtime --dbg-package=mono-runtime-dbg
-	dh_strip -plibmono-2.0-1 --dbg-package=libmono-2.0-1-dbg
+	dh_strip -plibmonoboehm-2.0-1 --dbg-package=libmonoboehm-2.0-1-dbg
+	dh_strip -plibmonosgen-2.0-1 --dbg-package=libmonosgen-2.0-1-dbg
 	dh_strip -s -Xbin/mono-sgen
 	dh_compress -s -Xskeleton.cs
 
 	dh_fixperms -s
-	dpkg-gensymbols -plibmono-2.0-1 -edebian/tmp/usr/lib/libmono-2.0.so.1 -c4
+	dpkg-gensymbols -plibmonoboehm-2.0-1 -edebian/tmp/usr/lib/libmonoboehm-2.0.so.1 -c4
+	dpkg-gensymbols -plibmonosgen-2.0-1 -edebian/tmp/usr/lib/libmonosgen-2.0.so.1 -c4
 	dh_makeshlibs -s -V
-	dh_makeshlibs -plibmono-2.0-1 -V 'libmono-2.0-1 (>= $(UPVERSION))'
+	dh_makeshlibs -plibmonoboehm-2.0-1 -V 'libmonoboehm-2.0-1 (>= $(UPVERSION))'
+	dh_makeshlibs -plibmonosgen-2.0-1 -V 'libmonosgen-2.0-1 (>= $(UPVERSION))'
 	dh_installdeb -s
-	dh_shlibdeps -s -Xlibmono-profiler-cov -ldebian/libmono-2.0-1/usr/lib
+	dh_shlibdeps -s -Xlibmono-profiler-cov -ldebian/libmonoboehm-2.0-1/usr/lib -ldebian/libmonosgen-2.0-1/usr/lib
 	dh_gencontrol -s
 	dh_md5sums -s
 	dh_builddeb -s

@@ -131,7 +131,7 @@ Package: mono-utils
 Provides: cil-disassembler
 Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Replaces: mono-mcs (<= 1.1.6-4)
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmono-2.0-1 (= ${binary:Version}),
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version}),
  libmono-corlib4.5-cil (= ${source:Version}) | libmono-corlib2.0-cil (= ${source:Version})
 Description: Mono utilities
  Mono is a platform for running and developing applications based on the
@@ -179,11 +179,11 @@ Description: complete Mono runtime, development tools and all libraries
  You should build-depend on cli-common-dev and the needed libraries instead.
 
 Package: libmono-2.0-1
-Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Architecture: amd64 armel i386 ia64 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Replaces: libmono-dev (<= 1.1.6-4)
 Conflicts: mono-utils (<< 1.2.3.1-4)
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Mono JIT library
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version})
+Description: Mono JIT library (Default version)
  Shared library for Mono, used for embedding/hosting of the JIT.
  .
  Mono is a platform for running and developing applications based on the
@@ -192,13 +192,37 @@ Description: Mono JIT library
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
 
-Package: libmono-2.0-1-dbg
+Package: libmono-2.0-dev
+Architecture: amd64 armel i386 ia64 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${misc:Depends}, libmonoboehm-2.0-dev (= ${binary:Version})
+Description: Mono JIT library - Development files (Default version)
+ Header files and static libraries for libmono-2.0.
+ .
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+
+Package: libmonosgen-2.0-1
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Mono JIT library (SGen GC)
+ Shared library for Mono, used for embedding/hosting of the JIT.
+ .
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+
+Package: libmonosgen-2.0-1-dbg
 Priority: extra
 Section: debug
 Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
-Depends: ${misc:Depends}, libmono-2.0-1 (= ${binary:Version})
+Depends: ${misc:Depends}, libmonosgen-2.0-1 (= ${binary:Version})
 Recommends: gdb
-Description: Mono JIT library, debugging symbols
+Description: Mono JIT library, debugging symbols (SGen GC)
  This package contains the debugging symbols of the Mono JIT library.
  .
  Mono is a platform for running and developing applications based on the
@@ -207,11 +231,50 @@ Description: Mono JIT library, debugging symbols
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
 
-Package: libmono-2.0-dev
+Package: libmonosgen-2.0-dev
 Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
-Depends: ${misc:Depends}, libmono-2.0-1 (= ${binary:Version})
-Description: Mono JIT library - Development files
- Header files and static libraries for libmono-2.0.
+Depends: ${misc:Depends}, libmonosgen-2.0-1 (= ${binary:Version})
+Description: Mono JIT library - Development files (SGen GC)
+ Header files and static libraries for libmonosgen-2.0.
+ .
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+
+Package: libmonoboehm-2.0-1
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Mono JIT library (Boehm GC)
+ Shared library for Mono, used for embedding/hosting of the JIT.
+ .
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+
+Package: libmonoboehm-2.0-1-dbg
+Priority: extra
+Section: debug
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version})
+Recommends: gdb
+Description: Mono JIT library, debugging symbols (Boehm GC)
+ This package contains the debugging symbols of the Mono JIT library.
+ .
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+
+Package: libmonoboehm-2.0-dev
+Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Depends: ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version})
+Description: Mono JIT library - Development files (Boehm GC)
+ Header files and static libraries for libmonoboehm-2.0.
  .
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Novell.
@@ -2878,8 +2941,8 @@ Depends: ${misc:Depends},
          mono-gac (= ${source:Version}),
          mono-xbuild (= ${source:Version}),
          libmono-cil-dev (= ${source:Version}),
-         libmono-2.0-dev (>= ${source:Version}),
-         libmono-2.0-dev (<< ${source:Version}.1~),
+         libmonoboehm-2.0-dev (>= ${source:Version}),
+         libmonoboehm-2.0-dev (<< ${source:Version}.1~),
          pkg-config
 Description: Mono development tools
  Mono is a platform for running and developing applications based on the
