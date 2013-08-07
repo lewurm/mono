@@ -1,4 +1,3 @@
-/usr/bin/mono
 /etc/mono/browscap.ini
 /etc/mono/config
 /etc/mono/2.0/
@@ -7,6 +6,6 @@
 /usr/share/mono-2.0/mono/cil/cil-opcodes.xml
 /usr/lib/libMonoPosixHelper.so
 /usr/lib/libMonoSupportW.so
-debian/mono-runtime.png /usr/share/pixmaps
-debian/mono-runtime.desktop /usr/share/applications
+debian/mono-runtime-common.png /usr/share/pixmaps
+debian/mono-runtime-common.desktop /usr/share/applications
 debian/mono-runtime-terminal.desktop /usr/share/applications
