@@ -8,6 +8,10 @@
  * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
  */
 
+#include <config.h>
+
+#ifndef DISABLE_JIT
+
 #include "mini.h"
 
 #define SPILL_COST_INCREMENT (1 << (bb->nesting << 1))
@@ -486,14 +490,13 @@ mono_analyze_liveness (MonoCompile *cfg)
 
 	for (i = 0; i < cfg->num_bblocks; ++i) {
 		MonoBasicBlock *bb = cfg->bblocks [i];
-		guint32 rem, max;
+		guint32 max;
 		guint32 abs_pos = (bb->dfn << 16);
 		MonoMethodVar *vars = cfg->vars;
 
 		if (!bb->live_out_set)
 			continue;
 
-		rem = max_vars % BITS_PER_CHUNK;
 		max = ((max_vars + (BITS_PER_CHUNK -1)) / BITS_PER_CHUNK);
 		for (j = 0; j < max; ++j) {
 			gsize bits_in;
@@ -839,7 +842,7 @@ update_liveness2 (MonoCompile *cfg, MonoInst *ins, gboolean set_volatile, int in
 static void
 mono_analyze_liveness2 (MonoCompile *cfg)
 {
-	int bnum, idx, i, j, nins, rem, max, max_vars, block_from, block_to, pos, reverse_len;
+	int bnum, idx, i, j, nins, max, max_vars, block_from, block_to, pos, reverse_len;
 	gint32 *last_use;
 	static guint32 disabled = -1;
 	MonoInst **reverse;
@@ -890,7 +893,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 		
 		/* For variables in bb->live_out, set last_use to block_to */
 
-		rem = max_vars % BITS_PER_CHUNK;
 		max = ((max_vars + (BITS_PER_CHUNK -1)) / BITS_PER_CHUNK);
 		for (j = 0; j < max; ++j) {
 			gsize bits_out;
@@ -969,8 +971,6 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 
 #endif
 
-#ifdef HAVE_SGEN_GC
-
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 static inline void
@@ -1043,7 +1043,7 @@ get_vreg_from_var (MonoCompile *cfg, MonoInst *var)
 void
 mono_analyze_liveness_gc (MonoCompile *cfg)
 {
-	int idx, i, j, nins, rem, max, max_vars, block_from, block_to, pos, reverse_len;
+	int idx, i, j, nins, max, max_vars, block_from, block_to, pos, reverse_len;
 	gint32 *last_use;
 	MonoInst **reverse;
 	MonoMethodVar **vreg_to_varinfo = NULL;
@@ -1083,7 +1083,6 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		
 		/* For variables in bb->live_out, set last_use to block_to */
 
-		rem = max_vars % BITS_PER_CHUNK;
 		max = ((max_vars + (BITS_PER_CHUNK -1)) / BITS_PER_CHUNK);
 		for (j = 0; j < max; ++j) {
 			gsize bits_out;
@@ -1133,4 +1132,4 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 	g_free (vreg_to_varinfo);
 }
 
-#endif
+#endif /* DISABLE_JIT */

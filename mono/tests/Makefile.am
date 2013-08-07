@@ -1,4 +1,4 @@
-SUBDIRS = cas assemblyresolve
+SUBDIRS = cas assemblyresolve gc-descriptors
 
 check-local: test
 
@@ -13,7 +13,7 @@ JITTEST_PROG_RUN = MONO_SHARED_DIR=$(mono_build_root)/runtime MONO_CFG_DIR=$(mon
 
 RUNTIME_ARGS=--config tests-config --optimize=all --debug
 
-with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_2_0
+with_mono_path = MONO_PATH=$(mcs_topdir)/class/lib/net_4_5
 with_mono_path_moonlight = MONO_PATH=$(mcs_topdir)/class/lib/moonlight_raw
 
 RUNTIME = $(with_mono_path) $(top_builddir)/runtime/mono-wrapper
@@ -21,11 +21,10 @@ RUNTIME_MOONLIGHT = $(with_mono_path_moonlight) $(top_builddir)/runtime/mono-wra
 
 MKBUNDLE = \
 	PKG_CONFIG_PATH=$(top_builddir):$(PKG_CONFIG_PATH) \
-	$(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/mkbundle.exe
+	$(RUNTIME) $(mcs_topdir)/class/lib/net_4_5/mkbundle.exe
 
-MCS = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/gmcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
-SMCS = $(RUNTIME_MOONLIGHT) --runtime=moonlight --security=temporary-smcs-hack $(mcs_topdir)/class/lib/moonlight_raw/smcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219
-ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_2_0/ilasm.exe
+MCS = $(RUNTIME) $(mcs_topdir)/class/lib/build/mcs.exe -unsafe -nowarn:0162 -nowarn:0168 -nowarn:0219 -debug
+ILASM = $(RUNTIME) $(mcs_topdir)/class/lib/net_4_5/ilasm.exe
 
 BENCHSRC=fib.cs random.cs nested-loops.cs ackermann.cs tight-loop.cs sieve.cs
 
@@ -45,6 +44,7 @@ STRESS_TESTS_SRC=	\
 # Disabled until ?mcs is fixed
 #	bug-331958.cs
 BASE_TEST_CS_SRC=		\
+	bug-2907.cs		\
 	array-init.cs		\
 	arraylist.cs		\
 	assemblyresolve_event.cs	\
@@ -230,6 +230,7 @@ BASE_TEST_CS_SRC=		\
 	bug-78656.cs		\
 	bug-77127.cs		\
 	bug-323114.cs		\
+	bug-Xamarin-5278.cs	\
 	interlocked.cs		\
 	cross-domain.cs		\
 	appdomain-exit.cs	\
@@ -239,6 +240,7 @@ BASE_TEST_CS_SRC=		\
 	finalizer-abort.cs	\
 	finalizer-exception.cs	\
 	finalizer-exit.cs	\
+	finalizer-thread.cs	\
 	main-exit.cs	\
 	main-returns-abort-resetabort.cs	\
 	main-returns-background-abort-resetabort.cs	\
@@ -358,8 +360,6 @@ BASE_TEST_CS_SRC=		\
 	gchandles.cs	\
 	interlocked-3.cs	\
 	interlocked-4.2.cs	\
-	finalizer-wait.cs	\
-	critical-finalizers.cs	\
 	appdomain-thread-abort.cs \
 	xdomain-threads.cs	\
 	w32message.cs	\
@@ -371,7 +371,25 @@ BASE_TEST_CS_SRC=		\
 	bug-575941.cs	\
 	bug-599469.cs	\
 	bug-389886-3.cs \
-	monitor.cs
+	monitor.cs	\
+	dynamic-method-resurrection.cs	\
+	bug-666008.cs	\
+	bug-685908.cs	\
+	sgen-long-vtype.cs	\
+	delegate-invoke.cs	\
+	bug-696593.cs	\
+	bug-705140.cs	\
+	bug-1147.cs	\
+	mono-path.cs	\
+	bug-bxc-795.cs	\
+	bug-3903.cs	\
+	async-with-cb-throws.cs	\
+	appdomain-unload-doesnot-raise-pending-events.cs	\
+	bug-6148.cs	\
+	assembly_append_ordering.cs	\
+	bug-10127.cs	\
+	allow-synchronous-major.cs	\
+	unload-appdomain-on-shutdown.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -405,7 +423,7 @@ endif
 if X86
 
 if HOST_WIN32
-PLATFORM_DISABLED_TESTS=async-exc-compilation.exe
+PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe
 endif
 
 endif
@@ -419,17 +437,121 @@ if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
 endif
 
+if MIPS
+# monitor.exe is racy
+PLATFORM_DISABLED_TESTS=filter-stack.exe monitor.exe
+endif
+
+if S390x
+PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe
+#PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe exception17.exe
+endif
+
+if NACL_CODEGEN
+# Tests that use Thread.Abort()
+PLATFORM_DISABLED_TESTS= abort-stress-1.exe \
+                         abort-stress-2.exe \
+                         abort-stress-3.exe \
+                         appdomain-thread-abort.exe \
+                         async-exc-compilation.exe \
+                         bug-561239.exe \
+                         bug-70561.exe \
+                         finalizer-abort.exe \
+                         finally_guard.exe \
+                         main-returns-abort-resetabort.exe \
+                         main-returns-background-abort-resetabort.exe \
+                         thread6.exe \
+                         threadpool-exceptions5.exe \
+                         threadpool-exceptions6.exe
+
+# Tests that rely on AppDomain.Unload
+PLATFORM_DISABLED_TESTS+= appdomain-async-invoke.exe \
+                          appdomain-exit.exe \
+                          appdomain-unload-callback.exe \
+                          appdomain-unload.exe \
+                          domain-stress.exe \
+                          generic-unloading.2.exe \
+                          monitor.exe \
+                          remoting4.exe \
+                          threadpool-exceptions7.exe \
+                          xdomain-threads.exe
+
+# pinvoke2 attaches a thread to the runtime, but
+# doesn't 'unattach' it and it hangs in GC on exit
+PLATFORM_DISABLED_TESTS+= pinvoke2.exe
+
+# Tests that currently hang waiting for non-main threads
+# to exit in NaCl, need to investigate.  Most are AppDomain
+# creation and Delegate tests.
+PLATFORM_DISABLED_TESTS+= appdomain1.exe \
+                          delegate9.exe \
+                          marshal-valuetypes.exe \
+                          cross-domain.exe \
+                          stackframes-async.2.exe \
+                          generic-marshalbyref.2.exe \
+                          generic-xdomain.2.exe \
+                          bug-415577.exe
+
+# Tests that fail trying to write files (appdomain create mostly)
+PLATFORM_DISABLED_TESTS+= bug-335131.2.exe \
+                          bug-349190.2.exe \
+                          bug-80307.exe \
+                          bug-462592.exe
+
+# FIXME: don't know why delegate2.exe fails, it shouldn't
+PLATFORM_DISABLED_TESTS+= delegate2.exe
+
+# These tests newly fail with the latest revision. pinvoke3 fails because
+# of a thread attach, the others have not been investigated.  TODO revisit.
+PLATFORM_DISABLED_TESTS+= pinvoke3.exe \
+                          async_read.exe \
+                          async-with-cb-throws.exe \
+                          appdomain-unload-doesnot-raise-pending-events.exe \
+                          gsharing-valuetype-layout.exe
+
+if X86
+# FIXME: There are problems with async callbacks and results on NaCl 32-bit
+PLATFORM_DISABLED_TESTS+= delegate1.exe \
+                          delegate3.exe \
+                          delegate5.exe \
+                          delegate8.exe \
+                          threadpool.exe \
+                          threadpool1.exe \
+                          threadpool-exceptions3.exe \
+                          bug-323114.exe \
+                          delegate-exit.exe \
+                          bug-80392.2.exe
+
+# FIXME: These tests hang/fail for unknown reasons, deal with exiting
+PLATFORM_DISABLED_TESTS+= main-returns-background-resetabort.exe \
+                          main-returns-background.exe \
+                          main-returns-background-change.exe
+endif
+
+endif
+
 # The two finalizer tests only work under sgen
 # gc-altstack.exe fails under boehm because it has no support for altstack
 # bug-459094.exe creates an extremely deep directory tree
+# delegate-invoke.exe depends on 929c6bc9b6d76a273f251e6f5dfacac36e9c38bd which was
+# reverted.
 DISABLED_TESTS=			\
 	delegate-async-exception.exe	\
 	bug-348522.2.exe	\
-	finalizer-wait.exe	\
-	critical-finalizers.exe	\
-	gc-altstack.exe \
 	bug-459094.exe \
+	delegate-invoke.exe \
 	$(PLATFORM_DISABLED_TESTS)
+
+DISABLED_TESTS_WRENCH=	\
+	$(DISABLED_TESTS)	\
+	$(PLATFORM_DISABLED_TESTS_WRENCH)	\
+	main-returns-background-resetabort.exe \
+	main-returns-background-abort-resetabort.exe	\
+	thread6.exe	\
+	assemblyresolve_event3.exe \
+	delegate2.exe	\
+	finally_guard.exe \
+	gc-altstack.exe
 
 AOT_DISABLED_TESTS=constraints-load.exe
 
@@ -502,7 +624,10 @@ TEST_IL_SRC=			\
 	bug-515884.il	\
 	bug-633291.il	\
 	delegate-with-null-target.il	\
-	bug-318677.il
+	bug-318677.il	\
+	gsharing-valuetype-layout.il	\
+	invalid_generic_instantiation.il
+
 
 # pre-requisite test sources: files that are not test themselves
 # but that need to be compiled
@@ -549,21 +674,32 @@ test_platform: test-eglib-remap
 endif
 endif
 
+# Target to precompile the test executables
+tests: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS) $(GSHARED_TESTS)
+
 #
 # Test that no symbols are missed in eglib-remap.h
 #
 OK_G_SYMBOLS='g_list\|g_slist\|g_concat_dir_and_file'
+if NACL_CODEGEN
+test-eglib-remap:
+else
 test-eglib-remap:
 	@echo "Testing eglib remap..."
 	@if which nm > /dev/null; then if nm $(top_builddir)/mono/mini/mono | grep -v $(OK_G_SYMBOLS) | grep 't g_'; then exit 1; else exit 0; fi; fi
+endif
 
 #
 # Tests that the internals in mono/io-layer/messages.c are ok by triggering the 
 # code that checks that the table is properly sorted
 #
-test_messages: w32message.exe
+if NACL_CODEGEN
+test-messages:
+else
+test-messages: w32message.exe
 	> test_messages.zero
-	$(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
+	$(with_mono_path) $(JITTEST_PROG_RUN) w32message.exe >& w32message.allout && cmp test_messages.zero w32message.allout
+endif
 
 if MOONLIGHT
 test_2_1 : test-coreclr-security
@@ -571,9 +707,29 @@ else
 test_2_1 :
 endif
 
-# test_messages fails on the buildbots
-#test: assemblyresolve/test/asm.dll testjit test-type-load test-generic-sharing test_platform test_2_1 test_messages
-test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit
+if AMD64
+test-sgen : sgen-tests
+else
+if X86
+test-sgen : sgen-tests
+else
+if ARM
+test-sgen : sgen-tests
+else
+if S390x
+test-sgen : sgen-regular-tests
+endif
+endif
+endif
+endif
+
+test: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen test-messages rm-empty-logs
+test-wrench: assemblyresolve/test/asm.dll testjit-wrench test-generic-sharing test-type-load test_platform test_2_1 test-process-exit test-sgen test-messages rm-empty-logs
+
+# Remove empty .stdout and .stderr files for wrench
+rm-empty-logs:
+	@echo "Removing empty logs..."
+	@find . '(' -name "*.stdout" -o -name "*.stderr" ')' -empty -exec rm {} \;
 
 assemblyresolve/test/asm.dll:
 	$(MAKE) -C assemblyresolve prereq
@@ -585,7 +741,7 @@ test_cs: $(TEST_PROG) $(TESTSI_CS) libtest.la
 	@failed=0; \
 	passed=0; \
 	for i in $(TESTSI_CS); do	\
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -599,7 +755,7 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 	@failed=0; \
 	passed=0; \
 	for i in $(TESTSI_IL); do	\
-		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i "$(DISABLED_TESTS)" 'no-dump' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -611,8 +767,34 @@ test_il: $(TEST_PROG) $(TESTSI_IL) libtest.la
 
 testb: $(TEST_PROG) $(TESTBS)
 	for i in $(TESTBS); do	\
-		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS);	\
+		$(srcdir)/test-driver '$(with_mono_path) $(TEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS);	\
 	done
+
+runtest-wrench: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
+		rm -f $${i}.so; \
+		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS_WRENCH)' 'dump-output' $(RUNTIME_ARGS); \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			if [ $$? = 2 ]; then break; fi; \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+runtest-managed-wrench: test-runner.exe $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+	@$(RUNTIME) ./test-runner.exe -j a --disabled '$(DISABLED_TESTS_WRENCH)' $(TESTSI_CS) $(TESTBS) $(TESTSI_IL)
+
+testjit-wrench:
+	@if test x$(M) != x; then $(MAKE) runtest-managed-wrench; else $(MAKE) runtest-wrench; fi
 
 runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
 	@failed=0; \
@@ -621,7 +803,7 @@ runtest: $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQS
 	for i in $(TESTSI_CS) $(TESTBS) $(TESTSI_IL); do	\
 		rm -f $${i}.so; \
 		if [ x$(AOT) = x1 ]; then if echo $(AOT_DISABLED_TESTS) | grep -v -q $${i}; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $${i} > $${i}.aotlog 2>&1 || exit 1; fi; fi; \
-		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' $(RUNTIME_ARGS); \
+		if $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$i '$(DISABLED_TESTS)' 'no-dump' $(RUNTIME_ARGS); \
 		then \
 			passed=`expr $${passed} + 1`; \
 		else \
@@ -692,6 +874,88 @@ test-type-load: TestDriver.dll
 	@$(MCS) -t:library -out:t.dll $(srcdir)/t-missing.cs
 	@echo "Testing load-exception.exe..."
 	@$(RUNTIME) load-exceptions.exe > load-exceptions.exe.stdout 2> load-exceptions.exe.stderr
+
+
+EXTRA_DIST += sgen-bridge.cs sgen-descriptors.cs sgen-gshared-vtype.cs sgen-bridge-major-fragmentation.cs sgen-domain-unload.cs sgen-weakref-stress.cs sgen-cementing-stress.cs sgen-case-23400.cs 	finalizer-wait.cs critical-finalizers.cs
+
+
+#those are actually configurations, eg plain_sgen-descriptors.exe
+#DISABLE_SGEN_TESTS =
+
+SGEN_TESTS =	\
+	finalizer-wait.exe	\
+	critical-finalizers.exe	\
+	sgen-descriptors.exe	\
+	sgen-gshared-vtype.exe	\
+	sgen-domain-unload.exe	\
+	sgen-weakref-stress.exe	\
+	sgen-cementing-stress.exe	\
+	sgen-case-23400.exe
+
+SGEN_CONFIGURATIONS =	\
+	"|plain"	\
+	"major=marksweep-par|ms-par"	\
+	"major=marksweep-conc|ms-conc"	\
+	"major=marksweep-conc,minor=split|ms-conc-split"	\
+	"minor=split|ms-split"	\
+	"minor=split,alloc-ratio=95|ms-split-95"
+
+#FIXME We should move to use SGEN_CONFIGURATIONS once sgen supports trailling commas or its argument list.
+SGEN_BRIDGE_CONFIGURATIONS =	\
+	"|plain"	\
+	",major=marksweep-conc|ms-conc"	\
+	",minor=split|ms-split"
+
+sgen-regular-tests: $(SGEN_TESTS)
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for test in $+; do	\
+		echo "...$$test";	\
+		for conf in $(SGEN_CONFIGURATIONS); do 	\
+			name=`echo $$conf | cut -d\| -f 2`;	\
+			params=`echo $$conf | cut -d\| -f 1`;	\
+			test_name="$${test}|$${name}";	\
+			if MONO_GC_PARAMS="$$params" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" 'dump-output' $(RUNTIME_ARGS);	\
+			then \
+				passed=`expr $${passed} + 1`; \
+			else \
+				if [ $$? = 2 ]; then break; fi; \
+				failed=`expr $${failed} + 1`; \
+				failed_tests="$${failed_tests} $$test_name"; \
+			fi \
+		done	\
+	done;	\
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+sgen-bridge-tests: sgen-bridge.exe sgen-bridge-major-fragmentation.exe
+	@failed=0; \
+	passed=0; \
+	failed_tests="";\
+	for test in $+; do	\
+		echo "...$$test";	\
+		for conf in $(SGEN_BRIDGE_CONFIGURATIONS); do 	\
+			name=`echo $$conf | cut -d\| -f 2`;	\
+			params=`echo $$conf | cut -d\| -f 1`;	\
+			test_name="$${test}|$${name}";	\
+			if MONO_GC_PARAMS="bridge=Bridge$${params}" MONO_ENV_OPTIONS="--gc=sgen" $(srcdir)/test-driver '$(with_mono_path) $(JITTEST_PROG_RUN)' $$test_name "$(DISABLED_TESTS_SGEN)" 'dump-output' $(RUNTIME_ARGS);	\
+			then \
+				passed=`expr $${passed} + 1`; \
+			else \
+				if [ $$? = 2 ]; then break; fi; \
+				failed=`expr $${failed} + 1`; \
+				failed_tests="$${failed_tests} $$test_name"; \
+			fi \
+		done	\
+	done;	\
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass."; \
+	if [ $${failed} != 0 ]; then echo -e "\nFailed tests:\n"; \
+	  for i in $${failed_tests}; do echo $${i}; done; exit 1; fi
+
+sgen-tests: sgen-regular-tests sgen-bridge-tests
+
 
 # Generated tests for runtime invoke
 EXTRA_DIST += gen-runtime-invoke.cs
@@ -816,6 +1080,9 @@ generic-delegate2-lib.2.dll : generic-delegate2-lib.2.il
 generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
+bug-3903.exe: bug-3903.cs
+	$(MCS) -sdk:2 $(srcdir)/bug-3903.cs -out:$@
+
 gshared: test-generic-sharing
 
 gshared-aot:
@@ -846,7 +1113,8 @@ GSHARED_TESTS = \
 		generic-stack-traces.2.exe generic-stack-traces2.2.exe		\
 		bug-472600.2.exe bug-473482.2.exe bug-473999.2.exe		\
 		bug-479763.2.exe generic-xdomain.2.exe				\
-		generic-type-load-exception.2.exe bug-616463.exe
+		generic-type-load-exception.2.exe bug-616463.exe	\
+		bug-1147.exe
 
 test-generic-sharing-normal: $(GSHARED_TESTS)
 	@for fn in $+ ; do	\
@@ -861,10 +1129,12 @@ test-generic-sharing-normal: $(GSHARED_TESTS)
 test-generic-sharing-managed: test-runner.exe $(GSHARED_TESTS)
 	@$(RUNTIME) ./test-runner.exe -j a --opt-sets "gshared gshared,shared gshared,-inline gshared,-inline,shared" $(GSHARED_TESTS)
 
+if NACL_CODEGEN
+test-generic-sharing:
+else
 test-generic-sharing:
 	@if test x$(M) != x; then $(MAKE) test-generic-sharing-managed; else $(MAKE) test-generic-sharing-normal; fi
-
-EXTRA_DIST += delegate2.exe.config
+endif
 
 EXTRA_DIST += async-exceptions.cs
 async-exceptions.exe : async-exceptions.cs
@@ -886,12 +1156,21 @@ patch-libtool:
 	sed -e 's,LIBTOOL =,LIBTOOL2 =,g' Makefile > 2 && echo "LIBTOOL = bash ./libtool" > 1 && cat 1 2 > Makefile
 	touch libtest.c
 
-EXTRA_DIST += bug-438454.cs bug-438454.exe.stdout.expected
+
+if NACL_CODEGEN
+test-process-exit:
+else
+EXTRA_DIST += bug-438454.cs bug-438454.exe.stdout.expected threadpool-in-processexit.cs threadpool-in-processexit.exe.stdout.expected
 test-process-exit:
 	@$(MCS) $(srcdir)/bug-438454.cs -out:bug-438454.exe
 	@echo "Testing bug-438454.exe..."
 	@$(RUNTIME) bug-438454.exe > bug-438454.exe.stdout
-	@diff bug-438454.exe.stdout $(srcdir)/bug-438454.exe.stdout.expected
+	@diff -w bug-438454.exe.stdout $(srcdir)/bug-438454.exe.stdout.expected
+	@$(MCS) $(srcdir)/threadpool-in-processexit.cs -out:threadpool-in-processexit.exe
+	@echo "Testing threadpool-in-processexit.exe..."
+	@$(RUNTIME) threadpool-in-processexit.exe > threadpool-in-processexit.exe.stdout
+	@diff -w threadpool-in-processexit.exe.stdout $(srcdir)/threadpool-in-processexit.exe.stdout.expected
+endif
 
 OOM_TESTS =	\
 	gc-oom-handling.exe	\
@@ -909,7 +1188,7 @@ test-oom: $(OOM_TESTS)
 
 noinst_LTLIBRARIES = libtest.la
 
-INCLUDES = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
+AM_CPPFLAGS = $(GLIB_CFLAGS) $(GMODULE_CFLAGS)
 
 if HOST_WIN32
 # gcc-3.4.4 emits incorrect code when making indirect calls to stdcall functions using a tail call
@@ -922,6 +1201,6 @@ else
 libtest_la_LDFLAGS = -rpath `pwd`
 endif
 libtest_la_SOURCES = libtest.c
-libtest_la_LIBADD = $(GLIB_LIBS)
+libtest_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
 
 CLEANFILES = $(TESTSI_CS) $(TESTSI_IL) $(STRESS_TESTS) *.dll *.stdout *.aotlog *.exe stest.dat

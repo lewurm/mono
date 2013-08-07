@@ -1,1 +1,1 @@
-#define FULL_VERSION "mono-2-10/6922ed8"
+#define FULL_VERSION "(no/f3f789e"

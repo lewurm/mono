@@ -26,8 +26,8 @@ using System.Runtime.CompilerServices;
 
 class Tests {
 
-	public static int Main () {
-		return TestDriver.RunTests (typeof (Tests));
+	public static int Main (string[] args) {
+		return TestDriver.RunTests (typeof (Tests), args);
 	}
 
 	public static int test_0_catch () {
@@ -1455,6 +1455,7 @@ class Tests {
 		return 0;
 	}
 	
+	[Category ("NaClDisable")]
 	public static int test_0_div_zero () {
 		int d = 1;
 		int q = 0;
@@ -1560,6 +1561,7 @@ class Tests {
 		return 0;
 	}
 
+	[Category ("NaClDisable")]
 	public static int test_0_long_div_zero () {
 		long d = 1;
 		long q = 0;
@@ -2344,6 +2346,8 @@ class Tests {
 	}
 
 	/* Test that arguments are correctly popped off the stack during unwinding */
+	/* FIXME: Fails on x86 when llvm is enabled (#5432) */
+	/*
 	public static int test_0_stack_unwind () {
 		addr = new IntPtr [1000];
 		S s = new S ();
@@ -2356,6 +2360,7 @@ class Tests {
 		}
 		return (addr [0].ToInt64 () - addr [100].ToInt64 () < 100) ? 0 : 1;
 	}
+	*/
 
 	static unsafe void get_sp (int i) {
 		addr [i] = new IntPtr (&i);

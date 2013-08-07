@@ -6,7 +6,7 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
- * Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+ * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  */
 
 #include <config.h>
@@ -21,7 +21,7 @@
 #include <mono/metadata/gc-internal.h>
 #include <string.h>
 
-#define DATA_TABLE_CHUNK_SIZE		16384
+#define DATA_TABLE_CHUNK_SIZE		(16384-sizeof (MonoDebugDataChunk))
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -198,7 +198,10 @@ lookup_data_table (MonoDomain *domain)
 	MonoDebugDataTable *table;
 
 	table = g_hash_table_lookup (data_table_hash, domain);
-	g_assert (table);
+	if (!table) {
+		g_error ("lookup_data_table () failed for %p\n", domain);
+		g_assert (table);
+	}
 	return table;
 }
 
@@ -649,6 +652,12 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	for (i = 0; i < jit->num_locals; i++)
 		write_variable (&jit->locals [i], ptr, &ptr);
 
+	*ptr++ = jit->gsharedvt_info_var ? 1 : 0;
+	if (jit->gsharedvt_info_var) {
+		write_variable (jit->gsharedvt_info_var, ptr, &ptr);
+		write_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+	}
+
 	size = ptr - oldptr;
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
@@ -824,6 +833,8 @@ mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
 	g_free (jit->this_var);
 	g_free (jit->params);
 	g_free (jit->locals);
+	g_free (jit->gsharedvt_info_var);
+	g_free (jit->gsharedvt_locals_var);
 	g_free (jit);
 }
 
@@ -867,6 +878,13 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 	for (i = 0; i < jit->num_locals; i++)
 		read_variable (&jit->locals [i], ptr, &ptr);
+
+	if (*ptr++) {
+		jit->gsharedvt_info_var = g_new0 (MonoDebugVarInfo, 1);
+		jit->gsharedvt_locals_var = g_new0 (MonoDebugVarInfo, 1);
+		read_variable (jit->gsharedvt_info_var, ptr, &ptr);
+		read_variable (jit->gsharedvt_locals_var, ptr, &ptr);
+	}
 
 	return jit;
 }
