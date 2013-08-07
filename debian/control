@@ -331,6 +331,48 @@ Depends: ${misc:Depends},
          libmono-db2-1.0-cil (= ${source:Version}),
          libmono-debugger-soft2.0-cil (= ${source:Version}),
          libmono-debugger-soft4.0-cil (= ${source:Version}),
+         libmono-facades-system-collections-concurrent-cil (= ${source:Version}),
+         libmono-facades-system-collections-cil (= ${source:Version}),
+         libmono-facades-system-componentmodel-annotations-cil (= ${source:Version}),
+         libmono-facades-system-componentmodel-eventbasedasync-cil (= ${source:Version}),
+         libmono-facades-system-componentmodel-cil (= ${source:Version}),
+         libmono-facades-system-diagnostics-contracts-cil (= ${source:Version}),
+         libmono-facades-system-diagnostics-debug-cil (= ${source:Version}),
+         libmono-facades-system-diagnostics-tools-cil (= ${source:Version}),
+         libmono-facades-system-dynamic-runtime-cil (= ${source:Version}),
+         libmono-facades-system-globalization-cil (= ${source:Version}),
+         libmono-facades-system-io-cil (= ${source:Version}),
+         libmono-facades-system-linq-cil (= ${source:Version}),
+         libmono-facades-system-linq-expressions-cil (= ${source:Version}),
+         libmono-facades-system-linq-parallel-cil (= ${source:Version}),
+         libmono-facades-system-linq-queryable-cil (= ${source:Version}),
+         libmono-facades-system-net-networkinformation-cil (= ${source:Version}),
+         libmono-facades-system-net-primitives-cil (= ${source:Version}),
+         libmono-facades-system-net-requests-cil (= ${source:Version}),
+         libmono-facades-system-objectmodel-cil (= ${source:Version}),
+         libmono-facades-system-reflection-cil (= ${source:Version}),
+         libmono-facades-system-reflection-extensions-cil (= ${source:Version}),
+         libmono-facades-system-reflection-primitives-cil (= ${source:Version}),
+         libmono-facades-system-resources-resourcemanager-cil (= ${source:Version}),
+         libmono-facades-system-runtime-cil (= ${source:Version}),
+         libmono-facades-system-runtime-extensions-cil (= ${source:Version}),
+         libmono-facades-system-runtime-interopservices-cil (= ${source:Version}),
+         libmono-facades-system-runtime-numerics-cil (= ${source:Version}),
+         libmono-facades-system-runtime-serialization-json-cil (= ${source:Version}),
+         libmono-facades-system-runtime-serialization-primitives-cil (= ${source:Version}),
+         libmono-facades-system-runtime-serialization-xml-cil (= ${source:Version}),
+         libmono-facades-system-security-principal-cil (= ${source:Version}),
+         libmono-facades-system-servicemodel-http-cil (= ${source:Version}),
+         libmono-facades-system-servicemodel-primitives-cil (= ${source:Version}),
+         libmono-facades-system-text-encoding-cil (= ${source:Version}),
+         libmono-facades-system-text-encoding-extensions-cil (= ${source:Version}),
+         libmono-facades-system-text-regularexpressions-cil (= ${source:Version}),
+         libmono-facades-system-threading-cil (= ${source:Version}),
+         libmono-facades-system-threading-tasks-cil (= ${source:Version}),
+         libmono-facades-system-threading-tasks-parallel-cil (= ${source:Version}),
+         libmono-facades-system-xml-readerwriter-cil (= ${source:Version}),
+         libmono-facades-system-xml-xdocument-cil (= ${source:Version}),
+         libmono-facades-system-xml-xmlserializer-cil (= ${source:Version}),
          libmono-http4.0-cil (= ${source:Version}),
          libmono-i18n2.0-cil (= ${source:Version}),
          libmono-i18n4.0-all (= ${source:Version}),
@@ -687,6 +729,605 @@ Description: Mono Web Browser library (for CLI 4.0)
  .
  This package contains the implementation of the WebControl class based on the
  Mozilla engine using libgluezilla for CLI 4.0.
+
+Package: libmono-facades-system-collections-concurrent-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Collections.Concurrent
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Collections.Concurrent Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-collections-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Collections
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Collections Facade library for CLI 4.0, which 
+ is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-componentmodel-annotations-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.ComponentModel.Annotations
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ComponentModel.Annotations Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-componentmodel-eventbasedasync-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.ComponentModel.EventBasedAsync
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ComponentModel.EventBasedAsync Facade library 
+ for CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-componentmodel-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.ComponentModel
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ComponentModel Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-diagnostics-contracts-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Diagnostics.Contracts
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Diagnostics.Contracts Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-diagnostics-debug-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Diagnostics.Debug
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Diagnostics.Debug Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-diagnostics-tools-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Diagnostics.Tools
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Diagnostics.Tools Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-dynamic-runtime-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Dynamic.Runtime
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Dynamic.Runtime Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-globalization-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Globalization
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Globalization Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-io-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.IO
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.IO Facade library for CLI 4.0, which is for 
+ use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-linq-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Linq
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Linq Facade library for CLI 4.0, which is for 
+ use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-linq-expressions-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Linq.Expressions
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Linq.Expressions Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-linq-parallel-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Linq.Parallel
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Linq.Parallel Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-linq-queryable-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Linq.Queryable
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Linq.Queryable Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-net-networkinformation-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Net.NetworkInformation
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Net.NetworkInformation Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-net-primitives-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Net.Primitives
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Net.Primitives Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-net-requests-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Net.Requests
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Net.Requests Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-objectmodel-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.ObjectModel
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ObjectModel Facade library for CLI 4.0, which 
+ is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-reflection-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Reflection
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reflection Facade library for CLI 4.0, which 
+ is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-reflection-extensions-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Reflection.Extensions
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reflection.Extensions Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-reflection-primitives-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Reflection.Primitives
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Reflection.Primitives Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-resources-resourcemanager-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Resources.ResourceManager
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Resources.ResourceManager Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-runtime-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime Facade library for CLI 4.0, which is 
+ for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-runtime-extensions-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime.Extensions
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime.Extensions Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-runtime-interopservices-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime.InteropServices
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime.InteropServices Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-runtime-numerics-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime.Numerics
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime.Numerics Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-runtime-serialization-json-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime.Serialization.Json
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime.Serialization.Json Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-runtime-serialization-primitives-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime.Serialization.Primitives
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime.Serialization.Primitives Facade 
+ library for CLI 4.0, which is for use with Portable Class Library assemblies 
+ from Microsoft.
+
+Package: libmono-facades-system-runtime-serialization-xml-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Runtime.Serialization.Xml
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Runtime.Serialization.Xml Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-security-principal-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Security.Principal
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Security.Principal Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-servicemodel-http-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.ServiceModel.Http
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ServiceModel.Http Facade library for CLI 
+ 4.0, which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-servicemodel-primitives-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.ServiceModel.Primitives
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ServiceModel.Primitives Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-text-encoding-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Text.Encoding
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Text.Encoding Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-text-encoding-extensions-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Text.Encoding.Extensions
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Text.Encoding.Extensions Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-text-regularexpressions-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Text.RegularExpressions
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Text.RegularExpressions Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-threading-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Threading
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Threading Facade library for CLI 4.0, which 
+ is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-threading-tasks-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Threading.Tasks
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Threading.Tasks Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-threading-tasks-parallel-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Threading.Tasks.Parallel
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Threading.Tasks.Parallel Facade library for 
+ CLI 4.0, which is for use with Portable Class Library assemblies from 
+ Microsoft.
+
+Package: libmono-facades-system-xml-readerwriter-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Xml.ReaderWriter
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Xml.ReaderWriter Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-xml-xdocument-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Xml.XDocument
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Xml.XDocument Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
+
+Package: libmono-facades-system-xml-xmlserializer-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Facades (PCL) library - System.Xml.XmlSerializer
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.Xml.XmlSerializer Facade library for CLI 4.0, 
+ which is for use with Portable Class Library assemblies from Microsoft.
 
 Package: libmono-management2.0-cil
 Architecture: all
