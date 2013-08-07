@@ -324,7 +324,7 @@ Depends: ${misc:Depends},
          libmono-corlib4.0-cil (= ${source:Version}),
          libmono-corlib4.5-cil (= ${source:Version}),
          libmono-cscompmgd8.0-cil (= ${source:Version}),
-         libmono-csharp4.0-cil (= ${source:Version}),
+         libmono-csharp4.0a-cil (= ${source:Version}),
          libmono-custommarshalers4.0-cil (= ${source:Version}),
          libmono-data-tds2.0-cil (= ${source:Version}),
          libmono-data-tds4.0-cil (= ${source:Version}),
@@ -548,7 +548,9 @@ Description: Mono.CompilerServices.SymbolWriter library (for CLI 4.0)
  This package contains the Mono.CompilerServices.SymbolWriter library
  for CLI 4.0.
 
-Package: libmono-csharp4.0-cil
+Package: libmono-csharp4.0a-cil
+Conflicts: libmono-csharp4.0-cil (<< 3.2.1)
+Replaces: libmono-csharp4.0-cil (<< 3.2.1)
 Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.CSharp library (for CLI 4.0)
