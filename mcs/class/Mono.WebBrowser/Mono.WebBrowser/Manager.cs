@@ -52,8 +52,15 @@ namespace Mono.WebBrowser
 				}
 			}
 #endif
-			if (browserEngine == null || browserEngine == "mozilla")
-				return new Mono.Mozilla.WebBrowser (platform);
+			if (browserEngine == "mozilla") {
+				try {
+					return new Mono.Mozilla.WebBrowser (platform);
+				} catch {
+					browserEngine = null;
+				}
+			}
+			if (browserEngine == null)
+				return new Mono.NullBrowser.WebBrowser (platform);
 			throw new Exception (Mono.WebBrowser.Exception.ErrorCodes.EngineNotSupported, browserEngine);
 		}
 
