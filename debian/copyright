@@ -163,6 +163,7 @@ Copyright: © 2001 Andreas Jonsson
            © 2009 Eric Maupin (http://www.ermau.com)
            © 2009 leppie (http://xacc.wordpress.com/)
            © 2009 Olivier Dufour olivier(dot)duff(at)gmail(dot)com
+           © 2011-2013 Xamarin Inc (http://www.xamarin.com)
 License: MIT
 
 Files: debian/*
@@ -193,6 +194,7 @@ Copyright: © 1995-1997 Peter Mattis, Spencer Kimball and Josh MacDonald
            © 2007 Randolph Chung
            © 2007-2008 Andreas Faerber
            © 2008 Kornél Pál
+           © 2011-2012 Xamarin Inc (http://www.xamarin.com)
 License: LGPL-2
 
 Files: libgc/*
