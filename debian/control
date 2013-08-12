@@ -37,7 +37,7 @@ Depends: ${shlibs:Depends},
          mono-gac (= ${source:Version})
 Description: Mono runtime - common files
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -55,7 +55,7 @@ Depends: ${shlibs:Depends},
          mono-runtime-sgen (= ${binary:Version})
 Description: Mono runtime - default version
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -76,7 +76,7 @@ Depends: ${shlibs:Depends},
 Homepage: http://www.mono-project.com/Compacting_GC
 Description: Mono runtime - SGen
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -97,7 +97,7 @@ Depends: ${shlibs:Depends},
          mono-runtime-common (= ${binary:Version})
 Description: Mono runtime - Boehm
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -120,7 +120,7 @@ Depends: ${misc:Depends}, mono-runtime-sgen (= ${binary:Version}), mono-runtime-
 Recommends: gdb
 Description: Mono runtime, debugging symbols
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -135,7 +135,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Vers
  libmono-corlib4.5-cil (= ${source:Version}) | libmono-corlib2.0-cil (= ${source:Version})
 Description: Mono utilities
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -164,7 +164,7 @@ Depends: ${misc:Depends},
          libmono-cil-dev (= ${source:Version})
 Description: complete Mono runtime, development tools and all libraries
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -187,7 +187,7 @@ Description: Mono JIT library (Default version)
  Shared library for Mono, used for embedding/hosting of the JIT.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -199,7 +199,7 @@ Description: Mono JIT library - Development files (Default version)
  Header files and static libraries for libmono-2.0.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -211,7 +211,7 @@ Description: Mono JIT library (SGen GC)
  Shared library for Mono, used for embedding/hosting of the JIT.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -226,7 +226,7 @@ Description: Mono JIT library, debugging symbols (SGen GC)
  This package contains the debugging symbols of the Mono JIT library.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -238,7 +238,7 @@ Description: Mono JIT library - Development files (SGen GC)
  Header files and static libraries for libmonosgen-2.0.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -250,7 +250,7 @@ Description: Mono JIT library (Boehm GC)
  Shared library for Mono, used for embedding/hosting of the JIT.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -265,7 +265,7 @@ Description: Mono JIT library, debugging symbols (Boehm GC)
  This package contains the debugging symbols of the Mono JIT library.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -277,7 +277,7 @@ Description: Mono JIT library - Development files (Boehm GC)
  Header files and static libraries for libmonoboehm-2.0.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -291,7 +291,7 @@ Description: Mono profiler libraries
  For details how to use them, please take a look at the mono manpage.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -515,7 +515,7 @@ Description: Mono Base Class Libraries (BCL) - Development files
  This package contains development headers for the Mono Base Class Libraries.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -526,7 +526,7 @@ Replaces: mono-classlib-2.0 (<< 1.1.13.6), mono-classlib-2.0-dbg (<< 1.1.13.6)
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono libraries (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -543,7 +543,7 @@ Replaces: libmono2.0-cil (<< 2.0)
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.Posix library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -556,7 +556,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.Posix library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -570,7 +570,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono.CodeContracts library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -582,7 +582,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.CompilerServices.SymbolWriter library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -597,7 +597,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.CSharp library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -609,7 +609,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: EntityFramework library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -623,7 +623,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: EntityFramework.SqlServer library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -638,7 +638,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.Http library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -650,7 +650,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.Web library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -662,7 +662,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono OpenSystem.C library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -675,7 +675,7 @@ Replaces: libmono1.0-cil (<< 2.4)
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.Cecil library
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -689,7 +689,7 @@ Replaces: mono-classlib-2.0 (<< 1.1.13.6), mono-classlib-2.0-dbg (<< 1.1.13.6), 
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono C5 library
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -705,7 +705,7 @@ Depends: ${misc:Depends},
 Recommends: ${cli:Recommends}
 Description: Mono Web Browser library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -722,7 +722,7 @@ Depends: ${misc:Depends},
 Recommends: ${cli:Recommends}
 Description: Mono Web Browser library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -736,7 +736,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Collections.Concurrent
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -750,7 +750,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Collections
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -764,7 +764,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.ComponentModel.Annotations
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -779,7 +779,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.ComponentModel.EventBasedAsync
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -794,7 +794,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.ComponentModel
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -808,7 +808,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Diagnostics.Contracts
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -822,7 +822,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Diagnostics.Debug
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -836,7 +836,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Diagnostics.Tools
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -850,7 +850,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Dynamic.Runtime
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -864,7 +864,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Globalization
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -878,7 +878,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.IO
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -892,7 +892,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Linq
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -906,7 +906,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Linq.Expressions
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -920,7 +920,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Linq.Parallel
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -934,7 +934,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Linq.Queryable
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -948,7 +948,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Net.NetworkInformation
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -962,7 +962,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Net.Primitives
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -976,7 +976,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Net.Requests
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -990,7 +990,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.ObjectModel
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1004,7 +1004,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Reflection
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1018,7 +1018,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Reflection.Extensions
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1032,7 +1032,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Reflection.Primitives
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1046,7 +1046,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Resources.ResourceManager
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1061,7 +1061,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1075,7 +1075,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime.Extensions
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1089,7 +1089,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime.InteropServices
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1104,7 +1104,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime.Numerics
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1118,7 +1118,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime.Serialization.Json
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1133,7 +1133,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime.Serialization.Primitives
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1148,7 +1148,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Runtime.Serialization.Xml
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1163,7 +1163,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Security.Principal
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1177,7 +1177,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.ServiceModel.Http
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1191,7 +1191,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.ServiceModel.Primitives
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1206,7 +1206,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Text.Encoding
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1220,7 +1220,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Text.Encoding.Extensions
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1235,7 +1235,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Text.RegularExpressions
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1250,7 +1250,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Threading
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1264,7 +1264,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Threading.Tasks
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1278,7 +1278,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Threading.Tasks.Parallel
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1293,7 +1293,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Xml.ReaderWriter
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1307,7 +1307,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Xml.XDocument
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1321,7 +1321,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Facades (PCL) library - System.Xml.XmlSerializer
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1335,7 +1335,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Management library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1350,7 +1350,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Management library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1366,7 +1366,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/SystemMessaging
 Description: Mono Messaging library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1382,7 +1382,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/SystemMessaging
 Description: Mono Messaging library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1398,7 +1398,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/SystemMessaging
 Description: Mono Messaging RabbitMQ library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler
  and
  runtime, which can produce and execute CIL (Common Intermediate Language)
@@ -1413,7 +1413,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/SystemMessaging
 Description: Mono Messaging RabbitMQ library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler
  and
  runtime, which can produce and execute CIL (Common Intermediate Language)
@@ -1428,7 +1428,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/SystemMessaging
 Description: Mono RabbitMQ.Client library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler
  and
  runtime, which can produce and execute CIL (Common Intermediate Language)
@@ -1443,7 +1443,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/SystemMessaging
 Description: Mono RabbitMQ.Client library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler
  and
  runtime, which can produce and execute CIL (Common Intermediate Language)
@@ -1458,7 +1458,7 @@ Depends: ${misc:Depends},
 Homepage: http://go-mono.com/docs/index.aspx?tlink=0@N%3aMono.Simd
 Description: Mono SIMD (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1474,7 +1474,7 @@ Depends: ${misc:Depends},
 Homepage: http://go-mono.com/docs/index.aspx?tlink=0@N%3aMono.Simd
 Description: Mono SIMD (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1493,7 +1493,7 @@ Recommends: libmono-i18n-west2.0-cil
 Suggests: libmono-i18n2.0-cil
 Description: Mono core library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1514,7 +1514,7 @@ Recommends: libmono-i18n-west4.0-cil
 Suggests: libmono-i18n4.0-all
 Description: Mono core library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1535,7 +1535,7 @@ Recommends: libmono-i18n-west4.0-cil
 Suggests: libmono-i18n4.0-all
 Description: Mono core library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1558,7 +1558,7 @@ Depends: ${misc:Depends},
          libmono-i18n-west4.0-cil (= ${source:Version}),
 Description: Mono I18N libraries (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1573,7 +1573,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono I18N libraries (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1588,7 +1588,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono I18N base library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1603,7 +1603,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono I18N.CJK library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1616,7 +1616,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono I18N.MidEast library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1629,7 +1629,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono I18N.Other library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1642,7 +1642,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono I18N.Rare library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1656,7 +1656,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono I18N.West library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1674,7 +1674,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono I18N.West library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1689,7 +1689,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono.Parallel library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1706,7 +1706,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono System libraries (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1721,7 +1721,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono System libraries (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1734,7 +1734,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.ComponentModel.Composition library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1748,7 +1748,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.ComponentModel.DataAnnotations library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1763,7 +1763,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono System.Configuration library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1776,7 +1776,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Configuration.Install library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1790,7 +1790,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Core library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1804,7 +1804,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Drawing library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1817,7 +1817,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Dynamic library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1830,7 +1830,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.EnterpriseServices library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1843,7 +1843,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Json library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1857,7 +1857,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Management library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1870,7 +1870,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Net library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1883,7 +1883,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Net.Http library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1896,7 +1896,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Net.Http.Formatting library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1909,7 +1909,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Numerics library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1922,7 +1922,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Security library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1935,7 +1935,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.ServiceProcess library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1948,7 +1948,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Threading.Tasks.Dataflow library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1962,7 +1962,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Transactions library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1975,7 +1975,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Xml library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -1988,7 +1988,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Xml.Linq library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2002,7 +2002,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono CustomMarshalers library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2017,7 +2017,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Messaging Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2030,7 +2030,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Messaging library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2044,7 +2044,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Security library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2057,7 +2057,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Security library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2071,7 +2071,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Data Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler
  and
  runtime, which can produce and execute CIL (Common Intermediate Language)
@@ -2085,7 +2085,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Data Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler
  and
  runtime, which can produce and execute CIL (Common Intermediate Language)
@@ -2101,7 +2101,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Data Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2115,7 +2115,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Data library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2128,7 +2128,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Data.DataSetExtensions library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2143,7 +2143,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.Data.Services library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2160,7 +2160,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.Data.Services.Client library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2178,7 +2178,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Data.Linq Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2193,7 +2193,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Data.Linq Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2208,7 +2208,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Drawing.Design (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2221,7 +2221,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Design Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2235,7 +2235,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.IdentityModel Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2252,7 +2252,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.IdentityModel.Selectors Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2269,7 +2269,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Core Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2284,7 +2284,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Debugger Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2299,7 +2299,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Experimental Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2314,7 +2314,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Interfaces Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2329,7 +2329,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Linq Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2344,7 +2344,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.PlatformServices Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2359,7 +2359,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Providers Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2374,7 +2374,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Runtime.Remoting Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2389,7 +2389,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Windows.Forms Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2404,7 +2404,7 @@ Depends: ${misc:Depends},
 Homepage: http://rx.codeplex.com
 Description: Mono System.Reactive.Windows.Threading Library (for CLI 4.5)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2420,7 +2420,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.Runtime.Serialization Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2436,7 +2436,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Runtime.Serialization.Formatters.Soap Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2450,7 +2450,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Runtime.Caching Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2463,7 +2463,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Runtime.DurableInstancing Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2478,7 +2478,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.ServiceModel Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2495,7 +2495,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.ServiceModel.Discovery Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2512,7 +2512,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.ServiceModel.Routing Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2529,7 +2529,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono System.ServiceModel.Web Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2549,7 +2549,7 @@ Depends: ${misc:Depends},
          libgdiplus
 Description: Mono System.Web Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2564,7 +2564,7 @@ Depends: ${misc:Depends},
          libgdiplus
 Description: Mono System.Web library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2577,7 +2577,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Abstractions library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2590,7 +2590,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.ApplicationServices library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2603,7 +2603,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.DynamicData library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2616,7 +2616,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Extensions library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2629,7 +2629,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Extensions.Design library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2643,7 +2643,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Http library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2656,7 +2656,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Http.SelfHost library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2669,7 +2669,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Razor (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2682,7 +2682,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Routing (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2695,7 +2695,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.Services (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2708,7 +2708,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono ASP.NET MVC 1.0 Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2725,7 +2725,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono ASP.NET MVC 2.0 Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2741,7 +2741,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono ASP.NET MVC 3.0 Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2757,7 +2757,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.WebPages (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2770,7 +2770,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.WebPages.Deployment (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2784,7 +2784,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Web.WebPages.Razor (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2802,7 +2802,7 @@ Depends: ${misc:Depends},
 Homepage: http://www.mono-project.com/Winforms
 Description: Mono System.Windows.Forms Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2815,7 +2815,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Windows.Forms.DataVisualization Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2830,7 +2830,7 @@ Depends: ${misc:Depends},
 Homepage: http://www.mono-project.com/SystemXamlHacking
 Description: Mono System.Xaml Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2844,7 +2844,7 @@ Depends: ${misc:Depends},
 Homepage: http://mono-project.com/WCF
 Description: Mono WCF libraries (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2864,7 +2864,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Runtime Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2877,7 +2877,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.Runtime library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2891,7 +2891,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.DirectoryServices library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2904,7 +2904,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono System.DirectoryServices library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2922,7 +2922,7 @@ Depends: ${misc:Depends},
          libmono-i18n-west2.0-cil
 Description: Mono System.Windows.Forms library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2938,7 +2938,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Cairo library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2951,7 +2951,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Cairo library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2965,7 +2965,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono SharpZipLib library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2979,7 +2979,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono SharpZipLib library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -2992,7 +2992,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono SharpZipLib library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3006,7 +3006,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Npgsql library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3019,7 +3019,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Npgsql library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3032,7 +3032,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono DB2 library
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3046,7 +3046,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Oracle library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3059,7 +3059,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Oracle library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3073,7 +3073,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Sqlite library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3086,7 +3086,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Sqlite library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3100,7 +3100,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Accessibility library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3113,7 +3113,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Accessibility library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3127,7 +3127,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono cscompmgd library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3141,7 +3141,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono LDAP library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3154,7 +3154,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono LDAP library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3168,7 +3168,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft libraries (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3182,7 +3182,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Build libraries (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3195,7 +3195,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Build library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3208,7 +3208,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Build.Engine library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3221,7 +3221,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Build.Framework library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3234,7 +3234,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Build.Tasks.v4.0 library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3247,7 +3247,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Build.Utilities.v4.0 library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3261,7 +3261,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.CSharp library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3274,7 +3274,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.VisualC library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3288,7 +3288,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Microsoft.Web.Infrastructure library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3303,7 +3303,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono PEAPI library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3316,7 +3316,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono PEAPI library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3330,7 +3330,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Relaxng library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3343,7 +3343,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Relaxng library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3359,7 +3359,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono Soft Debugger library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3373,7 +3373,7 @@ Depends: ${misc:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
 Description: Mono Soft Debugger library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3388,7 +3388,7 @@ Depends: ${misc:Depends},
 Homepage: http://www.mono-project.com/Continuations
 Description: Mono Tasklets library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3407,7 +3407,7 @@ Depends: ${misc:Depends},
 Homepage: http://www.mono-project.com/Continuations
 Description: Mono Tasklets library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3424,7 +3424,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono WindowsBase library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3438,7 +3438,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono WindowsBase library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3452,7 +3452,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono WebMatrix.Data Library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3466,7 +3466,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.IO.Compression library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3479,7 +3479,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.IO.Compresion.FileSystem library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3493,7 +3493,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Net.Http.WebRequest library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3506,7 +3506,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Windows library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3519,7 +3519,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Web.Http.WebHost library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3532,7 +3532,7 @@ Depends: ${misc:Depends},
          ${cli:Depends},
 Description: Mono System.Xml.Serialization library (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3552,7 +3552,7 @@ Description: Mono debugging symbols
  packages.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3609,7 +3609,7 @@ Description: Mono C# 2.0 / 3.0 / 4.0 / 5.0  compiler for CLI 2.0 / 4.0 / 4.5
   - caller info attributes (as of Mono 3.0 currently not supported!)
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3626,7 +3626,7 @@ Description: Mono C# 2.0 and C# 3.0 compiler for CLI 2.0 (transitional package)
  This compiler targets the CLI 2.0 runtime version.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3643,7 +3643,7 @@ Description: Mono C# 4.0 compiler for CLI 4.0 (transitional package)
  This compiler targets the CLI 4.0 runtime version.
  .
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3675,7 +3675,7 @@ Depends: ${misc:Depends},
          pkg-config
 Description: Mono development tools
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3690,7 +3690,7 @@ Replaces: mono-gmcs (<< 1.2.6-1),
           libmono2.0-cil (<< 2.4.4~svn151842-3~)
 Description: Mono service manager for CLI 2.0
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3705,7 +3705,7 @@ Conflicts: mono-1.0-service
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono service manager for CLI 4.0
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3719,7 +3719,7 @@ Depends: ${misc:Depends}, ${cli:Depends}
 Replaces: mono-gmcs (<< 1.2.6-1)
 Description: MSBuild-compatible build system for Mono
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3740,7 +3740,7 @@ Depends: ${misc:Depends},
 Provides: global-assembly-cache-tool
 Description: Mono GAC tool
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3755,7 +3755,7 @@ Depends: ${misc:Depends},
 Recommends: cli-common (>= 0.4.0)
 Description: Mono GAC tool (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3772,7 +3772,7 @@ Depends: ${misc:Depends},
 Recommends: cli-common (>= 0.4.0)
 Description: Mono GAC tool (for CLI 4.0)
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3786,7 +3786,7 @@ Architecture: amd64 armel i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: LALR(1) parser generator oriented to Java/CLI
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
@@ -3805,7 +3805,7 @@ Depends: ${misc:Depends},
          ${cli:Depends}
 Description: interactive C# shell
  Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
