@@ -274,7 +274,7 @@ binary-indep: build-stamp install-stamp
 	debian/dh_makeclilibs -p libmono-compilerservices-symbolwriter4.0-cil -m 3.0.6 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-corlib2.0-cil -m 3.2.1 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-corlib4.0-cil -m 3.2.1 $(DH_INTERNAL_MONO_PARAM)
-	debian/dh_makeclilibs -p libmono-csharp4.0-cil -m 3.2.1 $(DH_INTERNAL_MONO_PARAM)
+	debian/dh_makeclilibs -p libmono-csharp4.0a-cil -m 3.2.1 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-data-tds2.0-cil -m 3.0.6 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-data-tds4.0-cil -m 3.0.6 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-debugger-soft2.0-cil -m 3.2.1 $(DH_INTERNAL_MONO_PARAM)
