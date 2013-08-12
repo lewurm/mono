@@ -161,13 +161,7 @@ namespace Mono.NullBrowser
 
 		public static object GetProxyForObject (IWebBrowser control, Guid iid, object obj)
 		{
-			if (!isInitialized ())
-				return null;
-			
-			IntPtr ret;
-			
-			object o = Marshal.GetObjectForIUnknown (ret);
-			return o;
+			return null;
 		}
 
 		public static string EvalScript (IWebBrowser control, string script)
