@@ -1,3 +1,92 @@
+mono (3.2.1+dfsg-1) experimental; urgency=low
+
+  * The "REJECT FALSE ICONS" release
+
+  [ Jo Shields ]
+  * [b9108c7] Dirty patch to introduce a new System.Windows.Forms.WebBrowser 
+    back-end, which does absolutely nothing. This is to allow applications 
+    which create a WebBrowser object to continue to run without crashing, 
+    in the absence of a working browser back-end (which we lack right now). 
+    This patch is sufficient for 
+    http://www.java2s.com/Tutorial/CSharp/0460__GUI-Windows-Forms/AsimpleBrowser.htm
+    to run without crashing. (Closes: #683289, #694948)
+  * [d20f6ad] Update README.source for the latest +dfsg changes
+  * [621d62b] Imported Upstream version 3.2.1+dfsg
+  * [a469da4] Delete .git folders which are incorrectly supplied (sometimes) 
+    in upstream tarballs
+  * [93dc83d] Remove IA64 as a build arch, it's abandoned upstream - add 
+    newly fixed MIPS (little endian) instead.
+  * [45139df] Refresh debian/ - including new split-off packages - now SGen 
+    is default
+  * [f8f6ae7] Rename libmono-2.0 packages to libmonoboehm-2.0 as appropriate.
+  * [22f5059] Add new GAC'd assemblies from this release.
+  * [7876094] Refreshed dh_makeclilibs version information to reflect ABI 
+    and API bumps.
+  * [0916fab] Rename libmono-csharp4.0-cil.install to 
+    libmono-csharp4.0a-cil.install, due to heavy ABI breakage.
+  * [c4437d1] Fix compilation failure to due to uninitialized variable.
+  * [b53dbb2] Create a set of new packages for PCL Facades.
+  * [1054a3b] Add Xamarin to copyright file
+  * [3643568] Fix compilation failure to due to uninitialized variable.
+  * [0873f74] Replace references to Novell in package descriptions with 
+    Xamarin.
+
+  [ Mirco Bauer ]
+  * [c920c13] Removed mono_arch_get_lmf_addr from s390x specific symbols
+  * [7b291a4] Added new armel specific symbols to libmono-2.0-1.symbols.armel
+
+  [ Atsushi Eno ]
+  * [15e60b3] Add Assembly version attributes to hopefully fix bug #10002.
+    (cherry picked from commit cd6dc32e0b936645bf2f89e1bf61c6ae04c3258a)
+    The new files are modified by this commit but were not present in the
+    packaged release.
+  * [5b98c36] [rx] Add missing AssemblyInfos.
+    (cherry picked from commit 7890e1e824b91b1fd30d375b8cfb19d5abb23c5a)
+  * [7cb9532] remove wrong EOLs after Libs: in reactive.pc.in. Third 
+    attempt to fix bug #10002.
+    (cherry picked from commit 5c228f3dd0e9b32a5b0d4aaaf0903ebaeae5a6d9)
+  * [8583276] Fix build (giconv.c) (cherry picked from commit 
+    37e7f2fb50e2f357ae4068d3b7551ff411f9f77c)
+
+  [ Carlos Martín Nieto ]
+  * [b85c794] Create package for Reactive Extensions.
+    Now that they have a version, let's create binary packages for them.
+
+  [ Alex Rønne Petersen ]
+  * [172471f] Support a MONO_ARCH_HAVE_TLS_INIT variable.
+    Setting this on an architecture makes Mini call
+    mono_arch_tls_init () on thread attach.
+    This is primarily useful for architectures that have not
+    had their LMF code ported to the new infrastructure due to
+    a general lack of maintenance or hardware to do it on.
+    (cherry picked from commit f87a4f127d1a0ea1cf4145f9605c5698af08c6cf)
+  * [7cbea71] MIPS: Set USE_MUL to 0 by default (for now).
+    Setting it to 1 breaks on Loongson CPUs which are the most common
+    desktop MIPS CPUs supported by e.g. Debian.
+    This change can be reverted when more investigation is done to find
+    out why exactly this breaks.
+    Thanks to Jo Shields (@directhex) for lots of testing and debugging
+    and spotting this define that turned out to be the culprit.
+    (cherry picked from commit 0e67acba31c39e37b1bc55afb28d157c36895c23)
+
+  [ Mark Probst ]
+  * [e19428c] Fix race conditions in finalizer/weak link staging. 
+    (cherry picked from commit aef4b77ea79aa0a4c06e10bd5842da9df0d10973)
+
+  [ Jeffrey Stedfast ]
+  * [090dda7] [eglib] Fixed g_utf8_to_utf16_general() to handle 
+    invalid utf8 (cherry picked from commit 
+    a81cd6dae81a7077a7f014948c78075da08f02f7)
+
+  [ Zoltan Varga ]
+  * [49af7b0] [sgen] Use __builtin_ctzl () in OBJ_BITMAP_FOREACH_PTR () on 64 
+    bit platforms. Fixes #14834. (cherry picked from commit 
+    d2cc22580898df5d4a15e0f99ab513e1570a6082)
+    Thanks to Andres G. Aragoneses (@knocte) for his help tracking this one
+    down, as it broke Banshee.
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 22 Sep 2013 18:35:43 +0100
+
 mono (3.0.6+dfsg2-4) unstable; urgency=low
 
   [ Iain Lane ]
