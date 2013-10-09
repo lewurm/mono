@@ -1,3 +1,13 @@
+mono (3.0.6+dfsg2-5) unstable; urgency=low
+
+  * [8b43de0] [monodoc] Ensure we don't try to use <Parameters> when 
+    it might be null. Fixes Gendarme doc generation. 
+    (cherry picked from commit ba222d4eb939ef097dd2b77b1fea5c3b8a60b310)
+  * [478f26a] Switch debian/gbp.conf to use non-Experimental branches
+  * [0dde9cb] Fix compilation failure to due to uninitialized variable.
+
+ -- Jo Shields <directhex@apebox.org>  Wed, 09 Oct 2013 23:21:56 +0200
+
 mono (3.0.6+dfsg2-4) unstable; urgency=low
 
   [ Iain Lane ]
