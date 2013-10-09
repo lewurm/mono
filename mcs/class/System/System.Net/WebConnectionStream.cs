@@ -70,6 +70,12 @@ namespace System.Net
 
 		public WebConnectionStream (WebConnection cnc)
 		{
+			if (cnc.Data == null)
+				throw new InvalidOperationException ("cnc.Data was not initialized");
+			if (cnc.Data.Headers == null)
+				throw new InvalidOperationException ("cnc.Data.Headers was not initialized");
+			if (cnc.Data.request == null)
+				throw new InvalidOperationException ("cnc.Data.request was not initialized");
 			isRead = true;
 			cb_wrapper = new AsyncCallback (ReadCallbackWrapper);
 			pending = new ManualResetEvent (true);
@@ -137,16 +143,11 @@ namespace System.Net
 		internal WebConnection Connection {
 			get { return cnc; }
 		}
-#if NET_2_0
 		public override bool CanTimeout {
 			get { return true; }
 		}
-#endif
 
-#if NET_2_0
-		public override
-#endif
-		int ReadTimeout {
+		public override int ReadTimeout {
 			get {
 				return read_timeout;
 			}
@@ -158,10 +159,7 @@ namespace System.Net
 			}
 		}
 
-#if NET_2_0
-		public override
-#endif
-		int WriteTimeout {
+		public override int WriteTimeout {
 			get {
 				return write_timeout;
 			}
@@ -643,8 +641,11 @@ namespace System.Net
 			long cl = request.ContentLength;
 			string method = request.Method;
 			bool no_writestream = (method == "GET" || method == "CONNECT" || method == "HEAD" ||
-						method == "TRACE" || method == "DELETE");
-			if (sendChunked || cl > -1 || no_writestream) {
+						method == "TRACE");
+			bool webdav = (method == "PROPFIND" || method == "PROPPATCH" || method == "MKCOL" ||
+			               method == "COPY" || method == "MOVE" || method == "LOCK" ||
+			               method == "UNLOCK");
+			if (sendChunked || cl > -1 || no_writestream || webdav) {
 				WriteHeaders ();
 				if (!initRead) {
 					initRead = true;
@@ -703,7 +704,7 @@ namespace System.Net
 			if (!headersSent) {
 				string method = request.Method;
 				bool no_writestream = (method == "GET" || method == "CONNECT" || method == "HEAD" ||
-							method == "TRACE" || method == "DELETE");
+							method == "TRACE");
 				if (!no_writestream)
 					request.InternalContentLength = length;
 				request.SendRequestHeaders (true);
@@ -776,7 +777,8 @@ namespace System.Net
 				throw new WebException ("Request was cancelled.", io, WebExceptionStatus.RequestCanceled);
 			}
 
-			WriteRequest ();
+			// Commented out the next line to fix xamarin bug #1512
+			//WriteRequest ();
 			disposed = true;
 		}
 

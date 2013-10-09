@@ -1,10 +1,12 @@
 debian/tmp/usr/share/man/man1/al.1
 debian/man/caspol.1
 debian/tmp/usr/share/man/man1/lc.1
+debian/tmp/usr/share/man/man1/cccheck.1
 debian/tmp/usr/share/man/man1/cert2spc.1
 debian/tmp/usr/share/man/man1/certmgr.1
 debian/tmp/usr/share/man/man1/chktrust.1
 debian/tmp/usr/share/man/man1/cilc.1
+debian/tmp/usr/share/man/man1/crlupdate.1
 debian/tmp/usr/share/man/man1/disco.1
 debian/tmp/usr/share/man/man1/dtd2xsd.1
 debian/tmp/usr/share/man/man1/genxs.1

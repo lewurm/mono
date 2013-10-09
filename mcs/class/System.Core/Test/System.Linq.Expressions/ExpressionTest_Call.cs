@@ -87,7 +87,7 @@ namespace MonoTests.System.Linq.Expressions {
 		}
 
 		[Test]
-#if NET_4_0
+#if NET_4_0 && !MONOTOUCH
 		[ExpectedException (typeof (ArgumentException))]
 #else
 		[ExpectedException (typeof (ArgumentNullException))]
@@ -371,6 +371,9 @@ namespace MonoTests.System.Linq.Expressions {
 		}
 
 		[Test]
+#if MONOTOUCH
+		[Category ("NotWorking")]
+#endif
 		[Category ("NotDotNet")] // https://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=319190
 		public void Connect319190 ()
 		{
@@ -477,6 +480,9 @@ namespace MonoTests.System.Linq.Expressions {
 		}
 
 		[Test]
+#if MONOTOUCH
+		[Category ("NotWorking")]
+#endif
 		public void CallNullableGetValueOrDefault () // #568989
 		{
 			var value = Expression.Parameter (typeof (int?), "value");
@@ -504,6 +510,18 @@ namespace MonoTests.System.Linq.Expressions {
 					typeof (object).GetMethod ("ToString"))).Compile ();
 
 			Assert.AreEqual ("Boolean", lambda ());
+		}
+
+		public static void AcceptsIEnumerable(IEnumerable<object> o)
+		{
+		}
+
+		[Test]
+		public void CallIQueryableMethodWithNewArrayBoundExpression () // #2304
+		{
+			Expression.Call (
+				GetType ().GetMethod ("AcceptsIEnumerable", BindingFlags.Public | BindingFlags.Static),
+				Expression.NewArrayBounds (typeof (object), Expression.Constant (0)));
 		}
 	}
 }

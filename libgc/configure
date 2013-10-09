@@ -787,7 +787,7 @@ addtests
 addlibs
 addincludes
 CXXINCLUDES
-INCLUDES
+AM_CPPFLAGS
 CPLUSPLUS_FALSE
 CPLUSPLUS_TRUE
 target_all
@@ -808,6 +808,8 @@ am__fastdepCCAS_TRUE
 CCASDEPMODE
 CCASFLAGS
 CCAS
+AM_BACKSLASH
+AM_DEFAULT_VERBOSITY
 am__fastdepCXX_FALSE
 am__fastdepCXX_TRUE
 CXXDEPMODE
@@ -904,6 +906,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
+enable_silent_rules
 enable_maintainer_mode
 enable_win32_dllmain
 enable_parallel_mark
@@ -1559,6 +1562,8 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
+  --enable-silent-rules          less verbose build output (undo: `make V=1')
+  --disable-silent-rules         verbose build output (undo: `make V=0')
   --enable-maintainer-mode  enable make rules and dependencies not useful
 			  (and sometimes confusing) to the casual installer
   --enable-win32-dllmain    Define the DllMain function in win32_threads.c even if the collector is not built as a dll
@@ -2971,8 +2976,8 @@ fi
 
 
 # Define the identity of the package.
- PACKAGE=libgc-mono
- VERSION=6.6
+ PACKAGE='libgc-mono'
+ VERSION='6.6'
 
 
 # Some tools Automake needs.
@@ -4444,6 +4449,19 @@ fi
 
 
 
+# Check whether --enable-silent-rules was given.
+if test "${enable_silent_rules+set}" = set; then :
+  enableval=$enable_silent_rules;
+fi
+
+case $enable_silent_rules in
+yes) AM_DEFAULT_VERBOSITY=0;;
+no)  AM_DEFAULT_VERBOSITY=1;;
+*)   AM_DEFAULT_VERBOSITY=0;;
+esac
+AM_BACKSLASH='\'
+
+
 # By default we simply use the C compiler to build assembly code.
 
 test "${CCAS+set}" = set || CCAS=$CC
@@ -4831,7 +4849,7 @@ if test "${enable_cplusplus+set}" = set; then :
 fi
 
 
-INCLUDES=-I${srcdir}/include
+AM_CPPFLAGS=-I${srcdir}/include
 THREADDLLIBS=
 ## Libraries needed to support dynamic loading and/or threads.
 case "$THREADS" in
@@ -4925,13 +4943,15 @@ $as_echo "$as_me: WARNING: \"Only HP/UX 11 threads are supported.\"" >&2;}
 	$as_echo "#define GC_FREEBSD_THREADS 1" >>confdefs.h
 
 	if test "x$PTHREAD_CFLAGS" != "x"; then
-		INCLUDES="$INCLUDES $PTHREAD_CFLAGS"
+		AM_CPPFLAGS="$AM_CPPFLAGS $PTHREAD_CFLAGS"
 	fi
 	if test "x$PTHREAD_LIBS" = "x"; then
 		THREADDLLIBS=-pthread
 	else
 		THREADDLLIBS="$PTHREAD_LIBS"
 	fi
+	$as_echo "#define THREAD_LOCAL_ALLOC 1" >>confdefs.h
+
 	;;
      *-*-solaris*)
 	$as_echo "#define GC_SOLARIS_THREADS 1" >>confdefs.h
@@ -4988,7 +5008,7 @@ $as_echo "$as_me: WARNING: \"Only HP/UX 11 threads are supported.\"" >&2;}
 	  # May want to enable it in other cases, too.
 	  # Measurements havent yet been done.
 	fi
-	INCLUDES="$INCLUDES -pthread"
+	AM_CPPFLAGS="$AM_CPPFLAGS -pthread"
 	THREADDLLIBS="-lpthread -lrt"
 	;;
       *)
@@ -5023,7 +5043,7 @@ $as_echo "$THREADDLLIBS" >&6; }
     $as_echo "#define DGUX_THREADS 1" >>confdefs.h
 
     # Enable _POSIX4A_DRAFT10_SOURCE with flag -pthread
-    INCLUDES="-pthread $INCLUDES"
+    AM_CPPFLAGS="-pthread $AM_CPPFLAGS"
     ;;
  aix)
     THREADS=posix
@@ -5055,6 +5075,42 @@ else
   POWERPC_DARWIN_FALSE=
 fi
 
+
+# Check if the GCC builtin __sync_bool_compare_and_swap is available.
+# It is preferred in gc_locks.h for PPC as GCC 4.4 has a problem with the inline assembly there.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for __sync_bool_compare_and_swap" >&5
+$as_echo_n "checking for __sync_bool_compare_and_swap... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+volatile unsigned int foo = 0;
+int main(int argc, char** argv) {
+    unsigned int r1 = __sync_bool_compare_and_swap(&foo, 0, 1);
+    return 0;
+}
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+$as_echo "#define HAS___SYNC_BOOL_COMPARE_AND_SWAP 1" >>confdefs.h
+
+
+else
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for xlc" >&5
 $as_echo_n "checking for xlc... " >&6; }
@@ -5161,7 +5217,7 @@ addobjs=
 addlibs=
 addincludes=
 addtests=
-CXXINCLUDES=
+CXXAM_CPPFLAGS=
 case "$TARGET_ECOS" in
    no)
       ;;
@@ -5933,13 +5989,13 @@ if ${lt_cv_nm_interface+:} false; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5936: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5992: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5939: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5995: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5942: output\"" >&5)
+  (eval echo "\"\$as_me:5998: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -7144,7 +7200,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7147 "configure"' > conftest.$ac_ext
+  echo '#line 7203 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9166,11 +9222,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9169: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9225: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9173: \$? = $ac_status" >&5
+   echo "$as_me:9229: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9505,11 +9561,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9508: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9564: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9512: \$? = $ac_status" >&5
+   echo "$as_me:9568: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9610,11 +9666,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9613: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9669: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9617: \$? = $ac_status" >&5
+   echo "$as_me:9673: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9665,11 +9721,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9668: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9724: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9672: \$? = $ac_status" >&5
+   echo "$as_me:9728: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12033,7 +12089,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12036 "configure"
+#line 12092 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12129,7 +12185,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12132 "configure"
+#line 12188 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14085,11 +14141,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14088: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14144: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14092: \$? = $ac_status" >&5
+   echo "$as_me:14148: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14184,11 +14240,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14187: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14243: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14191: \$? = $ac_status" >&5
+   echo "$as_me:14247: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14236,11 +14292,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14239: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14295: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14243: \$? = $ac_status" >&5
+   echo "$as_me:14299: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15370,6 +15426,7 @@ modeok=false
 tagok=false
 for arg in "$@"; do
     case "$arg" in
+        --silent) ;;
         --mode=compile) modeok=true ;;
         --tag=CC|--tag=CXX) tagok=true ;;
         --quiet) ;;
@@ -15636,14 +15693,7 @@ else
   multilib_arg=
 fi
 
-if test x$enable_quiet_build = xyes; then
-   ac_config_commands="$ac_config_commands quiet"
-
-   ac_config_commands="$ac_config_commands quiet-libtool"
-
-fi
-
-ac_config_files="$ac_config_files Makefile include/Makefile include/private/Makefile doc/Makefile"
+ac_config_files="$ac_config_files Makefile m4/Makefile include/Makefile include/private/Makefile doc/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -16770,7 +16820,6 @@ fi
 
 
 
-shell=$SHELL
 srcdir=${srcdir}
 host=${host}
 CONFIG_SHELL=${CONFIG_SHELL-/bin/sh}
@@ -16788,9 +16837,8 @@ do
   case $ac_config_target in
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
-    "quiet") CONFIG_COMMANDS="$CONFIG_COMMANDS quiet" ;;
-    "quiet-libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS quiet-libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "m4/Makefile") CONFIG_FILES="$CONFIG_FILES m4/Makefile" ;;
     "include/Makefile") CONFIG_FILES="$CONFIG_FILES include/Makefile" ;;
     "include/private/Makefile") CONFIG_FILES="$CONFIG_FILES include/private/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
@@ -18120,8 +18168,6 @@ compiler_lib_search_path=$lt_compiler_lib_search_path_CXX
 _LT_EOF
 
  ;;
-    "quiet":C) for i in `find . -name Makefile.in | sed -e 's/Makefile.in/Makefile/g'`; do if test -f $i; then $srcdir/../scripts/patch-quiet.sh $i; fi; done ;;
-    "quiet-libtool":C) sed -e 's/$echo "copying selected/$show "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool; sed -e 's/$ECHO "copying selected/# "copying selected/g' < libtool > libtool.tmp && mv libtool.tmp libtool && chmod a+x libtool ;;
 
   esac
 done # for ac_tag

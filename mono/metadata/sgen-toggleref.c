@@ -1,32 +1,25 @@
 /*
- *
  * sgen-toggleref.c: toggleref support for sgen
- *
- * Copyright 2011 Xamarin, Inc.
  *
  * Author:
  *  Rodrigo Kumpera (kumpera@gmail.com)
- * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * Copyright 2011 Xamarin, Inc.
+ * Copyright (C) 2012 Xamarin Inc
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License 2.0 as published by the Free Software Foundation;
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License 2.0 along with this library; if not, write to the Free
+ * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 
 #include "config.h"
 
@@ -44,18 +37,18 @@ typedef struct {
 
 static MonoToggleRefStatus (*toggleref_callback) (MonoObject *obj);
 static MonoGCToggleRef *toggleref_array;
-static int toogleref_array_size;
-static int toogleref_array_capacity;
+static int toggleref_array_size;
+static int toggleref_array_capacity;
 
 void
-mono_sgen_process_togglerefs (void)
+sgen_process_togglerefs (void)
 {
 	int i, w;
-	int toggle_ref_counts [3] = { 0 };
+	int toggle_ref_counts [3] = { 0, 0, 0 };
 
-	DEBUG (4, fprintf (gc_debug_file, "Proccessing ToggleRefs %d\n", toogleref_array_size));
+	SGEN_LOG (4, "Proccessing ToggleRefs %d", toggleref_array_size);
 
-	for (i = w = 0; i < toogleref_array_size; ++i) {
+	for (i = w = 0; i < toggleref_array_size; ++i) {
 		int res;
 		MonoGCToggleRef r = toggleref_array [i];
 
@@ -88,38 +81,40 @@ mono_sgen_process_togglerefs (void)
 		}
 	}
 
-	toogleref_array_size = w;
+	toggleref_array_size = w;
 
-	DEBUG (4, fprintf (gc_debug_file, "Done Proccessing ToggleRefs dropped %d strong %d weak %d final size %d\n",
+	SGEN_LOG (4, "Done Proccessing ToggleRefs dropped %d strong %d weak %d final size %d",
 		toggle_ref_counts [MONO_TOGGLE_REF_DROP],
 		toggle_ref_counts [MONO_TOGGLE_REF_STRONG],
 		toggle_ref_counts [MONO_TOGGLE_REF_WEAK],
-		w));
+		w);
 }
 
 void
-mono_sgen_scan_togglerefs (CopyOrMarkObjectFunc copy_func, char *start, char *end, SgenGrayQueue *queue)
+sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
+	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	SgenGrayQueue *queue = ctx.queue;
 	int i;
 
-	DEBUG (4, fprintf (gc_debug_file, "Scanning ToggleRefs %d\n", toogleref_array_size));
+	SGEN_LOG (4, "Scanning ToggleRefs %d", toggleref_array_size);
 
-	for (i = 0; i < toogleref_array_size; ++i) {
+	for (i = 0; i < toggleref_array_size; ++i) {
 		if (toggleref_array [i].strong_ref) {
 			char *object = toggleref_array [i].strong_ref;
 			if (object >= start && object < end) {
-				DEBUG (6, fprintf (gc_debug_file, "\tcopying strong slot %d\n", i));
+				SGEN_LOG (6, "\tcopying strong slot %d", i);
 				copy_func (&toggleref_array [i].strong_ref, queue);
 			}
 		} else if (toggleref_array [i].weak_ref) {
 			char *object = toggleref_array [i].weak_ref;
 
 			if (object >= start && object < end) {
-				if (mono_sgen_gc_is_object_ready_for_finalization (object)) {
-					DEBUG (6, fprintf (gc_debug_file, "\tcleaning weak slot %d\n", i));
+				if (sgen_gc_is_object_ready_for_finalization (object)) {
+					SGEN_LOG (6, "\tcleaning weak slot %d", i);
 					toggleref_array [i].weak_ref = NULL; /* We defer compaction to only happen on the callback step. */
 				} else {
-					DEBUG (6, fprintf (gc_debug_file, "\tkeeping weak slot %d\n", i));
+					SGEN_LOG (6, "\tkeeping weak slot %d", i);
 					copy_func (&toggleref_array [i].weak_ref, queue);
 				}
 			}
@@ -131,24 +126,26 @@ static void
 ensure_toggleref_capacity (int capacity)
 {
 	if (!toggleref_array) {
-		toogleref_array_capacity = 32;
-		toggleref_array = mono_sgen_alloc_internal_dynamic (
-			toogleref_array_capacity * sizeof (MonoGCToggleRef),
-			INTERNAL_MEM_TOGGLEREF_DATA);	
+		toggleref_array_capacity = 32;
+		toggleref_array = sgen_alloc_internal_dynamic (
+			toggleref_array_capacity * sizeof (MonoGCToggleRef),
+			INTERNAL_MEM_TOGGLEREF_DATA,
+			TRUE);
 	}
-	if (toogleref_array_size + capacity >= toogleref_array_capacity) {
+	if (toggleref_array_size + capacity >= toggleref_array_capacity) {
 		MonoGCToggleRef *tmp;
-		int old_capacity = toogleref_array_capacity;
-		while (toogleref_array_capacity < toogleref_array_size + capacity)
-			toogleref_array_size *= 2;
-		
-		tmp = mono_sgen_alloc_internal_dynamic (
-			toogleref_array_capacity * sizeof (MonoGCToggleRef),
-			INTERNAL_MEM_TOGGLEREF_DATA);
+		int old_capacity = toggleref_array_capacity;
+		while (toggleref_array_capacity < toggleref_array_size + capacity)
+			toggleref_array_size *= 2;
 
-		memcpy (tmp, toggleref_array, toogleref_array_size * sizeof (MonoGCToggleRef));
+		tmp = sgen_alloc_internal_dynamic (
+			toggleref_array_capacity * sizeof (MonoGCToggleRef),
+			INTERNAL_MEM_TOGGLEREF_DATA,
+			TRUE);
 
-		mono_sgen_free_internal_dynamic (toggleref_array, old_capacity * sizeof (MonoGCToggleRef), INTERNAL_MEM_TOGGLEREF_DATA);
+		memcpy (tmp, toggleref_array, toggleref_array_size * sizeof (MonoGCToggleRef));
+
+		sgen_free_internal_dynamic (toggleref_array, old_capacity * sizeof (MonoGCToggleRef), INTERNAL_MEM_TOGGLEREF_DATA);
 		toggleref_array = tmp;
 	}
 }
@@ -167,17 +164,16 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	if (!toggleref_callback)
 		return;
 
-	DEBUG (4, fprintf (gc_debug_file, "Adding toggleref %p %d\n", object, strong_ref));
+	SGEN_LOG (4, "Adding toggleref %p %d", object, strong_ref);
 
-	mono_sgen_gc_lock ();
+	sgen_gc_lock ();
 
 	ensure_toggleref_capacity (1);
-	if (strong_ref)
-		toggleref_array [toogleref_array_size++].strong_ref = object;
-	else
-		toggleref_array [toogleref_array_size++].weak_ref = object;
+	toggleref_array [toggleref_array_size].strong_ref = strong_ref ? object : NULL;
+	toggleref_array [toggleref_array_size].weak_ref = strong_ref ? NULL : object;
+	++toggleref_array_size;
 
-	mono_sgen_gc_unlock ();
+	sgen_gc_unlock ();
 }
 
 /**

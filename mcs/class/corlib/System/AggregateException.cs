@@ -22,7 +22,7 @@
 //
 //
 
-#if NET_4_0 || MOBILE
+#if NET_4_0
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -148,14 +148,20 @@ namespace System
 			return finalMessage.ToString ();
 		}
 
-		public override Exception GetBaseException ()
-		{
-			return this;
-		}
-
 		public override void GetObjectData (SerializationInfo info,	StreamingContext context)
 		{
-			throw new NotImplementedException ();
+			if (info == null) {
+				throw new ArgumentNullException("info");
+			}
+			base.GetObjectData(info, context);
+			info.AddValue ("InnerExceptions", innerExceptions.ToArray(), typeof (Exception[]));
+		}
+
+		public override Exception GetBaseException ()
+		{
+			if (innerExceptions == null || innerExceptions.Count == 0)
+				return this;
+			return innerExceptions[0].GetBaseException ();
 		}
 	}
 }

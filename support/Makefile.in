@@ -38,11 +38,13 @@ target_triplet = @target@
 subdir = support
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in ChangeLog
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/libtool.m4 \
-	$(top_srcdir)/ltoptions.m4 $(top_srcdir)/ltsugar.m4 \
-	$(top_srcdir)/ltversion.m4 $(top_srcdir)/lt~obsolete.m4 \
-	$(top_srcdir)/nls.m4 $(top_srcdir)/po.m4 \
-	$(top_srcdir)/progtest.m4 $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/iconv.m4 \
+	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
+	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/po.m4 \
+	$(top_srcdir)/m4/progtest.m4 $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -74,23 +76,25 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@HOST_WIN32_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@HOST_WIN32_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+@HOST_WIN32_FALSE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
+@HOST_WIN32_FALSE@	$(am__DEPENDENCIES_1)
+@HOST_WIN32_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
+@HOST_WIN32_TRUE@	$(am__DEPENDENCIES_1)
 libMonoPosixHelper_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am__libMonoPosixHelper_la_SOURCES_DIST = errno.c map.c map.h mph.h \
 	signal.c stdio.c string.c stdlib.c fakepoll.h dirent.c fcntl.c \
-	fstab.c grp.c macros.c old-map.c old-map.h pwd.c serial.c \
-	sys-mman.c sys-sendfile.c sys-stat.c sys-statvfs.c sys-time.c \
-	sys-utsname.c sys-wait.c sys-xattr.c syslog.c time.c unistd.c \
-	utime.c x-struct-str.c zlib-helper.c adler32.c compress.c \
-	crc32.c uncompr.c deflate.c trees.c zutil.c inflate.c \
-	infback.c inftrees.c inffast.c crc32.h deflate.h inffast.h \
-	inffixed.h inflate.h inftrees.h trees.h zconf.h zlib.h zutil.h \
-	minizip/crypt.h minizip/ioapi.c minizip/ioapi.h \
+	fstab.c grp.c macros.c nl.c nl.h old-map.c old-map.h pwd.c \
+	serial.c sys-mman.c sys-sendfile.c sys-stat.c sys-statvfs.c \
+	sys-time.c sys-utsname.c sys-wait.c sys-xattr.c syslog.c \
+	time.c unistd.c utime.c x-struct-str.c zlib-helper.c adler32.c \
+	compress.c crc32.c uncompr.c deflate.c trees.c zutil.c \
+	inflate.c infback.c inftrees.c inffast.c crc32.h deflate.h \
+	inffast.h inffixed.h inflate.h inftrees.h trees.h zconf.h \
+	zlib.h zutil.h minizip/crypt.h minizip/ioapi.c minizip/ioapi.h \
 	minizip/unzip.c minizip/unzip.h minizip/zip.c minizip/zip.h
 am__objects_1 = errno.lo map.lo signal.lo stdio.lo string.lo stdlib.lo
-am__objects_2 = dirent.lo fcntl.lo fstab.lo grp.lo macros.lo \
+am__objects_2 = dirent.lo fcntl.lo fstab.lo grp.lo macros.lo nl.lo \
 	old-map.lo pwd.lo serial.lo sys-mman.lo sys-sendfile.lo \
 	sys-stat.lo sys-statvfs.lo sys-time.lo sys-utsname.lo \
 	sys-wait.lo sys-xattr.lo syslog.lo time.lo unistd.lo utime.lo \
@@ -105,15 +109,21 @@ am__objects_6 = ioapi.lo unzip.lo zip.lo
 am_libMonoPosixHelper_la_OBJECTS = $(am__objects_3) $(am__objects_5) \
 	$(am__objects_6)
 libMonoPosixHelper_la_OBJECTS = $(am_libMonoPosixHelper_la_OBJECTS)
-libMonoPosixHelper_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libMonoPosixHelper_la_LDFLAGS) $(LDFLAGS) -o $@
-libMonoSupportW_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+AM_V_lt = $(am__v_lt_$(V))
+am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
+am__v_lt_0 = --silent
+libMonoPosixHelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libMonoPosixHelper_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+libMonoSupportW_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_libMonoSupportW_la_OBJECTS = supportw.lo support-heap.lo
 libMonoSupportW_la_OBJECTS = $(am_libMonoSupportW_la_OBJECTS)
-libMonoSupportW_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libMonoSupportW_la_LDFLAGS) $(LDFLAGS) -o $@
+libMonoSupportW_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libMonoSupportW_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 @HOST_WIN32_FALSE@am_libMonoSupportW_la_rpath = -rpath $(libdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -121,10 +131,22 @@ am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_$(V))
+am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
+am__v_CC_0 = @echo "  CC    " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
 CCLD = $(CC)
-LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_$(V))
+am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
+am__v_CCLD_0 = @echo "  CCLD  " $@;
+AM_V_GEN = $(am__v_GEN_$(V))
+am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(libMonoPosixHelper_la_SOURCES) \
 	$(libMonoSupportW_la_SOURCES)
 DIST_SOURCES = $(am__libMonoPosixHelper_la_SOURCES_DIST) \
@@ -134,6 +156,7 @@ CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 API_VER = @API_VER@
 AR = @AR@
 AS = @AS@
@@ -141,7 +164,6 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BISON = @BISON@
 BOEHM_DEFINES = @BOEHM_DEFINES@
 BUILD_EXEEXT = @BUILD_EXEEXT@
 BUILD_GLIB_CFLAGS = @BUILD_GLIB_CFLAGS@
@@ -195,9 +217,11 @@ INTL = @INTL@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
-LIBGC_CFLAGS = @LIBGC_CFLAGS@
+LIBGC_CPPFLAGS = @LIBGC_CPPFLAGS@
 LIBGC_LIBS = @LIBGC_LIBS@
 LIBGC_STATIC_LIBS = @LIBGC_STATIC_LIBS@
+LIBICONV = @LIBICONV@
+LIBMONO_LA = @LIBMONO_LA@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -210,6 +234,7 @@ LLVM_LIBS = @LLVM_LIBS@
 LN_S = @LN_S@
 LTCOMPILE = @LTCOMPILE@
 LTCXXCOMPILE = @LTCXXCOMPILE@
+LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -332,7 +357,7 @@ lib_LTLIBRARIES = \
 	libMonoPosixHelper.la			\
 	$(SUPPORT)
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	$(GLIB_CFLAGS)				\
 	-I$(top_srcdir)
 
@@ -359,6 +384,8 @@ MPH_UNIX_SOURCE = \
 	fstab.c					\
 	grp.c					\
 	macros.c				\
+	nl.c					\
+	nl.h					\
 	old-map.c				\
 	old-map.h				\
 	pwd.c					\
@@ -379,8 +406,8 @@ MPH_UNIX_SOURCE = \
 
 @HOST_WIN32_FALSE@MPH_SOURCE = $(MPH_C_SOURCE) $(MPH_UNIX_SOURCE)
 @HOST_WIN32_TRUE@MPH_SOURCE = $(MPH_C_SOURCE)
-@HOST_WIN32_FALSE@MPH_LIBS = $(GLIB_LIBS)
-@HOST_WIN32_TRUE@MPH_LIBS = $(GLIB_LIBS)
+@HOST_WIN32_FALSE@MPH_LIBS = $(GLIB_LIBS) $(LIBICONV)
+@HOST_WIN32_TRUE@MPH_LIBS = $(GLIB_LIBS) $(LIBICONV)
 MINIZIP_SOURCE = \
 	minizip/crypt.h \
 	minizip/ioapi.c	\
@@ -437,7 +464,7 @@ libMonoSupportW_la_SOURCES = \
 		supportw.h
 
 libMonoSupportW_la_LIBADD = \
-		$(GLIB_LIBS)
+		$(GLIB_LIBS) $(LIBICONV)
 
 all: all-am
 
@@ -452,9 +479,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu support/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign support/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu support/Makefile
+	  $(AUTOMAKE) --foreign support/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -505,9 +532,9 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libMonoPosixHelper.la: $(libMonoPosixHelper_la_OBJECTS) $(libMonoPosixHelper_la_DEPENDENCIES) 
-	$(libMonoPosixHelper_la_LINK) -rpath $(libdir) $(libMonoPosixHelper_la_OBJECTS) $(libMonoPosixHelper_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libMonoPosixHelper_la_LINK) -rpath $(libdir) $(libMonoPosixHelper_la_OBJECTS) $(libMonoPosixHelper_la_LIBADD) $(LIBS)
 libMonoSupportW.la: $(libMonoSupportW_la_OBJECTS) $(libMonoSupportW_la_DEPENDENCIES) 
-	$(libMonoSupportW_la_LINK) $(am_libMonoSupportW_la_rpath) $(libMonoSupportW_la_OBJECTS) $(libMonoSupportW_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libMonoSupportW_la_LINK) $(am_libMonoSupportW_la_rpath) $(libMonoSupportW_la_OBJECTS) $(libMonoSupportW_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -531,6 +558,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ioapi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/macros.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/old-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pwd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/serial.Plo@am__quote@
@@ -561,46 +589,52 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zutil.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
 ioapi.lo: minizip/ioapi.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ioapi.lo -MD -MP -MF $(DEPDIR)/ioapi.Tpo -c -o ioapi.lo `test -f 'minizip/ioapi.c' || echo '$(srcdir)/'`minizip/ioapi.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/ioapi.Tpo $(DEPDIR)/ioapi.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ioapi.lo -MD -MP -MF $(DEPDIR)/ioapi.Tpo -c -o ioapi.lo `test -f 'minizip/ioapi.c' || echo '$(srcdir)/'`minizip/ioapi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ioapi.Tpo $(DEPDIR)/ioapi.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='minizip/ioapi.c' object='ioapi.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ioapi.lo `test -f 'minizip/ioapi.c' || echo '$(srcdir)/'`minizip/ioapi.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ioapi.lo `test -f 'minizip/ioapi.c' || echo '$(srcdir)/'`minizip/ioapi.c
 
 unzip.lo: minizip/unzip.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unzip.lo -MD -MP -MF $(DEPDIR)/unzip.Tpo -c -o unzip.lo `test -f 'minizip/unzip.c' || echo '$(srcdir)/'`minizip/unzip.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/unzip.Tpo $(DEPDIR)/unzip.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unzip.lo -MD -MP -MF $(DEPDIR)/unzip.Tpo -c -o unzip.lo `test -f 'minizip/unzip.c' || echo '$(srcdir)/'`minizip/unzip.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/unzip.Tpo $(DEPDIR)/unzip.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='minizip/unzip.c' object='unzip.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unzip.lo `test -f 'minizip/unzip.c' || echo '$(srcdir)/'`minizip/unzip.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unzip.lo `test -f 'minizip/unzip.c' || echo '$(srcdir)/'`minizip/unzip.c
 
 zip.lo: minizip/zip.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zip.lo -MD -MP -MF $(DEPDIR)/zip.Tpo -c -o zip.lo `test -f 'minizip/zip.c' || echo '$(srcdir)/'`minizip/zip.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/zip.Tpo $(DEPDIR)/zip.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zip.lo -MD -MP -MF $(DEPDIR)/zip.Tpo -c -o zip.lo `test -f 'minizip/zip.c' || echo '$(srcdir)/'`minizip/zip.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/zip.Tpo $(DEPDIR)/zip.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='minizip/zip.c' object='zip.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zip.lo `test -f 'minizip/zip.c' || echo '$(srcdir)/'`minizip/zip.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zip.lo `test -f 'minizip/zip.c' || echo '$(srcdir)/'`minizip/zip.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

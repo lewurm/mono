@@ -11,6 +11,7 @@
 //
 // (C) 2001, 2002 Ximian, Inc.  http://www.ximian.com
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
+// Copyright 2011 Xamarin Inc (http://www.xamarin.com).
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -36,7 +37,9 @@ using System.Collections;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+#if !FULL_AOT_RUNTIME
 using System.Reflection.Emit;
+#endif
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -61,8 +64,9 @@ namespace System {
 	[ComDefaultInterface (typeof (_AppDomain))]
 #endif
 	[ClassInterface(ClassInterfaceType.None)]
+	[StructLayout (LayoutKind.Sequential)]
 #if NET_2_1
-	public sealed class AppDomain : MarshalByRefObject {
+	public sealed class AppDomain : MarshalByRefObject, _AppDomain {
 #else
 	public sealed class AppDomain : MarshalByRefObject, _AppDomain, IEvidenceFactory {
 #endif
@@ -81,7 +85,6 @@ namespace System {
 
 		[ThreadStatic]
 		static Hashtable assembly_resolve_in_progress_refonly;
-#if !MOONLIGHT
 		// CAS
 		private Evidence _evidence;
 		private PermissionSet _granted;
@@ -91,7 +94,7 @@ namespace System {
 
 		[ThreadStatic]
 		private static IPrincipal _principal;
-#endif
+
 		static AppDomain default_domain;
 
 		private AppDomain ()
@@ -121,14 +124,15 @@ namespace System {
 			get { throw new NotImplementedException (); }
 		}
 #endif
-#if !MOONLIGHT
 		public string BaseDirectory {
 			get {
 				string path = SetupInformationNoCopy.ApplicationBase;
+#if !NET_2_1
 				if (SecurityManager.SecurityEnabled && (path != null) && (path.Length > 0)) {
 					// we cannot divulge local file informations
 					new FileIOPermission (FileIOPermissionAccess.PathDiscovery, path).Demand ();
 				}
+#endif
 				return path;
 			}
 		}
@@ -136,10 +140,12 @@ namespace System {
 		public string RelativeSearchPath {
 			get {
 				string path = SetupInformationNoCopy.PrivateBinPath;
+#if !NET_2_1
 				if (SecurityManager.SecurityEnabled && (path != null) && (path.Length > 0)) {
 					// we cannot divulge local file informations
 					new FileIOPermission (FileIOPermissionAccess.PathDiscovery, path).Demand ();
 				}
+#endif
 				return path;
 			}
 		}
@@ -151,10 +157,12 @@ namespace System {
 					return null;
 
 				string path = Path.Combine (setup.DynamicBase, setup.ApplicationName);
+#if !NET_2_1
 				if (SecurityManager.SecurityEnabled && (path != null) && (path.Length > 0)) {
 					// we cannot divulge local file informations
 					new FileIOPermission (FileIOPermissionAccess.PathDiscovery, path).Demand ();
 				}
+#endif
 				return path;
 			}
 		}
@@ -164,7 +172,6 @@ namespace System {
 				return (SetupInformationNoCopy.ShadowCopyFiles == "true");
 			}
 		}
-#endif
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private extern string getFriendlyName ();
@@ -174,7 +181,7 @@ namespace System {
 				return getFriendlyName ();
 			}
 		}
-#if !MOONLIGHT
+
 		public Evidence Evidence {
 			get {
 				// if the host (runtime) hasn't provided it's own evidence...
@@ -222,7 +229,6 @@ namespace System {
 		internal PermissionSet GrantedPermissionSet {
 			get { return _granted; }
 		}
-#endif
 
 #if NET_4_0
 		public PermissionSet PermissionSet {
@@ -254,8 +260,6 @@ namespace System {
 				return default_domain;
 			}
 		}
-
-#if !MOONLIGHT
 
 		[Obsolete ("AppDomain.AppendPrivatePath has been deprecated. Please investigate the use of AppDomainSetup.PrivateBinPath instead.")]
 		[SecurityPermission (SecurityAction.LinkDemand, ControlAppDomain = true)]
@@ -457,8 +461,7 @@ namespace System {
 			return (oh != null) ? oh.Unwrap () : null;
 		}
 
-#endif // !NET_2_1
-
+#if !FULL_AOT_RUNTIME
 		public AssemblyBuilder DefineDynamicAssembly (AssemblyName name, AssemblyBuilderAccess access)
 		{
 			return DefineDynamicAssembly (name, access, null, null, null, null, null, false);
@@ -596,6 +599,7 @@ namespace System {
 		{
 			return new AssemblyBuilder (name, null, access, true);
 		}
+#endif
 
 		//
 		// AppDomain.DoCallBack works because AppDomain is a MarshalByRefObject
@@ -814,7 +818,6 @@ namespace System {
 			assembly.FromByteArray = true;
 			return assembly;
 		}
-#if !MOONLIGHT
 #if NET_4_0
 		[Obsolete ("AppDomain policy levels are obsolete")]
 #endif
@@ -877,7 +880,7 @@ namespace System {
 
 			_principal = principal;
 		}
-#endif
+
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private static extern AppDomain InternalSetDomainByID (int domain_id);
  
@@ -965,8 +968,6 @@ namespace System {
 			}
 			return _process_guid;
 		}
-
-#if !MOONLIGHT
 
 		public static AppDomain CreateDomain (string friendlyName)
 		{
@@ -1096,7 +1097,7 @@ namespace System {
 			if (info == null)
 				throw new ArgumentNullException ("info");
 
-			info.ApplicationTrust = new ApplicationTrust (grantSet, fullTrustAssemblies ?? new StrongName [0]);
+			info.ApplicationTrust = new ApplicationTrust (grantSet, fullTrustAssemblies ?? EmptyArray<StrongName>.Value);
 			return CreateDomain (friendlyName, securityInfo, info);		
 		}
 #endif
@@ -1115,8 +1116,7 @@ namespace System {
 
 			return info;
 		}
-#endif // !NET_2_1
-
+		
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private static extern bool InternalIsFinalizingForUnload (int domain_id);
 
@@ -1176,14 +1176,7 @@ namespace System {
 
 		public override string ToString ()
 		{
-#if !MOONLIGHT
 			return getFriendlyName ();
-#else
-			StringBuilder sb = new StringBuilder ("Name:");
-			sb.AppendLine (FriendlyName);
-			sb.AppendLine ("There are no context policies.");
-			return sb.ToString ();
-#endif
 		}
 
 		private static void ValidateAssemblyName (string name)
@@ -1285,9 +1278,11 @@ namespace System {
 
 			string name;
 
+#if !FULL_AOT_RUNTIME
 			if (name_or_tb is TypeBuilder)
 				name = ((TypeBuilder) name_or_tb).FullName;
 			else
+#endif
 				name = (string) name_or_tb;
 
 			/* Prevent infinite recursion */
@@ -1341,13 +1336,12 @@ namespace System {
 				DomainUnload(this, null);
 		}
 
-#if !NET_2_1
 		internal byte[] GetMarshalledDomainObjRef ()
 		{
 			ObjRef oref = RemotingServices.Marshal (AppDomain.CurrentDomain, null, typeof (AppDomain));
 			return CADSerializer.SerializeObject (oref).GetBuffer();
 		}
-#endif
+
 		internal void ProcessMessageInDomain (byte[] arrRequest, CADMethodCallMessage cadMsg,
 		                                      out byte[] arrResponse, out CADMethodReturnMessage cadMrm)
 		{
@@ -1414,23 +1408,26 @@ namespace System {
 			get { return _domain_manager; }
 		}
 
-#if (!MOONLIGHT)
-
 		public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
 
         #pragma warning disable 649
+#if MOBILE
+		private object _activation;
+		private object _applicationIdentity;
+#else
 		private ActivationContext _activation;
 		private ApplicationIdentity _applicationIdentity;
+#endif
         #pragma warning restore 649
 
 		// properties
 
 		public ActivationContext ActivationContext {
-			get { return _activation; }
+			get { return (ActivationContext)_activation; }
 		}
 
 		public ApplicationIdentity ApplicationIdentity {
-			get { return _applicationIdentity; }
+			get { return (ApplicationIdentity)_applicationIdentity; }
 		}
 
 		public int Id {
@@ -1523,15 +1520,6 @@ namespace System {
 			return GetAssemblies (true);
 		}
 
-#else // MOONLIGHT
-
-		public int ExecuteAssemblyByName (string assemblyName)
-		{
-			// critical code in SL that we're not calling in ML
-			throw new NotImplementedException ();
-		}
-#endif
-
 #if !NET_2_1
 		void _AppDomain.GetIDsOfNames ([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
 		{
@@ -1555,7 +1543,7 @@ namespace System {
 		}
 #endif
 
-#if NET_4_0 || MOONLIGHT || MOBILE
+#if NET_4_0
 		List<string> compatibility_switch;
 
 		public bool? IsCompatibilitySwitchSet (string value)

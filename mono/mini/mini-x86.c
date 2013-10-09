@@ -26,11 +26,13 @@
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-memory-model.h>
 
 #include "trace.h"
 #include "mini-x86.h"
 #include "cpu-x86.h"
 #include "ir-emit.h"
+#include "mini-gc.h"
 
 /* On windows, these hold the key returned by TlsAlloc () */
 static gint lmf_tls_offset = -1;
@@ -202,6 +204,8 @@ typedef struct {
 	gint16 offset;
 	gint8  reg;
 	ArgStorage storage;
+	int nslots;
+	gboolean is_pair;
 
 	/* Only if storage == ArgValuetypeInReg */
 	ArgStorage pair_storage [2];
@@ -218,6 +222,7 @@ typedef struct {
 	gboolean vtype_retaddr;
 	/* The index of the vret arg in the argument list */
 	int vret_arg_index;
+	int vret_arg_offset;
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
@@ -259,6 +264,7 @@ add_general_pair (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo)
 	
 	ainfo->storage = ArgOnStack;
 	(*stack_size) += sizeof (gpointer) * 2;
+	ainfo->nslots = 2;
 }
 
 static void inline
@@ -269,6 +275,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean is_double)
     if (*gr >= FLOAT_PARAM_REGS) {
 		ainfo->storage = ArgOnStack;
 		(*stack_size) += is_double ? 8 : 4;
+		ainfo->nslots = is_double ? 2 : 1;
     }
     else {
 		/* A double register */
@@ -333,6 +340,7 @@ add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgIn
 	ainfo->offset = *stack_size;
 	ainfo->storage = ArgOnStack;
 	*stack_size += ALIGN_TO (size, sizeof (gpointer));
+	ainfo->nslots = ALIGN_TO (size, sizeof (gpointer)) / sizeof (gpointer);
 }
 
 /*
@@ -355,6 +363,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 
 	gr = 0;
 	fr = 0;
+	cinfo->nargs = n;
 
 	/* return value */
 	{
@@ -384,6 +393,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 		case MONO_TYPE_I8:
 			cinfo->ret.storage = ArgInIReg;
 			cinfo->ret.reg = X86_EAX;
+			cinfo->ret.is_pair = TRUE;
 			break;
 		case MONO_TYPE_R4:
 			cinfo->ret.storage = ArgOnFloatFpStack;
@@ -398,7 +408,8 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 				break;
 			}
 			/* Fall through */
-		case MONO_TYPE_VALUETYPE: {
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_TYPEDBYREF: {
 			guint32 tmp_gr = 0, tmp_fr = 0, tmp_stacksize = 0;
 
 			add_valuetype (gsctx, sig, &cinfo->ret, sig->ret, TRUE, &tmp_gr, &tmp_fr, &tmp_stacksize);
@@ -408,10 +419,6 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			}
 			break;
 		}
-		case MONO_TYPE_TYPEDBYREF:
-			/* Same as a valuetype with size 12 */
-			cinfo->vtype_retaddr = TRUE;
-			break;
 		case MONO_TYPE_VOID:
 			cinfo->ret.storage = ArgNone;
 			break;
@@ -435,6 +442,7 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			add_general (&gr, &stack_size, &cinfo->args [sig->hasthis + 0]);
 			pstart = 1;
 		}
+		cinfo->vret_arg_offset = stack_size;
 		add_general (&gr, &stack_size, &cinfo->ret);
 		cinfo->vret_arg_index = 1;
 	} else {
@@ -509,11 +517,8 @@ get_call_info_internal (MonoGenericSharingContext *gsctx, CallInfo *cinfo, MonoM
 			}
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE:
-			add_valuetype (gsctx, sig, ainfo, sig->params [i], FALSE, &gr, &fr, &stack_size);
-			break;
 		case MONO_TYPE_TYPEDBYREF:
-			stack_size += sizeof (MonoTypedRef);
-			ainfo->storage = ArgOnStack;
+			add_valuetype (gsctx, sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
 			break;
 		case MONO_TYPE_U8:
 		case MONO_TYPE_I8:
@@ -580,7 +585,7 @@ get_call_info (MonoGenericSharingContext *gsctx, MonoMemPool *mp, MonoMethodSign
  * FIXME: The metadata calls might not be signal safe.
  */
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
+mono_arch_get_argument_info (MonoGenericSharingContext *gsctx, MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
 {
 	int len, k, args_size = 0;
 	int size, pad;
@@ -593,7 +598,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	cinfo = (CallInfo*)g_newa (guint8*, len);
 	memset (cinfo, 0, len);
 
-	cinfo = get_call_info_internal (NULL, cinfo, csig);
+	cinfo = get_call_info_internal (gsctx, cinfo, csig);
 
 	arg_info [0].offset = offset;
 
@@ -791,6 +796,9 @@ mono_arch_init (void)
 
 	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
 	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
+	mono_aot_register_jit_icall ("mono_x86_start_gsharedvt_call", mono_x86_start_gsharedvt_call);
+#endif
 }
 
 /*
@@ -799,6 +807,10 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
+	if (ss_trigger_page)
+		mono_vfree (ss_trigger_page, mono_pagesize ());
+	if (bp_trigger_page)
+		mono_vfree (bp_trigger_page, mono_pagesize ());
 	DeleteCriticalSection (&mini_arch_mutex);
 }
 
@@ -806,7 +818,7 @@ mono_arch_cleanup (void)
  * This function returns the optimizations supported on this cpu.
  */
 guint32
-mono_arch_cpu_optimizazions (guint32 *exclude_mask)
+mono_arch_cpu_optimizations (guint32 *exclude_mask)
 {
 #if !defined(__native_client__)
 	int eax, ebx, ecx, edx;
@@ -1131,7 +1143,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	/* Allocate locals */
-	offsets = mono_allocate_stack_slots (cfg, &locals_stack_size, &locals_stack_align);
+	offsets = mono_allocate_stack_slots (cfg, TRUE, &locals_stack_size, &locals_stack_align);
 	if (locals_stack_size > MONO_ARCH_MAX_FRAME_SIZE) {
 		char *mname = mono_method_full_name (cfg->method, TRUE);
 		cfg->exception_type = MONO_EXCEPTION_INVALID_PROGRAM;
@@ -1140,8 +1152,15 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		return;
 	}
 	if (locals_stack_align) {
+		int prev_offset = offset;
+
 		offset += (locals_stack_align - 1);
 		offset &= ~(locals_stack_align - 1);
+
+		while (prev_offset < offset) {
+			prev_offset += 4;
+			mini_gc_set_slot_type_from_fp (cfg, - prev_offset, SLOT_NOREF);
+		}
 	}
 	cfg->locals_min_stack_offset = - (offset + locals_stack_size);
 	cfg->locals_max_stack_offset = - offset;
@@ -1170,7 +1189,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	switch (cinfo->ret.storage) {
 	case ArgOnStack:
-		if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+		if (cfg->vret_addr) {
 			/* 
 			 * In the new IR, the cfg->vret_addr variable represents the
 			 * vtype return value.
@@ -1233,7 +1252,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cinfo->ret.storage == ArgValuetypeInReg)
 		cfg->ret_var_is_local = TRUE;
-	if ((cinfo->ret.storage != ArgValuetypeInReg) && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if ((cinfo->ret.storage != ArgValuetypeInReg) && (MONO_TYPE_ISSTRUCT (sig->ret) || mini_is_gsharedvt_variable_type (cfg, sig->ret))) {
 		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
 	}
 
@@ -1271,9 +1290,7 @@ static void
 emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	MonoMethodSignature *tmp_sig;
-
-	/* FIXME: Add support for signature tokens to AOT */
-	cfg->disable_aot = TRUE;
+	int sig_reg;
 
 	/*
 	 * mono_ArgIterator_Setup assumes the signature cookie is 
@@ -1286,7 +1303,13 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	tmp_sig->sentinelpos = 0;
 	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
 
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_X86_PUSH_IMM, -1, -1, tmp_sig);
+	if (cfg->compile_aot) {
+		sig_reg = mono_alloc_ireg (cfg);
+		MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
+		MONO_EMIT_NEW_UNALU (cfg, OP_X86_PUSH, -1, sig_reg);
+	} else {
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_X86_PUSH_IMM, -1, -1, tmp_sig);
+	}
 }
 
 #ifdef ENABLE_LLVM
@@ -1327,13 +1350,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		*/
 	}
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage == ArgInIReg) {
+	if (mini_type_is_vtype (cfg, sig->ret) && cinfo->ret.storage == ArgInIReg) {
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
 	}
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret) && cinfo->ret.storage != ArgInIReg) {
+	if (mini_type_is_vtype (cfg, sig->ret) && cinfo->ret.storage != ArgInIReg) {
 		// FIXME:
 		cfg->exception_message = g_strdup ("vtype ret in call");
 		cfg->disable_llvm = TRUE;
@@ -1358,7 +1381,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgInFPReg;
 			break;
 		case ArgOnStack:
-			if (MONO_TYPE_ISSTRUCT (t)) {
+			if (mini_type_is_vtype (cfg, t)) {
 				if (mono_class_value_size (mono_class_from_mono_type (t), NULL) == 0)
 				/* LLVM seems to allocate argument space for empty structures too */
 					linfo->args [i].storage = LLVMArgNone;
@@ -1400,14 +1423,27 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 }
 #endif
 
+static void
+emit_gc_param_slot_def (MonoCompile *cfg, int sp_offset, MonoType *t)
+{
+	if (cfg->compute_gc_maps) {
+		MonoInst *def;
+
+		/* On x86, the offsets are from the sp value before the start of the call sequence */
+		if (t == NULL)
+			t = &mono_defaults.int_class->byval_arg;
+		EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, sp_offset, t);
+	}
+}
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
 	MonoInst *arg, *in;
 	MonoMethodSignature *sig;
-	int i, n;
+	int i, j, n;
 	CallInfo *cinfo;
-	int sentinelpos = 0;
+	int sentinelpos = 0, sp_offset = 0;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -1423,6 +1459,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		arg->sreg1 = X86_ESP;
 		arg->inst_imm = cinfo->stack_align_amount;
 		MONO_ADD_INS (cfg->cbb, arg);
+		for (i = 0; i < cinfo->stack_align_amount; i += sizeof (mgreg_t)) {
+			sp_offset += 4;
+
+			emit_gc_param_slot_def (cfg, sp_offset, NULL);
+		}
 	}
 
 	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
@@ -1438,15 +1479,20 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 	}
 
+	// FIXME: Emit EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF everywhere 
+
 	/* Handle the case where there are no implicit arguments */
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (n == sentinelpos)) {
 		emit_sig_cookie (cfg, call, cinfo);
+		sp_offset += 4;
+		emit_gc_param_slot_def (cfg, sp_offset, NULL);
 	}
 
 	/* Arguments are pushed in the reverse order */
 	for (i = n - 1; i >= 0; i --) {
 		ArgInfo *ainfo = cinfo->args + i;
-		MonoType *t;
+		MonoType *orig_type, *t;
+		int argsize;
 
 		if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && i == 0) {
 			/* Push the vret arg before the first argument */
@@ -1455,12 +1501,15 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			vtarg->type = STACK_MP;
 			vtarg->sreg1 = call->vret_var->dreg;
 			MONO_ADD_INS (cfg->cbb, vtarg);
+			sp_offset += 4;
+			emit_gc_param_slot_def (cfg, sp_offset, NULL);
 		}
 
 		if (i >= sig->hasthis)
 			t = sig->params [i - sig->hasthis];
 		else
 			t = &mono_defaults.int_class->byval_arg;
+		orig_type = t;
 		t = mini_type_get_underlying_type (cfg->generic_sharing_context, t);
 
 		MONO_INST_NEW (cfg, arg, OP_X86_PUSH);
@@ -1493,9 +1542,12 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				arg->backend.size = size;
 
 				MONO_ADD_INS (cfg->cbb, arg);
+				sp_offset += size;
+				emit_gc_param_slot_def (cfg, sp_offset, orig_type);
 			}
-		}
-		else {
+		} else {
+			argsize = 4;
+
 			switch (ainfo->storage) {
 			case ArgOnStack:
 				arg->opcode = OP_X86_PUSH;
@@ -1505,14 +1557,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 						arg->opcode = OP_STORER4_MEMBASE_REG;
 						arg->inst_destbasereg = X86_ESP;
 						arg->inst_offset = 0;
+						argsize = 4;
 					} else if (t->type == MONO_TYPE_R8) {
 						MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SUB_IMM, X86_ESP, X86_ESP, 8);
 						arg->opcode = OP_STORER8_MEMBASE_REG;
 						arg->inst_destbasereg = X86_ESP;
 						arg->inst_offset = 0;
+						argsize = 8;
 					} else if (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8) {
 						arg->sreg1 ++;
 						MONO_EMIT_NEW_UNALU (cfg, OP_X86_PUSH, -1, in->dreg + 2);
+						sp_offset += 4;
 					}
 				}
 				break;
@@ -1521,15 +1576,39 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			
 			MONO_ADD_INS (cfg->cbb, arg);
+
+			sp_offset += argsize;
+
+			if (cfg->compute_gc_maps) {
+				if (argsize == 4) {
+					/* FIXME: The == STACK_OBJ check might be fragile ? */
+					if (sig->hasthis && i == 0 && call->args [i]->type == STACK_OBJ) {
+						/* this */
+						if (call->need_unbox_trampoline)
+							/* The unbox trampoline transforms this into a managed pointer */
+							emit_gc_param_slot_def (cfg, sp_offset, &mono_defaults.int_class->this_arg);
+						else
+							emit_gc_param_slot_def (cfg, sp_offset, &mono_defaults.object_class->byval_arg);
+					} else {
+						emit_gc_param_slot_def (cfg, sp_offset, orig_type);
+					}
+				} else {
+					/* i8/r8 */
+					for (j = 0; j < argsize; j += 4)
+						emit_gc_param_slot_def (cfg, sp_offset - j, NULL);
+				}
+			}
 		}
 
 		if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (i == sentinelpos)) {
 			/* Emit the signature cookie just before the implicit arguments */
 			emit_sig_cookie (cfg, call, cinfo);
+			sp_offset += 4;
+			emit_gc_param_slot_def (cfg, sp_offset, NULL);
 		}
 	}
 
-	if (sig->ret && MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (sig->ret && (MONO_TYPE_ISSTRUCT (sig->ret) || cinfo->vtype_retaddr)) {
 		MonoInst *vtarg;
 
 		if (cinfo->ret.storage == ArgValuetypeInReg) {
@@ -1550,6 +1629,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			vtarg->type = STACK_MP;
 			vtarg->sreg1 = call->vret_var->dreg;
 			MONO_ADD_INS (cfg->cbb, vtarg);
+			sp_offset += 4;
+			emit_gc_param_slot_def (cfg, sp_offset, NULL);
 		}
 
 		/* if the function returns a struct on stack, the called method already does a ret $0x4 */
@@ -1558,6 +1639,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	call->stack_usage = cinfo->stack_usage;
+	call->stack_align_amount = cinfo->stack_align_amount;
+	cfg->arch.param_area_size = MAX (cfg->arch.param_area_size, sp_offset);
 }
 
 void
@@ -1807,12 +1890,28 @@ if (ins->inst_true_bb->native_offset) { \
 static guint8*
 emit_call (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstpointer data)
 {
+	gboolean needs_paddings = TRUE;
+	guint32 pad_size;
+
+	if (cfg->abs_patches && g_hash_table_lookup (cfg->abs_patches, data)) {
+	} else {
+		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
+		if (info) {
+			if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && strstr (cfg->method->name, info->name))
+				needs_paddings = FALSE; /* A call to the wrapped function */
+		}
+	}
+
+	if (cfg->compile_aot)
+		needs_paddings = FALSE;
 	/*The address must be 4 bytes aligned to avoid spanning multiple cache lines.
 	This is required for code patching to be safe on SMP machines.
 	*/
-	guint32 pad_size = (guint32)(code + 1 - cfg->native_code) & 0x3;
-	if (pad_size)
+	pad_size = (guint32)(code + 1 - cfg->native_code) & 0x3;
+#ifndef __native_client_codegen__
+	if (needs_paddings && pad_size)
 		x86_padding (code, 4 - pad_size);
+#endif
 
 	mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 	x86_call_code (code, 0);
@@ -2199,11 +2298,12 @@ mono_x86_have_tls_get (void)
 #ifdef __APPLE__
 	static gboolean have_tls_get = FALSE;
 	static gboolean inited = FALSE;
+	guint32 *ins;
 
 	if (inited)
 		return have_tls_get;
 
-	guint32 *ins = (guint32*)pthread_getspecific;
+	ins = (guint32*)pthread_getspecific;
 	/*
 	 * We're looking for these two instructions:
 	 *
@@ -2216,9 +2316,26 @@ mono_x86_have_tls_get (void)
 	inited = TRUE;
 
 	return have_tls_get;
+#elif defined(TARGET_ANDROID)
+	return FALSE;
 #else
 	return TRUE;
 #endif
+}
+
+static guint8*
+mono_x86_emit_tls_set (guint8* code, int sreg, int tls_offset)
+{
+#if defined(__APPLE__)
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_mem_reg (code, tls_gs_offset + (tls_offset * 4), sreg, 4);
+#elif defined(TARGET_WIN32)
+	g_assert_not_reached ();
+#else
+	x86_prefix (code, X86_GS_PREFIX);
+	x86_mov_mem_reg (code, tls_offset, sreg, 4);
+#endif
+	return code;
 }
 
 /*
@@ -2416,7 +2533,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			cfg->code_size *= 2;
 			cfg->native_code = mono_realloc_native_code(cfg);
 			code = cfg->native_code + offset;
-			mono_jit_stats.code_reallocs++;
+			cfg->stat_code_reallocs++;
 		}
 
 		if (cfg->debug_info)
@@ -2627,6 +2744,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 */
 			for (i = 0; i < 6; ++i)
 				x86_nop (code);
+			/*
+			 * Add an additional nop so skipping the bp doesn't cause the ip to point
+			 * to another IL offset.
+			 */
+			x86_nop (code);
 			break;
 		}
 		case OP_ADDCC:
@@ -3042,6 +3164,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoCallInst *call = (MonoCallInst*)ins;
 			int pos = 0, i;
 
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
+
 			/* FIXME: no tracing support... */
 			if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 				code = mono_arch_instrument_epilog (cfg, mono_profiler_method_leave, code, FALSE);
@@ -3070,7 +3195,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			/* Copy arguments on the stack to our argument area */
-			for (i = 0; i < call->stack_usage; i += 4) {
+			for (i = 0; i < call->stack_usage - call->stack_align_amount; i += 4) {
 				x86_mov_reg_membase (code, X86_EAX, X86_ESP, i, 4);
 				x86_mov_membase_reg (code, X86_EBP, 8 + i, X86_EAX, 4);
 			}
@@ -3081,6 +3206,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD_JUMP, ins->inst_p0);
 			x86_jump32 (code, 0);
 
+			ins->flags |= MONO_INST_GC_CALLSITE;
 			cfg->disable_aot = TRUE;
 			break;
 		}
@@ -3520,7 +3646,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			br = code; x86_branch8 (code, X86_CC_GEZ, 0, TRUE);
 	
 			/* add correction constant mn */
-			x86_fld80_mem (code, mn);
+			if (cfg->compile_aot) {
+				x86_push_imm (code, (((guint32)mn [9]) << 24) | ((guint32)mn [8] << 16) | ((guint32)mn [7] << 8) | ((guint32)mn [6]));
+				x86_push_imm (code, (((guint32)mn [5]) << 24) | ((guint32)mn [4] << 16) | ((guint32)mn [3] << 8) | ((guint32)mn [2]));
+				x86_push_imm (code, (((guint32)mn [1]) << 24) | ((guint32)mn [0] << 16));
+				x86_fld80_membase (code, X86_ESP, 2);
+				x86_alu_reg_imm (code, X86_ADD, X86_ESP, 12);
+			} else {
+				x86_fld80_mem (code, mn);
+			}
 			x86_fp_op_reg (code, X86_FADD, 1, TRUE);
 
 			x86_patch (br, code);
@@ -3992,9 +4126,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MEMORY_BARRIER: {
-			/* http://blogs.sun.com/dave/resource/NHM-Pipeline-Blog-V2.txt */
-			x86_prefix (code, X86_LOCK_PREFIX);
-			x86_alu_membase_imm (code, X86_ADD, X86_ESP, 0, 0);
+			/* x86 only needs barrier for StoreLoad and FullBarrier */
+			switch (ins->backend.memory_barrier_kind) {
+			case StoreLoadBarrier:
+			case FullBarrier:
+				/* http://blogs.sun.com/dave/resource/NHM-Pipeline-Blog-V2.txt */
+				x86_prefix (code, X86_LOCK_PREFIX);
+				x86_alu_membase_imm (code, X86_ADD, X86_ESP, 0, 0);
+				break;
+			}
 			break;
 		}
 		case OP_ATOMIC_ADD_I4: {
@@ -4119,6 +4259,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			size_t nursery_size;
 			gulong card_table = (gulong)mono_gc_get_card_table (&card_table_shift, &card_table_mask);
 			gulong nursery_start = (gulong)mono_gc_get_nursery (&nursery_shift, &nursery_size);
+			gboolean card_table_nursery_check = mono_gc_card_table_nursery_check ();
 
 			/*
 			 * We need one register we can clobber, we choose EDX and make sreg1
@@ -4141,17 +4282,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * done:
 			 */
 
-			if (value != X86_EDX)
-				x86_mov_reg_reg (code, X86_EDX, value, 4);
-			x86_shift_reg_imm (code, X86_SHR, X86_EDX, nursery_shift);
-			x86_alu_reg_imm (code, X86_CMP, X86_EDX, nursery_start >> nursery_shift);
-			br = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
+			if (card_table_nursery_check) {
+				if (value != X86_EDX)
+					x86_mov_reg_reg (code, X86_EDX, value, 4);
+				x86_shift_reg_imm (code, X86_SHR, X86_EDX, nursery_shift);
+				x86_alu_reg_imm (code, X86_CMP, X86_EDX, nursery_start >> nursery_shift);
+				br = code; x86_branch8 (code, X86_CC_NE, -1, FALSE);
+			}
 			x86_mov_reg_reg (code, X86_EDX, ptr, 4);
 			x86_shift_reg_imm (code, X86_SHR, X86_EDX, card_table_shift);
 			if (card_table_mask)
 				x86_alu_reg_imm (code, X86_AND, X86_EDX, (int)card_table_mask);
 			x86_mov_membase_imm (code, X86_EDX, card_table, 1, 1);
-			x86_patch (br, code);
+			if (card_table_nursery_check)
+				x86_patch (br, code);
 			break;
 		}
 #ifdef MONO_ARCH_SIMD_INTRINSICS
@@ -4874,6 +5018,13 @@ mono_arch_patch_code (MonoMethod *method, MonoDomain *domain, guint8 *code, Mono
 	}
 }
 
+static G_GNUC_UNUSED void
+stack_unaligned (MonoMethod *m, gpointer caller)
+{
+	printf ("%s\n", mono_method_full_name (m, TRUE));
+	g_assert_not_reached ();
+}
+
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -4909,6 +5060,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
   	g_assert(alignment_check == 0);
 #endif
 
+#if 0
+	{
+		guint8 *br [16];
+
+	/* Check that the stack is aligned on osx */
+	x86_mov_reg_reg (code, X86_EAX, X86_ESP, sizeof (mgreg_t));
+	x86_alu_reg_imm (code, X86_AND, X86_EAX, 15);
+	x86_alu_reg_imm (code, X86_CMP, X86_EAX, 0xc);
+	br [0] = code;
+	x86_branch_disp (code, X86_CC_Z, 0, FALSE);
+	x86_push_membase (code, X86_ESP, 0);
+	x86_push_imm (code, cfg->method);
+	x86_mov_reg_imm (code, X86_EAX, stack_unaligned);
+	x86_call_reg (code, X86_EAX);
+	x86_patch (br [0], code);
+	}
+#endif
+
 	/* Offset between RSP and the CFA */
 	cfa_offset = 0;
 
@@ -4918,6 +5087,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	// IP saved at CFA - 4
 	/* There is no IP reg on x86 */
 	mono_emit_unwind_op_offset (cfg, code, X86_NREG, -cfa_offset);
+	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 
 	need_stack_frame = needs_stack_frame (cfg);
 
@@ -4928,55 +5098,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_offset (cfg, code, X86_EBP, - cfa_offset);
 		x86_mov_reg_reg (code, X86_EBP, X86_ESP, 4);
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, X86_EBP);
+		/* These are handled automatically by the stack marking code */
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 	} else {
 		cfg->frame_reg = X86_ESP;
 	}
 
 	alloc_size = cfg->stack_offset;
 	pos = 0;
-
-	if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
-		/* Might need to attach the thread to the JIT  or change the domain for the callback */
-		if (appdomain_tls_offset != -1 && lmf_tls_offset != -1) {
-			guint8 *buf, *no_domain_branch;
-
-			code = mono_x86_emit_tls_get (code, X86_EAX, appdomain_tls_offset);
-			x86_alu_reg_imm (code, X86_CMP, X86_EAX, GPOINTER_TO_UINT (cfg->domain));
-			no_domain_branch = code;
-			x86_branch8 (code, X86_CC_NE, 0, 0);
-			code = mono_x86_emit_tls_get ( code, X86_EAX, lmf_tls_offset);
-			x86_test_reg_reg (code, X86_EAX, X86_EAX);
-			buf = code;
-			x86_branch8 (code, X86_CC_NE, 0, 0);
-			x86_patch (no_domain_branch, code);
-			x86_push_imm (code, cfg->domain);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-			x86_patch (buf, code);
-#ifdef TARGET_WIN32
-			/* The TLS key actually contains a pointer to the MonoJitTlsData structure */
-			/* FIXME: Add a separate key for LMF to avoid this */
-			x86_alu_reg_imm (code, X86_ADD, X86_EAX, G_STRUCT_OFFSET (MonoJitTlsData, lmf));
-#endif
-		}
-		else {
-			if (cfg->compile_aot) {
-				/* 
-				 * This goes before the saving of callee saved regs, so save the got reg
-				 * ourselves.
-				 */
-				x86_push_reg (code, MONO_ARCH_GOT_REG);
-				code = mono_arch_emit_load_got_addr (cfg->native_code, code, cfg, NULL);
-				x86_push_imm (code, 0);
-			} else {
-				x86_push_imm (code, cfg->domain);
-			}
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, (gpointer)"mono_jit_thread_attach");
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 4);
-			if (cfg->compile_aot)
-				x86_pop_reg (code, MONO_ARCH_GOT_REG);
-		}
-	}
 
 	if (method->save_lmf) {
 		pos += sizeof (MonoLMF);
@@ -4990,19 +5119,24 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			x86_push_imm_template (code);
 		}
 		cfa_offset += sizeof (gpointer);
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 
 		/* save all caller saved regs */
 		x86_push_reg (code, X86_EBP);
 		cfa_offset += sizeof (gpointer);
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 		x86_push_reg (code, X86_ESI);
 		cfa_offset += sizeof (gpointer);
 		mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 		x86_push_reg (code, X86_EDI);
 		cfa_offset += sizeof (gpointer);
 		mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 		x86_push_reg (code, X86_EBX);
 		cfa_offset += sizeof (gpointer);
 		mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
+		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 
 		if ((lmf_tls_offset != -1) && !is_win32 && !optimize_for_xen) {
 			/*
@@ -5010,15 +5144,19 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			 * through the mono_lmf_addr TLS variable.
 			 */
 			/* %eax = previous_lmf */
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_reg_mem (code, X86_EAX, lmf_tls_offset, 4);
+			code = mono_x86_emit_tls_get (code, X86_EAX, lmf_tls_offset);
 			/* skip esp + method_info + lmf */
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 12);
+			cfa_offset += 12;
+			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
+			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + 4, SLOT_NOREF);
+			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + 8, SLOT_NOREF);
 			/* push previous_lmf */
 			x86_push_reg (code, X86_EAX);
+			cfa_offset += 4;
+			mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
 			/* new lmf = ESP */
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_mem_reg (code, lmf_tls_offset, X86_ESP, 4);
+			code = mono_x86_emit_tls_set (code, X86_ESP, lmf_tls_offset);
 		} else {
 			/* get the address of lmf for the current thread */
 			/* 
@@ -5057,6 +5195,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			pos += 4;
 			cfa_offset += sizeof (gpointer);
 			mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset);
+			/* These are handled automatically by the stack marking code */
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_EDI)) {
@@ -5064,6 +5204,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			pos += 4;
 			cfa_offset += sizeof (gpointer);
 			mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset);
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 
 		if (cfg->used_int_regs & (1 << X86_ESI)) {
@@ -5071,6 +5212,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			pos += 4;
 			cfa_offset += sizeof (gpointer);
 			mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset);
+			mini_gc_set_slot_type_from_cfa (cfg, - cfa_offset, SLOT_NOREF);
 		}
 	}
 
@@ -5082,9 +5224,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		if (need_stack_frame)
 			tot += 4; /* ebp */
 		tot &= MONO_ARCH_FRAME_ALIGNMENT - 1;
-		if (tot)
+		if (tot) {
 			alloc_size += MONO_ARCH_FRAME_ALIGNMENT - tot;
+			for (i = 0; i < MONO_ARCH_FRAME_ALIGNMENT - tot; i += sizeof (mgreg_t))
+				mini_gc_set_slot_type_from_fp (cfg, - (alloc_size + pos - i), SLOT_NOREF);
+		}
 	}
+
+	cfg->arch.sp_fp_offset = alloc_size + pos;
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
@@ -5098,7 +5245,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				cfg->code_size *= 2;
 			cfg->native_code = mono_realloc_native_code(cfg);
 			code = cfg->native_code + offset;
-			mono_jit_stats.code_reallocs++;
+			cfg->stat_code_reallocs++;
 		}
 		while (remaining_size >= 0x1000) {
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x1000);
@@ -5214,7 +5361,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	while (cfg->code_len + max_epilog_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
 		cfg->native_code = mono_realloc_native_code(cfg);
-		mono_jit_stats.code_reallocs++;
+		cfg->stat_code_reallocs++;
 	}
 
 	code = cfg->native_code + cfg->code_len;
@@ -5255,8 +5402,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			x86_mov_reg_membase (code, X86_ECX, X86_EBP, lmf_offset + G_STRUCT_OFFSET (MonoLMF, previous_lmf), 4);
 
 			/* lmf = previous_lmf */
-			x86_prefix (code, X86_GS_PREFIX);
-			x86_mov_mem_reg (code, lmf_tls_offset, X86_ECX, 4);
+			code = mono_x86_emit_tls_set (code, X86_ECX, lmf_tls_offset);
 		} else {
 			/* Find a spare register */
 			switch (mini_type_get_underlying_type (cfg->generic_sharing_context, sig->ret)->type) {
@@ -5348,8 +5494,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (CALLCONV_IS_STDCALL (sig)) {
 		MonoJitArgumentInfo *arg_info = alloca (sizeof (MonoJitArgumentInfo) * (sig->param_count + 1));
 
-		stack_to_pop = mono_arch_get_argument_info (sig, sig->param_count, arg_info);
-	} else if (MONO_TYPE_ISSTRUCT (mono_method_signature (cfg->method)->ret) && (cinfo->ret.storage == ArgOnStack))
+		stack_to_pop = mono_arch_get_argument_info (NULL, sig, sig->param_count, arg_info);
+	} else if (cinfo->vtype_retaddr)
 		stack_to_pop = 4;
 	else
 		stack_to_pop = 0;
@@ -5395,7 +5541,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	while (cfg->code_len + code_size > (cfg->code_size - 16)) {
 		cfg->code_size *= 2;
 		cfg->native_code = mono_realloc_native_code(cfg);
-		mono_jit_stats.code_reallocs++;
+		cfg->stat_code_reallocs++;
 	}
 
 	code = cfg->native_code + cfg->code_len;
@@ -5495,41 +5641,31 @@ mono_arch_is_inst_imm (gint64 imm)
 	return TRUE;
 }
 
-/*
- * Support for fast access to the thread-local lmf structure using the GS
- * segment register on NPTL + kernel 2.6.x.
- */
-
-static gboolean tls_offset_inited = FALSE;
-
 void
-mono_arch_setup_jit_tls_data (MonoJitTlsData *tls)
+mono_arch_finish_init (void)
 {
-	if (!tls_offset_inited) {
-		if (!getenv ("MONO_NO_TLS")) {
+	if (!getenv ("MONO_NO_TLS")) {
 #ifdef TARGET_WIN32
-			/* 
-			 * We need to init this multiple times, since when we are first called, the key might not
-			 * be initialized yet.
-			 */
-			appdomain_tls_offset = mono_domain_get_native_tls_key ();
-			lmf_tls_offset = mono_get_jit_tls_key ();
+		/* 
+		 * We need to init this multiple times, since when we are first called, the key might not
+		 * be initialized yet.
+		 */
+		appdomain_tls_offset = mono_domain_get_tls_key ();
+		lmf_tls_offset = mono_get_jit_tls_key ();
 
-			/* Only 64 tls entries can be accessed using inline code */
-			if (appdomain_tls_offset >= 64)
-				appdomain_tls_offset = -1;
-			if (lmf_tls_offset >= 64)
-				lmf_tls_offset = -1;
+		/* Only 64 tls entries can be accessed using inline code */
+		if (appdomain_tls_offset >= 64)
+			appdomain_tls_offset = -1;
+		if (lmf_tls_offset >= 64)
+			lmf_tls_offset = -1;
 #else
 #if MONO_XEN_OPT
-			optimize_for_xen = access ("/proc/xen", F_OK) == 0;
+		optimize_for_xen = access ("/proc/xen", F_OK) == 0;
 #endif
-			tls_offset_inited = TRUE;
-			appdomain_tls_offset = mono_domain_get_tls_offset ();
-			lmf_tls_offset = mono_get_lmf_tls_offset ();
-			lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
+		appdomain_tls_offset = mono_domain_get_tls_offset ();
+		lmf_tls_offset = mono_get_lmf_tls_offset ();
+		lmf_addr_tls_offset = mono_get_lmf_addr_tls_offset ();
 #endif
-		}
 	}		
 }
 
@@ -5816,9 +5952,9 @@ mono_arch_get_patch_offset (guint8 *code)
 {
 	if ((code [0] == 0x8b) && (x86_modrm_mod (code [1]) == 0x2))
 		return 2;
-	else if ((code [0] == 0xba))
+	else if (code [0] == 0xba)
 		return 1;
-	else if ((code [0] == 0x68))
+	else if (code [0] == 0x68)
 		/* push IMM */
 		return 1;
 	else if ((code [0] == 0xff) && (x86_modrm_reg (code [1]) == 0x6))
@@ -6086,19 +6222,54 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	return start;
 }
 
-gpointer
+mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	switch (reg) {
-	case X86_EAX: return (gpointer)ctx->eax;
-	case X86_EBX: return (gpointer)ctx->ebx;
-	case X86_ECX: return (gpointer)ctx->ecx;
-	case X86_EDX: return (gpointer)ctx->edx;
-	case X86_ESP: return (gpointer)ctx->esp;
-	case X86_EBP: return (gpointer)ctx->ebp;
-	case X86_ESI: return (gpointer)ctx->esi;
-	case X86_EDI: return (gpointer)ctx->edi;
-	default: g_assert_not_reached ();
+	case X86_EAX: return ctx->eax;
+	case X86_EBX: return ctx->ebx;
+	case X86_ECX: return ctx->ecx;
+	case X86_EDX: return ctx->edx;
+	case X86_ESP: return ctx->esp;
+	case X86_EBP: return ctx->ebp;
+	case X86_ESI: return ctx->esi;
+	case X86_EDI: return ctx->edi;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+void
+mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
+{
+	switch (reg) {
+	case X86_EAX:
+		ctx->eax = val;
+		break;
+	case X86_EBX:
+		ctx->ebx = val;
+		break;
+	case X86_ECX:
+		ctx->ecx = val;
+		break;
+	case X86_EDX:
+		ctx->edx = val;
+		break;
+	case X86_ESP:
+		ctx->esp = val;
+		break;
+	case X86_EBP:
+		ctx->ebp = val;
+		break;
+	case X86_ESI:
+		ctx->esi = val;
+		break;
+	case X86_EDI:
+		ctx->edi = val;
+		break;
+	default:
+		g_assert_not_reached ();
 	}
 }
 
@@ -6485,36 +6656,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 #endif
 }
 
-/*
- * mono_arch_get_ip_for_breakpoint:
- *
- *   See mini-amd64.c for docs.
- */
-guint8*
-mono_arch_get_ip_for_breakpoint (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	return ip;
-}
-
 #define BREAKPOINT_SIZE 6
-
-/*
- * mono_arch_get_ip_for_single_step:
- *
- *   See mini-amd64.c for docs.
- */
-guint8*
-mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
-{
-	guint8 *ip = MONO_CONTEXT_GET_IP (ctx);
-
-	/* Size of x86_alu_reg_imm */
-	ip += 6;
-
-	return ip;
-}
 
 /*
  * mono_arch_skip_breakpoint:
@@ -6522,7 +6664,7 @@ mono_arch_get_ip_for_single_step (MonoJitInfo *ji, MonoContext *ctx)
  *   See mini-amd64.c for docs.
  */
 void
-mono_arch_skip_breakpoint (MonoContext *ctx)
+mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 {
 	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + BREAKPOINT_SIZE);
 }
@@ -6552,3 +6694,8 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 #endif
 
+#if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
+
+#include "../../../mono-extensions/mono/mini/mini-x86-gsharedvt.c"
+
+#endif /* !MONOTOUCH */

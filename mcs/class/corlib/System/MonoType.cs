@@ -41,12 +41,14 @@ using System.Security;
 namespace System
 {
 	// Contains information about the type which is expensive to compute
+	[StructLayout (LayoutKind.Sequential)]
 	internal class MonoTypeInfo {
 		public string full_name;
 		public ConstructorInfo default_ctor;
 	}
 		
 	[Serializable]
+	[StructLayout (LayoutKind.Sequential)]
 	internal class MonoType : Type, ISerializable
 	{
 		[NonSerialized]
@@ -416,7 +418,7 @@ namespace System
 				MethodInfo[] methods = GetMethodsByName (name, invokeAttr, ignoreCase, this);
 				object state = null;
 				if (args == null)
-					args = new object [0];
+					args = EmptyArray<object>.Value;
 				MethodBase m = binder.BindToMethod (invokeAttr, methods, ref args, modifiers, culture, namedParameters, out state);
 				if (m == null) {
 					if (methods.Length > 0)
@@ -424,7 +426,7 @@ namespace System
 					else
 						throwMissingMethodDescription = "Cannot find method " + name + ".";
 				} else {
-					ParameterInfo[] parameters = m.GetParameters();
+					ParameterInfo[] parameters = m.GetParametersInternal();
 					for (int i = 0; i < parameters.Length; ++i) {
 						if (System.Reflection.Missing.Value == args [i] && (parameters [i].Attributes & ParameterAttributes.HasDefault) != ParameterAttributes.HasDefault)
 							throw new ArgumentException ("Used Missing.Value for argument without default value", "parameters");
@@ -734,5 +736,10 @@ namespace System
 		}
 #endif
 
+		internal override bool IsUserType {
+			get {
+				return false;
+			}
+		}
 	}
 }

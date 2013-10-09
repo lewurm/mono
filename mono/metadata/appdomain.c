@@ -8,19 +8,21 @@
  *
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2009 Novell, Inc (http://www.novell.com)
+ * Copyright 2012 Xamarin Inc
  */
 #undef ASSEMBLY_LOAD_DEBUG
 #include <config.h>
 #include <glib.h>
 #include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <errno.h>
-#include <sys/stat.h>
+#include <time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 #ifdef HAVE_UTIME_H
 #include <utime.h>
@@ -73,7 +75,7 @@
  * Changes which are already detected at runtime, like the addition
  * of icalls, do not require an increment.
  */
-#define MONO_CORLIB_VERSION 96
+#define MONO_CORLIB_VERSION 110
 
 typedef struct
 {
@@ -862,12 +864,17 @@ mono_set_private_bin_path_from_config (MonoDomain *domain)
 MonoAppDomain *
 ves_icall_System_AppDomain_createDomain (MonoString *friendly_name, MonoAppDomainSetup *setup)
 {
+#ifdef DISABLE_APPDOMAINS
+	mono_raise_exception (mono_get_exception_not_supported ("AppDomain creation is not supported on this runtime."));
+	return NULL;
+#else
 	char *fname = mono_string_to_utf8 (friendly_name);
 	MonoAppDomain *ad = mono_domain_create_appdomain_internal (fname, setup);
 	
 	g_free (fname);
 
 	return ad;
+#endif
 }
 
 MonoArray *
@@ -995,7 +1002,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 	if (!g_hash_table_lookup (ht, ass)) {
 		mono_assembly_addref (ass);
 		g_hash_table_insert (ht, ass, ass);
-		domain->domain_assemblies = g_slist_prepend (domain->domain_assemblies, ass);
+		domain->domain_assemblies = g_slist_append (domain->domain_assemblies, ass);
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Assembly %s[%p] added to domain %s, ref_count=%d", ass->aname.name, ass, domain->friendly_name, ass->ref_count);
 	}
 
@@ -1099,7 +1106,7 @@ set_domain_search_path (MonoDomain *domain)
 	if (setup->private_bin_path) {
 		search_path = mono_string_to_utf8_checked (setup->private_bin_path, &error);
 		if (!mono_error_ok (&error)) { /*FIXME maybe we should bubble up the error.*/
-			g_warning ("Could not decode AppDomain search path since it contains invalid caracters");
+			g_warning ("Could not decode AppDomain search path since it contains invalid characters");
 			mono_error_cleanup (&error);
 			mono_domain_assemblies_unlock (domain);
 			return;
@@ -2169,21 +2176,23 @@ clear_cached_vtable (MonoVTable *vtable)
 	MonoClass *klass = vtable->klass;
 	MonoDomain *domain = vtable->domain;
 	MonoClassRuntimeInfo *runtime_info;
+	void *data;
 
 	runtime_info = klass->runtime_info;
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id)
 		runtime_info->domain_vtables [domain->domain_id] = NULL;
-	if (vtable->data && klass->has_static_refs)
-		mono_gc_free_fixed (vtable->data);
+	if (klass->has_static_refs && (data = mono_vtable_get_static_field_data (vtable)))
+		mono_gc_free_fixed (data);
 }
 
 static G_GNUC_UNUSED void
 zero_static_data (MonoVTable *vtable)
 {
 	MonoClass *klass = vtable->klass;
+	void *data;
 
-	if (vtable->data && klass->has_static_refs)
-		memset (vtable->data, 0, mono_class_data_size (klass));
+	if (klass->has_static_refs && (data = mono_vtable_get_static_field_data (vtable)))
+		mono_gc_bzero (data, mono_class_data_size (klass));
 }
 
 typedef struct unload_data {

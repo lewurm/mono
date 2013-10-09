@@ -38,11 +38,13 @@ target_triplet = @target@
 subdir = mono/arch/amd64
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/libtool.m4 \
-	$(top_srcdir)/ltoptions.m4 $(top_srcdir)/ltsugar.m4 \
-	$(top_srcdir)/ltversion.m4 $(top_srcdir)/lt~obsolete.m4 \
-	$(top_srcdir)/nls.m4 $(top_srcdir)/po.m4 \
-	$(top_srcdir)/progtest.m4 $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/iconv.m4 \
+	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
+	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/po.m4 \
+	$(top_srcdir)/m4/progtest.m4 $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -54,16 +56,31 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libmonoarch_amd64_la_LIBADD =
 am_libmonoarch_amd64_la_OBJECTS = tramp.lo
 libmonoarch_amd64_la_OBJECTS = $(am_libmonoarch_amd64_la_OBJECTS)
+AM_V_lt = $(am__v_lt_$(V))
+am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
+am__v_lt_0 = --silent
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_$(V))
+am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
+am__v_CC_0 = @echo "  CC    " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
 CCLD = $(CC)
-LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_$(V))
+am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
+am__v_CCLD_0 = @echo "  CCLD  " $@;
+AM_V_GEN = $(am__v_GEN_$(V))
+am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(libmonoarch_amd64_la_SOURCES)
 DIST_SOURCES = $(libmonoarch_amd64_la_SOURCES)
 ETAGS = etags
@@ -71,6 +88,7 @@ CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 API_VER = @API_VER@
 AR = @AR@
 AS = @AS@
@@ -78,7 +96,6 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BISON = @BISON@
 BOEHM_DEFINES = @BOEHM_DEFINES@
 BUILD_EXEEXT = @BUILD_EXEEXT@
 BUILD_GLIB_CFLAGS = @BUILD_GLIB_CFLAGS@
@@ -132,9 +149,11 @@ INTL = @INTL@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
-LIBGC_CFLAGS = @LIBGC_CFLAGS@
+LIBGC_CPPFLAGS = @LIBGC_CPPFLAGS@
 LIBGC_LIBS = @LIBGC_LIBS@
 LIBGC_STATIC_LIBS = @LIBGC_STATIC_LIBS@
+LIBICONV = @LIBICONV@
+LIBMONO_LA = @LIBMONO_LA@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -147,6 +166,7 @@ LLVM_LIBS = @LLVM_LIBS@
 LN_S = @LN_S@
 LTCOMPILE = @LTCOMPILE@
 LTCXXCOMPILE = @LTCXXCOMPILE@
+LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -263,7 +283,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-INCLUDES = $(GLIB_CFLAGS) -I$(top_srcdir)
+AM_CPPFLAGS = $(GLIB_CFLAGS) -I$(top_srcdir)
 noinst_LTLIBRARIES = libmonoarch-amd64.la
 libmonoarch_amd64_la_SOURCES = tramp.c amd64-codegen.h
 all: all-am
@@ -279,9 +299,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu mono/arch/amd64/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign mono/arch/amd64/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu mono/arch/amd64/Makefile
+	  $(AUTOMAKE) --foreign mono/arch/amd64/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -310,7 +330,7 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libmonoarch-amd64.la: $(libmonoarch_amd64_la_OBJECTS) $(libmonoarch_amd64_la_DEPENDENCIES) 
-	$(LINK)  $(libmonoarch_amd64_la_OBJECTS) $(libmonoarch_amd64_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK)  $(libmonoarch_amd64_la_OBJECTS) $(libmonoarch_amd64_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -321,22 +341,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tramp.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<

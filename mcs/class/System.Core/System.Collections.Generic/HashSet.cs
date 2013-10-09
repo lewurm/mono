@@ -40,11 +40,11 @@ using System.Diagnostics;
 
 namespace System.Collections.Generic {
 
-	[Serializable, HostProtection (SecurityAction.LinkDemand, MayLeakOnAbort = true)]
+	[Serializable]
 	[DebuggerDisplay ("Count={Count}")]
 	[DebuggerTypeProxy (typeof (CollectionDebuggerView<,>))]
 	public class HashSet<T> : ICollection<T>, ISerializable, IDeserializationCallback
-#if NET_4_0 || MOONLIGHT || MOBILE
+#if NET_4_0
 							, ISet<T>
 #endif
 	{
@@ -438,7 +438,7 @@ namespace System.Collections.Generic {
 		{
 			var set = enumerable as HashSet<T>;
 			if (set == null || !Comparer.Equals (set.Comparer))
-				set = new HashSet<T> (enumerable);
+				set = new HashSet<T> (enumerable, Comparer);
 
 			return set;
 		}
@@ -582,7 +582,7 @@ namespace System.Collections.Generic {
 			info.AddValue("Comparer", comparer, typeof(IEqualityComparer<T>));
 			info.AddValue("Capacity", (table == null) ? 0 : table.Length);
 			if (table != null) {
-				T[] tableArray = new T[table.Length];
+				T[] tableArray = new T[count];
 				CopyTo(tableArray);
 				info.AddValue("Elements", tableArray, typeof(T[]));
 			}

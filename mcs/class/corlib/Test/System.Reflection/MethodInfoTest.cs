@@ -31,7 +31,9 @@ using NUnit.Framework;
 using System;
 using System.Threading;
 using System.Reflection;
+#if !MONOTOUCH
 using System.Reflection.Emit;
+#endif
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -77,6 +79,20 @@ namespace MonoTests.System.Reflection
 				Assert.IsNotNull (ex.Message, "#4");
 				Assert.IsNotNull (ex.ParamName, "#5");
 				Assert.AreEqual ("attributeType", ex.ParamName, "#6");
+			}
+		}
+
+		[Test]
+		public void TestInvokeByRefReturnMethod ()
+		{
+			try {
+				MethodInfo m = typeof (int[]).GetMethod ("Address");
+				m.Invoke (new int[1], new object[] { 0 });
+				Assert.Fail ("#1");
+			} catch (NotSupportedException e) {
+				Assert.AreEqual (typeof (NotSupportedException), e.GetType (), "#2");
+				Assert.IsNull (e.InnerException, "#3");
+				Assert.IsNotNull (e.Message, "#4");
 			}
 		}
 
@@ -538,7 +554,7 @@ namespace MonoTests.System.Reflection
 			} catch (InvalidOperationException ex) {
 			}
 		}
-
+#if !MONOTOUCH
 		public TFoo SimpleGenericMethod2<TFoo, TBar> () { return default (TFoo); }
 		/*Test for the uggly broken behavior of SRE.*/
 		[Test]
@@ -557,13 +573,14 @@ namespace MonoTests.System.Reflection
 			/*broken ReturnType*/
 			Assert.AreSame (gmi.GetGenericArguments () [0], ins.ReturnType, "#2");
 		}
-
+#endif
 		public static int? pass_nullable (int? i)
 		{
 			return i;
 		}
 
 		[Test]
+		[Category ("MobileNotWorking")] // bug #10266
 		public void NullableTests ()
 		{
 			MethodInfo mi = typeof (MethodInfoTest).GetMethod ("pass_nullable");

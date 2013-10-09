@@ -5,6 +5,7 @@
 //	Sebastien Pouliot (sebastien@ximian.com)
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
+// Copyright 2011 Xamarin Inc (http://www.xamarin.com).
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -25,6 +26,8 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
+
+#if !MOBILE
 
 using NUnit.Framework;
 using System;
@@ -3552,3 +3555,5 @@ namespace MonoTests.System
 		static byte [] pk_token = { 0xce, 0x52, 0x76, 0xd8, 0x68, 0x7e, 0Xc6, 0xdc };
 	}
 }
+
+#endif

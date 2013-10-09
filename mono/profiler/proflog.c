@@ -5,6 +5,7 @@
  *   Paolo Molaro (lupus@ximian.com)
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
+ * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  */
 
 #include <config.h>
@@ -15,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <glib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -63,6 +65,8 @@
 
 /* the architecture needs a memory fence */
 #if defined(__linux__) && (defined(__i386__) || defined(__x86_64__))
+#include <unistd.h>
+#include <sys/syscall.h>
 #include "perf_event.h"
 #define USE_PERF_EVENTS 1
 static int read_perf_mmap (MonoProfiler* prof);
@@ -1857,6 +1861,15 @@ helper_thread (void* arg)
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 		len = select (max_fd + 1, &rfds, NULL, NULL, &tv);
+		
+		if (len < 0) {
+			if (errno == EINTR)
+				continue;
+			
+			g_warning ("Error in proflog server: %s", strerror (errno));
+			return NULL;
+		}
+		
 		if (FD_ISSET (prof->pipes [0], &rfds)) {
 			char c;
 			int r = read (prof->pipes [0], &c, 1);

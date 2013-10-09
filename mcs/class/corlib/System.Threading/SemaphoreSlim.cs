@@ -25,7 +25,7 @@
 using System;
 using System.Diagnostics;
 
-#if NET_4_0 || MOBILE
+#if NET_4_0
 namespace System.Threading
 {
 	[System.Diagnostics.DebuggerDisplayAttribute ("Current Count = {currCount}")]
@@ -52,11 +52,6 @@ namespace System.Threading
 			this.maxCount = maxCount;
 			this.currCount = initialCount;
 			this.handle = new ManualResetEvent (initialCount == 0);
-		}
-
-		~SemaphoreSlim ()
-		{
-			Dispose(false);
 		}
 
 		public void Dispose ()

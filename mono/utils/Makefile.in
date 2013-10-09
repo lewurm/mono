@@ -36,18 +36,21 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@X86_TRUE@am__append_1 = mach-support-x86.c
-@AMD64_TRUE@am__append_2 = mach-support-amd64.c
-@ARM_TRUE@am__append_3 = mach-support-arm.c
+@CROSS_COMPILE_FALSE@@X86_TRUE@am__append_1 = mach-support-x86.c
+@AMD64_TRUE@@CROSS_COMPILE_FALSE@am__append_2 = mach-support-amd64.c
+@ARM_TRUE@@CROSS_COMPILE_FALSE@am__append_3 = mach-support-arm.c
+@CROSS_COMPILE_TRUE@am__append_4 = mach-support-unknown.c
 subdir = mono/utils
 DIST_COMMON = $(libmonoutilsinclude_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in ChangeLog
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/libtool.m4 \
-	$(top_srcdir)/ltoptions.m4 $(top_srcdir)/ltsugar.m4 \
-	$(top_srcdir)/ltversion.m4 $(top_srcdir)/lt~obsolete.m4 \
-	$(top_srcdir)/nls.m4 $(top_srcdir)/po.m4 \
-	$(top_srcdir)/progtest.m4 $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/iconv.m4 \
+	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
+	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/po.m4 \
+	$(top_srcdir)/m4/progtest.m4 $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -73,10 +76,18 @@ am__libmonoutils_la_SOURCES_DIST = mono-md5.c mono-sha1.c \
 	freebsd-elf64.h freebsd-dwarf.h dtrace.h gc_wrapper.h \
 	mono-error.c mono-error-internals.h monobitset.h \
 	mono-codeman.h mono-counters.h mono-digest.h mono-error.h \
-	mono-math.h mono-membar.h mono-path.h mono-poll.h mono-tls.h \
-	mono-uri.h mono-stdlib.h valgrind.h mach-support.c \
-	mach-support.h memcheck.h mach-support-x86.c \
-	mach-support-amd64.c mach-support-arm.c
+	mono-machine.h mono-math.h mono-membar.h mono-path.h \
+	mono-poll.h mono-uri.h mono-stdlib.h valgrind.h mach-support.c \
+	mach-support.h memcheck.h mono-context.c mono-context.h \
+	mono-stack-unwinding.h hazard-pointer.c hazard-pointer.h \
+	lock-free-queue.c lock-free-queue.h lock-free-alloc.c \
+	lock-free-alloc.h lock-free-array-queue.c \
+	lock-free-array-queue.h mono-linked-list-set.c \
+	mono-linked-list-set.h mono-threads.c mono-threads-posix.c \
+	mono-threads-mach.c mono-threads-windows.c mono-threads.h \
+	mono-tls.h linux_magic.h mono-memory-model.h \
+	mach-support-x86.c mach-support-amd64.c mach-support-arm.c \
+	mach-support-unknown.c
 am__objects_1 = mono-md5.lo mono-sha1.lo mono-logger.lo \
 	mono-codeman.lo dlmalloc.lo mono-counters.lo mono-dl.lo \
 	mono-internal-hash.lo mono-io-portability.lo monobitset.lo \
@@ -85,23 +96,44 @@ am__objects_1 = mono-md5.lo mono-sha1.lo mono-logger.lo \
 	mono-time.lo strtod.lo strenc.lo mono-uri.lo mono-poll.lo \
 	mono-path.lo mono-semaphore.lo mono-stdlib.lo \
 	mono-property-hash.lo mono-value-hash.lo mono-error.lo \
-	mach-support.lo
-@X86_TRUE@am__objects_2 = mach-support-x86.lo
-@AMD64_TRUE@am__objects_3 = mach-support-amd64.lo
-@ARM_TRUE@am__objects_4 = mach-support-arm.lo
-am__objects_5 = $(am__objects_2) $(am__objects_3) $(am__objects_4)
-am_libmonoutils_la_OBJECTS = $(am__objects_1) $(am__objects_5)
+	mach-support.lo mono-context.lo hazard-pointer.lo \
+	lock-free-queue.lo lock-free-alloc.lo lock-free-array-queue.lo \
+	mono-linked-list-set.lo mono-threads.lo mono-threads-posix.lo \
+	mono-threads-mach.lo mono-threads-windows.lo
+@CROSS_COMPILE_FALSE@@X86_TRUE@am__objects_2 = mach-support-x86.lo
+@AMD64_TRUE@@CROSS_COMPILE_FALSE@am__objects_3 =  \
+@AMD64_TRUE@@CROSS_COMPILE_FALSE@	mach-support-amd64.lo
+@ARM_TRUE@@CROSS_COMPILE_FALSE@am__objects_4 = mach-support-arm.lo
+@CROSS_COMPILE_TRUE@am__objects_5 = mach-support-unknown.lo
+am__objects_6 = $(am__objects_2) $(am__objects_3) $(am__objects_4) \
+	$(am__objects_5)
+am_libmonoutils_la_OBJECTS = $(am__objects_1) $(am__objects_6)
 libmonoutils_la_OBJECTS = $(am_libmonoutils_la_OBJECTS)
+AM_V_lt = $(am__v_lt_$(V))
+am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
+am__v_lt_0 = --silent
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_$(V))
+am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
+am__v_CC_0 = @echo "  CC    " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
 CCLD = $(CC)
-LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_$(V))
+am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
+am__v_CCLD_0 = @echo "  CCLD  " $@;
+AM_V_GEN = $(am__v_GEN_$(V))
+am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
+am__v_GEN_0 = @echo "  GEN   " $@;
 SOURCES = $(libmonoutils_la_SOURCES)
 DIST_SOURCES = $(am__libmonoutils_la_SOURCES_DIST)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -132,6 +164,7 @@ CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 API_VER = @API_VER@
 AR = @AR@
 AS = @AS@
@@ -139,7 +172,6 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
-BISON = @BISON@
 BOEHM_DEFINES = @BOEHM_DEFINES@
 BUILD_EXEEXT = @BUILD_EXEEXT@
 BUILD_GLIB_CFLAGS = @BUILD_GLIB_CFLAGS@
@@ -193,9 +225,11 @@ INTL = @INTL@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBC = @LIBC@
-LIBGC_CFLAGS = @LIBGC_CFLAGS@
+LIBGC_CPPFLAGS = @LIBGC_CPPFLAGS@
 LIBGC_LIBS = @LIBGC_LIBS@
 LIBGC_STATIC_LIBS = @LIBGC_STATIC_LIBS@
+LIBICONV = @LIBICONV@
+LIBMONO_LA = @LIBMONO_LA@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -208,6 +242,7 @@ LLVM_LIBS = @LLVM_LIBS@
 LN_S = @LN_S@
 LTCOMPILE = @LTCOMPILE@
 LTCXXCOMPILE = @LTCXXCOMPILE@
+LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
@@ -325,7 +360,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LTLIBRARIES = libmonoutils.la
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CFLAGS) $(GLIB_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS)
 @ENABLE_DTRACE_TRUE@BUILT_SOURCES = mono-dtrace.h
 monoutils_sources = \
 	mono-md5.c		\
@@ -384,19 +419,41 @@ monoutils_sources = \
 	mono-counters.h	\
 	mono-digest.h	\
 	mono-error.h	\
+	mono-machine.h	\
 	mono-math.h	\
 	mono-membar.h	\
 	mono-path.h	\
 	mono-poll.h	\
-	mono-tls.h  	\
 	mono-uri.h	\
 	mono-stdlib.h	\
 	valgrind.h	\
 	mach-support.c	\
 	mach-support.h  \
-	memcheck.h
+	memcheck.h	\
+	mono-context.c	\
+	mono-context.h	\
+	mono-stack-unwinding.h	\
+	hazard-pointer.c	\
+	hazard-pointer.h	\
+	lock-free-queue.c	\
+	lock-free-queue.h	\
+	lock-free-alloc.c	\
+	lock-free-alloc.h	\
+	lock-free-array-queue.c	\
+	lock-free-array-queue.h	\
+	mono-linked-list-set.c	\
+	mono-linked-list-set.h	\
+	mono-threads.c	\
+	mono-threads-posix.c	\
+	mono-threads-mach.c	\
+	mono-threads-windows.c	\
+	mono-threads.h	\
+	mono-tls.h	\
+	linux_magic.h	\
+	mono-memory-model.h
 
-arch_sources = $(am__append_1) $(am__append_2) $(am__append_3)
+arch_sources = $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4)
 libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 libmonoutilsinclude_HEADERS = \
@@ -420,9 +477,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu mono/utils/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign mono/utils/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu mono/utils/Makefile
+	  $(AUTOMAKE) --foreign mono/utils/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -451,7 +508,7 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 libmonoutils.la: $(libmonoutils_la_OBJECTS) $(libmonoutils_la_DEPENDENCIES) 
-	$(LINK)  $(libmonoutils_la_OBJECTS) $(libmonoutils_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK)  $(libmonoutils_la_OBJECTS) $(libmonoutils_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -460,17 +517,24 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dlmalloc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hazard-pointer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lock-free-alloc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lock-free-array-queue.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lock-free-queue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mach-support-amd64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mach-support-arm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mach-support-unknown.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mach-support-x86.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mach-support.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-codeman.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-counters.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-dl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-filemap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-internal-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-io-portability.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-linked-list-set.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-logger.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-math.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-md5.Plo@am__quote@
@@ -484,6 +548,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-semaphore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-sha1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-stdlib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-threads-mach.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-threads-posix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-threads-windows.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-threads.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-uri.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-value-hash.Plo@am__quote@
@@ -492,22 +560,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strtod.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<

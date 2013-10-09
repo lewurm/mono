@@ -31,6 +31,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+#if !FULL_AOT_RUNTIME
 
 using System;
 using System.Reflection;
@@ -42,9 +43,10 @@ using System.Runtime.InteropServices;
 namespace System.Reflection.Emit {
 
 	[ComVisible (true)]
+	[StructLayout (LayoutKind.Sequential)]
 	public sealed class DynamicMethod : MethodInfo {
 
-#pragma warning disable 169, 414
+#pragma warning disable 169, 414, 649
 		#region Sync with reflection.h
 		private RuntimeMethodHandle mhandle;
 		private string name;
@@ -61,12 +63,13 @@ namespace System.Reflection.Emit {
 		private IntPtr referenced_by;
 		private Type owner;
 		#endregion
-#pragma warning restore 169, 414
+#pragma warning restore 169, 414, 649
 		
 		private Delegate deleg;
 		private MonoMethod method;
 		private ParameterBuilder[] pinfo;
 		internal bool creating;
+		private DynamicILInfo il_info;
 
 		public DynamicMethod (string name, Type returnType, Type[] parameterTypes, Module m) : this (name, returnType, parameterTypes, m, false) {
 		}
@@ -110,9 +113,12 @@ namespace System.Reflection.Emit {
 					if (parameterTypes [i] == null)
 						throw new ArgumentException ("Parameter " + i + " is null", "parameterTypes");
 			}
+			if (owner != null && (owner.IsArray || owner.IsInterface)) {
+				throw new ArgumentException ("Owner can't be an array or an interface.");
+			}
 
 			if (m == null)
-				m = AnonHostModuleHolder.anon_host_module;
+				m = AnonHostModuleHolder.AnonHostModule;
 
 			this.name = name;
 			this.attributes = attributes | MethodAttributes.Static;
@@ -213,9 +219,10 @@ namespace System.Reflection.Emit {
 			throw new NotImplementedException ();
 		}
 
-		[MonoTODO("Not implemented")]
 		public DynamicILInfo GetDynamicILInfo () {
-			throw new NotImplementedException ();
+			if (il_info == null)
+				il_info = new DynamicILInfo (this);
+			return il_info;
 		}
 
 		public ILGenerator GetILGenerator () {
@@ -238,9 +245,15 @@ namespace System.Reflection.Emit {
 			return MethodImplAttributes.IL | MethodImplAttributes.Managed;
 		}
 
-		public override ParameterInfo[] GetParameters () {
+		public override ParameterInfo[] GetParameters ()
+		{
+			return GetParametersInternal ();
+		}
+
+		internal override ParameterInfo[] GetParametersInternal ()
+		{
 			if (parameters == null)
-				return new ParameterInfo [0];
+				return EmptyArray<ParameterInfo>.Value;
 
 			ParameterInfo[] retval = new ParameterInfo [parameters.Length];
 			for (int i = 0; i < parameters.Length; i++) {
@@ -249,10 +262,14 @@ namespace System.Reflection.Emit {
 			return retval;
 		}
 		
-		internal override int GetParameterCount ()
+		internal override int GetParametersCount ()
 		{
 			return parameters == null ? 0 : parameters.Length;
 		}		
+
+		internal override Type GetParameterType (int pos) {
+			return parameters [pos];
+		}
 
 		/*
 		public override object Invoke (object obj, object[] parameters) {
@@ -286,7 +303,7 @@ namespace System.Reflection.Emit {
 
 		public override string ToString () {
 			string parms = String.Empty;
-			ParameterInfo[] p = GetParameters ();
+			ParameterInfo[] p = GetParametersInternal ();
 			for (int i = 0; i < p.Length; ++i) {
 				if (i > 0)
 					parms = parms + ", ";
@@ -405,6 +422,12 @@ namespace System.Reflection.Emit {
 
 				anon_host_module = ab.GetManifestModule ();
 			}
+
+			public static Module AnonHostModule {
+				get {
+					return anon_host_module;
+				}
+			}
 		}
 	}
 
@@ -434,3 +457,4 @@ namespace System.Reflection.Emit {
 	}
 }
 
+#endif

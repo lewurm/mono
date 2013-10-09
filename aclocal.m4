@@ -130,29 +130,6 @@ AC_PREREQ([2.50])dnl
 am_aux_dir=`cd $ac_aux_dir && pwd`
 ])
 
-
-# Copyright (C) 1996, 1997, 1999, 2000, 2001, 2002, 2003, 2005
-# Free Software Foundation, Inc.
-#
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
-
-# serial 4
-
-# This was merged into AC_PROG_CC in Autoconf.
-
-AU_DEFUN([AM_PROG_CC_STDC],
-[AC_PROG_CC
-AC_DIAGNOSE([obsolete], [$0:
-	your code should no longer depend upon `am_cv_prog_cc_stdc', but upon
-	`ac_cv_prog_cc_stdc'.  Remove this warning and the assignment when
-	you adjust the code.  You can also remove the above call to
-	AC_PROG_CC if you already called it elsewhere.])
-am_cv_prog_cc_stdc=$ac_cv_prog_cc_stdc
-])
-AU_DEFUN([fp_PROG_CC_STDC])
-
 # AM_CONDITIONAL                                            -*- Autoconf -*-
 
 # Copyright (C) 1997, 2000, 2001, 2003, 2004, 2005, 2006, 2008
@@ -450,18 +427,6 @@ AC_DEFUN([AM_OUTPUT_DEPENDENCY_COMMANDS],
      [test x"$AMDEP_TRUE" != x"" || _AM_OUTPUT_DEPENDENCY_COMMANDS],
      [AMDEP_TRUE="$AMDEP_TRUE" ac_aux_dir="$ac_aux_dir"])
 ])
-
-# Copyright (C) 1996, 1997, 2000, 2001, 2003, 2005
-# Free Software Foundation, Inc.
-#
-# This file is free software; the Free Software Foundation
-# gives unlimited permission to copy and/or distribute it,
-# with or without modifications, as long as this notice is preserved.
-
-# serial 8
-
-# AM_CONFIG_HEADER is obsolete.  It has been replaced by AC_CONFIG_HEADERS.
-AU_DEFUN([AM_CONFIG_HEADER], [AC_CONFIG_HEADERS($@)])
 
 # Do all the work for Automake.                             -*- Autoconf -*-
 
@@ -920,6 +885,33 @@ Check your system clock])
 fi
 AC_MSG_RESULT(yes)])
 
+# Copyright (C) 2009  Free Software Foundation, Inc.
+#
+# This file is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# serial 1
+
+# AM_SILENT_RULES([DEFAULT])
+# --------------------------
+# Enable less verbose build rules; with the default set to DEFAULT
+# (`yes' being less verbose, `no' or empty being verbose).
+AC_DEFUN([AM_SILENT_RULES],
+[AC_ARG_ENABLE([silent-rules],
+[  --enable-silent-rules          less verbose build output (undo: `make V=1')
+  --disable-silent-rules         verbose build output (undo: `make V=0')])
+case $enable_silent_rules in
+yes) AM_DEFAULT_VERBOSITY=0;;
+no)  AM_DEFAULT_VERBOSITY=1;;
+*)   AM_DEFAULT_VERBOSITY=m4_if([$1], [yes], [0], [1]);;
+esac
+AC_SUBST([AM_DEFAULT_VERBOSITY])dnl
+AM_BACKSLASH='\'
+AC_SUBST([AM_BACKSLASH])dnl
+_AM_SUBST_NOTMAKE([AM_BACKSLASH])dnl
+])
+
 # Copyright (C) 2001, 2003, 2005  Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
@@ -1063,12 +1055,16 @@ AC_SUBST([am__tar])
 AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
-m4_include([libtool.m4])
-m4_include([ltoptions.m4])
-m4_include([ltsugar.m4])
-m4_include([ltversion.m4])
-m4_include([lt~obsolete.m4])
-m4_include([nls.m4])
-m4_include([po.m4])
-m4_include([progtest.m4])
+m4_include([m4/iconv.m4])
+m4_include([m4/lib-ld.m4])
+m4_include([m4/lib-link.m4])
+m4_include([m4/lib-prefix.m4])
+m4_include([m4/libtool.m4])
+m4_include([m4/ltoptions.m4])
+m4_include([m4/ltsugar.m4])
+m4_include([m4/ltversion.m4])
+m4_include([m4/lt~obsolete.m4])
+m4_include([m4/nls.m4])
+m4_include([m4/po.m4])
+m4_include([m4/progtest.m4])
 m4_include([acinclude.m4])

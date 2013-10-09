@@ -39,10 +39,13 @@ using System.Runtime.Remoting.Proxies;
 using System.Runtime.Remoting.Activation;
 using System.Runtime.Remoting.Messaging;
 using System.Runtime.Remoting.Lifetime;
+using System.Runtime.InteropServices;
+
 
 namespace System.Runtime.Remoting.Contexts {
 
 	[System.Runtime.InteropServices.ComVisible (true)]
+	[StructLayout (LayoutKind.Sequential)]
 	public class Context 
 	{
 #pragma warning disable 169, 414
@@ -350,7 +353,6 @@ namespace System.Runtime.Remoting.Contexts {
 			callback_object.DoCallBack (deleg);
 		}
 		
-#if !MOONLIGHT
 		public static LocalDataStoreSlot AllocateDataSlot ()
 		{
 			return new LocalDataStoreSlot (false);
@@ -411,7 +413,6 @@ namespace System.Runtime.Remoting.Contexts {
 				ctx.datastore [slot.slot] = data;
 			}
 		}
-#endif
 	}
 
 	class DynamicPropertyCollection

@@ -27,8 +27,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if !MOONLIGHT
-
 using System.Runtime.InteropServices;
 
 using Mono.Security.Cryptography;
@@ -88,11 +86,6 @@ namespace System.Security.Cryptography {
 			mac = new MACAlgorithm (tdes);
 			m_disposed = false;
 		}
-	
-		~MACTripleDES () 
-		{
-			Dispose (false);
-		}
 
 		[ComVisible (false)]
 		public PaddingMode Padding {
@@ -151,6 +144,3 @@ namespace System.Security.Cryptography {
 		}
 	}
 }
-
-#endif
-

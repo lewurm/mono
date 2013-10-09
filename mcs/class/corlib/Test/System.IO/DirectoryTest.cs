@@ -314,7 +314,7 @@ public class DirectoryTest
 		Assert.IsFalse (Directory.Exists (null as string));
 	}
 
-#if !TARGET_JVM // We don't support yet the Process class.
+#if !TARGET_JVM && !MOBILE // We don't support yet the Process class.
 	[Test] // bug #78239
 	public void ExistsAccessDenied ()
 	{
@@ -324,11 +324,11 @@ public class DirectoryTest
 		string path = TempFolder + DSC + "ExistsAccessDenied";
 
 		Directory.CreateDirectory (path);
-		Process.Start ("/bin/chmod", "000 " + path).WaitForExit ();
+		Mono.Posix.Syscall.chmod (path, 0);
 		try {
 			Assert.IsFalse (Directory.Exists(path + DSC + "b"));
 		} finally {
-			Process.Start ("/bin/chmod", "755 " + path).WaitForExit ();
+			Mono.Posix.Syscall.chmod (path, (Mono.Posix.FileMode) 755);
 			Directory.Delete (path);
 		}
 	}

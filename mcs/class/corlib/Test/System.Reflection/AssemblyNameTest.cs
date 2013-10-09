@@ -13,7 +13,7 @@ using System;
 using System.Configuration.Assemblies;
 using System.IO;
 using System.Reflection;
-#if !TARGET_JVM
+#if !TARGET_JVM && !MOBILE
 using System.Reflection.Emit;
 #endif
 using System.Runtime.Serialization;
@@ -889,7 +889,7 @@ public class AssemblyNameTest {
 		return assemblyName;
 	}
 
-#if !TARGET_JVM // Reflection.Emit is not supported for TARGET_JVM.
+#if !TARGET_JVM && !MOBILE // Reflection.Emit is not supported for TARGET_JVM.
 	private Assembly GenerateAssembly (AssemblyName name) 
 	{
 		AssemblyBuilder ab = domain.DefineDynamicAssembly (
@@ -1468,6 +1468,10 @@ public class AssemblyNameTest {
 		try {
 			new AssemblyName (assemblyName + ", Culture=aa-AA");
 			Assert.Fail ("#1");
+#if NET_4_0
+		} catch (CultureNotFoundException ex) {
+		}
+#else
 		} catch (ArgumentException ex) {
 			// Culture name 'aa-aa' is not supported
 			Assert.AreEqual (typeof (ArgumentException), ex.GetType (), "#2");
@@ -1476,6 +1480,7 @@ public class AssemblyNameTest {
 			Assert.IsNotNull (ex.ParamName, "#5");
 			Assert.AreEqual ("name", ex.ParamName, "#6");
 		}
+#endif
 	}
 
 	[Test] // ctor (String)

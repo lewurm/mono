@@ -82,9 +82,6 @@ namespace System.Threading {
 			if (callBack == null)
 				throw new ArgumentNullException ("callBack");
 
-#if MOONLIGHT
-			callBack = MoonlightHandler (callBack);
-#endif
 			if (callBack.IsTransparentProxy ()) {
 				IAsyncResult ar = callBack.BeginInvoke (state, null, null);
 				if (ar == null)
@@ -154,13 +151,13 @@ namespace System.Threading {
 							    (long) millisecondsTimeOutInterval, executeOnlyOnce);
 		}
 
-#if !NET_2_1 || MOBILE
-
 		[CLSCompliant (false)]
 		unsafe public static bool UnsafeQueueNativeOverlapped (NativeOverlapped *overlapped)
 		{
 			throw new NotImplementedException ();
 		}
+
+#if !NET_2_1 || MOBILE
 
 		[SecurityPermission (SecurityAction.Demand, ControlEvidence=true, ControlPolicy=true)]
 		public static bool UnsafeQueueUserWorkItem (WaitCallback callBack, object state)
@@ -224,20 +221,6 @@ namespace System.Threading {
 			throw new NotImplementedException ();
 		}
 
-#endif
-
-#if MOONLIGHT
-		static WaitCallback MoonlightHandler (WaitCallback callback)
-		{
-			return delegate (object o) {
-				try {
-					callback (o);
-				} 
-				catch (Exception ex) {
-					Thread.MoonlightUnhandledException (ex);
-				} 
-			};
-		}
 #endif
 	}
 }

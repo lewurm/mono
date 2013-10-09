@@ -92,7 +92,7 @@ Provides: cil-disassembler
 Architecture: amd64 armel i386 ia64 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Replaces: mono-mcs (<= 1.1.6-4)
 Depends: ${shlibs:Depends}, ${misc:Depends}, libmono-2.0-1 (= ${binary:Version}),
- libmono-corlib4.0-cil (= ${source:Version}) | libmono-corlib2.0-cil (= ${source:Version})
+ libmono-corlib4.5-cil (= ${source:Version}) | libmono-corlib2.0-cil (= ${source:Version})
 Description: Mono utilities
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Novell.
@@ -114,8 +114,6 @@ Depends: ${misc:Depends},
          mono-jay (= ${binary:Version}),
          mono-devel (= ${source:Version}),
          mono-mcs (= ${source:Version}),
-         mono-gmcs (= ${source:Version}),
-         mono-dmcs (= ${source:Version}),
          mono-csharp-shell (= ${source:Version}),
          mono-2.0-gac (= ${source:Version}),
          mono-4.0-gac (= ${source:Version}),
@@ -221,6 +219,7 @@ Depends: ${misc:Depends},
          libmono-compilerservices-symbolwriter4.0-cil (= ${source:Version}),
          libmono-corlib2.0-cil (= ${source:Version}),
          libmono-corlib4.0-cil (= ${source:Version}),
+         libmono-corlib4.5-cil (= ${source:Version}),
          libmono-cscompmgd8.0-cil (= ${source:Version}),
          libmono-csharp4.0-cil (= ${source:Version}),
          libmono-custommarshalers4.0-cil (= ${source:Version}),
@@ -243,6 +242,7 @@ Depends: ${misc:Depends},
          libmono-messaging-rabbitmq4.0-cil (= ${source:Version}),
          libmono-microsoft8.0-cil (= ${source:Version}),
          libmono-microsoft-build2.0-cil (= ${source:Version}),
+         libmono-microsoft-build4.0-cil (= ${source:Version}),
          libmono-microsoft-build-engine4.0-cil (= ${source:Version}),
          libmono-microsoft-build-framework4.0-cil (= ${source:Version}),
          libmono-microsoft-build-tasks-v4.0-4.0-cil (= ${source:Version}),
@@ -299,6 +299,8 @@ Depends: ${misc:Depends},
          libmono-system-messaging2.0-cil (= ${source:Version}),
          libmono-system-messaging4.0-cil (= ${source:Version}),
          libmono-system-net4.0-cil (= ${source:Version}),
+         libmono-system-net-http4.0-cil (= ${source:Version}),
+         libmono-system-net-http-formatting4.0-cil (= ${source:Version}),
          libmono-system-numerics4.0-cil (= ${source:Version}),
          libmono-system-runtime2.0-cil (= ${source:Version}),
          libmono-system-runtime4.0-cil (= ${source:Version}),
@@ -312,6 +314,7 @@ Depends: ${misc:Depends},
          libmono-system-servicemodel-routing4.0-cil (= ${source:Version}),
          libmono-system-servicemodel-web4.0-cil (= ${source:Version}),
          libmono-system-serviceprocess4.0-cil (= ${source:Version}),
+         libmono-system-threading-tasks-dataflow4.0-cil (= ${source:Version}),
          libmono-system-transactions4.0-cil (= ${source:Version}),
          libmono-system-web2.0-cil (= ${source:Version}),
          libmono-system-web4.0-cil (= ${source:Version}),
@@ -320,10 +323,17 @@ Depends: ${misc:Depends},
          libmono-system-web-dynamicdata4.0-cil (= ${source:Version}),
          libmono-system-web-extensions4.0-cil (= ${source:Version}),
          libmono-system-web-extensions-design4.0-cil (= ${source:Version}),
+         libmono-system-web-http4.0-cil (= ${source:Version}),
+         libmono-system-web-http-selfhost4.0-cil (= ${source:Version}),
          libmono-system-web-mvc1.0-cil (= ${source:Version}),
          libmono-system-web-mvc2.0-cil (= ${source:Version}),
+         libmono-system-web-mvc3.0-cil (= ${source:Version}),
+         libmono-system-web-razor2.0-cil (= ${source:Version}),
          libmono-system-web-routing4.0-cil (= ${source:Version}),
          libmono-system-web-services4.0-cil (= ${source:Version}),
+         libmono-system-web-webpages2.0-cil (= ${source:Version}),
+         libmono-system-web-webpages-deployment2.0-cil (= ${source:Version}),
+         libmono-system-web-webpages-razor2.0-cil (= ${source:Version}),
          libmono-system-windows-forms4.0-cil (= ${source:Version}),
          libmono-system-windows-forms-datavisualization4.0-cil (= ${source:Version}),
          libmono-system-xaml4.0-cil (= ${source:Version}),
@@ -430,6 +440,35 @@ Description: Mono.CSharp library (for CLI 4.0)
  bytecode (aka assemblies), and a class library.
  .
  This package contains the Mono.CSharp library for CLI 4.0.
+
+Package: libmono-entityframework6.0-cil
+Architecture: all
+Depends: ${misc:Depends}, ${cli:Depends}
+Description: EntityFramework library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the EntityFramework library for CLI 4.0.
+ .
+ ADO.NET Entity Framework (EF) is an object-relational mapping (ORM) framework.
+
+Package: libmono-entityframework-sqlserver6.0-cil
+Architecture: all
+Depends: ${misc:Depends}, ${cli:Depends}
+Description: EntityFramework.SqlServer library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the EntityFramework.SqlServer library for CLI 4.0 which
+ provides Microsoft SQL Server support.
+ .
+ ADO.NET Entity Framework (EF) is an object-relational mapping (ORM) framework.
 
 Package: libmono-http4.0-cil
 Architecture: all
@@ -726,6 +765,27 @@ Description: Mono core library (for CLI 4.0)
  US-ASCII, ISO 8859-1 (Latin 1) and UTF-8 users don't need any extra I18N
  packages.
 
+Package: libmono-corlib4.5-cil
+Architecture: all
+Depends: ${misc:Depends},
+         mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
+Recommends: libmono-i18n-west4.0-cil
+Suggests: libmono-i18n4.0-all
+Description: Mono core library (for CLI 4.5)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Core Library (mscorlib.dll) of Mono for CLI 4.5,
+ which is the glue between the BCL (Base Class Libraries) and the JIT.
+ .
+ You should install libmono-i18n-west4.0-cil if you are using
+ ISO 8859-15 (Latin 9) or other common Western European code pages.
+ US-ASCII, ISO 8859-1 (Latin 1) and UTF-8 users don't need any extra I18N
+ packages.
+
 Package: libmono-i18n4.0-all
 Architecture: all
 Depends: ${misc:Depends},
@@ -860,6 +920,20 @@ Description: Mono I18N.West library (for CLI 4.0)
  This package contains the I18N.West library for CLI 4.0, containing Central
  and Western European code pages such as ISO 8859-3 (Latin 3),
  ISO 8859-15 (Latin 9) and others.
+
+Package: libmono-parallel4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono.Parallel library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono.Parallel library for CLI 4.0 which ships some
+ threading utility classes.
 
 Package: libmono-system2.0-cil
 Architecture: all
@@ -1001,6 +1075,20 @@ Description: Mono System.EnterpriseServices library (for CLI 4.0)
  .
  This package contains the Mono System.EnterpriseServices library for CLI 4.0.
 
+Package: libmono-system-json4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends},
+Description: Mono System.Json library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Json library for CLI 4.0 which provides
+ serialization of JavaScript Object Notation (JSON).
+
 Package: libmono-system-management4.0-cil
 Architecture: all
 Depends: ${misc:Depends},
@@ -1026,6 +1114,32 @@ Description: Mono System.Net library (for CLI 4.0)
  bytecode (aka assemblies), and a class library.
  .
  This package contains the Mono System.Net library for CLI 4.0.
+
+Package: libmono-system-net-http4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends},
+Description: Mono System.Net.Http library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Net.Http library for CLI 4.0.
+
+Package: libmono-system-net-http-formatting4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends},
+Description: Mono System.Net.Http.Formatting library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Net.Http.Formatting library for CLI 4.0.
 
 Package: libmono-system-numerics4.0-cil
 Architecture: all
@@ -1065,6 +1179,20 @@ Description: Mono System.ServiceProcess library (for CLI 4.0)
  bytecode (aka assemblies), and a class library.
  .
  This package contains the Mono System.ServiceProcess library for CLI 4.0.
+
+Package: libmono-system-threading-tasks-dataflow4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends},
+Description: Mono System.Threading.Tasks.Dataflow library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Threading.Tasks.Dataflow library for
+ CLI 4.0.
 
 Package: libmono-system-transactions4.0-cil
 Architecture: all
@@ -1596,6 +1724,45 @@ Description: Mono System.Web.Extensions.Design library (for CLI 4.0)
  This package contains the Mono System.Web.Extensions.Design library
  for CLI 4.0.
 
+Package: libmono-system-web-http4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono System.Web.Http library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.Http library for CLI 4.0.
+
+Package: libmono-system-web-http-selfhost4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono System.Web.Http.SelfHost library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.Http.SelfHost library for CLI 4.0.
+
+Package: libmono-system-web-razor2.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono System.Web.Razor (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.Razor library for CLI 4.0.
+
 Package: libmono-system-web-routing4.0-cil
 Architecture: all
 Depends: ${misc:Depends},
@@ -1626,7 +1793,7 @@ Package: libmono-system-web-mvc1.0-cil
 Architecture: all
 Depends: ${misc:Depends},
          ${cli:Depends}
-Description: Mono ASP.NET MVC Library (for CLI 2.0)
+Description: Mono ASP.NET MVC 1.0 Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Novell.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
@@ -1634,13 +1801,16 @@ Description: Mono ASP.NET MVC Library (for CLI 2.0)
  bytecode (aka assemblies), and a class library.
  .
  This package contains the Mono System.Web.Mvc library for CLI 2.0.
+ .
+ The ASP.NET MVC framework is a web application framework that implements the
+ model-view-controller (MVC) pattern.
 
 Package: libmono-system-web-mvc2.0-cil
 Architecture: all
 Replaces: libmono-system-web-mvc1.0-cil (<< 2.6.7)
 Depends: ${misc:Depends},
          ${cli:Depends}
-Description: Mono ASP.NET MVC Library (for CLI 2.0)
+Description: Mono ASP.NET MVC 2.0 Library (for CLI 2.0)
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Novell.
  Mono provides a complete CLR (Common Language Runtime) including compiler and
@@ -1648,6 +1818,65 @@ Description: Mono ASP.NET MVC Library (for CLI 2.0)
  bytecode (aka assemblies), and a class library.
  .
  This package contains the Mono System.Web.Mvc 2.0 library for CLI 2.0.
+ .
+ The ASP.NET MVC framework is a web application framework that implements the
+ model-view-controller (MVC) pattern.
+
+Package: libmono-system-web-mvc3.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono ASP.NET MVC 3.0 Library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.Mvc 3.0 library for CLI 4.0.
+ .
+ The ASP.NET MVC framework is a web application framework that implements the
+ model-view-controller (MVC) pattern.
+
+Package: libmono-system-web-webpages2.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono System.Web.WebPages (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.WebPages library for CLI 4.0.
+
+Package: libmono-system-web-webpages-deployment2.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono System.Web.WebPages.Deployment (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.WebPages.Deployment library for
+ CLI 4.0.
+
+Package: libmono-system-web-webpages-razor2.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono System.Web.WebPages.Razor (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono System.Web.WebPages.Razor library for CLI 4.0.
 
 Package: libmono-system-windows-forms4.0-cil
 Architecture: all
@@ -2047,6 +2276,19 @@ Description: Mono Microsoft.Build libraries (for CLI 2.0)
  .
  This package contains the Mono Microsoft.Build libraries version 2.0.
 
+Package: libmono-microsoft-build4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Microsoft.Build library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono Microsoft.Build library for CLI 4.0.
+
 Package: libmono-microsoft-build-engine4.0-cil
 Architecture: all
 Depends: ${misc:Depends},
@@ -2326,36 +2568,24 @@ Package: mono-mcs
 Architecture: all
 Depends: ${misc:Depends},
          ${cli:Depends},
-         libmono-corlib2.0-cil (>= ${mono:upversion}),
-         libmono-corlib2.0-cil (<< ${mono:next-upversion})
+         libmono-corlib4.5-cil (>= ${mono:upversion}),
+         libmono-corlib4.5-cil (<< ${mono:next-upversion}),
+         libmono-microsoft-csharp4.0-cil
 Recommends: pkg-config
-Replaces: mono-devel (<< 2.4.2.3)
-Description: Mono C# 2.0 / 3.0 / 4.0  compiler for CLI 2.0 / 4.0
- This is the Mono C# (C-Sharp) 2.0, 3.0 and 4.0 compiler,
- a platform-independent compiler which produces CIL (Common Intermediate
- Language) binary executables.
- This compiler targets the CLI 2.0 or 4.0 runtime version.
+Replaces: mono-devel (<< 2.4.2.3),
+          mono-gmcs (<< 3.0~),
+          mono-dmcs (<< 3.0~)
+Breaks: mono-gmcs (<< 3.0~),
+        mono-dmcs (<< 3.0~)
+Description: Mono C# 2.0 / 3.0 / 4.0 / 5.0  compiler for CLI 2.0 / 4.0 / 4.5
+ This is the Mono C# (C-Sharp) 2.0, 3.0, 4.0 and 5.0 compiler,
+ a platform-independent compiler which produces
+ CIL (Common Intermediate Language) binary executables.
  .
- Mono is a platform for running and developing applications based on the
- ECMA/ISO Standards. Mono is an open source effort led by Novell.
- Mono provides a complete CLR (Common Language Runtime) including compiler and
- runtime, which can produce and execute CIL (Common Intermediate Language)
- bytecode (aka assemblies), and a class library.
-
-Package: mono-gmcs
-Architecture: all
-Depends: ${misc:Depends}, 
-         ${cli:Depends},
-         libmono-corlib2.0-cil (>= ${mono:upversion}),
-         libmono-corlib2.0-cil (<< ${mono:next-upversion})
-Recommends: pkg-config
-Replaces: mono-mcs (>= 1.1.10), mono-mcs (<= 1.1.13), mono-devel (<< 2.4.2.3)
-Description: Mono C# 2.0 and C# 3.0 compiler for CLI 2.0
- This is the Mono C# (C-Sharp) 2.0 and C# 3.0 compiler, a platform-independent
- compiler which produces CIL (Common Intermediate Language) binary executables.
- The gmcs compiler supports two different featuresets (C# versions).
+ This compiler targets the CLI 2.0, 4.0 or 4.5 runtime version.
  .
- With C# 2.0 (which is the default) it supports:
+ The mcs compiler supports different C# versions as follows.
+ With C# 2.0 it supports:
   - generics
   - iterators (yield)
   - nullable value types
@@ -2376,6 +2606,30 @@ Description: Mono C# 2.0 and C# 3.0 compiler for CLI 2.0
   - extension methods
   - partial methods
  .
+ With C# 4.0 it supports:
+  - dynamic binding (duck typing)
+  - named and optional arguments
+  - covariant and contravariant generic type parameters
+ .
+ With C# 5.0 (which is the default) it supports:
+  - asynchronous methods
+  - caller info attributes (as of Mono 3.0 currently not supported!)
+ .
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Novell.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+
+Package: mono-gmcs
+Architecture: all
+Depends: ${misc:Depends},
+         mono-mcs (= ${source:Version})
+Description: Mono C# 2.0 and C# 3.0 compiler for CLI 2.0 (transitional package)
+ This is a transitional dummy package to aid migration to mono-mcs.
+ .
+ This is the Mono C# (C-Sharp) 2.0 and C# 3.0 compiler, a platform-independent
+ compiler which produces CIL (Common Intermediate Language) binary executables.
  This compiler targets the CLI 2.0 runtime version.
  .
  Mono is a platform for running and developing applications based on the
@@ -2387,12 +2641,10 @@ Description: Mono C# 2.0 and C# 3.0 compiler for CLI 2.0
 Package: mono-dmcs
 Architecture: all
 Depends: ${misc:Depends},
-         ${cli:Depends},
-         libmono-corlib4.0-cil (>= ${mono:upversion}),
-         libmono-corlib4.0-cil (<< ${mono:next-upversion}),
-         libmono-microsoft-csharp4.0-cil
-Recommends: pkg-config
-Description: Mono C# 4.0 compiler for CLI 4.0
+         mono-mcs (= ${source:Version})
+Description: Mono C# 4.0 compiler for CLI 4.0 (transitional package)
+ This is a transitional dummy package to aid migration to mono-mcs.
+ .
  This is the Mono C# (C-Sharp) 4.0 compiler, a platform-independent compiler
  which produces CIL (Common Intermediate Language) binary executables.
  This compiler targets the CLI 4.0 runtime version.
@@ -2409,6 +2661,7 @@ Provides: c-sharp-compiler,
  c-sharp-2.0-compiler,
  c-sharp-3.0-compiler,
  c-sharp-4.0-compiler,
+ c-sharp-4.5-compiler,
  resource-file-generator,
  assembly-linker,
  strong-name-tool
@@ -2420,7 +2673,7 @@ Replaces: mono-1.0-devel (<< 2.0),
 Recommends: mono-csharp-shell
 Depends: ${misc:Depends},
          ${cli:Depends},
-         mono-dmcs (= ${source:Version}),
+         mono-mcs (= ${source:Version}),
          mono-gac (= ${source:Version}),
          mono-xbuild (= ${source:Version}),
          libmono-cil-dev (= ${source:Version}),

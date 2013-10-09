@@ -14,7 +14,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+#if !MONOTOUCH
 using System.Reflection.Emit;
+#endif
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
@@ -232,12 +234,12 @@ namespace MonoTests.System
 		}
 	}
 
-
 	[TestFixture]
 	public class TypeTest
 	{
-		private AssemblyBuilder assembly;
+#if !MONOTOUCH
 		private ModuleBuilder module;
+#endif
 		const string ASSEMBLY_NAME = "MonoTests.System.TypeTest";
 		static int typeIndexer = 0;
 
@@ -246,9 +248,11 @@ namespace MonoTests.System
 		{
 			AssemblyName assemblyName = new AssemblyName ();
 			assemblyName.Name = ASSEMBLY_NAME;
-			assembly = AppDomain.CurrentDomain.DefineDynamicAssembly (
+#if !MONOTOUCH
+			var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly (
 					assemblyName, AssemblyBuilderAccess.RunAndSave, Path.GetTempPath ());
 			module = assembly.DefineDynamicModule ("module1");
+#endif
 		}
 
 		private string genTypeName ()
@@ -1623,7 +1627,7 @@ namespace MonoTests.System
 			Type [] typeArgs = typeof (List<>).GetGenericArguments ();
 			Assert.IsFalse (typeArgs [0].IsAbstract, "#7");
 		}
-
+#if !MOBILE
 		[Test]
 		public void IsCOMObject ()
 		{
@@ -1650,7 +1654,7 @@ namespace MonoTests.System
 			type = tb.CreateType ();
 			Assert.IsTrue (type.IsImport, "#3");
 		}
-
+#endif
 		[Test]
 		public void IsInterface ()
 		{
@@ -2683,7 +2687,7 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.IsNull (i);
 		}
 
-#if !TARGET_JVM // Reflection.Emit is not supported for TARGET_JVM
+#if !TARGET_JVM && !MOBILE // Reflection.Emit is not supported for TARGET_JVM
 		[Test]
 		public void EqualsUnderlyingType ()
 		{
@@ -2926,7 +2930,10 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.AreEqual ("System.Int32", t.FullName);
 		}
 
-		[Test] //bug #331199
+		[Test]
+#if MONOTOUCH
+		[ExpectedException (typeof (NotSupportedException))]
+#endif
 		public void MakeGenericType_UserDefinedType ()
 		{
 			Type ut = new UserType (typeof (int));
@@ -2967,6 +2974,9 @@ PublicKeyToken=b77a5c561934e089"));
 		}
 		
 		[Test]
+#if MONOTOUCH
+		[ExpectedException (typeof (NotSupportedException))]
+#endif
 		public void MakeGenericType_BadUserType ()
 		{
 			Type ut = new UserType (null);
@@ -3100,7 +3110,7 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.AreEqual (t1, t2);
 		}
 
-
+#if !MONOTOUCH
 		[Test]
 		public void Bug506757 ()
 		{
@@ -3145,7 +3155,7 @@ PublicKeyToken=b77a5c561934e089"));
 			foreach (var m in t2.GetMethods (BindingFlags.Instance | BindingFlags.NonPublic))
 				Assert.IsTrue (m.DeclaringType == typeof (object), String.Format ("{0}::{1}", m.DeclaringType, m.Name));
 		}
-
+#endif
 		[Test]
 		public void MakeArrayTypeOfOneDimension ()
 		{
@@ -3489,6 +3499,22 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.AreEqual ("C", res [2], "#7");
 		}
 
+		public enum OutOfOrderEnum : sbyte
+		{
+			D = -1, C = 2, B = 1, A = 0
+		}
+				
+		[Test]
+		public void GetEnumNamesSortsByUnsignedValue ()
+		{
+			string[] names = typeof (OutOfOrderEnum).GetEnumNames ();
+			Assert.AreEqual (4, names.Length);
+			Assert.AreEqual ("A", names [0]);
+			Assert.AreEqual ("B", names [1]);
+			Assert.AreEqual ("C", names [2]);
+			Assert.AreEqual ("D", names [3]);
+		}
+		
 		[Test]
 		public void GetEnumValues () {
 			try {
@@ -3766,6 +3792,10 @@ PublicKeyToken=b77a5c561934e089"));
 					return asm == null ? Type.GetType (name, false, ignore) : asm.GetType (name, false, ignore);
 				}, false, false);
 			Assert.AreEqual (typeof (MyRealEnum).MakePointerType (), res, "#12");
+
+			// assembly resolve without type resolve
+			res = Type.GetType ("System.String,mscorlib", delegate (AssemblyName aname) { return typeof (int).Assembly; }, null);
+			Assert.AreEqual (typeof (string), res);
 		}
 
 
@@ -3892,6 +3922,13 @@ PublicKeyToken=b77a5c561934e089"));
 			MustFNFE (string.Format ("{0}, ZZZ{1}", typeof (MyRealEnum).FullName, aqn));
 			MustTLE (string.Format ("{0}ZZZZ", typeof (MyRealEnum).FullName));
 			MustTLE (string.Format ("{0}ZZZZ,{1}", typeof (MyRealEnum).FullName, aqn));
+		}
+
+	   	delegate void MyAction<in T>(T ag);
+
+		[Test] //bug #668506
+		public void IsAssignableFromWithVariantDelegate () {
+			Assert.IsFalse (typeof(MyAction<string>).IsAssignableFrom(typeof(MyAction<>)), "#1");
 		}
 
 		[Test] //bug #124

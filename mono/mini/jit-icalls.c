@@ -234,6 +234,103 @@ mono_llmult_ovf (gint64 a, gint64 b)
 	return 0;
 }
 
+gint64 
+mono_lldiv (gint64 a, gint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
+	return a / b;
+}
+
+gint64 
+mono_llrem (gint64 a, gint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
+		mono_raise_exception (mono_get_exception_arithmetic ());
+#endif
+	return a % b;
+}
+
+guint64 
+mono_lldiv_un (guint64 a, guint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
+	return a / b;
+}
+
+guint64 
+mono_llrem_un (guint64 a, guint64 b)
+{
+	MONO_ARCH_SAVE_REGS;
+
+#ifdef MONO_ARCH_NEED_DIV_CHECK
+	if (!b)
+		mono_raise_exception (mono_get_exception_divide_by_zero ());
+#endif
+	return a % b;
+}
+
+#endif
+
+#ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
+
+guint64 
+mono_lshl (guint64 a, gint32 shamt)
+{
+	guint64 res;
+
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	res = a << shamt;
+
+	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
+
+	return res;
+}
+
+guint64 
+mono_lshr_un (guint64 a, gint32 shamt)
+{
+	guint64 res;
+
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	res = a >> shamt;
+
+	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
+
+	return res;
+}
+
+gint64 
+mono_lshr (gint64 a, gint32 shamt)
+{
+	gint64 res;
+
+	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
+	res = a >> shamt;
+
+	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
+
+	return res;
+}
+
+#endif
+
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_DIV)
 
 gint32
@@ -340,103 +437,6 @@ mono_fdiv (double a, double b)
 
 	return a / b;
 }
-#endif
-
-gint64 
-mono_lldiv (gint64 a, gint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
-		mono_raise_exception (mono_get_exception_arithmetic ());
-#endif
-	return a / b;
-}
-
-gint64 
-mono_llrem (gint64 a, gint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-	else if (b == -1 && a == (-9223372036854775807LL - 1LL))
-		mono_raise_exception (mono_get_exception_arithmetic ());
-#endif
-	return a % b;
-}
-
-guint64 
-mono_lldiv_un (guint64 a, guint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-#endif
-	return a / b;
-}
-
-guint64 
-mono_llrem_un (guint64 a, guint64 b)
-{
-	MONO_ARCH_SAVE_REGS;
-
-#ifdef MONO_ARCH_NEED_DIV_CHECK
-	if (!b)
-		mono_raise_exception (mono_get_exception_divide_by_zero ());
-#endif
-	return a % b;
-}
-
-#endif
-
-#ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
-
-guint64 
-mono_lshl (guint64 a, gint32 shamt)
-{
-	guint64 res;
-
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-	res = a << shamt;
-
-	/*printf ("TESTL %lld << %d = %lld\n", a, shamt, res);*/
-
-	return res;
-}
-
-guint64 
-mono_lshr_un (guint64 a, gint32 shamt)
-{
-	guint64 res;
-
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-	res = a >> shamt;
-
-	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
-
-	return res;
-}
-
-gint64 
-mono_lshr (gint64 a, gint32 shamt)
-{
-	gint64 res;
-
-	/* no need, no exceptions: MONO_ARCH_SAVE_REGS;*/
-	res = a >> shamt;
-
-	/*printf ("TESTR %lld >> %d = %lld\n", a, shamt, res);*/
-
-	return res;
-}
-
 #endif
 
 #ifdef MONO_ARCH_SOFT_FLOAT
@@ -765,6 +765,37 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
 }
 
+MonoArray *
+mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3, guint32 length4)
+{
+	MonoDomain *domain = mono_domain_get ();
+	uintptr_t lengths [4];
+	intptr_t *lower_bounds;
+	int pcount;
+	int rank;
+
+	MONO_ARCH_SAVE_REGS;
+
+	pcount = mono_method_signature (cm)->param_count;
+	rank = cm->klass->rank;
+
+	lengths [0] = length1;
+	lengths [1] = length2;
+	lengths [2] = length3;
+	lengths [3] = length4;
+
+	g_assert (rank == pcount);
+
+	if (cm->klass->byval_arg.type == MONO_TYPE_ARRAY) {
+		lower_bounds = alloca (sizeof (intptr_t) * rank);
+		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
+	} else {
+		lower_bounds = NULL;
+	}
+
+	return mono_array_new_full (domain, cm->klass, lengths, lower_bounds);
+}
+
 gpointer
 mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 {
@@ -786,7 +817,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	if (domain->special_static_fields && (addr = g_hash_table_lookup (domain->special_static_fields, field)))
 		addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 	else
-		addr = (char*)vtable->data + field->offset;
+		addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
 	
 	return addr;
 }
@@ -1026,7 +1057,7 @@ mono_object_castclass (MonoObject *obj, MonoClass *klass)
 	MonoJitTlsData *jit_tls = NULL;
 
 	if (mini_get_debug_options ()->better_cast_details) {
-		jit_tls = TlsGetValue (mono_jit_tls_id);
+		jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 		jit_tls->class_cast_from = NULL;
 	}
 
@@ -1054,7 +1085,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 	gpointer cached_vtable, obj_vtable;
 
 	if (mini_get_debug_options ()->better_cast_details) {
-		jit_tls = TlsGetValue (mono_jit_tls_id);
+		jit_tls = mono_native_tls_get_value (mono_jit_tls_id);
 		jit_tls->class_cast_from = NULL;
 	}
 
@@ -1122,3 +1153,47 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 
 	return mono_compile_method (m);
 }
+
+MonoObject*
+mono_object_tostring_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	int vt_slot;
+	gpointer this_arg;
+
+	/* Lookup the virtual method */
+	mono_class_setup_vtable (klass);
+	g_assert (klass->vtable);
+	vt_slot = mono_method_get_vtable_slot (cmethod);
+	m = klass->vtable [vt_slot];
+	if (klass->valuetype)
+		this_arg = mp;
+	else
+		this_arg = *(gpointer*)mp;
+	return mono_runtime_invoke (m, this_arg, NULL, NULL);
+}
+
+int
+mono_object_gethashcode_gsharedvt (gpointer mp, MonoMethod *cmethod, MonoClass *klass)
+{
+	MonoMethod *m;
+	int vt_slot;
+	gpointer this_arg;
+	MonoObject *res;
+	gpointer p;
+
+	/* Lookup the virtual method */
+	mono_class_setup_vtable (klass);
+	g_assert (klass->vtable);
+	vt_slot = mono_method_get_vtable_slot (cmethod);
+	m = klass->vtable [vt_slot];
+	if (klass->valuetype)
+		this_arg = mp;
+	else
+		this_arg = *(gpointer*)mp;
+	// FIXME: This boxes the result
+	res = mono_runtime_invoke (m, this_arg, NULL, NULL);
+	p = mono_object_unbox (res);
+	return *(int*)p;
+}
+

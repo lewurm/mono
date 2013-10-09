@@ -42,7 +42,7 @@ using System.Security;
 using System.Runtime.ConstrainedExecution;
 
 namespace System.Threading {
-
+	[StructLayout (LayoutKind.Sequential)]
 	internal class InternalThread : CriticalFinalizerObject {
 #pragma warning disable 169, 414, 649
 		#region Sync with metadata/object-internals.h
@@ -51,9 +51,7 @@ namespace System.Threading {
 		internal IntPtr system_thread_handle;
 
 		/* Note this is an opaque object (an array), not a CultureInfo */
-		private object cached_culture_info; /*FIXME remove this on the next corlib version bump*/
-		private IntPtr unused0;
-		internal bool threadpool_thread;
+		private object cached_culture_info;
 		/* accessed only from unmanaged code */
 		private IntPtr name;
 		private int name_len; 
@@ -70,44 +68,45 @@ namespace System.Threading {
 		private IntPtr stack_ptr;
 		private UIntPtr static_data; /* GC-tracked */
 		private IntPtr jit_data;
-		private IntPtr lock_data;
+		private IntPtr runtime_thread_info;
 		/* current System.Runtime.Remoting.Contexts.Context instance
 		   keep as an object to avoid triggering its class constructor when not needed */
 		private object current_appcontext;
-		internal int stack_size;
+		private object pending_exception;
+		private object root_domain_thread;
+		internal byte[] _serialized_principal;
+		internal int _serialized_principal_version;
 		private IntPtr appdomain_refs;
 		private int interruption_requested;
 		private IntPtr suspend_event;
 		private IntPtr suspended_event;
 		private IntPtr resume_event;
 		private IntPtr synch_cs;
+		internal bool threadpool_thread;
 		private bool thread_dump_requested;
-		private IntPtr end_stack;
 		private bool thread_interrupt_requested;
+		private IntPtr end_stack;
+		/* These are used from managed code */
+		internal int stack_size;
 		internal byte apartment_state;
 		internal volatile int critical_region_level;
+		internal int managed_id;
 		private int small_id;
 		private IntPtr manage_callback;
-		private object pending_exception;
-		/* This is the ExecutionContext that will be set by
-		   start_wrapper() in the runtime. */
-		private ExecutionContext ec_to_set;
-
 		private IntPtr interrupt_on_stop;
-
+		private IntPtr flags;
+		private IntPtr android_tid;
+		private IntPtr thread_pinning_ref;
+		private int ignore_next_signal;
 		/* 
 		 * These fields are used to avoid having to increment corlib versions
 		 * when a new field is added to the unmanaged MonoThread structure.
 		 */
-		private IntPtr unused3;
-		private IntPtr unused4;
-		private IntPtr unused5;
-		internal int managed_id;
+		private IntPtr unused0;
+		private IntPtr unused1;
+		private IntPtr unused2;
 		#endregion
 #pragma warning restore 169, 414, 649
-
-		internal byte[] _serialized_principal;
-		internal int _serialized_principal_version;
 
 		// Closes the system thread handle
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -122,6 +121,7 @@ namespace System.Threading {
 	[ClassInterface (ClassInterfaceType.None)]
 	[ComVisible (true)]
 	[ComDefaultInterface (typeof (_Thread))]
+	[StructLayout (LayoutKind.Sequential)]
 	public sealed class Thread : CriticalFinalizerObject, _Thread {
 #pragma warning disable 414		
 		#region Sync with metadata/object-internals.h
@@ -184,7 +184,77 @@ namespace System.Threading {
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static byte[] ByteArrayToCurrentDomain (byte[] arr);
 
-#if !MOONLIGHT
+		static void DeserializePrincipal (Thread th)
+		{
+			MemoryStream ms = new MemoryStream (ByteArrayToCurrentDomain (th.Internal._serialized_principal));
+			int type = ms.ReadByte ();
+			if (type == 0) {
+				BinaryFormatter bf = new BinaryFormatter ();
+				th.principal = (IPrincipal) bf.Deserialize (ms);
+				th.principal_version = th.Internal._serialized_principal_version;
+			} else if (type == 1) {
+				BinaryReader reader = new BinaryReader (ms);
+				string name = reader.ReadString ();
+				string auth_type = reader.ReadString ();
+				int n_roles = reader.ReadInt32 ();
+				string [] roles = null;
+				if (n_roles >= 0) {
+					roles = new string [n_roles];
+					for (int i = 0; i < n_roles; i++)
+						roles [i] = reader.ReadString ();
+				}
+				th.principal = new GenericPrincipal (new GenericIdentity (name, auth_type), roles);
+			} else if (type == 2 || type == 3) {
+				string [] roles = type == 2 ? null : new string [0];
+				th.principal = new GenericPrincipal (new GenericIdentity ("", ""), roles);
+			}
+		}
+
+		static void SerializePrincipal (Thread th, IPrincipal value)
+		{
+			MemoryStream ms = new MemoryStream ();
+			bool done = false;
+			if (value.GetType () == typeof (GenericPrincipal)) {
+				GenericPrincipal gp = (GenericPrincipal) value;
+				if (gp.Identity != null && gp.Identity.GetType () == typeof (GenericIdentity)) {
+					GenericIdentity id = (GenericIdentity) gp.Identity;
+					if (id.Name == "" && id.AuthenticationType == "") {
+						if (gp.Roles == null) {
+							ms.WriteByte (2);
+							done = true;
+						} else if (gp.Roles.Length == 0) {
+							ms.WriteByte (3);
+							done = true;
+						}
+					} else {
+						ms.WriteByte (1);
+						BinaryWriter br = new BinaryWriter (ms);
+						br.Write (gp.Identity.Name);
+						br.Write (gp.Identity.AuthenticationType);
+						string [] roles = gp.Roles;
+						if  (roles == null) {
+							br.Write ((int) (-1));
+						} else {
+							br.Write (roles.Length);
+							foreach (string s in roles) {
+								br.Write (s);
+							}
+						}
+						br.Flush ();
+						done = true;
+					}
+				}
+			}
+			if (!done) {
+				ms.WriteByte (0);
+				BinaryFormatter bf = new BinaryFormatter ();
+				try {
+					bf.Serialize (ms, value);
+				} catch {}
+			}
+			th.Internal._serialized_principal = ByteArrayToRootDomain (ms.ToArray ());
+		}
+
 		public static IPrincipal CurrentPrincipal {
 			get {
 				Thread th = CurrentThread;
@@ -197,13 +267,9 @@ namespace System.Threading {
 
 				if (th.Internal._serialized_principal != null) {
 					try {
-						BinaryFormatter bf = new BinaryFormatter ();
-						MemoryStream ms = new MemoryStream (ByteArrayToCurrentDomain (th.Internal._serialized_principal));
-						th.principal = (IPrincipal) bf.Deserialize (ms);
-						th.principal_version = th.Internal._serialized_principal_version;
+						DeserializePrincipal (th);
 						return th.principal;
-					} catch (Exception) {
-					}
+					} catch {}
 				}
 
 				th.principal = GetDomain ().DefaultPrincipal;
@@ -214,25 +280,32 @@ namespace System.Threading {
 			set {
 				Thread th = CurrentThread;
 
-				++th.Internal._serialized_principal_version;
-				try {
-					BinaryFormatter bf = new BinaryFormatter ();
-					MemoryStream ms = new MemoryStream ();
-					bf.Serialize (ms, value);
-					th.Internal._serialized_principal = ByteArrayToRootDomain (ms.ToArray ());
-				} catch (Exception) {
+				if (value != GetDomain ().DefaultPrincipal) {
+					++th.Internal._serialized_principal_version;
+					try {
+						SerializePrincipal (th, value);
+					} catch (Exception) {
+						th.Internal._serialized_principal = null;
+					}
+					th.principal_version = th.Internal._serialized_principal_version;
+				} else {
 					th.Internal._serialized_principal = null;
 				}
 
 				th.principal = value;
-				th.principal_version = th.Internal._serialized_principal_version;
 			}
 		}
-#endif
 
 		// Looks up the object associated with the current thread
+		// this is called by the JIT directly, too
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static InternalThread CurrentInternalThread_internal();
+
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		internal extern static uint AllocTlsData (Type type);
+
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		internal extern static void DestroyTlsData (uint offset);
 
 		public static Thread CurrentThread {
 			[ReliabilityContract (Consistency.WillNotCorruptState, Cer.MayFail)]
@@ -249,7 +322,6 @@ namespace System.Threading {
 			}
 		}
 
-#if !MOONLIGHT
 		// Stores a hash keyed by strings of LocalDataStoreSlot objects
 		static Hashtable datastorehash;
 		private static object datastore_lock = new object ();
@@ -338,7 +410,6 @@ namespace System.Threading {
 				return(slot);
 			}
 		}
-#endif
 		
 		public static AppDomain GetDomain() {
 			return AppDomain.CurrentDomain;
@@ -356,9 +427,10 @@ namespace System.Threading {
 			ResetAbort_internal ();
 		}
 
-#if NET_4_0 || MOBILE
+#if NET_4_0
 		[HostProtectionAttribute (SecurityAction.LinkDemand, Synchronization = true, ExternalThreading = true)]
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		[ReliabilityContract (Consistency.WillNotCorruptState, Cer.Success)]
 		public extern static bool Yield ();
 #endif
 
@@ -397,8 +469,13 @@ namespace System.Threading {
 		private Thread (InternalThread it) {
 			internal_thread = it;
 		}
+		
+		// part of ".NETPortable,Version=v4.0,Profile=Profile3" i.e. FX4 and SL4
+		[ReliabilityContract (Consistency.WillNotCorruptState, Cer.Success)]
+		~Thread ()
+		{
+		}
 
-#if !MOONLIGHT
 		[Obsolete ("Deprecated in favor of GetApartmentState, SetApartmentState and TrySetApartmentState.")]
 		public ApartmentState ApartmentState {
 			get {
@@ -412,7 +489,6 @@ namespace System.Threading {
 				TrySetApartmentState (value);
 			}
 		}
-#endif // !NET_2_1
 
 		//[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		//private static extern int current_lcid ();
@@ -524,7 +600,6 @@ namespace System.Threading {
 			}
 		}
 
-#if !MOONLIGHT
 		public ThreadPriority Priority {
 			get {
 				return(ThreadPriority.Lowest);
@@ -534,7 +609,6 @@ namespace System.Threading {
 				// FIXME: Implement setter.
 			}
 		}
-#endif
 
 		public ThreadState ThreadState {
 			get {
@@ -551,7 +625,6 @@ namespace System.Threading {
 			Abort_internal (Internal, null);
 		}
 
-#if !MOONLIGHT
 		[SecurityPermission (SecurityAction.Demand, ControlThread=true)]
 		public void Abort (object stateInfo) 
 		{
@@ -569,7 +642,6 @@ namespace System.Threading {
 		{
 			Interrupt_internal (Internal);
 		}
-#endif
 
 		// The current thread joins with 'this'. Set ms to 0 to block
 		// until this actually exits.
@@ -589,7 +661,6 @@ namespace System.Threading {
 			return Join_internal (Internal, millisecondsTimeout, Internal.system_thread_handle);
 		}
 
-#if !MOONLIGHT
 		public bool Join(TimeSpan timeout)
 		{
 			long ms = (long) timeout.TotalMilliseconds;
@@ -598,14 +669,10 @@ namespace System.Threading {
 
 			return Join_internal (Internal, (int) ms, Internal.system_thread_handle);
 		}
-#endif
 
-#if NET_1_1
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public extern static void MemoryBarrier ();
-#endif
 
-#if !MOONLIGHT
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern void Resume_internal();
 
@@ -615,7 +682,6 @@ namespace System.Threading {
 		{
 			Resume_internal ();
 		}
-#endif // !NET_2_1
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private extern static void SpinWait_nop ();
@@ -632,45 +698,7 @@ namespace System.Threading {
 			}
 		}
 
-#if MOONLIGHT
-		private void StartInternal ()
-		{
-			current_thread = this;
-
-			try {
-				if (threadstart is ThreadStart) {
-					((ThreadStart) threadstart) ();
-				} else {
-					((ParameterizedThreadStart) threadstart) (start_obj);
-				}
-			} catch (ThreadAbortException) {
-				// do nothing
-			} catch (Exception ex) {
-				MoonlightUnhandledException (ex);
-			}
-		}
-
-		static MethodInfo moonlight_unhandled_exception = null;
-
-		static internal void MoonlightUnhandledException (Exception e)
-		{
-			try {
-				if (moonlight_unhandled_exception == null) {
-					var assembly = System.Reflection.Assembly.Load ("System.Windows, Version=2.0.5.0, Culture=Neutral, PublicKeyToken=7cec85d7bea7798e");
-					var application = assembly.GetType ("System.Windows.Application");
-					moonlight_unhandled_exception = application.GetMethod ("OnUnhandledException", 
-						System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-				}
-				moonlight_unhandled_exception.Invoke (null, new object [] { null, e });
-			}
-			catch {
-				try {
-					Console.WriteLine ("Unexpected exception while trying to report unhandled application exception: {0}", e);
-				} catch {
-				}
-			}
-		}
-#elif MONOTOUCH
+#if MONOTOUCH
 		static ConstructorInfo nsautoreleasepool_ctor;
 		
 		IDisposable GetNSAutoreleasePool ()
@@ -717,7 +745,6 @@ namespace System.Threading {
 				throw new SystemException ("Thread creation failed.");
 		}
 
-#if !MOONLIGHT
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static void Suspend_internal(InternalThread thread);
 
@@ -727,7 +754,6 @@ namespace System.Threading {
 		{
 			Suspend_internal (Internal);
 		}
-#endif // !NET_2_1
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern private static void SetState (InternalThread thread, ThreadState set);
@@ -738,8 +764,6 @@ namespace System.Threading {
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern private static ThreadState GetState (InternalThread thread);
 
-#if NET_1_1
-		
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern public static byte VolatileRead (ref byte address);
 		
@@ -828,7 +852,6 @@ namespace System.Threading {
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern public static void VolatileWrite (ref UIntPtr address, UIntPtr value);
 		
-#endif
 
 		static int CheckStackSize (int maxStackSize)
 		{
@@ -918,7 +941,6 @@ namespace System.Threading {
 			// Managed and native threads are currently bound together.
 		}
 
-#if !MOONLIGHT
 		public ApartmentState GetApartmentState ()
 		{
 			return (ApartmentState)Internal.apartment_state;
@@ -946,7 +968,6 @@ namespace System.Threading {
 
 			return true;
 		}
-#endif // !NET_2_1
 		
 		[ComVisible (false)]
 		public override int GetHashCode ()
@@ -960,18 +981,13 @@ namespace System.Threading {
 			Start ();
 		}
 
-#if !MOONLIGHT
 		// NOTE: This method doesn't show in the class library status page because
 		// it cannot be "found" with the StrongNameIdentityPermission for ECMA key.
 		// But it's there!
 		[SecurityPermission (SecurityAction.LinkDemand, UnmanagedCode = true)]
 		[StrongNameIdentityPermission (SecurityAction.LinkDemand, PublicKey="00000000000000000400000000000000")]
 		[Obsolete ("see CompressedStack class")]
-#if NET_1_1
 		public
-#else
-		internal
-#endif
 		CompressedStack GetCompressedStack ()
 		{
 			// Note: returns null if no CompressedStack has been set.
@@ -987,19 +1003,12 @@ namespace System.Threading {
 		[SecurityPermission (SecurityAction.LinkDemand, UnmanagedCode = true)]
 		[StrongNameIdentityPermission (SecurityAction.LinkDemand, PublicKey="00000000000000000400000000000000")]
 		[Obsolete ("see CompressedStack class")]
-#if NET_1_1
 		public
-#else
-		internal
-#endif
 		void SetCompressedStack (CompressedStack stack)
 		{
 			ExecutionContext.SecurityContext.CompressedStack = stack;
 		}
 
-#endif
-
-#if NET_1_1
 		void _Thread.GetIDsOfNames ([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
 		{
 			throw new NotImplementedException ();
@@ -1020,6 +1029,5 @@ namespace System.Threading {
 		{
 			throw new NotImplementedException ();
 		}
-#endif
 	}
 }

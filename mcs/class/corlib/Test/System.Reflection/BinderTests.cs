@@ -876,6 +876,32 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual ("Hello\nExtra\nWorld\n", sw.ToString ());
 		}
 
+		[Test] // #1321
+		public void BindToMethodNamedArgs_2 ()
+		{
+			StringWriter sw = new StringWriter ();
+			sw.NewLine = "\n";
+
+			object[] argValues = new object [] {5, "AB", sw};
+			string [] argNames = new string [] {"second", "first", "output"};
+
+			typeof (BinderTest).InvokeMember ("TestMethod",
+					BindingFlags.InvokeMethod,
+					null,
+					null,
+					argValues,
+					null,
+					null,
+					argNames);
+
+			Assert.AreEqual ("AB\n5\n", sw.ToString ());
+		}
+
+		public static void TestMethod (string first, int second, TextWriter output) {
+			output.WriteLine (first);
+			output.WriteLine (second);
+		}
+
 		public class Bug41691
 		{
 			public static void PrintName (string lastName, string firstName, string extra, TextWriter output)
@@ -954,19 +980,16 @@ namespace MonoTests.System.Reflection
 		}
 
 		[Test]
-		[Category ("NotDotNet")]
-		public void TestParamsAttribute2_Mono ()
+		public void TestParamsAttribute_1 ()
 		{
-			MethodInfo mi = typeof (BinderTest).GetMethod ("params_method1", BindingFlags.Static|BindingFlags.Public, null, new Type [] { typeof (object), typeof (object), typeof (object) }, null);
-			Assert.IsNotNull (mi, "#1");
-			Assert.AreEqual (typeof (object []), mi.GetParameters () [1].ParameterType, "#2");
+			MethodInfo mi = typeof (BinderTest).GetMethod ("params_method1", BindingFlags.Static | BindingFlags.Public, null, new Type [] { typeof (object), typeof (object), typeof (object) }, null);
+			Assert.IsNull (mi, "#1");
 		}
 
 		[Test]
-		[Category ("NotWorking")]
-		public void TestParamsAttribute2_MS ()
+		public void TestParamsAttribute_2 ()
 		{
-			MethodInfo mi = typeof (BinderTest).GetMethod ("params_method1", BindingFlags.Static | BindingFlags.Public, null, new Type [] { typeof (object), typeof (object), typeof (object) }, null);
+			MethodInfo mi = typeof (BinderTest).GetMethod ("params_method2", BindingFlags.Static | BindingFlags.Public, null, Type.EmptyTypes, null);
 			Assert.IsNull (mi, "#1");
 		}
 
@@ -981,6 +1004,10 @@ namespace MonoTests.System.Reflection
 		public static void params_method1 (object o, object o2)
 		{
 		}
+
+		public static void params_method2 (params string[] args)
+		{
+		}	
 
 		public static double DoubleMethod (double d) {
 			return d;
