@@ -1,3 +1,37 @@
+mono (3.0.6+dfsg2-6) unstable; urgency=low
+
+  [ Mirco Bauer ]
+  * [c920c13] Removed mono_arch_get_lmf_addr from s390x specific symbols
+  * [7b291a4] Added new armel specific symbols to libmono-2.0-1.symbols.armel
+
+  [ Atsushi Eno ]
+  * [15e60b3] Add Assembly version attributes to hopefully fix bug #10002.
+    (cherry picked from commit cd6dc32e0b936645bf2f89e1bf61c6ae04c3258a)
+    The new files are modified by this commit but were not present in the
+    packaged release.
+  * [5b98c36] [rx] Add missing AssemblyInfos.
+    (cherry picked from commit 7890e1e824b91b1fd30d375b8cfb19d5abb23c5a)
+  * [7cb9532] remove wrong EOLs after Libs: in reactive.pc.in. Third attempt to fix bug #10002.
+    (cherry picked from commit 5c228f3dd0e9b32a5b0d4aaaf0903ebaeae5a6d9)
+
+  [ Carlos Martín Nieto ]
+  * [b85c794] Create package for Reactive Extensions.
+    Now that they have a version, let's create binary packages for them.
+
+  [ Alex Rønne Petersen ]
+  * [172471f] Support a MONO_ARCH_HAVE_TLS_INIT variable.
+    Setting this on an architecture makes Mini call
+    mono_arch_tls_init () on thread attach.
+    This is primarily useful for architectures that have not
+    had their LMF code ported to the new infrastructure due to
+    a general lack of maintenance or hardware to do it on.
+    (cherry picked from commit f87a4f127d1a0ea1cf4145f9605c5698af08c6cf)
+
+  [ Jo Shields ]
+  * [1eacac9] Kill IA64 support. It's dead upstream and not coming back.
+
+ -- Mirco Bauer <meebey@meebey.net>  Fri, 11 Oct 2013 11:25:53 +0200
+
 mono (3.0.6+dfsg2-5) unstable; urgency=low
 
   * [8b43de0] [monodoc] Ensure we don't try to use <Parameters> when 
