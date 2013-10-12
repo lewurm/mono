@@ -1,3 +1,16 @@
+mono (3.0.6+dfsg2-7) unstable; urgency=low
+
+  [ Jeffrey Stedfast ]
+  * [235060d] [eglib] Fixed g_utf8_to_utf16_general() to handle invalid 
+    utf8 (cherry picked from commit a81cd6dae81a7077a7f014948c78075da08f02f7)
+    (Closes: #716689)
+
+  [ Atsushi Eno ]
+  * [5c90cf9] Fix build (giconv.c) 
+    (cherry picked from commit 37e7f2fb50e2f357ae4068d3b7551ff411f9f77c)
+
+ -- Jo Shields <directhex@apebox.org>  Sat, 12 Oct 2013 23:54:26 +0100
+
 mono (3.0.6+dfsg2-6) unstable; urgency=low
 
   [ Mirco Bauer ]
