@@ -16,7 +16,6 @@
 
 
 
-
 VPATH = @srcdir@
 am__make_dryrun = \
   { \
@@ -62,11 +61,10 @@ target_triplet = @target@
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@noinst_PROGRAMS = genmdesc$(EXEEXT) \
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	mono$(EXEEXT)
 @DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@noinst_PROGRAMS = genmdesc$(EXEEXT)
-@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@am__append_1 = libmono-moon.la
-@JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@am__append_2 = libmono-llvm.la
-@JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@@PLATFORM_DARWIN_FALSE@am__append_3 = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(libs)
-@NACL_CODEGEN_TRUE@am__append_4 = nacl.cs
-@NACL_CODEGEN_TRUE@am__append_5 = nacl.exe
+@JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@am__append_1 = libmono-llvm.la
+@JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@@PLATFORM_DARWIN_FALSE@am__append_2 = $(top_builddir)/mono/mini/libmono-$(API_VER).la $(libs)
+@NACL_CODEGEN_TRUE@am__append_3 = nacl.cs
+@NACL_CODEGEN_TRUE@am__append_4 = nacl.exe
 subdir = mono/mini
 DIST_COMMON = README $(libmonoinclude_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/depcomp \
@@ -114,7 +112,7 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(libmonoincludedir)"
+	"$(DESTDIR)$(libmonoincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @DTRACE_G_REQUIRED_TRUE@@STATIC_MONO_TRUE@am__DEPENDENCIES_1 = mono-dtrace.$(OBJEXT)
 libmini_static_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -197,11 +195,11 @@ am__objects_10 = libmini_static_la-mini-x86.lo \
 	libmini_static_la-tramp-x86.lo
 @MONO_DEBUGGER_SUPPORTED_TRUE@@PLATFORM_DARWIN_FALSE@@X86_TRUE@am__objects_11 = mdb-debug-info32.lo
 @MONO_DEBUGGER_SUPPORTED_TRUE@@PLATFORM_DARWIN_TRUE@@X86_TRUE@am__objects_11 = mdb-debug-info32-darwin.lo
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@am__objects_12 = $(am__objects_10) \
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@	$(am__objects_11)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_TRUE@am__objects_12 = $(am__objects_9)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_TRUE@am__objects_12 = $(am__objects_9)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_TRUE@am__objects_12 = $(am__objects_8)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@am__objects_12 = $(am__objects_10) \
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@	$(am__objects_11)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_FALSE@@SPARC_TRUE@am__objects_12 = $(am__objects_9)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_TRUE@am__objects_12 = $(am__objects_9)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_TRUE@am__objects_12 = $(am__objects_8)
 @AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_TRUE@am__objects_12 = $(am__objects_7)
 @AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_TRUE@am__objects_12 = $(am__objects_7)
 @AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_TRUE@am__objects_12 = $(am__objects_6)
@@ -295,11 +293,11 @@ am__objects_26 = libmini_la-mini-sparc.lo \
 	libmini_la-exceptions-sparc.lo libmini_la-tramp-sparc.lo
 am__objects_27 = libmini_la-mini-x86.lo libmini_la-exceptions-x86.lo \
 	libmini_la-tramp-x86.lo
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@am__objects_28 = $(am__objects_27) \
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@	$(am__objects_11)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_TRUE@am__objects_28 = $(am__objects_26)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_TRUE@am__objects_28 = $(am__objects_26)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_TRUE@am__objects_28 = $(am__objects_25)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@am__objects_28 = $(am__objects_27) \
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@	$(am__objects_11)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_FALSE@@SPARC_TRUE@am__objects_28 = $(am__objects_26)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_FALSE@@SPARC64_TRUE@am__objects_28 = $(am__objects_26)
+@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390X_TRUE@am__objects_28 = $(am__objects_25)
 @AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_TRUE@am__objects_28 = $(am__objects_24)
 @AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_TRUE@am__objects_28 = $(am__objects_24)
 @AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_TRUE@am__objects_28 = $(am__objects_23)
@@ -348,118 +346,10 @@ libmono_llvm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(LDFLAGS) -o $@
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@am_libmono_llvm_la_rpath =  \
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@	-rpath $(libdir)
-@MOONLIGHT_TRUE@am__DEPENDENCIES_6 = $(monodir)/mono/metadata/libmonoruntimemoon.la \
-@MOONLIGHT_TRUE@	$(monodir)/mono/io-layer/libwapi.la \
-@MOONLIGHT_TRUE@	$(monodir)/mono/utils/libmonoutils.la \
-@MOONLIGHT_TRUE@	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
-@DTRACE_G_REQUIRED_TRUE@am__DEPENDENCIES_7 =  \
+@DTRACE_G_REQUIRED_TRUE@am__DEPENDENCIES_6 =  \
 @DTRACE_G_REQUIRED_TRUE@	.libs/mono-dtrace.$(OBJEXT)
-@MOONLIGHT_BOEHM_FALSE@@MOONLIGHT_TRUE@libmono_moon_la_DEPENDENCIES =  \
-@MOONLIGHT_BOEHM_FALSE@@MOONLIGHT_TRUE@	$(am__DEPENDENCIES_6) \
-@MOONLIGHT_BOEHM_FALSE@@MOONLIGHT_TRUE@	$(am__DEPENDENCIES_7)
-@MOONLIGHT_BOEHM_TRUE@@MOONLIGHT_TRUE@libmono_moon_la_DEPENDENCIES =  \
-@MOONLIGHT_BOEHM_TRUE@@MOONLIGHT_TRUE@	$(am__DEPENDENCIES_6) \
-@MOONLIGHT_BOEHM_TRUE@@MOONLIGHT_TRUE@	$(am__DEPENDENCIES_3) \
-@MOONLIGHT_BOEHM_TRUE@@MOONLIGHT_TRUE@	$(am__DEPENDENCIES_7)
-am__libmono_moon_la_SOURCES_DIST = mini.c ir-emit.h method-to-ir.c \
-	decompose.c mini.h version.h optflags-def.h jit-icalls.h \
-	jit-icalls.c trace.c trace.h patch-info.h mini-ops.h \
-	mini-arch.h dominators.c cfold.c regalloc.c regalloc.h \
-	helpers.c liveness.c ssa.c abcremoval.c abcremoval.h ssapre.c \
-	ssapre.h local-propagation.c driver.c debug-mini.c \
-	debug-mini.h linear-scan.c aot-compiler.c aot-runtime.c \
-	graph.c mini-codegen.c mini-exceptions.c mini-trampolines.c \
-	declsec.c declsec.h wapihandles.c branch-opts.c \
-	mini-generic-sharing.c regalloc2.c simd-methods.h tasklets.c \
-	tasklets.h simd-intrinsics.c mini-unwind.h unwind.c \
-	image-writer.h image-writer.c dwarfwriter.h dwarfwriter.c \
-	mini-gc.h mini-gc.c debugger-agent.h debugger-agent.c \
-	debug-debugger.c debug-debugger.h xdebug.c mini-llvm.h \
-	mini-llvm-cpp.h mini-llvm.c mini-llvm-cpp.cpp mini-amd64.c \
-	mini-amd64.h exceptions-amd64.c tramp-amd64.c \
-	mdb-debug-info64.s mini-arm.c mini-arm.h exceptions-arm.c \
-	tramp-arm.c mini-ia64.c mini-ia64.h exceptions-ia64.c \
-	tramp-ia64.c mini-mips.c mini-mips.h exceptions-mips.c \
-	tramp-mips.c mini-ppc.c mini-ppc.h exceptions-ppc.c \
-	tramp-ppc.c mini-s390x.c mini-s390x.h exceptions-s390x.c \
-	tramp-s390x.c mini-sparc.c mini-sparc.h exceptions-sparc.c \
-	tramp-sparc.c mini-x86.c mini-x86.h exceptions-x86.c \
-	tramp-x86.c mdb-debug-info32.s mdb-debug-info32-darwin.s \
-	mini-windows.c mini-darwin.c mini-posix.c
-am__objects_33 = libmono_moon_la-mini.lo \
-	libmono_moon_la-method-to-ir.lo libmono_moon_la-decompose.lo \
-	libmono_moon_la-jit-icalls.lo libmono_moon_la-trace.lo \
-	libmono_moon_la-dominators.lo libmono_moon_la-cfold.lo \
-	libmono_moon_la-regalloc.lo libmono_moon_la-helpers.lo \
-	libmono_moon_la-liveness.lo libmono_moon_la-ssa.lo \
-	libmono_moon_la-abcremoval.lo libmono_moon_la-ssapre.lo \
-	libmono_moon_la-local-propagation.lo libmono_moon_la-driver.lo \
-	libmono_moon_la-debug-mini.lo libmono_moon_la-linear-scan.lo \
-	libmono_moon_la-aot-compiler.lo libmono_moon_la-aot-runtime.lo \
-	libmono_moon_la-graph.lo libmono_moon_la-mini-codegen.lo \
-	libmono_moon_la-mini-exceptions.lo \
-	libmono_moon_la-mini-trampolines.lo libmono_moon_la-declsec.lo \
-	libmono_moon_la-wapihandles.lo libmono_moon_la-branch-opts.lo \
-	libmono_moon_la-mini-generic-sharing.lo \
-	libmono_moon_la-regalloc2.lo libmono_moon_la-tasklets.lo \
-	libmono_moon_la-simd-intrinsics.lo libmono_moon_la-unwind.lo \
-	libmono_moon_la-image-writer.lo libmono_moon_la-dwarfwriter.lo \
-	libmono_moon_la-mini-gc.lo libmono_moon_la-debugger-agent.lo \
-	libmono_moon_la-debug-debugger.lo libmono_moon_la-xdebug.lo
-@ENABLE_LLVM_TRUE@@LOADED_LLVM_FALSE@am__objects_34 = libmono_moon_la-mini-llvm.lo \
-@ENABLE_LLVM_TRUE@@LOADED_LLVM_FALSE@	mini-llvm-cpp.lo
-am__objects_35 = libmono_moon_la-mini-amd64.lo \
-	libmono_moon_la-exceptions-amd64.lo \
-	libmono_moon_la-tramp-amd64.lo
-am__objects_36 = libmono_moon_la-mini-arm.lo \
-	libmono_moon_la-exceptions-arm.lo libmono_moon_la-tramp-arm.lo
-am__objects_37 = libmono_moon_la-mini-ia64.lo \
-	libmono_moon_la-exceptions-ia64.lo \
-	libmono_moon_la-tramp-ia64.lo
-am__objects_38 = libmono_moon_la-mini-mips.lo \
-	libmono_moon_la-exceptions-mips.lo \
-	libmono_moon_la-tramp-mips.lo
-am__objects_39 = libmono_moon_la-mini-ppc.lo \
-	libmono_moon_la-exceptions-ppc.lo libmono_moon_la-tramp-ppc.lo
-am__objects_40 = libmono_moon_la-mini-s390x.lo \
-	libmono_moon_la-exceptions-s390x.lo \
-	libmono_moon_la-tramp-s390x.lo
-am__objects_41 = libmono_moon_la-mini-sparc.lo \
-	libmono_moon_la-exceptions-sparc.lo \
-	libmono_moon_la-tramp-sparc.lo
-am__objects_42 = libmono_moon_la-mini-x86.lo \
-	libmono_moon_la-exceptions-x86.lo libmono_moon_la-tramp-x86.lo
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@am__objects_43 = $(am__objects_42) \
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_FALSE@@X86_TRUE@	$(am__objects_11)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_FALSE@@SPARC_TRUE@am__objects_43 = $(am__objects_41)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_FALSE@@SPARC64_TRUE@am__objects_43 = $(am__objects_41)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_FALSE@@S390x_TRUE@am__objects_43 = $(am__objects_40)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_FALSE@@POWERPC_TRUE@am__objects_43 = $(am__objects_39)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_FALSE@@POWERPC64_TRUE@am__objects_43 = $(am__objects_39)
-@AMD64_FALSE@@ARM_FALSE@@IA64_FALSE@@MIPS_TRUE@am__objects_43 = $(am__objects_38)
-@AMD64_FALSE@@ARM_FALSE@@IA64_TRUE@am__objects_43 = $(am__objects_37)
-@AMD64_FALSE@@ARM_TRUE@am__objects_43 = $(am__objects_36)
-@AMD64_TRUE@@MONO_DEBUGGER_SUPPORTED_FALSE@am__objects_43 =  \
-@AMD64_TRUE@@MONO_DEBUGGER_SUPPORTED_FALSE@	$(am__objects_35)
-@AMD64_TRUE@@MONO_DEBUGGER_SUPPORTED_TRUE@am__objects_43 =  \
-@AMD64_TRUE@@MONO_DEBUGGER_SUPPORTED_TRUE@	$(am__objects_35) \
-@AMD64_TRUE@@MONO_DEBUGGER_SUPPORTED_TRUE@	mdb-debug-info64.lo
-am__objects_44 = libmono_moon_la-mini-windows.lo
-am__objects_45 = libmono_moon_la-mini-darwin.lo
-am__objects_46 = libmono_moon_la-mini-posix.lo
-@HOST_WIN32_FALSE@@PLATFORM_DARWIN_FALSE@@PLATFORM_SIGPOSIX_TRUE@am__objects_47 = $(am__objects_46)
-@HOST_WIN32_FALSE@@PLATFORM_DARWIN_TRUE@am__objects_47 =  \
-@HOST_WIN32_FALSE@@PLATFORM_DARWIN_TRUE@	$(am__objects_45) \
-@HOST_WIN32_FALSE@@PLATFORM_DARWIN_TRUE@	$(am__objects_46)
-@HOST_WIN32_TRUE@am__objects_47 = $(am__objects_44)
-am__objects_48 = $(am__objects_33) $(am__objects_34) $(am__objects_43) \
-	$(am__objects_47)
-@MOONLIGHT_TRUE@am_libmono_moon_la_OBJECTS = $(am__objects_48)
-libmono_moon_la_OBJECTS = $(am_libmono_moon_la_OBJECTS)
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@am_libmono_moon_la_rpath =
-@DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@am_libmono_moon_la_rpath =
 libmonoboehm_2_0_la_DEPENDENCIES = libmini.la $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_7)
+	$(am__DEPENDENCIES_6)
 am_libmonoboehm_2_0_la_OBJECTS =
 libmonoboehm_2_0_la_OBJECTS = $(am_libmonoboehm_2_0_la_OBJECTS)
 libmonoboehm_2_0_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -470,12 +360,12 @@ libmonoboehm_2_0_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@@SHARED_MONO_TRUE@@SUPPORT_BOEHM_TRUE@	$(libdir)
 @DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@am_libmonoboehm_2_0_la_rpath = -rpath \
 @DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@	$(libdir)
-am__DEPENDENCIES_8 = $(monodir)/mono/metadata/libmonoruntimesgen.la \
+am__DEPENDENCIES_7 = $(monodir)/mono/metadata/libmonoruntimesgen.la \
 	$(monodir)/mono/io-layer/libwapi.la \
 	$(monodir)/mono/utils/libmonoutils.la $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_2)
-libmonosgen_2_0_la_DEPENDENCIES = libmini.la $(am__DEPENDENCIES_8) \
-	$(am__DEPENDENCIES_7)
+libmonosgen_2_0_la_DEPENDENCIES = libmini.la $(am__DEPENDENCIES_7) \
+	$(am__DEPENDENCIES_6)
 am_libmonosgen_2_0_la_OBJECTS =
 libmonosgen_2_0_la_OBJECTS = $(am_libmonosgen_2_0_la_OBJECTS)
 libmonosgen_2_0_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -491,8 +381,10 @@ libmonosgen_2_0_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@am__EXEEXT_2 =  \
 @JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@	mono-sgen$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
+am__dirstamp = $(am__leading_dot)dirstamp
 am_genmdesc_OBJECTS = genmdesc-genmdesc.$(OBJEXT) \
-	genmdesc-helpers.$(OBJEXT) genmdesc-opcodes.$(OBJEXT)
+	genmdesc-helpers.$(OBJEXT) \
+	../metadata/genmdesc-opcodes.$(OBJEXT)
 genmdesc_OBJECTS = $(am_genmdesc_OBJECTS)
 genmdesc_DEPENDENCIES = $(monodir)/mono/utils/libmonoutils.la \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
@@ -507,56 +399,56 @@ mono_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_mono_boehm_OBJECTS = mono_boehm-main.$(OBJEXT)
 mono_boehm_OBJECTS = $(am_mono_boehm_OBJECTS)
-@INCLUDED_LIBGC_FALSE@am__DEPENDENCIES_9 = $(am__DEPENDENCIES_2)
-@INCLUDED_LIBGC_TRUE@am__DEPENDENCIES_9 =  \
+@INCLUDED_LIBGC_FALSE@am__DEPENDENCIES_8 = $(am__DEPENDENCIES_2)
+@INCLUDED_LIBGC_TRUE@am__DEPENDENCIES_8 =  \
 @INCLUDED_LIBGC_TRUE@	$(monodir)/libgc/libmonogc-static.la
-am__DEPENDENCIES_10 =  \
+am__DEPENDENCIES_9 =  \
 	$(monodir)/mono/metadata/libmonoruntime-static.la \
 	$(monodir)/mono/io-layer/libwapi.la \
 	$(monodir)/mono/utils/libmonoutils.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_9)
-@JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@am__DEPENDENCIES_11 =  \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_8)
+@JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@am__DEPENDENCIES_10 =  \
 @JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@	libmini-static.la \
-@JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@	$(am__DEPENDENCIES_10)
-@STATIC_MONO_FALSE@am__DEPENDENCIES_12 = libmonoboehm-2.0.la
-@STATIC_MONO_TRUE@am__DEPENDENCIES_12 = $(am__DEPENDENCIES_11)
-@LOADED_LLVM_FALSE@am__DEPENDENCIES_13 = $(am__DEPENDENCIES_2) \
+@JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@	$(am__DEPENDENCIES_9)
+@STATIC_MONO_FALSE@am__DEPENDENCIES_11 = libmonoboehm-2.0.la
+@STATIC_MONO_TRUE@am__DEPENDENCIES_11 = $(am__DEPENDENCIES_10)
+@LOADED_LLVM_FALSE@am__DEPENDENCIES_12 = $(am__DEPENDENCIES_2) \
 @LOADED_LLVM_FALSE@	$(am__DEPENDENCIES_2)
-mono_boehm_DEPENDENCIES = $(am__DEPENDENCIES_12) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_13) $(am__DEPENDENCIES_2) \
+mono_boehm_DEPENDENCIES = $(am__DEPENDENCIES_11) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1)
 mono_boehm_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(mono_boehm_CFLAGS) \
 	$(CFLAGS) $(mono_boehm_LDFLAGS) $(LDFLAGS) -o $@
 am_mono_sgen_OBJECTS = mono_sgen-main-sgen.$(OBJEXT)
 mono_sgen_OBJECTS = $(am_mono_sgen_OBJECTS)
-am__DEPENDENCIES_14 =  \
+am__DEPENDENCIES_13 =  \
 	$(monodir)/mono/metadata/libmonoruntimesgen-static.la \
 	$(monodir)/mono/io-layer/libwapi.la \
 	$(monodir)/mono/utils/libmonoutils.la $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_2)
-@JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@am__DEPENDENCIES_15 =  \
+@JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@am__DEPENDENCIES_14 =  \
 @JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@	libmini-static.la \
-@JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@	$(am__DEPENDENCIES_14)
-@STATIC_MONO_TRUE@am__DEPENDENCIES_16 = $(am__DEPENDENCIES_15)
-mono_sgen_DEPENDENCIES = $(am__DEPENDENCIES_16) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_13) $(am__DEPENDENCIES_2) \
+@JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@	$(am__DEPENDENCIES_13)
+@STATIC_MONO_FALSE@am__DEPENDENCIES_15 = libmonosgen-2.0.la
+@STATIC_MONO_TRUE@am__DEPENDENCIES_15 = $(am__DEPENDENCIES_14)
+mono_sgen_DEPENDENCIES = $(am__DEPENDENCIES_15) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1)
 mono_sgen_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(mono_sgen_CFLAGS) \
 	$(CFLAGS) $(mono_sgen_LDFLAGS) $(LDFLAGS) -o $@
 am__monow_SOURCES_DIST = main.c
-am__objects_49 = main.$(OBJEXT)
-@HOST_WIN32_TRUE@am_monow_OBJECTS = $(am__objects_49)
+am__objects_33 = main.$(OBJEXT)
+@HOST_WIN32_TRUE@am_monow_OBJECTS = $(am__objects_33)
 monow_OBJECTS = $(am_monow_OBJECTS)
-am__DEPENDENCIES_17 = $(am__DEPENDENCIES_12) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_13) $(am__DEPENDENCIES_2) \
+am__DEPENDENCIES_16 = $(am__DEPENDENCIES_11) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_12) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1)
-@HOST_WIN32_TRUE@monow_DEPENDENCIES = $(am__DEPENDENCIES_17)
+@HOST_WIN32_TRUE@monow_DEPENDENCIES = $(am__DEPENDENCIES_16)
 monow_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(monow_LDFLAGS) $(LDFLAGS) -o $@
-SCRIPTS = $(bin_SCRIPTS) $(noinst_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -599,14 +491,13 @@ AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
 SOURCES = $(libmini_static_la_SOURCES) $(libmini_la_SOURCES) \
-	$(libmono_llvm_la_SOURCES) $(libmono_moon_la_SOURCES) \
-	$(libmonoboehm_2_0_la_SOURCES) $(libmonosgen_2_0_la_SOURCES) \
-	$(genmdesc_SOURCES) $(mono_SOURCES) $(mono_boehm_SOURCES) \
-	$(mono_sgen_SOURCES) $(monow_SOURCES)
+	$(libmono_llvm_la_SOURCES) $(libmonoboehm_2_0_la_SOURCES) \
+	$(libmonosgen_2_0_la_SOURCES) $(genmdesc_SOURCES) \
+	$(mono_SOURCES) $(mono_boehm_SOURCES) $(mono_sgen_SOURCES) \
+	$(monow_SOURCES)
 DIST_SOURCES = $(am__libmini_static_la_SOURCES_DIST) \
 	$(am__libmini_la_SOURCES_DIST) \
 	$(am__libmono_llvm_la_SOURCES_DIST) \
-	$(am__libmono_moon_la_SOURCES_DIST) \
 	$(libmonoboehm_2_0_la_SOURCES) $(libmonosgen_2_0_la_SOURCES) \
 	$(genmdesc_SOURCES) $(mono_SOURCES) $(mono_boehm_SOURCES) \
 	$(mono_sgen_SOURCES) $(am__monow_SOURCES_DIST)
@@ -707,7 +598,6 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONO_DL_NEED_USCORE = @MONO_DL_NEED_USCORE@
 MONO_NACL_ALIGN_MASK_OFF = @MONO_NACL_ALIGN_MASK_OFF@
-MOONLIGHT_DEFINES = @MOONLIGHT_DEFINES@
 MSGFMT = @MSGFMT@
 MSGFMT_015 = @MSGFMT_015@
 MSGMERGE = @MSGMERGE@
@@ -841,12 +731,6 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 
-@MOONLIGHT_TRUE@moon_libs = \
-@MOONLIGHT_TRUE@	$(monodir)/mono/metadata/libmonoruntimemoon.la	\
-@MOONLIGHT_TRUE@	$(monodir)/mono/io-layer/libwapi.la	\
-@MOONLIGHT_TRUE@	$(monodir)/mono/utils/libmonoutils.la \
-@MOONLIGHT_TRUE@	$(GLIB_LIBS) $(LIBICONV)
-
 static_libs = \
 	$(monodir)/mono/metadata/libmonoruntime-static.la	\
 	$(monodir)/mono/io-layer/libwapi.la	\
@@ -892,28 +776,24 @@ genmdesc_CFLAGS = $(AM_CFLAGS)
 @JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@boehm_libraries = libmonoboehm-2.0.la
 @JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@boehm_static_libraries = libmini-static.la $(static_libs)
 @JIT_SUPPORTED_TRUE@@SUPPORT_BOEHM_TRUE@boehm_binaries = mono-boehm
+@JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_FALSE@mono_bin_suffix = boehm
 
 #The mono uses sgen, while libmono remains boehm
-@JIT_SUPPORTED_TRUE@mono_bin_suffix = sgen
+@JIT_SUPPORTED_TRUE@@SUPPORT_SGEN_TRUE@mono_bin_suffix = sgen
 @JIT_SUPPORTED_TRUE@libmono_suffix = boehm
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@bin_SCRIPTS = mono
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@noinst_SCRIPTS = mono
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@@SHARED_MONO_TRUE@shared_libraries = $(boehm_libraries) $(sgen_libraries)
 @DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@shared_libraries = $(boehm_libraries) $(sgen_libraries)
 @JIT_SUPPORTED_TRUE@lib_LTLIBRARIES = $(shared_libraries) \
-@JIT_SUPPORTED_TRUE@	$(am__append_2)
+@JIT_SUPPORTED_TRUE@	$(am__append_1)
 @JIT_SUPPORTED_TRUE@@SHARED_MONO_FALSE@mini_common_lib = 
 @JIT_SUPPORTED_TRUE@@SHARED_MONO_TRUE@mini_common_lib = libmini.la
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@noinst_LTLIBRARIES = $(mini_common_lib) \
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	libmini-static.la \
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	$(am__append_1)
-@DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@noinst_LTLIBRARIES = $(mini_common_lib) \
-@DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@	$(am__append_1)
+@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la
+@DISABLE_EXECUTABLES_TRUE@@JIT_SUPPORTED_TRUE@noinst_LTLIBRARIES = $(mini_common_lib)
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@libmono_llvm_la_LIBADD =  \
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@	$(LLVM_LIBS) \
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@	$(LLVM_LDFLAGS) \
-@JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@	$(am__append_3)
+@JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@	$(am__append_2)
 @JIT_SUPPORTED_TRUE@@LOADED_LLVM_TRUE@@PLATFORM_DARWIN_TRUE@libmono_llvm_la_LDFLAGS = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 mono_boehm_SOURCES = \
 	main.c
@@ -938,8 +818,8 @@ mono_sgen_CFLAGS = $(AM_CFLAGS)
 # Link libmono into mono statically
 # This leads to higher performance, especially with TLS
 @STATIC_MONO_TRUE@MONO_LIB = $(boehm_static_libraries)
+@STATIC_MONO_FALSE@MONO_SGEN_LIB = libmonosgen-2.0.la
 @STATIC_MONO_TRUE@MONO_SGEN_LIB = $(sgen_static_libraries)
-@STATIC_MONO_FALSE@MONO_LIBLIB = libmonosgen-2.0.la
 @LOADED_LLVM_FALSE@LLVMMONOF = $(LLVM_LIBS) $(LLVM_LDFLAGS)
 @LOADED_LLVM_TRUE@LLVMMONOF = 
 mono_boehm_LDADD = \
@@ -1109,11 +989,11 @@ test_sources = basic-calls.cs basic-long.cs bench.cs objects.cs \
 	arrays.cs basic-float.cs basic-math.cs basic.cs exceptions.cs \
 	devirtualization.cs iltests.il.in test.cs generics.cs \
 	generics-variant-types.il basic-simd.cs aot-tests.cs \
-	gc-test.cs gshared.cs $(am__append_4)
+	gc-test.cs gshared.cs $(am__append_3)
 regtests = basic.exe basic-float.exe basic-long.exe basic-calls.exe \
 	objects.exe arrays.exe basic-math.exe exceptions.exe \
 	iltests.exe devirtualization.exe generics.exe basic-simd.exe \
-	$(am__append_5)
+	$(am__append_4)
 @MONO_DEBUGGER_SUPPORTED_FALSE@@X86_TRUE@mdb_x86 = 
 @MONO_DEBUGGER_SUPPORTED_TRUE@@PLATFORM_DARWIN_FALSE@@X86_TRUE@mdb_x86 = mdb-debug-info32.s
 @MONO_DEBUGGER_SUPPORTED_TRUE@@PLATFORM_DARWIN_TRUE@@X86_TRUE@mdb_x86 = mdb-debug-info32-darwin.s
@@ -1124,7 +1004,7 @@ regtests = basic.exe basic-float.exe basic-long.exe basic-calls.exe \
 @MIPS_TRUE@arch_sources = $(mips_sources)
 @POWERPC64_TRUE@arch_sources = $(ppc_sources)
 @POWERPC_TRUE@arch_sources = $(ppc_sources)
-@S390x_TRUE@arch_sources = $(s390x_sources)
+@S390X_TRUE@arch_sources = $(s390x_sources)
 @SPARC64_TRUE@arch_sources = $(sparc_sources)
 @SPARC_TRUE@arch_sources = $(sparc_sources)
 @X86_TRUE@arch_sources = $(x86_sources) $(mdb_x86)
@@ -1134,7 +1014,7 @@ regtests = basic.exe basic-float.exe basic-long.exe basic-calls.exe \
 @MIPS_TRUE@arch_built = cpu-mips.h
 @POWERPC64_TRUE@arch_built = cpu-ppc64.h
 @POWERPC_TRUE@arch_built = cpu-ppc.h
-@S390x_TRUE@arch_built = cpu-s390x.h
+@S390X_TRUE@arch_built = cpu-s390x.h
 @SPARC64_TRUE@arch_built = cpu-sparc.h
 @SPARC_TRUE@arch_built = cpu-sparc.h
 @X86_TRUE@arch_built = cpu-x86.h
@@ -1144,7 +1024,7 @@ regtests = basic.exe basic-float.exe basic-long.exe basic-calls.exe \
 @MIPS_TRUE@arch_define = __mips__
 @POWERPC64_TRUE@arch_define = __ppc64__
 @POWERPC_TRUE@arch_define = __ppc__
-@S390x_TRUE@arch_define = __s390__
+@S390X_TRUE@arch_define = __s390__
 @SPARC64_TRUE@arch_define = __sparc__
 @SPARC_TRUE@arch_define = __sparc__
 @X86_TRUE@arch_define = __i386__
@@ -1168,11 +1048,6 @@ libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_2_0_la_LIBADD = libmini.la $(sgen_libs) $(LIBMONO_DTRACE_OBJECT)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags)
-@MOONLIGHT_TRUE@libmono_moon_la_SOURCES = $(libmini_la_SOURCES)
-@MOONLIGHT_BOEHM_FALSE@@MOONLIGHT_TRUE@libmono_moon_la_CFLAGS = $(mono_sgen_CFLAGS) $(MOONLIGHT_DEFINES)
-@MOONLIGHT_BOEHM_TRUE@@MOONLIGHT_TRUE@libmono_moon_la_CFLAGS = $(mono_CFLAGS) $(MOONLIGHT_DEFINES)
-@MOONLIGHT_BOEHM_FALSE@@MOONLIGHT_TRUE@libmono_moon_la_LIBADD = $(moon_libs) $(LIBMONO_DTRACE_OBJECT)
-@MOONLIGHT_BOEHM_TRUE@@MOONLIGHT_TRUE@libmono_moon_la_LIBADD = $(moon_libs) $(libgc_libs) $(LIBMONO_DTRACE_OBJECT)
 
 #
 # This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
@@ -1304,8 +1179,6 @@ libmini.la: $(libmini_la_OBJECTS) $(libmini_la_DEPENDENCIES) $(EXTRA_libmini_la_
 	$(AM_V_CXXLD)$(CXXLINK) $(am_libmini_la_rpath) $(libmini_la_OBJECTS) $(libmini_la_LIBADD) $(LIBS)
 libmono-llvm.la: $(libmono_llvm_la_OBJECTS) $(libmono_llvm_la_DEPENDENCIES) $(EXTRA_libmono_llvm_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libmono_llvm_la_LINK) $(am_libmono_llvm_la_rpath) $(libmono_llvm_la_OBJECTS) $(libmono_llvm_la_LIBADD) $(LIBS)
-libmono-moon.la: $(libmono_moon_la_OBJECTS) $(libmono_moon_la_DEPENDENCIES) $(EXTRA_libmono_moon_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(CXXLINK) $(am_libmono_moon_la_rpath) $(libmono_moon_la_OBJECTS) $(libmono_moon_la_LIBADD) $(LIBS)
 libmonoboehm-2.0.la: $(libmonoboehm_2_0_la_OBJECTS) $(libmonoboehm_2_0_la_DEPENDENCIES) $(EXTRA_libmonoboehm_2_0_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libmonoboehm_2_0_la_LINK) $(am_libmonoboehm_2_0_la_rpath) $(libmonoboehm_2_0_la_OBJECTS) $(libmonoboehm_2_0_la_LIBADD) $(LIBS)
 libmonosgen-2.0.la: $(libmonosgen_2_0_la_OBJECTS) $(libmonosgen_2_0_la_DEPENDENCIES) $(EXTRA_libmonosgen_2_0_la_DEPENDENCIES) 
@@ -1365,6 +1238,14 @@ clean-noinstPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+../metadata/$(am__dirstamp):
+	@$(MKDIR_P) ../metadata
+	@: > ../metadata/$(am__dirstamp)
+../metadata/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../metadata/$(DEPDIR)
+	@: > ../metadata/$(DEPDIR)/$(am__dirstamp)
+../metadata/genmdesc-opcodes.$(OBJEXT): ../metadata/$(am__dirstamp) \
+	../metadata/$(DEPDIR)/$(am__dirstamp)
 genmdesc$(EXEEXT): $(genmdesc_OBJECTS) $(genmdesc_DEPENDENCIES) $(EXTRA_genmdesc_DEPENDENCIES) 
 	@rm -f genmdesc$(EXEEXT)
 	$(AM_V_CCLD)$(genmdesc_LINK) $(genmdesc_OBJECTS) $(genmdesc_LDADD) $(LIBS)
@@ -1383,51 +1264,17 @@ mono-sgen$(EXEEXT): $(mono_sgen_OBJECTS) $(mono_sgen_DEPENDENCIES) $(EXTRA_mono_
 monow$(EXEEXT): $(monow_OBJECTS) $(monow_DEPENDENCIES) $(EXTRA_monow_DEPENDENCIES) 
 	@rm -f monow$(EXEEXT)
 	$(AM_V_CCLD)$(monow_LINK) $(monow_OBJECTS) $(monow_LDADD) $(LIBS)
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(bindir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(bindir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n' \
-	    -e 'h;s|.*|.|' \
-	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
-	      if (++n[d] == $(am__install_max)) { \
-		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
-	    else { print "f", d "/" $$4, $$1 } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	     test -z "$$files" || { \
-	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
-	     } \
-	; done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	       sed -e 's,.*/,,;$(transform)'`; \
-	dir='$(DESTDIR)$(bindir)'; $(am__uninstall_files_from_dir)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f ../metadata/genmdesc-opcodes.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@../metadata/$(DEPDIR)/genmdesc-opcodes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/genmdesc-genmdesc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/genmdesc-helpers.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/genmdesc-opcodes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmini_la-abcremoval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmini_la-aot-compiler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmini_la-aot-runtime.Plo@am__quote@
@@ -1558,71 +1405,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmini_static_la-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmini_static_la-wapihandles.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmini_static_la-xdebug.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-abcremoval.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-aot-compiler.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-aot-runtime.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-branch-opts.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-cfold.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-debug-debugger.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-debug-mini.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-debugger-agent.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-declsec.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-decompose.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-dominators.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-driver.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-dwarfwriter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-amd64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-arm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-ia64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-mips.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-ppc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-s390x.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-sparc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-exceptions-x86.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-graph.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-helpers.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-image-writer.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-jit-icalls.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-linear-scan.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-liveness.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-local-propagation.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-method-to-ir.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-amd64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-arm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-codegen.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-darwin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-exceptions.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-gc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-generic-sharing.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-ia64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-llvm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-mips.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-posix.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-ppc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-s390x.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-sparc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-trampolines.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-windows.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini-x86.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-mini.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-regalloc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-regalloc2.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-simd-intrinsics.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-ssa.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-ssapre.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tasklets.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-trace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-amd64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-arm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-ia64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-mips.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-ppc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-s390x.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-sparc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-tramp-x86.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-unwind.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-wapihandles.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libmono_moon_la-xdebug.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mini-llvm-cpp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mini-llvm.Plo@am__quote@
@@ -1631,22 +1413,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono_sgen-main-sgen.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c $<
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c `$(CYGPATH_W) '$<'`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -2561,461 +2346,6 @@ libmini_la-mini-posix.lo: mini-posix.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmini_la_CFLAGS) $(CFLAGS) -c -o libmini_la-mini-posix.lo `test -f 'mini-posix.c' || echo '$(srcdir)/'`mini-posix.c
 
-libmono_moon_la-mini.lo: mini.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini.Tpo -c -o libmono_moon_la-mini.lo `test -f 'mini.c' || echo '$(srcdir)/'`mini.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini.Tpo $(DEPDIR)/libmono_moon_la-mini.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini.c' object='libmono_moon_la-mini.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini.lo `test -f 'mini.c' || echo '$(srcdir)/'`mini.c
-
-libmono_moon_la-method-to-ir.lo: method-to-ir.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-method-to-ir.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-method-to-ir.Tpo -c -o libmono_moon_la-method-to-ir.lo `test -f 'method-to-ir.c' || echo '$(srcdir)/'`method-to-ir.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-method-to-ir.Tpo $(DEPDIR)/libmono_moon_la-method-to-ir.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='method-to-ir.c' object='libmono_moon_la-method-to-ir.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-method-to-ir.lo `test -f 'method-to-ir.c' || echo '$(srcdir)/'`method-to-ir.c
-
-libmono_moon_la-decompose.lo: decompose.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-decompose.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-decompose.Tpo -c -o libmono_moon_la-decompose.lo `test -f 'decompose.c' || echo '$(srcdir)/'`decompose.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-decompose.Tpo $(DEPDIR)/libmono_moon_la-decompose.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decompose.c' object='libmono_moon_la-decompose.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-decompose.lo `test -f 'decompose.c' || echo '$(srcdir)/'`decompose.c
-
-libmono_moon_la-jit-icalls.lo: jit-icalls.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-jit-icalls.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-jit-icalls.Tpo -c -o libmono_moon_la-jit-icalls.lo `test -f 'jit-icalls.c' || echo '$(srcdir)/'`jit-icalls.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-jit-icalls.Tpo $(DEPDIR)/libmono_moon_la-jit-icalls.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='jit-icalls.c' object='libmono_moon_la-jit-icalls.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-jit-icalls.lo `test -f 'jit-icalls.c' || echo '$(srcdir)/'`jit-icalls.c
-
-libmono_moon_la-trace.lo: trace.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-trace.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-trace.Tpo -c -o libmono_moon_la-trace.lo `test -f 'trace.c' || echo '$(srcdir)/'`trace.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-trace.Tpo $(DEPDIR)/libmono_moon_la-trace.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trace.c' object='libmono_moon_la-trace.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-trace.lo `test -f 'trace.c' || echo '$(srcdir)/'`trace.c
-
-libmono_moon_la-dominators.lo: dominators.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-dominators.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-dominators.Tpo -c -o libmono_moon_la-dominators.lo `test -f 'dominators.c' || echo '$(srcdir)/'`dominators.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-dominators.Tpo $(DEPDIR)/libmono_moon_la-dominators.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dominators.c' object='libmono_moon_la-dominators.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-dominators.lo `test -f 'dominators.c' || echo '$(srcdir)/'`dominators.c
-
-libmono_moon_la-cfold.lo: cfold.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-cfold.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-cfold.Tpo -c -o libmono_moon_la-cfold.lo `test -f 'cfold.c' || echo '$(srcdir)/'`cfold.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-cfold.Tpo $(DEPDIR)/libmono_moon_la-cfold.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cfold.c' object='libmono_moon_la-cfold.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-cfold.lo `test -f 'cfold.c' || echo '$(srcdir)/'`cfold.c
-
-libmono_moon_la-regalloc.lo: regalloc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-regalloc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-regalloc.Tpo -c -o libmono_moon_la-regalloc.lo `test -f 'regalloc.c' || echo '$(srcdir)/'`regalloc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-regalloc.Tpo $(DEPDIR)/libmono_moon_la-regalloc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='regalloc.c' object='libmono_moon_la-regalloc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-regalloc.lo `test -f 'regalloc.c' || echo '$(srcdir)/'`regalloc.c
-
-libmono_moon_la-helpers.lo: helpers.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-helpers.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-helpers.Tpo -c -o libmono_moon_la-helpers.lo `test -f 'helpers.c' || echo '$(srcdir)/'`helpers.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-helpers.Tpo $(DEPDIR)/libmono_moon_la-helpers.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='helpers.c' object='libmono_moon_la-helpers.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-helpers.lo `test -f 'helpers.c' || echo '$(srcdir)/'`helpers.c
-
-libmono_moon_la-liveness.lo: liveness.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-liveness.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-liveness.Tpo -c -o libmono_moon_la-liveness.lo `test -f 'liveness.c' || echo '$(srcdir)/'`liveness.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-liveness.Tpo $(DEPDIR)/libmono_moon_la-liveness.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='liveness.c' object='libmono_moon_la-liveness.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-liveness.lo `test -f 'liveness.c' || echo '$(srcdir)/'`liveness.c
-
-libmono_moon_la-ssa.lo: ssa.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-ssa.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-ssa.Tpo -c -o libmono_moon_la-ssa.lo `test -f 'ssa.c' || echo '$(srcdir)/'`ssa.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-ssa.Tpo $(DEPDIR)/libmono_moon_la-ssa.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ssa.c' object='libmono_moon_la-ssa.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-ssa.lo `test -f 'ssa.c' || echo '$(srcdir)/'`ssa.c
-
-libmono_moon_la-abcremoval.lo: abcremoval.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-abcremoval.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-abcremoval.Tpo -c -o libmono_moon_la-abcremoval.lo `test -f 'abcremoval.c' || echo '$(srcdir)/'`abcremoval.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-abcremoval.Tpo $(DEPDIR)/libmono_moon_la-abcremoval.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='abcremoval.c' object='libmono_moon_la-abcremoval.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-abcremoval.lo `test -f 'abcremoval.c' || echo '$(srcdir)/'`abcremoval.c
-
-libmono_moon_la-ssapre.lo: ssapre.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-ssapre.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-ssapre.Tpo -c -o libmono_moon_la-ssapre.lo `test -f 'ssapre.c' || echo '$(srcdir)/'`ssapre.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-ssapre.Tpo $(DEPDIR)/libmono_moon_la-ssapre.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ssapre.c' object='libmono_moon_la-ssapre.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-ssapre.lo `test -f 'ssapre.c' || echo '$(srcdir)/'`ssapre.c
-
-libmono_moon_la-local-propagation.lo: local-propagation.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-local-propagation.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-local-propagation.Tpo -c -o libmono_moon_la-local-propagation.lo `test -f 'local-propagation.c' || echo '$(srcdir)/'`local-propagation.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-local-propagation.Tpo $(DEPDIR)/libmono_moon_la-local-propagation.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='local-propagation.c' object='libmono_moon_la-local-propagation.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-local-propagation.lo `test -f 'local-propagation.c' || echo '$(srcdir)/'`local-propagation.c
-
-libmono_moon_la-driver.lo: driver.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-driver.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-driver.Tpo -c -o libmono_moon_la-driver.lo `test -f 'driver.c' || echo '$(srcdir)/'`driver.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-driver.Tpo $(DEPDIR)/libmono_moon_la-driver.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='driver.c' object='libmono_moon_la-driver.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-driver.lo `test -f 'driver.c' || echo '$(srcdir)/'`driver.c
-
-libmono_moon_la-debug-mini.lo: debug-mini.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-debug-mini.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-debug-mini.Tpo -c -o libmono_moon_la-debug-mini.lo `test -f 'debug-mini.c' || echo '$(srcdir)/'`debug-mini.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-debug-mini.Tpo $(DEPDIR)/libmono_moon_la-debug-mini.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='debug-mini.c' object='libmono_moon_la-debug-mini.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-debug-mini.lo `test -f 'debug-mini.c' || echo '$(srcdir)/'`debug-mini.c
-
-libmono_moon_la-linear-scan.lo: linear-scan.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-linear-scan.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-linear-scan.Tpo -c -o libmono_moon_la-linear-scan.lo `test -f 'linear-scan.c' || echo '$(srcdir)/'`linear-scan.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-linear-scan.Tpo $(DEPDIR)/libmono_moon_la-linear-scan.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='linear-scan.c' object='libmono_moon_la-linear-scan.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-linear-scan.lo `test -f 'linear-scan.c' || echo '$(srcdir)/'`linear-scan.c
-
-libmono_moon_la-aot-compiler.lo: aot-compiler.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-aot-compiler.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-aot-compiler.Tpo -c -o libmono_moon_la-aot-compiler.lo `test -f 'aot-compiler.c' || echo '$(srcdir)/'`aot-compiler.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-aot-compiler.Tpo $(DEPDIR)/libmono_moon_la-aot-compiler.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='aot-compiler.c' object='libmono_moon_la-aot-compiler.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-aot-compiler.lo `test -f 'aot-compiler.c' || echo '$(srcdir)/'`aot-compiler.c
-
-libmono_moon_la-aot-runtime.lo: aot-runtime.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-aot-runtime.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-aot-runtime.Tpo -c -o libmono_moon_la-aot-runtime.lo `test -f 'aot-runtime.c' || echo '$(srcdir)/'`aot-runtime.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-aot-runtime.Tpo $(DEPDIR)/libmono_moon_la-aot-runtime.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='aot-runtime.c' object='libmono_moon_la-aot-runtime.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-aot-runtime.lo `test -f 'aot-runtime.c' || echo '$(srcdir)/'`aot-runtime.c
-
-libmono_moon_la-graph.lo: graph.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-graph.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-graph.Tpo -c -o libmono_moon_la-graph.lo `test -f 'graph.c' || echo '$(srcdir)/'`graph.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-graph.Tpo $(DEPDIR)/libmono_moon_la-graph.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='graph.c' object='libmono_moon_la-graph.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-graph.lo `test -f 'graph.c' || echo '$(srcdir)/'`graph.c
-
-libmono_moon_la-mini-codegen.lo: mini-codegen.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-codegen.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-codegen.Tpo -c -o libmono_moon_la-mini-codegen.lo `test -f 'mini-codegen.c' || echo '$(srcdir)/'`mini-codegen.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-codegen.Tpo $(DEPDIR)/libmono_moon_la-mini-codegen.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-codegen.c' object='libmono_moon_la-mini-codegen.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-codegen.lo `test -f 'mini-codegen.c' || echo '$(srcdir)/'`mini-codegen.c
-
-libmono_moon_la-mini-exceptions.lo: mini-exceptions.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-exceptions.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-exceptions.Tpo -c -o libmono_moon_la-mini-exceptions.lo `test -f 'mini-exceptions.c' || echo '$(srcdir)/'`mini-exceptions.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-exceptions.Tpo $(DEPDIR)/libmono_moon_la-mini-exceptions.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-exceptions.c' object='libmono_moon_la-mini-exceptions.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-exceptions.lo `test -f 'mini-exceptions.c' || echo '$(srcdir)/'`mini-exceptions.c
-
-libmono_moon_la-mini-trampolines.lo: mini-trampolines.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-trampolines.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-trampolines.Tpo -c -o libmono_moon_la-mini-trampolines.lo `test -f 'mini-trampolines.c' || echo '$(srcdir)/'`mini-trampolines.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-trampolines.Tpo $(DEPDIR)/libmono_moon_la-mini-trampolines.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-trampolines.c' object='libmono_moon_la-mini-trampolines.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-trampolines.lo `test -f 'mini-trampolines.c' || echo '$(srcdir)/'`mini-trampolines.c
-
-libmono_moon_la-declsec.lo: declsec.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-declsec.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-declsec.Tpo -c -o libmono_moon_la-declsec.lo `test -f 'declsec.c' || echo '$(srcdir)/'`declsec.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-declsec.Tpo $(DEPDIR)/libmono_moon_la-declsec.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='declsec.c' object='libmono_moon_la-declsec.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-declsec.lo `test -f 'declsec.c' || echo '$(srcdir)/'`declsec.c
-
-libmono_moon_la-wapihandles.lo: wapihandles.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-wapihandles.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-wapihandles.Tpo -c -o libmono_moon_la-wapihandles.lo `test -f 'wapihandles.c' || echo '$(srcdir)/'`wapihandles.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-wapihandles.Tpo $(DEPDIR)/libmono_moon_la-wapihandles.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='wapihandles.c' object='libmono_moon_la-wapihandles.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-wapihandles.lo `test -f 'wapihandles.c' || echo '$(srcdir)/'`wapihandles.c
-
-libmono_moon_la-branch-opts.lo: branch-opts.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-branch-opts.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-branch-opts.Tpo -c -o libmono_moon_la-branch-opts.lo `test -f 'branch-opts.c' || echo '$(srcdir)/'`branch-opts.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-branch-opts.Tpo $(DEPDIR)/libmono_moon_la-branch-opts.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='branch-opts.c' object='libmono_moon_la-branch-opts.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-branch-opts.lo `test -f 'branch-opts.c' || echo '$(srcdir)/'`branch-opts.c
-
-libmono_moon_la-mini-generic-sharing.lo: mini-generic-sharing.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-generic-sharing.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-generic-sharing.Tpo -c -o libmono_moon_la-mini-generic-sharing.lo `test -f 'mini-generic-sharing.c' || echo '$(srcdir)/'`mini-generic-sharing.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-generic-sharing.Tpo $(DEPDIR)/libmono_moon_la-mini-generic-sharing.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-generic-sharing.c' object='libmono_moon_la-mini-generic-sharing.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-generic-sharing.lo `test -f 'mini-generic-sharing.c' || echo '$(srcdir)/'`mini-generic-sharing.c
-
-libmono_moon_la-regalloc2.lo: regalloc2.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-regalloc2.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-regalloc2.Tpo -c -o libmono_moon_la-regalloc2.lo `test -f 'regalloc2.c' || echo '$(srcdir)/'`regalloc2.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-regalloc2.Tpo $(DEPDIR)/libmono_moon_la-regalloc2.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='regalloc2.c' object='libmono_moon_la-regalloc2.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-regalloc2.lo `test -f 'regalloc2.c' || echo '$(srcdir)/'`regalloc2.c
-
-libmono_moon_la-tasklets.lo: tasklets.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tasklets.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tasklets.Tpo -c -o libmono_moon_la-tasklets.lo `test -f 'tasklets.c' || echo '$(srcdir)/'`tasklets.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tasklets.Tpo $(DEPDIR)/libmono_moon_la-tasklets.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tasklets.c' object='libmono_moon_la-tasklets.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tasklets.lo `test -f 'tasklets.c' || echo '$(srcdir)/'`tasklets.c
-
-libmono_moon_la-simd-intrinsics.lo: simd-intrinsics.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-simd-intrinsics.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-simd-intrinsics.Tpo -c -o libmono_moon_la-simd-intrinsics.lo `test -f 'simd-intrinsics.c' || echo '$(srcdir)/'`simd-intrinsics.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-simd-intrinsics.Tpo $(DEPDIR)/libmono_moon_la-simd-intrinsics.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='simd-intrinsics.c' object='libmono_moon_la-simd-intrinsics.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-simd-intrinsics.lo `test -f 'simd-intrinsics.c' || echo '$(srcdir)/'`simd-intrinsics.c
-
-libmono_moon_la-unwind.lo: unwind.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-unwind.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-unwind.Tpo -c -o libmono_moon_la-unwind.lo `test -f 'unwind.c' || echo '$(srcdir)/'`unwind.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-unwind.Tpo $(DEPDIR)/libmono_moon_la-unwind.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind.c' object='libmono_moon_la-unwind.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-unwind.lo `test -f 'unwind.c' || echo '$(srcdir)/'`unwind.c
-
-libmono_moon_la-image-writer.lo: image-writer.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-image-writer.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-image-writer.Tpo -c -o libmono_moon_la-image-writer.lo `test -f 'image-writer.c' || echo '$(srcdir)/'`image-writer.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-image-writer.Tpo $(DEPDIR)/libmono_moon_la-image-writer.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='image-writer.c' object='libmono_moon_la-image-writer.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-image-writer.lo `test -f 'image-writer.c' || echo '$(srcdir)/'`image-writer.c
-
-libmono_moon_la-dwarfwriter.lo: dwarfwriter.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-dwarfwriter.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-dwarfwriter.Tpo -c -o libmono_moon_la-dwarfwriter.lo `test -f 'dwarfwriter.c' || echo '$(srcdir)/'`dwarfwriter.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-dwarfwriter.Tpo $(DEPDIR)/libmono_moon_la-dwarfwriter.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dwarfwriter.c' object='libmono_moon_la-dwarfwriter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-dwarfwriter.lo `test -f 'dwarfwriter.c' || echo '$(srcdir)/'`dwarfwriter.c
-
-libmono_moon_la-mini-gc.lo: mini-gc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-gc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-gc.Tpo -c -o libmono_moon_la-mini-gc.lo `test -f 'mini-gc.c' || echo '$(srcdir)/'`mini-gc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-gc.Tpo $(DEPDIR)/libmono_moon_la-mini-gc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-gc.c' object='libmono_moon_la-mini-gc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-gc.lo `test -f 'mini-gc.c' || echo '$(srcdir)/'`mini-gc.c
-
-libmono_moon_la-debugger-agent.lo: debugger-agent.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-debugger-agent.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-debugger-agent.Tpo -c -o libmono_moon_la-debugger-agent.lo `test -f 'debugger-agent.c' || echo '$(srcdir)/'`debugger-agent.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-debugger-agent.Tpo $(DEPDIR)/libmono_moon_la-debugger-agent.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='debugger-agent.c' object='libmono_moon_la-debugger-agent.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-debugger-agent.lo `test -f 'debugger-agent.c' || echo '$(srcdir)/'`debugger-agent.c
-
-libmono_moon_la-debug-debugger.lo: debug-debugger.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-debug-debugger.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-debug-debugger.Tpo -c -o libmono_moon_la-debug-debugger.lo `test -f 'debug-debugger.c' || echo '$(srcdir)/'`debug-debugger.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-debug-debugger.Tpo $(DEPDIR)/libmono_moon_la-debug-debugger.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='debug-debugger.c' object='libmono_moon_la-debug-debugger.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-debug-debugger.lo `test -f 'debug-debugger.c' || echo '$(srcdir)/'`debug-debugger.c
-
-libmono_moon_la-xdebug.lo: xdebug.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-xdebug.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-xdebug.Tpo -c -o libmono_moon_la-xdebug.lo `test -f 'xdebug.c' || echo '$(srcdir)/'`xdebug.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-xdebug.Tpo $(DEPDIR)/libmono_moon_la-xdebug.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='xdebug.c' object='libmono_moon_la-xdebug.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-xdebug.lo `test -f 'xdebug.c' || echo '$(srcdir)/'`xdebug.c
-
-libmono_moon_la-mini-llvm.lo: mini-llvm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-llvm.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-llvm.Tpo -c -o libmono_moon_la-mini-llvm.lo `test -f 'mini-llvm.c' || echo '$(srcdir)/'`mini-llvm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-llvm.Tpo $(DEPDIR)/libmono_moon_la-mini-llvm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-llvm.c' object='libmono_moon_la-mini-llvm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-llvm.lo `test -f 'mini-llvm.c' || echo '$(srcdir)/'`mini-llvm.c
-
-libmono_moon_la-mini-amd64.lo: mini-amd64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-amd64.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-amd64.Tpo -c -o libmono_moon_la-mini-amd64.lo `test -f 'mini-amd64.c' || echo '$(srcdir)/'`mini-amd64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-amd64.Tpo $(DEPDIR)/libmono_moon_la-mini-amd64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-amd64.c' object='libmono_moon_la-mini-amd64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-amd64.lo `test -f 'mini-amd64.c' || echo '$(srcdir)/'`mini-amd64.c
-
-libmono_moon_la-exceptions-amd64.lo: exceptions-amd64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-amd64.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-amd64.Tpo -c -o libmono_moon_la-exceptions-amd64.lo `test -f 'exceptions-amd64.c' || echo '$(srcdir)/'`exceptions-amd64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-amd64.Tpo $(DEPDIR)/libmono_moon_la-exceptions-amd64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-amd64.c' object='libmono_moon_la-exceptions-amd64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-amd64.lo `test -f 'exceptions-amd64.c' || echo '$(srcdir)/'`exceptions-amd64.c
-
-libmono_moon_la-tramp-amd64.lo: tramp-amd64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-amd64.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-amd64.Tpo -c -o libmono_moon_la-tramp-amd64.lo `test -f 'tramp-amd64.c' || echo '$(srcdir)/'`tramp-amd64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-amd64.Tpo $(DEPDIR)/libmono_moon_la-tramp-amd64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-amd64.c' object='libmono_moon_la-tramp-amd64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-amd64.lo `test -f 'tramp-amd64.c' || echo '$(srcdir)/'`tramp-amd64.c
-
-libmono_moon_la-mini-arm.lo: mini-arm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-arm.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-arm.Tpo -c -o libmono_moon_la-mini-arm.lo `test -f 'mini-arm.c' || echo '$(srcdir)/'`mini-arm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-arm.Tpo $(DEPDIR)/libmono_moon_la-mini-arm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-arm.c' object='libmono_moon_la-mini-arm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-arm.lo `test -f 'mini-arm.c' || echo '$(srcdir)/'`mini-arm.c
-
-libmono_moon_la-exceptions-arm.lo: exceptions-arm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-arm.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-arm.Tpo -c -o libmono_moon_la-exceptions-arm.lo `test -f 'exceptions-arm.c' || echo '$(srcdir)/'`exceptions-arm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-arm.Tpo $(DEPDIR)/libmono_moon_la-exceptions-arm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-arm.c' object='libmono_moon_la-exceptions-arm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-arm.lo `test -f 'exceptions-arm.c' || echo '$(srcdir)/'`exceptions-arm.c
-
-libmono_moon_la-tramp-arm.lo: tramp-arm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-arm.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-arm.Tpo -c -o libmono_moon_la-tramp-arm.lo `test -f 'tramp-arm.c' || echo '$(srcdir)/'`tramp-arm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-arm.Tpo $(DEPDIR)/libmono_moon_la-tramp-arm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-arm.c' object='libmono_moon_la-tramp-arm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-arm.lo `test -f 'tramp-arm.c' || echo '$(srcdir)/'`tramp-arm.c
-
-libmono_moon_la-mini-ia64.lo: mini-ia64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-ia64.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-ia64.Tpo -c -o libmono_moon_la-mini-ia64.lo `test -f 'mini-ia64.c' || echo '$(srcdir)/'`mini-ia64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-ia64.Tpo $(DEPDIR)/libmono_moon_la-mini-ia64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-ia64.c' object='libmono_moon_la-mini-ia64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-ia64.lo `test -f 'mini-ia64.c' || echo '$(srcdir)/'`mini-ia64.c
-
-libmono_moon_la-exceptions-ia64.lo: exceptions-ia64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-ia64.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-ia64.Tpo -c -o libmono_moon_la-exceptions-ia64.lo `test -f 'exceptions-ia64.c' || echo '$(srcdir)/'`exceptions-ia64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-ia64.Tpo $(DEPDIR)/libmono_moon_la-exceptions-ia64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-ia64.c' object='libmono_moon_la-exceptions-ia64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-ia64.lo `test -f 'exceptions-ia64.c' || echo '$(srcdir)/'`exceptions-ia64.c
-
-libmono_moon_la-tramp-ia64.lo: tramp-ia64.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-ia64.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-ia64.Tpo -c -o libmono_moon_la-tramp-ia64.lo `test -f 'tramp-ia64.c' || echo '$(srcdir)/'`tramp-ia64.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-ia64.Tpo $(DEPDIR)/libmono_moon_la-tramp-ia64.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-ia64.c' object='libmono_moon_la-tramp-ia64.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-ia64.lo `test -f 'tramp-ia64.c' || echo '$(srcdir)/'`tramp-ia64.c
-
-libmono_moon_la-mini-mips.lo: mini-mips.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-mips.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-mips.Tpo -c -o libmono_moon_la-mini-mips.lo `test -f 'mini-mips.c' || echo '$(srcdir)/'`mini-mips.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-mips.Tpo $(DEPDIR)/libmono_moon_la-mini-mips.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-mips.c' object='libmono_moon_la-mini-mips.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-mips.lo `test -f 'mini-mips.c' || echo '$(srcdir)/'`mini-mips.c
-
-libmono_moon_la-exceptions-mips.lo: exceptions-mips.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-mips.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-mips.Tpo -c -o libmono_moon_la-exceptions-mips.lo `test -f 'exceptions-mips.c' || echo '$(srcdir)/'`exceptions-mips.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-mips.Tpo $(DEPDIR)/libmono_moon_la-exceptions-mips.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-mips.c' object='libmono_moon_la-exceptions-mips.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-mips.lo `test -f 'exceptions-mips.c' || echo '$(srcdir)/'`exceptions-mips.c
-
-libmono_moon_la-tramp-mips.lo: tramp-mips.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-mips.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-mips.Tpo -c -o libmono_moon_la-tramp-mips.lo `test -f 'tramp-mips.c' || echo '$(srcdir)/'`tramp-mips.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-mips.Tpo $(DEPDIR)/libmono_moon_la-tramp-mips.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-mips.c' object='libmono_moon_la-tramp-mips.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-mips.lo `test -f 'tramp-mips.c' || echo '$(srcdir)/'`tramp-mips.c
-
-libmono_moon_la-mini-ppc.lo: mini-ppc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-ppc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-ppc.Tpo -c -o libmono_moon_la-mini-ppc.lo `test -f 'mini-ppc.c' || echo '$(srcdir)/'`mini-ppc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-ppc.Tpo $(DEPDIR)/libmono_moon_la-mini-ppc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-ppc.c' object='libmono_moon_la-mini-ppc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-ppc.lo `test -f 'mini-ppc.c' || echo '$(srcdir)/'`mini-ppc.c
-
-libmono_moon_la-exceptions-ppc.lo: exceptions-ppc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-ppc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-ppc.Tpo -c -o libmono_moon_la-exceptions-ppc.lo `test -f 'exceptions-ppc.c' || echo '$(srcdir)/'`exceptions-ppc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-ppc.Tpo $(DEPDIR)/libmono_moon_la-exceptions-ppc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-ppc.c' object='libmono_moon_la-exceptions-ppc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-ppc.lo `test -f 'exceptions-ppc.c' || echo '$(srcdir)/'`exceptions-ppc.c
-
-libmono_moon_la-tramp-ppc.lo: tramp-ppc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-ppc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-ppc.Tpo -c -o libmono_moon_la-tramp-ppc.lo `test -f 'tramp-ppc.c' || echo '$(srcdir)/'`tramp-ppc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-ppc.Tpo $(DEPDIR)/libmono_moon_la-tramp-ppc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-ppc.c' object='libmono_moon_la-tramp-ppc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-ppc.lo `test -f 'tramp-ppc.c' || echo '$(srcdir)/'`tramp-ppc.c
-
-libmono_moon_la-mini-s390x.lo: mini-s390x.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-s390x.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-s390x.Tpo -c -o libmono_moon_la-mini-s390x.lo `test -f 'mini-s390x.c' || echo '$(srcdir)/'`mini-s390x.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-s390x.Tpo $(DEPDIR)/libmono_moon_la-mini-s390x.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-s390x.c' object='libmono_moon_la-mini-s390x.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-s390x.lo `test -f 'mini-s390x.c' || echo '$(srcdir)/'`mini-s390x.c
-
-libmono_moon_la-exceptions-s390x.lo: exceptions-s390x.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-s390x.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-s390x.Tpo -c -o libmono_moon_la-exceptions-s390x.lo `test -f 'exceptions-s390x.c' || echo '$(srcdir)/'`exceptions-s390x.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-s390x.Tpo $(DEPDIR)/libmono_moon_la-exceptions-s390x.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-s390x.c' object='libmono_moon_la-exceptions-s390x.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-s390x.lo `test -f 'exceptions-s390x.c' || echo '$(srcdir)/'`exceptions-s390x.c
-
-libmono_moon_la-tramp-s390x.lo: tramp-s390x.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-s390x.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-s390x.Tpo -c -o libmono_moon_la-tramp-s390x.lo `test -f 'tramp-s390x.c' || echo '$(srcdir)/'`tramp-s390x.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-s390x.Tpo $(DEPDIR)/libmono_moon_la-tramp-s390x.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-s390x.c' object='libmono_moon_la-tramp-s390x.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-s390x.lo `test -f 'tramp-s390x.c' || echo '$(srcdir)/'`tramp-s390x.c
-
-libmono_moon_la-mini-sparc.lo: mini-sparc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-sparc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-sparc.Tpo -c -o libmono_moon_la-mini-sparc.lo `test -f 'mini-sparc.c' || echo '$(srcdir)/'`mini-sparc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-sparc.Tpo $(DEPDIR)/libmono_moon_la-mini-sparc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-sparc.c' object='libmono_moon_la-mini-sparc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-sparc.lo `test -f 'mini-sparc.c' || echo '$(srcdir)/'`mini-sparc.c
-
-libmono_moon_la-exceptions-sparc.lo: exceptions-sparc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-sparc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-sparc.Tpo -c -o libmono_moon_la-exceptions-sparc.lo `test -f 'exceptions-sparc.c' || echo '$(srcdir)/'`exceptions-sparc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-sparc.Tpo $(DEPDIR)/libmono_moon_la-exceptions-sparc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-sparc.c' object='libmono_moon_la-exceptions-sparc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-sparc.lo `test -f 'exceptions-sparc.c' || echo '$(srcdir)/'`exceptions-sparc.c
-
-libmono_moon_la-tramp-sparc.lo: tramp-sparc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-sparc.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-sparc.Tpo -c -o libmono_moon_la-tramp-sparc.lo `test -f 'tramp-sparc.c' || echo '$(srcdir)/'`tramp-sparc.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-sparc.Tpo $(DEPDIR)/libmono_moon_la-tramp-sparc.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-sparc.c' object='libmono_moon_la-tramp-sparc.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-sparc.lo `test -f 'tramp-sparc.c' || echo '$(srcdir)/'`tramp-sparc.c
-
-libmono_moon_la-mini-x86.lo: mini-x86.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-x86.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-x86.Tpo -c -o libmono_moon_la-mini-x86.lo `test -f 'mini-x86.c' || echo '$(srcdir)/'`mini-x86.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-x86.Tpo $(DEPDIR)/libmono_moon_la-mini-x86.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-x86.c' object='libmono_moon_la-mini-x86.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-x86.lo `test -f 'mini-x86.c' || echo '$(srcdir)/'`mini-x86.c
-
-libmono_moon_la-exceptions-x86.lo: exceptions-x86.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-exceptions-x86.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-exceptions-x86.Tpo -c -o libmono_moon_la-exceptions-x86.lo `test -f 'exceptions-x86.c' || echo '$(srcdir)/'`exceptions-x86.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-exceptions-x86.Tpo $(DEPDIR)/libmono_moon_la-exceptions-x86.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exceptions-x86.c' object='libmono_moon_la-exceptions-x86.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-exceptions-x86.lo `test -f 'exceptions-x86.c' || echo '$(srcdir)/'`exceptions-x86.c
-
-libmono_moon_la-tramp-x86.lo: tramp-x86.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-tramp-x86.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-tramp-x86.Tpo -c -o libmono_moon_la-tramp-x86.lo `test -f 'tramp-x86.c' || echo '$(srcdir)/'`tramp-x86.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-tramp-x86.Tpo $(DEPDIR)/libmono_moon_la-tramp-x86.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tramp-x86.c' object='libmono_moon_la-tramp-x86.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-tramp-x86.lo `test -f 'tramp-x86.c' || echo '$(srcdir)/'`tramp-x86.c
-
-libmono_moon_la-mini-windows.lo: mini-windows.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-windows.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-windows.Tpo -c -o libmono_moon_la-mini-windows.lo `test -f 'mini-windows.c' || echo '$(srcdir)/'`mini-windows.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-windows.Tpo $(DEPDIR)/libmono_moon_la-mini-windows.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-windows.c' object='libmono_moon_la-mini-windows.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-windows.lo `test -f 'mini-windows.c' || echo '$(srcdir)/'`mini-windows.c
-
-libmono_moon_la-mini-darwin.lo: mini-darwin.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-darwin.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-darwin.Tpo -c -o libmono_moon_la-mini-darwin.lo `test -f 'mini-darwin.c' || echo '$(srcdir)/'`mini-darwin.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-darwin.Tpo $(DEPDIR)/libmono_moon_la-mini-darwin.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-darwin.c' object='libmono_moon_la-mini-darwin.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-darwin.lo `test -f 'mini-darwin.c' || echo '$(srcdir)/'`mini-darwin.c
-
-libmono_moon_la-mini-posix.lo: mini-posix.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -MT libmono_moon_la-mini-posix.lo -MD -MP -MF $(DEPDIR)/libmono_moon_la-mini-posix.Tpo -c -o libmono_moon_la-mini-posix.lo `test -f 'mini-posix.c' || echo '$(srcdir)/'`mini-posix.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libmono_moon_la-mini-posix.Tpo $(DEPDIR)/libmono_moon_la-mini-posix.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mini-posix.c' object='libmono_moon_la-mini-posix.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libmono_moon_la_CFLAGS) $(CFLAGS) -c -o libmono_moon_la-mini-posix.lo `test -f 'mini-posix.c' || echo '$(srcdir)/'`mini-posix.c
-
 genmdesc-genmdesc.o: genmdesc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -MT genmdesc-genmdesc.o -MD -MP -MF $(DEPDIR)/genmdesc-genmdesc.Tpo -c -o genmdesc-genmdesc.o `test -f 'genmdesc.c' || echo '$(srcdir)/'`genmdesc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/genmdesc-genmdesc.Tpo $(DEPDIR)/genmdesc-genmdesc.Po
@@ -3044,19 +2374,19 @@ genmdesc-helpers.obj: helpers.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -c -o genmdesc-helpers.obj `if test -f 'helpers.c'; then $(CYGPATH_W) 'helpers.c'; else $(CYGPATH_W) '$(srcdir)/helpers.c'; fi`
 
-genmdesc-opcodes.o: ../metadata/opcodes.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -MT genmdesc-opcodes.o -MD -MP -MF $(DEPDIR)/genmdesc-opcodes.Tpo -c -o genmdesc-opcodes.o `test -f '../metadata/opcodes.c' || echo '$(srcdir)/'`../metadata/opcodes.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/genmdesc-opcodes.Tpo $(DEPDIR)/genmdesc-opcodes.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../metadata/opcodes.c' object='genmdesc-opcodes.o' libtool=no @AMDEPBACKSLASH@
+../metadata/genmdesc-opcodes.o: ../metadata/opcodes.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -MT ../metadata/genmdesc-opcodes.o -MD -MP -MF ../metadata/$(DEPDIR)/genmdesc-opcodes.Tpo -c -o ../metadata/genmdesc-opcodes.o `test -f '../metadata/opcodes.c' || echo '$(srcdir)/'`../metadata/opcodes.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ../metadata/$(DEPDIR)/genmdesc-opcodes.Tpo ../metadata/$(DEPDIR)/genmdesc-opcodes.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../metadata/opcodes.c' object='../metadata/genmdesc-opcodes.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -c -o genmdesc-opcodes.o `test -f '../metadata/opcodes.c' || echo '$(srcdir)/'`../metadata/opcodes.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -c -o ../metadata/genmdesc-opcodes.o `test -f '../metadata/opcodes.c' || echo '$(srcdir)/'`../metadata/opcodes.c
 
-genmdesc-opcodes.obj: ../metadata/opcodes.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -MT genmdesc-opcodes.obj -MD -MP -MF $(DEPDIR)/genmdesc-opcodes.Tpo -c -o genmdesc-opcodes.obj `if test -f '../metadata/opcodes.c'; then $(CYGPATH_W) '../metadata/opcodes.c'; else $(CYGPATH_W) '$(srcdir)/../metadata/opcodes.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/genmdesc-opcodes.Tpo $(DEPDIR)/genmdesc-opcodes.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../metadata/opcodes.c' object='genmdesc-opcodes.obj' libtool=no @AMDEPBACKSLASH@
+../metadata/genmdesc-opcodes.obj: ../metadata/opcodes.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -MT ../metadata/genmdesc-opcodes.obj -MD -MP -MF ../metadata/$(DEPDIR)/genmdesc-opcodes.Tpo -c -o ../metadata/genmdesc-opcodes.obj `if test -f '../metadata/opcodes.c'; then $(CYGPATH_W) '../metadata/opcodes.c'; else $(CYGPATH_W) '$(srcdir)/../metadata/opcodes.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ../metadata/$(DEPDIR)/genmdesc-opcodes.Tpo ../metadata/$(DEPDIR)/genmdesc-opcodes.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../metadata/opcodes.c' object='../metadata/genmdesc-opcodes.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -c -o genmdesc-opcodes.obj `if test -f '../metadata/opcodes.c'; then $(CYGPATH_W) '../metadata/opcodes.c'; else $(CYGPATH_W) '$(srcdir)/../metadata/opcodes.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(genmdesc_CFLAGS) $(CFLAGS) -c -o ../metadata/genmdesc-opcodes.obj `if test -f '../metadata/opcodes.c'; then $(CYGPATH_W) '../metadata/opcodes.c'; else $(CYGPATH_W) '$(srcdir)/../metadata/opcodes.c'; fi`
 
 mono-main-sgen.o: main-sgen.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mono_CFLAGS) $(CFLAGS) -MT mono-main-sgen.o -MD -MP -MF $(DEPDIR)/mono-main-sgen.Tpo -c -o mono-main-sgen.o `test -f 'main-sgen.c' || echo '$(srcdir)/'`main-sgen.c
@@ -3101,22 +2431,25 @@ mono_sgen-main-sgen.obj: main-sgen.c
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mono_sgen_CFLAGS) $(CFLAGS) -c -o mono_sgen-main-sgen.obj `if test -f 'main-sgen.c'; then $(CYGPATH_W) 'main-sgen.c'; else $(CYGPATH_W) '$(srcdir)/main-sgen.c'; fi`
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
@@ -3256,11 +2589,11 @@ check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) check-local
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libmonoincludedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libmonoincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -3291,6 +2624,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f ../metadata/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../metadata/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -3305,7 +2640,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ../metadata/$(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -3328,8 +2663,7 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS install-binSCRIPTS \
-	install-libLTLIBRARIES
+install-exec-am: install-binPROGRAMS install-libLTLIBRARIES
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-am
@@ -3353,7 +2687,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ../metadata/$(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -3370,8 +2704,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-libLTLIBRARIES uninstall-libmonoincludeHEADERS
+uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES \
+	uninstall-libmonoincludeHEADERS
 
 .MAKE: all check check-am install install-am install-exec-am \
 	install-strip
@@ -3382,17 +2716,16 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	clean-noinstPROGRAMS cscopelist ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-binPROGRAMS install-binSCRIPTS \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-exec-hook install-html \
-	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-libmonoincludeHEADERS \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	install install-am install-binPROGRAMS install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-exec-hook install-html install-html-am \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-libmonoincludeHEADERS install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
 	uninstall-libLTLIBRARIES uninstall-libmonoincludeHEADERS
 
 
@@ -3401,13 +2734,12 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@mono: mono-$(mono_bin_suffix)
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	ln -sf $< $@
 
+@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@mono.exe: mono-$(mono_bin_suffix).exe
+@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	ln -sf $< $@
+
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@install-exec-hook:
-@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	ln -sf $(DESTDIR)$(bindir)/mono-$(mono_bin_suffix) $(DESTDIR)$(bindir)/mono
+@DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	(cd $(DESTDIR)$(bindir) && ln -sf mono-$(mono_bin_suffix) mono)
 @DISABLE_EXECUTABLES_FALSE@@JIT_SUPPORTED_TRUE@	(cd $(DESTDIR)$(libdir); for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
-@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@moon-do-build: $(BUILT_SOURCES) mono libmono-moon.la
-@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@moon-do-clean: maintainer-clean-generic
-@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@	-test -z "mono$(EXEEXT)" || rm -f mono$(EXEEXT)
-@JIT_SUPPORTED_TRUE@@MOONLIGHT_TRUE@	-test -z "libmono-moon.la" || rm -f libmono-moon.la
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
@@ -3579,6 +2911,9 @@ patch-automake:
 
 tags:
 	etags -o TAGS `find .. -name "*.h" -o -name "*.c"`
+
+@HAS_EXTENSION_MODULE_FALSE@Makefile.am: Makefile.am.in
+@HAS_EXTENSION_MODULE_FALSE@	cp $< $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
