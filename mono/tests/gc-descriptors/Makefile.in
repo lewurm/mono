@@ -170,7 +170,6 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONO_DL_NEED_USCORE = @MONO_DL_NEED_USCORE@
 MONO_NACL_ALIGN_MASK_OFF = @MONO_NACL_ALIGN_MASK_OFF@
-MOONLIGHT_DEFINES = @MOONLIGHT_DEFINES@
 MSGFMT = @MSGFMT@
 MSGFMT_015 = @MSGFMT_015@
 MSGMERGE = @MSGMERGE@
@@ -490,6 +489,8 @@ descriptor-tests.exe : descriptor-tests.cs
 descriptor-tests.cs : descriptor-tests-driver.cs descriptor-tests-prefix.cs gen-descriptor-tests.py
 	-cp $^ .
 	$(srcdir)/gen-descriptor-tests.py >descriptor-tests.cs
+
+.DELETE_ON_ERROR:
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

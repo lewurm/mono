@@ -743,13 +743,14 @@ emit_line_number_info_begin (MonoDwarfWriter *w)
 }
 
 char *
-mono_dwarf_escape_path (char *name)
+mono_dwarf_escape_path (const char *name)
 {
 	if (strchr (name, '\\')) {
-		char *s = g_malloc (strlen (name) * 2);
+		char *s;
 		int len, i, j;
 
 		len = strlen (name);
+		s = g_malloc0 ((len + 1) * 2);
 		j = 0;
 		for (i = 0; i < len; ++i) {
 			if (name [i] == '\\') {
@@ -761,7 +762,7 @@ mono_dwarf_escape_path (char *name)
 		}
 		return s;
 	}
-	return name;
+	return g_strdup (name);
 }
 
 static void
