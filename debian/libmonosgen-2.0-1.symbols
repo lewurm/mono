@@ -73,8 +73,6 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_bounded_array_class_get@VER_1 3.2.1+dfsg
  mono_break_at_bb_bb_num@VER_1 3.2.1+dfsg
  mono_break_at_bb_method@VER_1 3.2.1+dfsg
- mono_breakpoint_clean_code@VER_1 3.2.1+dfsg
- mono_breakpoint_info@VER_1 3.2.1+dfsg
  mono_breakpoint_info_index@VER_1 3.2.1+dfsg
  mono_build_date@VER_1 3.2.1+dfsg
  mono_check_corlib_version@VER_1 3.2.1+dfsg
@@ -919,4 +917,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_win32_compat_MoveMemory@VER_1 3.2.1+dfsg
  mono_win32_compat_ZeroMemory@VER_1 3.2.1+dfsg
  mono_xdebug_flush@VER_1 3.2.1+dfsg
+ mono_binary_search@VER_1 3.2.3+dfsg
+ mono_config_is_server_mode@VER_1 3.2.3+dfsg
+ mono_config_set_server_mode@VER_1 3.2.3+dfsg
 

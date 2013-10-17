@@ -11,4 +11,11 @@
  mono_arm_throw_exception@VER_1 3.2.1+dfsg
  mono_arm_throw_exception_by_token@VER_1 3.2.1+dfsg
  mono_arm_thumb_supported@VER_1 3.2.1+dfsg
+ mono_hwcap_arm_has_thumb2@VER_1 3.2.3+dfsg  
+ mono_hwcap_arm_has_thumb@VER_1 3.2.3+dfsg  
+ mono_hwcap_arm_has_vfp@VER_1 3.2.3+dfsg  
+ mono_hwcap_arm_is_v5@VER_1 3.2.3+dfsg  
+ mono_hwcap_arm_is_v6@VER_1 3.2.3+dfsg 
+ mono_hwcap_arm_is_v7@VER_1 3.2.3+dfsg 
+ mono_hwcap_arm_is_v7s@VER_1 3.2.3+dfsg  
 
