@@ -1,9 +1,12 @@
 //
-// IServiceHostFactory.cs
+// ExtendedDNFlag.cs
 //
-// Author: Atsushi Enomoto (atsushi@ximian.com)
+// Author:
+//   Atsushi Enomoto  <atsushi@ximian.com>
 //
-// Copyright (C) 2006 Novell, Inc (http://www.novell.com)
+// Copyright (C) 2009 Novell, Inc.
+//
+
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,14 +27,14 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-using System;
-using System.ServiceModel.Channels;
 
-namespace System.ServiceModel.Activation
+using System;
+
+namespace System.DirectoryServices.Protocols
 {
-	public interface IServiceHostFactory
+	public enum ExtendedDNFlag
 	{
-		ServiceHostBase CreateServiceHost (string constructorString,
-			Uri [] baseAddresses);
+		HexString,
+		StandardString
 	}
 }
