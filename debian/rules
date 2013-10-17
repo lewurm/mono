@@ -181,6 +181,7 @@ install-stamp:
 	# we don't ship bundled nunit of mono
 	rm -f  $(CURDIR)/debian/tmp/usr/lib/mono/2.0/nunit*
 	rm -f  $(CURDIR)/debian/tmp/usr/lib/mono/4.0/nunit*
+	rm -f  $(CURDIR)/debian/tmp/usr/lib/mono/4.5/nunit*
 	rm -f  $(CURDIR)/debian/tmp/usr/lib/pkgconfig/mono-nunit.pc
 	rm -rf $(CURDIR)/debian/tmp/usr/lib/mono/gac/nunit*/
 	rm -f  $(CURDIR)/debian/tmp/usr/bin/nunit*
