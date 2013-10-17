@@ -15,10 +15,12 @@ debian/tmp/usr/bin/installvst
 debian/tmp/usr/bin/lc
 debian/tmp/usr/bin/macpack
 debian/tmp/usr/bin/makecert
+debian/tmp/usr/bin/mdbrebase
 debian/tmp/usr/bin/mkbundle
 debian/tmp/usr/bin/mono-api-info
 debian/tmp/usr/bin/mono-cil-strip
 debian/tmp/usr/bin/mono-configuration-crypto
+debian/tmp/usr/bin/mono-heapviz
 debian/tmp/usr/bin/mono-shlib-cop
 debian/tmp/usr/bin/mono-test-install
 debian/tmp/usr/bin/mono-xmltool
@@ -64,6 +66,7 @@ debian/tmp/usr/lib/mono/4.5/lc.exe*
 debian/tmp/usr/lib/mono/4.5/macpack.exe*
 debian/tmp/usr/lib/mono/4.5/makecert.exe*
 debian/tmp/usr/lib/mono/4.5/mconfig.exe*
+debian/tmp/usr/lib/mono/4.5/mdbrebase.exe*
 debian/tmp/usr/lib/mono/2.0/mkbundle.exe*
 debian/tmp/usr/lib/mono/4.5/mkbundle.exe*
 debian/tmp/usr/lib/mono/4.5/mono-xmltool.exe*
