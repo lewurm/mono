@@ -56,6 +56,16 @@ target_triplet = @target@
 @AMD64_TRUE@@CROSS_COMPILE_FALSE@am__append_2 = mach-support-amd64.c
 @ARM_TRUE@@CROSS_COMPILE_FALSE@am__append_3 = mach-support-arm.c
 @CROSS_COMPILE_TRUE@am__append_4 = mach-support-unknown.c
+@X86_TRUE@am__append_5 = mono-hwcap-x86.c mono-hwcap-x86.h
+@AMD64_TRUE@am__append_6 = mono-hwcap-x86.c mono-hwcap-x86.h
+@ARM_TRUE@am__append_7 = mono-hwcap-arm.c mono-hwcap-arm.h
+@MIPS_TRUE@am__append_8 = mono-hwcap-mips.c mono-hwcap-mips.h
+@POWERPC_TRUE@am__append_9 = mono-hwcap-ppc.c mono-hwcap-ppc.h
+@POWERPC64_TRUE@am__append_10 = mono-hwcap-ppc.c mono-hwcap-ppc.h
+@SPARC_TRUE@am__append_11 = mono-hwcap-sparc.c mono-hwcap-sparc.h
+@SPARC64_TRUE@am__append_12 = mono-hwcap-sparc.c mono-hwcap-sparc.h
+@IA64_TRUE@am__append_13 = mono-hwcap-ia64.c mono-hwcap-ia64.h
+@S390X_TRUE@am__append_14 = mono-hwcap-s390x.c mono-hwcap-s390x.h
 subdir = mono/utils
 DIST_COMMON = $(libmonoutilsinclude_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(top_srcdir)/depcomp \
@@ -103,8 +113,13 @@ am__libmonoutils_la_SOURCES_DIST = mono-md5.c mono-sha1.c \
 	mono-linked-list-set.h mono-threads.c mono-threads-posix.c \
 	mono-threads-mach.c mono-threads-windows.c mono-threads.h \
 	mono-tls.h linux_magic.h mono-memory-model.h atomic.h atomic.c \
+	mono-hwcap.h mono-hwcap.c bsearch.h bsearch.c \
 	mach-support-x86.c mach-support-amd64.c mach-support-arm.c \
-	mach-support-unknown.c
+	mach-support-unknown.c mono-hwcap-x86.c mono-hwcap-x86.h \
+	mono-hwcap-arm.c mono-hwcap-arm.h mono-hwcap-mips.c \
+	mono-hwcap-mips.h mono-hwcap-ppc.c mono-hwcap-ppc.h \
+	mono-hwcap-sparc.c mono-hwcap-sparc.h mono-hwcap-ia64.c \
+	mono-hwcap-ia64.h mono-hwcap-s390x.c mono-hwcap-s390x.h
 am__objects_1 = mono-md5.lo mono-sha1.lo mono-logger.lo \
 	mono-codeman.lo dlmalloc.lo mono-counters.lo mono-dl.lo \
 	mono-internal-hash.lo mono-io-portability.lo monobitset.lo \
@@ -116,15 +131,29 @@ am__objects_1 = mono-md5.lo mono-sha1.lo mono-logger.lo \
 	mach-support.lo mono-context.lo hazard-pointer.lo \
 	lock-free-queue.lo lock-free-alloc.lo lock-free-array-queue.lo \
 	mono-linked-list-set.lo mono-threads.lo mono-threads-posix.lo \
-	mono-threads-mach.lo mono-threads-windows.lo atomic.lo
+	mono-threads-mach.lo mono-threads-windows.lo atomic.lo \
+	mono-hwcap.lo bsearch.lo
 @CROSS_COMPILE_FALSE@@X86_TRUE@am__objects_2 = mach-support-x86.lo
 @AMD64_TRUE@@CROSS_COMPILE_FALSE@am__objects_3 =  \
 @AMD64_TRUE@@CROSS_COMPILE_FALSE@	mach-support-amd64.lo
 @ARM_TRUE@@CROSS_COMPILE_FALSE@am__objects_4 = mach-support-arm.lo
 @CROSS_COMPILE_TRUE@am__objects_5 = mach-support-unknown.lo
-am__objects_6 = $(am__objects_2) $(am__objects_3) $(am__objects_4) \
-	$(am__objects_5)
-am_libmonoutils_la_OBJECTS = $(am__objects_1) $(am__objects_6)
+@X86_TRUE@am__objects_6 = mono-hwcap-x86.lo
+@AMD64_TRUE@am__objects_7 = mono-hwcap-x86.lo
+@ARM_TRUE@am__objects_8 = mono-hwcap-arm.lo
+@MIPS_TRUE@am__objects_9 = mono-hwcap-mips.lo
+@POWERPC_TRUE@am__objects_10 = mono-hwcap-ppc.lo
+@POWERPC64_TRUE@am__objects_11 = mono-hwcap-ppc.lo
+@SPARC_TRUE@am__objects_12 = mono-hwcap-sparc.lo
+@SPARC64_TRUE@am__objects_13 = mono-hwcap-sparc.lo
+@IA64_TRUE@am__objects_14 = mono-hwcap-ia64.lo
+@S390X_TRUE@am__objects_15 = mono-hwcap-s390x.lo
+am__objects_16 = $(am__objects_2) $(am__objects_3) $(am__objects_4) \
+	$(am__objects_5) $(am__objects_6) $(am__objects_7) \
+	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
+	$(am__objects_11) $(am__objects_12) $(am__objects_13) \
+	$(am__objects_14) $(am__objects_15)
+am_libmonoutils_la_OBJECTS = $(am__objects_1) $(am__objects_16)
 libmonoutils_la_OBJECTS = $(am_libmonoutils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -278,7 +307,6 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MONO_DL_NEED_USCORE = @MONO_DL_NEED_USCORE@
 MONO_NACL_ALIGN_MASK_OFF = @MONO_NACL_ALIGN_MASK_OFF@
-MOONLIGHT_DEFINES = @MOONLIGHT_DEFINES@
 MSGFMT = @MSGFMT@
 MSGFMT_015 = @MSGFMT_015@
 MSGMERGE = @MSGMERGE@
@@ -485,10 +513,17 @@ monoutils_sources = \
 	linux_magic.h	\
 	mono-memory-model.h	\
 	atomic.h	\
-	atomic.c
+	atomic.c	\
+	mono-hwcap.h	\
+	mono-hwcap.c	\
+	bsearch.h	\
+	bsearch.c
 
 arch_sources = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4)
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8) $(am__append_9) \
+	$(am__append_10) $(am__append_11) $(am__append_12) \
+	$(am__append_13) $(am__append_14)
 libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
 libmonoutilsinclude_HEADERS = \
@@ -554,6 +589,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/atomic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bsearch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dlmalloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hazard-pointer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lock-free-alloc.Plo@am__quote@
@@ -570,6 +606,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-dl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-filemap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-arm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-ia64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-mips.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-ppc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-s390x.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-sparc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap-x86.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-hwcap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-internal-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-io-portability.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mono-linked-list-set.Plo@am__quote@
@@ -599,22 +643,25 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strtod.Plo@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c $<
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c `$(CYGPATH_W) '$<'`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
