@@ -475,6 +475,7 @@ Depends: ${misc:Depends},
          libmono-system-runtime-serialization-formatters-soap4.0-cil (= ${source:Version}),
          libmono-system-security4.0-cil (= ${source:Version}),
          libmono-system-servicemodel4.0a-cil (= ${source:Version}),
+         libmono-system-servicemodel-activation4.0-cil (= ${source:Version}),
          libmono-system-servicemodel-discovery4.0-cil (= ${source:Version}),
          libmono-system-servicemodel-routing4.0-cil (= ${source:Version}),
          libmono-system-servicemodel-web4.0-cil (= ${source:Version}),
@@ -2521,6 +2522,23 @@ Description: Mono System.ServiceModel Library (for CLI 4.0)
  .
  This package contains the System.ServiceModel library which is part of
  the Windows Communication Foundation (WCF) libraries of Mono for CLI 4.0.
+ The WFC stack is for building SOA-based applications.
+ Its development is in early stages.
+
+Package: libmono-system-servicemodel-activation4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Homepage: http://mono-project.com/WCF
+Description: Mono System.ServiceModel.Activation Library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the System.ServiceModel.Activation library which is part
+ of the Windows Communication Foundation (WCF) libraries of Mono for CLI 4.0.
  The WFC stack is for building SOA-based applications.
  Its development is in early stages.
 
