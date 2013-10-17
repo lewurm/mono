@@ -94,12 +94,6 @@ namespace System
 		private static TextWriter stderr;
 		private static TextReader stdin;
 
-#if NET_4_5 && !MOBILE
-		static TextWriter console_stdout;
-		static TextWriter console_stderr;
-		static TextReader console_stdin;
-#endif
-
 		static Console ()
 		{
 #if NET_2_1
@@ -160,7 +154,7 @@ namespace System
 // FULL_AOT_RUNTIME is used (instead of MONOTOUCH) since we only want this code when running on 
 // iOS (simulator or devices) and *not* when running tools (e.g. btouch #12179) that needs to use 
 // the mscorlib.dll shipped with Xamarin.iOS
-#if FULL_AOT_RUNTIME
+#if MONOTOUCH && FULL_AOT_RUNTIME
 				stdout = new NSLogWriter ();
 #else
 				stdout = new UnexceptionalStreamWriter (OpenStandardOutput (0), outputEncoding);
@@ -168,7 +162,7 @@ namespace System
 #endif
 				stdout = TextWriter.Synchronized (stdout, true);
 
-#if FULL_AOT_RUNTIME
+#if MONOTOUCH && FULL_AOT_RUNTIME
 				stderr = new NSLogWriter ();
 #else
 				stderr = new UnexceptionalStreamWriter (OpenStandardError (0), outputEncoding); 
@@ -180,12 +174,6 @@ namespace System
 				stdin = TextReader.Synchronized (stdin);
 #if !NET_2_1
 			}
-#endif
-
-#if NET_4_5 && !MOBILE
-			console_stderr = stderr;
-			console_stdout = stdout;
-			console_stdin = stdin;
 #endif
 
 #if MONODROID
@@ -675,19 +663,19 @@ namespace System
 #if NET_4_5
 		public static bool IsErrorRedirected {
 			get {
-				return stderr != console_stderr || ConsoleDriver.IsErrorRedirected;
+				return ConsoleDriver.IsErrorRedirected;
 			}
 		}
 
 		public static bool IsOutputRedirected {
 			get {
-				return stdout != console_stdout || ConsoleDriver.IsOutputRedirected;
+				return ConsoleDriver.IsOutputRedirected;
 			}
 		}
 
 		public static bool IsInputRedirected {
 			get {
-				return stdin != console_stdin || ConsoleDriver.IsInputRedirected;
+				return ConsoleDriver.IsInputRedirected;
 			}
 		}
 #endif
