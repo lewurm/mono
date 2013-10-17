@@ -45,7 +45,7 @@ Description: Mono runtime - common files
  This package contains common files for the Virtual Machine, JIT (Just-in-Time) and
  AOT (Ahead-of-Time) code generator "mono".
  "mono" executes applications for the CLI (Common Language Infrastructure).
- Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
+ Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390x, AMD64 and
  MIPS architectures. Optionally this package configures BINFMT support.
 
 Package: mono-runtime
@@ -63,7 +63,7 @@ Description: Mono runtime - default version
  This package contains the Virtual Machine, JIT (Just-in-Time) and
  AOT (Ahead-of-Time) code generator "mono-sgen".
  mono-sgen executes applications for the CLI (Common Language Infrastructure).
- Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
+ Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390x, AMD64 and
  MIPS architectures.
  .
  This package installs this architecture's default runtime version.
@@ -84,7 +84,7 @@ Description: Mono runtime - SGen
  This package contains the Virtual Machine, JIT (Just-in-Time) and
  AOT (Ahead-of-Time) code generator "mono-sgen".
  mono-sgen executes applications for the CLI (Common Language Infrastructure).
- Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
+ Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390x, AMD64 and
  MIPS architectures.
  .
  This package uses SGen which is Mono's new simple generational garbage
@@ -105,7 +105,7 @@ Description: Mono runtime - Boehm
  This package contains the Virtual Machine, JIT (Just-in-Time) and
  AOT (Ahead-of-Time) code generator "mono-sgen".
  mono-sgen executes applications for the CLI (Common Language Infrastructure).
- Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
+ Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390x, AMD64 and
  MIPS architectures.
  .
  This package uses Boehm's conservative garbage collector.
@@ -179,7 +179,7 @@ Description: complete Mono runtime, development tools and all libraries
  You should build-depend on cli-common-dev and the needed libraries instead.
 
 Package: libmono-2.0-1
-Architecture: amd64 armel i386 ia64 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Architecture: amd64 armel i386 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Replaces: libmono-dev (<= 1.1.6-4)
 Conflicts: mono-utils (<< 1.2.3.1-4)
 Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version})
@@ -193,7 +193,7 @@ Description: Mono JIT library (Default version)
  bytecode (aka assemblies), and a class library.
 
 Package: libmono-2.0-dev
-Architecture: amd64 armel i386 ia64 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+Architecture: amd64 armel i386 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
 Depends: ${misc:Depends}, libmonoboehm-2.0-dev (= ${binary:Version})
 Description: Mono JIT library - Development files (Default version)
  Header files and static libraries for libmono-2.0.
