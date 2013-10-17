@@ -12,7 +12,7 @@ License:        LGPL v2.1 only
 Group:          Development/Languages/Mono
 Summary:        A .NET Runtime Environment
 Url:            http://www.mono-project.com
-Version:        3.2.1
+Version:        3.2.3
 Release:        0
 Source0:        mono-%{version}.tar.bz2
 BuildRequires:  bison
@@ -565,6 +565,7 @@ Provides:       mono(Mono.Data.Tds) = 1.0.5000.0
 Provides:       mono(Novell.Directory.Ldap) = 1.0.5000.0
 Provides:       mono(System.Data) = 1.0.5000.0
 Provides:       mono(System.DirectoryServices) = 1.0.5000.0
+Provides:       mono(System.DirectoryServices.Protocols) = 1.0.5000.0
 Provides:       mono(System.EnterpriseServices) = 1.0.5000.0
 
 %description -n mono-data
@@ -587,6 +588,7 @@ Database connectivity for Mono.
 %_prefix/lib/mono/2.0/System.Data.Linq.dll
 %_prefix/lib/mono/2.0/System.Data.dll
 %_prefix/lib/mono/2.0/System.DirectoryServices.dll
+%_prefix/lib/mono/2.0/System.DirectoryServices.Protocols.dll
 %_prefix/lib/mono/2.0/System.EnterpriseServices.dll
 %_prefix/lib/mono/2.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/2.0/System.Transactions.dll
@@ -596,6 +598,7 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.0/System.Data.Linq.dll
 %_prefix/lib/mono/4.0/System.Data.dll
 %_prefix/lib/mono/4.0/System.DirectoryServices.dll
+%_prefix/lib/mono/4.0/System.DirectoryServices.Protocols.dll
 %_prefix/lib/mono/4.0/System.EnterpriseServices.dll
 %_prefix/lib/mono/4.0/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.0/System.Transactions.dll
@@ -606,6 +609,7 @@ Database connectivity for Mono.
 %_prefix/lib/mono/4.5/System.Data.Linq.dll
 %_prefix/lib/mono/4.5/System.Data.dll
 %_prefix/lib/mono/4.5/System.DirectoryServices.dll
+%_prefix/lib/mono/4.5/System.DirectoryServices.Protocols.dll
 %_prefix/lib/mono/4.5/System.EnterpriseServices.dll
 %_prefix/lib/mono/4.5/System.Runtime.Serialization.dll
 %_prefix/lib/mono/4.5/System.Transactions.dll
@@ -620,6 +624,7 @@ Database connectivity for Mono.
 %_prefix/lib/mono/gac/System.Data.DataSetExtensions
 %_prefix/lib/mono/gac/System.Data.Linq
 %_prefix/lib/mono/gac/System.DirectoryServices
+%_prefix/lib/mono/gac/System.DirectoryServices.Protocols
 %_prefix/lib/mono/gac/System.EnterpriseServices
 %_prefix/lib/mono/gac/System.Runtime.Serialization
 %_prefix/lib/mono/gac/System.Transactions
@@ -821,6 +826,7 @@ Mono implementation of WCF, Windows Communication Foundation
 %_prefix/lib/mono/4.0/System.IdentityModel.Selectors.dll
 %_prefix/lib/mono/4.0/System.IdentityModel.dll
 %_prefix/lib/mono/4.0/System.Runtime.DurableInstancing.dll
+%_prefix/lib/mono/4.0/System.ServiceModel.Activation.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Discovery.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Routing.dll
 %_prefix/lib/mono/4.0/System.ServiceModel.Web.dll
@@ -829,6 +835,7 @@ Mono implementation of WCF, Windows Communication Foundation
 %_prefix/lib/mono/4.5/System.IdentityModel.Selectors.dll
 %_prefix/lib/mono/4.5/System.IdentityModel.dll
 %_prefix/lib/mono/4.5/System.Runtime.DurableInstancing.dll
+%_prefix/lib/mono/4.5/System.ServiceModel.Activation.dll
 %_prefix/lib/mono/4.5/System.ServiceModel.Discovery.dll
 %_prefix/lib/mono/4.5/System.ServiceModel.Routing.dll
 %_prefix/lib/mono/4.5/System.ServiceModel.Web.dll
@@ -839,6 +846,7 @@ Mono implementation of WCF, Windows Communication Foundation
 %_prefix/lib/mono/gac/System.IdentityModel.Selectors
 %_prefix/lib/mono/gac/System.Runtime.DurableInstancing
 %_prefix/lib/mono/gac/System.ServiceModel
+%_prefix/lib/mono/gac/System.ServiceModel.Activation
 %_prefix/lib/mono/gac/System.ServiceModel.Discovery
 %_prefix/lib/mono/gac/System.ServiceModel.Routing
 %_prefix/lib/mono/gac/System.ServiceModel.Web
