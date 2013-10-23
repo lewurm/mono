@@ -371,6 +371,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_gc_wbarrier_arrayref_copy@VER_1 3.2.1+dfsg
  mono_gc_wbarrier_generic_nostore@VER_1 3.2.1+dfsg
  mono_gc_wbarrier_generic_store@VER_1 3.2.1+dfsg
+ mono_gc_wbarrier_generic_store_atomic@VER_1 3.2.3+dfsg
  mono_gc_wbarrier_object_copy@VER_1 3.2.1+dfsg
  mono_gc_wbarrier_set_arrayref@VER_1 3.2.1+dfsg
  mono_gc_wbarrier_set_field@VER_1 3.2.1+dfsg
