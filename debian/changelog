@@ -1,3 +1,68 @@
+mono (3.2.3+dfsg-1) experimental; urgency=low
+
+  [ Jo Shields ]
+  * [d0a215f] Imported Upstream version 3.2.3+dfsg (Closes: #725279)
+  * [f355562] Add new symbols for 3.2.3
+  * [0d9bcb4] Bump ABI versions for 3.2.3 changes, including package renames 
+    where required by policy.
+  * [93ed69f] Fix the couple of packages that accidentally did not drop IA64 
+    support.
+  * [5513028] Add Sgen debug helper to mono-dbg
+  * [ab982e4] Add missing mono-heapviz and mdbrebase
+  * [81bf668] Strip out 4.5 version of bundled NUnit, we don't ship the 
+    bundle in Debian.
+  * [d6db210] Add missing monosgen-2.pc to libmonosgen-2.0-dev
+  * [6c1a392] Add libmono-system-json2.0-cil package
+  * [e3c04e1] Refresh list of packages in libmono-cil-dev.
+  * [b9c8e08] Add System.DirectoryServices.Protocols assembly package
+  * [2e5b801] Add 2.0 (3.5) version of System.Net assembly packages.
+  * [be5178c] Add package for System.ServiceModel.Activation assembly
+  * [6b9fdaa] Add package for System.Json.Microsoft assembly
+  * [e37416a] Add package for 2.0 (3.5) version of System.Data.Services.Client 
+    assembly
+  * [d42483b] Add symbol brought in by the last patch merge
+  * [cd78202] Don't redeclare desc in mini_create_ftnptr on ppc64
+  * [4d2d529] Add missing PowerPC symbols
+  * [0ad5d69] Abandon SPARC support. The company which had previously been 
+    maintaining it dropped their interest after Mono 2.8, and as such, the 
+    SPARC port is bitrotted beyond use. (Closes: #727542)
+
+  [ Alex Rønne Petersen ]
+  * [be0a4a3] Remove unneeded NetBSD code path from atomic.h. 
+  * [4d3344a] Simplify the ifdeffery in atomic.c/.h a bit. 
+  * [b3a340d] Use host preprocessor identifiers in atomic.c, not target.
+  * [9058bfe] Remove unneeded ARM code from atomic.c.
+  * [97a4fff] Use GCC atomics on s390x.
+  * [a668980] Remove MONO_ARCH_SAVE_REGS from threading icalls.
+  * [73ec437] Use mono_memory_barrier () for Thread.MemoryBarrier ().
+  * [70e8ca1] Add implementations of various interlocked functions to 
+    atomic.c/.h.
+  * [b37681e] Add interlocked read/write functions to atomic.c/.h.
+  * [f912c77] Move definition of NEED_64BIT_CMPXCHG_FALLBACK to top of 
+    atomic.c. 
+  * [3b93dd8] Use __sync_sub_and_fetch () for atomic decrements for 
+    clarity.
+  * [8d36fd1] Use InterlockedRead64 () for Interlocked.Read (long&).
+  * [07c705d] Use InterlockedIncrement64 () for Interlocked.Increment
+    (long&).
+  * [c1a8be1] Use InterlockedDecrement64 () for Interlocked.Decrement
+    (long&).
+  * [deeb1c8] Use InterlockedExchange64 () for Interlocked.Exchange
+    (long&, long).
+  * [413523f] Use InterlockedExchange64 () for Interlocked.Exchange
+    (double&, double).
+  * [2676ce4] Use InterlockedAdd () for Interlocked.Add (int&, int).
+  * [07d515c] Use InterlockedAdd64 () for Interlocked.Add (long&, long).
+  * [9599856] Correct our implementation of Thread.VolatileRead ()/VolatileWrite ().
+  * [bfe9881] Use slow 64-bit cmpxchg for 32-bit ARM, MIPS, and PowerPC.
+  * [3c16fd2] Add an extension point in atomic.c.
+  * [771e714] Add mono_gc_wbarrier_generic_store_atomic () function.
+
+  [ Zoltan Varga ]
+  * [d6629c3] [runtime] Fix the interlocked increment/decrement/add functions.
+
+ -- Jo Shields <directhex@apebox.org>  Thu, 24 Oct 2013 20:21:32 +0100
+
 mono (3.2.1+dfsg-1) experimental; urgency=low
 
   * The "REJECT FALSE ICONS" release
