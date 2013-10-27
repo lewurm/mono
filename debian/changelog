@@ -1,3 +1,12 @@
+mono (3.0.6+dfsg2-8) unstable; urgency=low
+
+  * [a87c24d] Remove SPARC. It's a dead architecture in Mono upstream 
+    (and elsewhere). (Closes: #727542)
+  * [b6e4975] Fix package descriptions to not mention SPARC or IA64, 
+    and exchange S/390 with S/390x
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 27 Oct 2013 14:09:33 +0000
+
 mono (3.0.6+dfsg2-7) unstable; urgency=low
 
   [ Jeffrey Stedfast ]
