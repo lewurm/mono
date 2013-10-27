@@ -44,8 +44,8 @@ Description: Mono runtime
  This package contains the Virtual Machine, JIT (Just-in-Time) and
  AOT (Ahead-of-Time) code generator "mono".
  "mono" executes applications for the CLI (Common Language Infrastructure).
- Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
- IA64 architectures. Optionally this package configures BINFMT support.
+ Mono currently only supports the X86, PowerPC, ARM, S/390x and AMD64 
+ architectures. Optionally this package configures BINFMT support.
 
 Package: mono-runtime-sgen
 Architecture: amd64 armel i386 kfreebsd-amd64 kfreebsd-i386 s390x
@@ -63,8 +63,8 @@ Description: Mono runtime - SGen (experimental)
  This package contains the Virtual Machine, JIT (Just-in-Time) and
  AOT (Ahead-of-Time) code generator "mono-sgen".
  mono-sgen executes applications for the CLI (Common Language Infrastructure).
- Mono currently only supports the X86, PowerPC, ARM, SPARC, S/390, AMD64 and
- IA64 architectures.
+ Mono currently only supports the X86, PowerPC, ARM, S/390x and AMD64
+ architectures.
  .
  This package uses SGen which is Mono's new simple generational garbage
  collector instead of Boehm's conservative garbage collector. SGen is
