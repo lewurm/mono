@@ -1,3 +1,10 @@
+mono (3.2.3+dfsg-2) experimental; urgency=low
+
+  [ Christopher James Halse Rogers ]
+  * [e3ef79e] Add dh_installcliframework support to mono.runtime-script
+
+ -- Jo Shields <directhex@apebox.org>  Wed, 30 Oct 2013 00:07:49 +0000
+
 mono (3.2.3+dfsg-1) experimental; urgency=low
 
   [ Jo Shields ]
