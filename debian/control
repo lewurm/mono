@@ -2897,8 +2897,8 @@ Description: Mono System.Windows.Forms Library (for CLI 4.0)
  This package contains the Mono System.Windows.Forms library for CLI 4.0.
 
 Package: libmono-system-windows-forms-datavisualization4.0a-cil
-Conflicts: libmono-system-windows-forms-datavisualization4.0a-cil (<< 3.2.3)
-Replaces: libmono-system-windows-forms-datavisualization4.0a-cil (<< 3.2.3)
+Conflicts: libmono-system-windows-forms-datavisualization4.0-cil (<< 3.2.3)
+Replaces: libmono-system-windows-forms-datavisualization4.0-cil (<< 3.2.3)
 Architecture: all
 Depends: ${misc:Depends},
          ${cli:Depends}
