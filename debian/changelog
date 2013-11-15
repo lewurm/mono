@@ -1,3 +1,21 @@
+mono (3.2.3+dfsg-3) experimental; urgency=low
+
+  * [2b7198e] Fix buggy Replaces section on 
+    libmono-system-windows-forms-datavisualization4.0a-cil package 
+    (Closes: #728340)
+  * [8a07907] There is a bug in the silicon on Loongson 2E and 2F 
+    processors, which can cause the traditional NOP instruction 
+    (which doesn't exist on MIPS but is an alias to 'sll 0,0,0') 
+    to fail intermittently under high load. This is worked around 
+    in binutils 
+    (https://sourceware.org/ml/binutils/2009-11/msg00387.html) but 
+    that only applies to software compiled via binutils, not via a 
+    JITter like Mono. The fix uses a different no-op instruction 
+    which does not trigger the CPU bug. Thanks to Alex Rønne 
+    Petersen for his help.
+
+ -- Jo Shields <directhex@apebox.org>  Fri, 15 Nov 2013 00:03:19 +0000
+
 mono (3.2.3+dfsg-2) experimental; urgency=low
 
   [ Christopher James Halse Rogers ]
