@@ -337,6 +337,7 @@ binary-indep: build-stamp install-stamp
 	debian/dh_makeclilibs -p libmono-winforms2.0-cil -m 2.4 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-windowsbase3.0-cil -m 3.0.6 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p libmono-windowsbase4.0-cil -m 3.0.6 $(DH_INTERNAL_MONO_PARAM)
+	debian/dh_makeclilibs -p libmono-cecil-private-cil -m $(UPVERSION) -l $(NEXT_UPVERSION) $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_makeclilibs -p monodoc-base -m 3.0.6 $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_clideps -i -l debian/tmp $(DH_INTERNAL_MONO_PARAM)
 	#DH_VERBOSE=1 debian/dh_clideps -i -l debian/tmp $(DH_INTERNAL_MONO_PARAM)
