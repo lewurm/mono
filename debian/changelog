@@ -1,3 +1,12 @@
+mono (3.0.6+dfsg2-9) unstable; urgency=low
+
+  * [24232d8] Enforce strict dependency versioning on 
+    libmono-cecil-private-cil. This ensures that packages depending 
+    on it are upgraded in lockstep. This works around the unreliable 
+    ABI versioning on this library. (Closes: #728911)
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 17 Nov 2013 20:21:43 +0000
+
 mono (3.0.6+dfsg2-8) unstable; urgency=low
 
   * [a87c24d] Remove SPARC. It's a dead architecture in Mono upstream 
