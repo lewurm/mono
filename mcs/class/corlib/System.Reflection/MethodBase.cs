@@ -88,8 +88,17 @@ namespace System.Reflection {
 		// This is a quick version for our own use. We should override
 		// it where possible so that it does not allocate an array.
 		//
-		internal abstract ParameterInfo[] GetParametersInternal ();
-		internal abstract int GetParametersCount ();
+		internal virtual ParameterInfo[] GetParametersInternal ()
+		{
+			// Override me
+			return GetParameters ();
+		}
+
+		internal virtual int GetParametersCount ()
+		{
+			// Override me
+			return GetParametersInternal ().Length;
+		}
 
 		internal virtual Type GetParameterType (int pos) {
 			throw new NotImplementedException ();
