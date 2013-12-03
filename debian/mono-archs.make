@@ -1,4 +1,4 @@
-DEB_MONO_ARCHS = amd64 armel i386 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x sparc
+DEB_MONO_ARCHS = amd64 armel i386 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x
 # grep defined mono/metadata/sgen-archdep.h
 #elif defined(__x86_64__)
 #elif defined(__ppc__)
