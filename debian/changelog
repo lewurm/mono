@@ -1,3 +1,14 @@
+mono (3.0.6+dfsg2-10) unstable; urgency=low
+
+  [ Marek Safar ]
+  * [3fc971b] Add test from Jb Evain to test biner with user method types
+    (cherry picked from commit 80d342ff7555e95bfa3917543ce66910175cf61d)
+
+  [ Jo Shields ]
+  * [fae7653] Really remove SPARC from list of architectures (Closes: #731253)
+
+ -- Jo Shields <directhex@apebox.org>  Tue, 03 Dec 2013 23:55:11 +0000
+
 mono (3.0.6+dfsg2-9) unstable; urgency=low
 
   * [24232d8] Enforce strict dependency versioning on 
