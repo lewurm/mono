@@ -14,6 +14,8 @@
  mono_hwcap_arm_has_thumb2@VER_1 3.2.3+dfsg  
  mono_hwcap_arm_has_thumb@VER_1 3.2.3+dfsg  
  mono_hwcap_arm_has_vfp@VER_1 3.2.3+dfsg  
+ mono_hwcap_arm_has_vfp3@VER_1 3.2.3+dfsg-4~
+ mono_hwcap_arm_has_vfp3_d16@VER_1 3.2.3+dfsg-4~
  mono_hwcap_arm_is_v5@VER_1 3.2.3+dfsg  
  mono_hwcap_arm_is_v6@VER_1 3.2.3+dfsg 
  mono_hwcap_arm_is_v7@VER_1 3.2.3+dfsg 
