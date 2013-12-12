@@ -1,3 +1,12 @@
+mono (3.2.3+dfsg-5) experimental; urgency=low
+
+  * [bb3e132] Fix error in debian/libmonosgen-2.0-1.symbols.armhf
+  * [98b1fb6] Roll all the -facades- (PCL) packages into mono-devel. These 
+    are meaningless outside compile time, and a pain to maintain, so we 
+    gain nothing from having them split out.
+
+ -- Jo Shields <directhex@apebox.org>  Thu, 12 Dec 2013 12:35:44 +0000
+
 mono (3.2.3+dfsg-4) experimental; urgency=low
 
   [ Alex Rønne Petersen ]
