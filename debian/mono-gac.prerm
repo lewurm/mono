@@ -7,6 +7,11 @@ if [ "$1" = remove ]; then
         if [ -x /usr/share/cli-common/gac-remove ]; then
 		/usr/share/cli-common/gac-remove mono
 	fi
+
+	# Remove any framework libs
+        if [ -x /usr/share/cli-common/framework-remove ]; then
+		/usr/share/cli-common/framework-remove mono
+	fi
 fi
 
 #DEBHELPER#
