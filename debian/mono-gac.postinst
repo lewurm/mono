@@ -4,6 +4,10 @@
 if [ -x /usr/share/cli-common/gac-install ]; then
 	/usr/share/cli-common/gac-install mono
 fi
+# Install any framework libs
+if [ -x /usr/share/cli-common/framework-install ]; then
+	/usr/share/cli-common/framework-install mono
+fi
 
 # Update the alternatives
 update-alternatives \
