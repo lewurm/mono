@@ -1,3 +1,22 @@
+mono (3.2.3+dfsg-6) experimental; urgency=medium
+
+  * The "Hello F#" release
+
+  [ Christopher James Halse Rogers ]
+  * [37faf77] Do the framework-install/framework-remove dance in mono-gac maint
+    scripts. This ensures our 3rd-party-ish framework libraries end up in the
+    right place on upgrades.
+
+  [ Jo Shields ]
+  * [5872e81] Disable monitor.exe, it frequently doesn't get cleaned up on
+    buildds, which can cause buildd admin angst.
+  * [a9a843a] Disable bug-10127, this is another test which can leave stray
+    processes.
+  * [c01f5fc] mono-devel should pull in libmono-2.0-dev as this contains
+    mono-2.pc. Fixes FTBFS in gtk-sharp3 and others.
+
+ -- Mirco Bauer <meebey@debian.org>  Wed, 15 Jan 2014 07:21:45 +0100
+
 mono (3.2.3+dfsg-5) experimental; urgency=low
 
   * [bb3e132] Fix error in debian/libmonosgen-2.0-1.symbols.armhf
