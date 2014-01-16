@@ -56,9 +56,10 @@ ifneq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	MONO_SGEN_TEST = true
 else
 	TIMEOUT = timeout -k 1h 1h
-	MINI_TEST = cd mono/mini && $(TIMEOUT) make check
-	MONO_BOEHM_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=boehm $(TIMEOUT) make test
-	MONO_SGEN_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=sgen $(TIMEOUT) make test
+	KILL_MONO = killall -9 mono
+	MINI_TEST = cd mono/mini && $(TIMEOUT) make check; $(KILL_MONO)
+	MONO_BOEHM_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=boehm $(TIMEOUT) make test; $(KILL_MONO)
+	MONO_SGEN_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=sgen $(TIMEOUT) make test; $(KILL_MONO)
 endif
 ifeq ($(DEB_BUILD_ARCH), powerpc)
 	MONO_SGEN_TEST = true
