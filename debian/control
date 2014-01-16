@@ -5,6 +5,7 @@ Maintainer: Debian Mono Group <pkg-mono-group@lists.alioth.debian.org>
 Uploaders: Mirco Bauer <meebey@debian.org>, Jo Shields <directhex@apebox.org>
 Build-Depends: debhelper (>= 7),
 	dpkg-dev (>= 1.16.1~),
+	psmisc,
 	bison,
 	libtool,
 	libxml-dom-perl,
