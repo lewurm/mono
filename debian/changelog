@@ -1,3 +1,17 @@
+mono (3.2.3+dfsg-7) experimental; urgency=medium
+
+  [ Mirco Bauer ]
+  * [fd41e43] Added a hard timeout of 1 hour per test pass to prevent blocking
+    buildds forever
+  * [68cd63d] Hard kill stray mono processes after each test pass to make the
+    life of buildd admins nicer
+  * [2b00059] Added psmisc to build-deps for the killall command
+
+  [ Christopher James Halse Rogers ]
+  * [c6ee8c7] Make the install-framework commmand idempotent
+
+ -- Mirco Bauer <meebey@debian.org>  Fri, 17 Jan 2014 07:06:13 +0100
+
 mono (3.2.3+dfsg-6) experimental; urgency=medium
 
   * The "Hello F#" release
