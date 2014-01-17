@@ -45,8 +45,7 @@ if ($mode eq "install-framework")
 
     my $uninstall = "$basedir/$basename.mono-framework";
 
-
-   open UNINSTALL, ">$uninstall"
+    open UNINSTALL, ">$uninstall"
 	or die "E: Cannot open uninstall: $uninstall";
 
     while (@ARGV)
@@ -62,6 +61,12 @@ if ($mode eq "install-framework")
 
 	my $target = "$runtime_versions{$framework_ver}/" . basename($dll);
 	
+	if (-f $target)
+	{
+	    # Ensure we're idempotent
+	    unlink $target;
+	}
+
 	symlink $dll, $target
 	    or die "E: Unable to install $dll into framework path: $target\n";
 	print UNINSTALL "$target\n";
