@@ -1,3 +1,17 @@
+mono (3.0.6+dfsg2-11) unstable; urgency=medium
+
+  * The "Hello F#" release
+
+  [ Christopher James Halse Rogers ]
+  * [d953ce1] Do the framework-install/framework-remove dance in mono-gac maint scripts.
+    This ensures our 3rd-party-ish framework libraries end up in the right place
+    on upgrades.
+    cf: gac-install/gac-remove
+  * [9303f0c] Add dh_installcliframework support to mono.runtime-script
+  * [a0ea7e3] Make the install-framework commmand idempotent
+
+ -- Mirco Bauer <meebey@debian.org>  Tue, 11 Feb 2014 02:46:08 +0100
+
 mono (3.0.6+dfsg2-10) unstable; urgency=low
 
   [ Marek Safar ]
