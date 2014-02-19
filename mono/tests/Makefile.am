@@ -386,7 +386,6 @@ BASE_TEST_CS_SRC=		\
 	appdomain-unload-doesnot-raise-pending-events.cs	\
 	bug-6148.cs	\
 	assembly_append_ordering.cs	\
-	bug-10127.cs	\
 	allow-synchronous-major.cs	\
 	unload-appdomain-on-shutdown.cs	\
 	block_guard_restore_aligment_on_exit.cs	\
