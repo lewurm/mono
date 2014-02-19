@@ -14,6 +14,9 @@ using TestInitializeAttribute = NUnit.Framework.SetUpAttribute;
 #else
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 #endif
+#if STRESS
+using ReactiveTests.Stress.Schedulers;
+#endif
 
 namespace ReactiveTests.Tests
 {
@@ -377,5 +380,13 @@ namespace ReactiveTests.Tests
                 d.Dispose();
             }
         }
+
+#if STRESS
+        [TestMethod]
+        public void EventLoop_Stress()
+        {
+            EventLoop.NoSemaphoreFullException();
+        }
+#endif
     }
 }

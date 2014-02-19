@@ -181,6 +181,34 @@
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
 
+/* Define to 1 if you have the declaration of `InterlockedAdd', and to 0 if
+   you don't. */
+#undef HAVE_DECL_INTERLOCKEDADD
+
+/* Define to 1 if you have the declaration of `InterlockedAdd64', and to 0 if
+   you don't. */
+#undef HAVE_DECL_INTERLOCKEDADD64
+
+/* Define to 1 if you have the declaration of `InterlockedCompareExchange64',
+   and to 0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64
+
+/* Define to 1 if you have the declaration of `InterlockedDecrement64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDDECREMENT64
+
+/* Define to 1 if you have the declaration of `InterlockedExchange64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDEXCHANGE64
+
+/* Define to 1 if you have the declaration of `InterlockedIncrement64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDINCREMENT64
+
+/* Define to 1 if you have the declaration of `__readfsdword', and to 0 if you
+   don't. */
+#undef HAVE_DECL___READFSDWORD
+
 /* Support for the deprecated attribute */
 #undef HAVE_DEPRECATED
 
@@ -547,6 +575,9 @@
 /* Define to 1 if you have the `sethostname' function. */
 #undef HAVE_SETHOSTNAME
 
+/* Define to 1 if you have the `setpgid' function. */
+#undef HAVE_SETPGID
+
 /* Define to 1 if you have the `setpriority' function. */
 #undef HAVE_SETPRIORITY
 
@@ -690,6 +721,9 @@
 
 /* Define to 1 if you have the <sys/epoll.h> header file. */
 #undef HAVE_SYS_EPOLL_H
+
+/* Define to 1 if you have the <sys/event.h> header file. */
+#undef HAVE_SYS_EVENT_H
 
 /* Define to 1 if you have the <sys/extattr.h> header file. */
 #undef HAVE_SYS_EXTATTR_H

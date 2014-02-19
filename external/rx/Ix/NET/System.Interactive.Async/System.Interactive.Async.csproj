@@ -12,16 +12,15 @@
     <AssemblyName>System.Interactive.Async</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <NoWarn>1591</NoWarn>
+    <ProductSignAssembly>true</ProductSignAssembly>
   </PropertyGroup>
   <Import Project="..\Common.targets" />
   <PropertyGroup>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugPL' Or '$(Configuration)' == 'ReleasePL' ">
-    <TargetFrameworkProfile>Profile1</TargetFrameworkProfile>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" Condition=" '$(BuildPlatform)' == 'SILVERLIGHT' " />
+    <Reference Include="mscorlib" Condition=" '$(BuildPlatform)' == 'SILVERLIGHT' or '$(TargetFrameworkIdentifier)' == '.NETPortable' " />
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>

@@ -10,7 +10,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Reactive</RootNamespace>
     <AssemblyName>Tests.System.Reactive</AssemblyName>
-    <DefineConstants>NO_TASK_DELAY;NO_WINDOWS_THREADING;NO_REMOTING;SIGNED;NUNIT;MONODROID</DefineConstants>
+    <DefineConstants>NO_TASK_DELAY;NO_WINDOWS_THREADING;NO_REMOTING;HAS_AWAIT;NUNIT;MONODROID;$(SignAssemblySpec)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -21,6 +21,7 @@
     <WarningLevel>4</WarningLevel>
     <AndroidLinkMode>None</AndroidLinkMode>
     <ConsolePause>False</ConsolePause>
+    <DefineConstants>DEBUG;NO_TASK_DELAY;NO_WINDOWS_THREADING;NO_REMOTING;HAS_AWAIT;NUNIT;MONODROID;$(SignAssemblySpec)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -38,59 +39,49 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Andr.Unit\Android.NUnitLite\Android.NUnitLite.csproj">
-      <Project>{6A005891-A3D6-4398-A729-F645397D573A}</Project>
-      <Name>Android.NUnitLite</Name>
-    </ProjectReference>
+<ProjectReference Include="..\..\Andr.Unit\Android.NUnitLite\Android.NUnitLite.csproj"><Project>{6A005891-A3D6-4398-A729-F645397D573A}</Project><Name>Android.NUnitLite</Name></ProjectReference>
+<ProjectReference Include="..\Mono.Reactive.Testing\android_Mono.Reactive.Testing.csproj">
+  <Project>{E7B7408B-B039-4F30-B6CF-CC06218CE4CA}</Project>
+  <Name>android_Mono.Reactive.Testing</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Core\android_System.Reactive.Core.csproj">
+  <Project>{4E516F10-DA7A-4D43-963E-A93865ABEA5B}</Project>
+  <Name>android_System.Reactive.Core</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Experimental\android_System.Reactive.Experimental.csproj">
+  <Project>{41E65B96-733B-41C4-A1BB-7476359B89EB}</Project>
+  <Name>android_System.Reactive.Experimental</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Interfaces\android_System.Reactive.Interfaces.csproj">
+  <Project>{9E9B9C60-98B0-40FA-9C2B-1218D417CAA4}</Project>
+  <Name>android_System.Reactive.Interfaces</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Observable.Aliases\android_System.Reactive.Observable.Aliases.csproj">
+  <Project>{9ffac385-10a4-4ddd-b800-de67e8469cc0}</Project>
+  <Name>android_System.Reactive.Observable.Aliases</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.PlatformServices\android_System.Reactive.PlatformServices.csproj">
+  <Project>{0CCCF009-763F-40D2-8655-7A94828023BF}</Project>
+  <Name>android_System.Reactive.PlatformServices</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Providers\android_System.Reactive.Providers.csproj" Condition=" '$(BuildFlavor)' != 'SILVERLIGHTM7' And '$(BuildPlatform)' != 'XNA' ">
+  <Project>{C7B9D7BE-F47F-466B-A6B0-E46F1069B171}</Project>
+  <Name>android_System.Reactive.Providers</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Linq\android_System.Reactive.Linq.csproj">
+  <Project>{63252AE9-5186-45CA-BFCD-FA51C6B66A43}</Project>
+  <Name>android_System.Reactive.Linq</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Runtime.Remoting\android_System.Reactive.Runtime.Remoting.csproj" Condition=" '$(BuildPlatform)' != 'WINDOWS_PHONE' And '$(BuildTarget)' != 'WP7' ">
+  <Project>{7A6EF49E-7946-4101-9C89-407B9C53A173}</Project>
+  <Name>android_System.Reactive.Runtime.Remoting</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Windows.Forms\android_System.Reactive.Windows.Forms.csproj" Condition=" '$(BuildPlatform)' == 'DESKTOPCLR' ">
+  <Project>{E32328A1-1F5B-45F9-B005-02EF5CC2CF0D}</Project>
+  <Name>android_System.Reactive.Windows.Forms</Name>
+</ProjectReference><ProjectReference Include="..\System.Reactive.Windows.Threading\android_System.Reactive.Windows.Threading.csproj">
+  <Project>{2F7D32BD-5BFC-45D4-9899-F1A76DB32FCB}</Project>
+  <Name>android_System.Reactive.Windows.Threading</Name>
+</ProjectReference>
     <!--
     <ProjectReference Include="..\Andr.Unit\Android.NUnitLite\Android.NUnitLite.csproj">
       <Project>{6A005891-A3D6-4398-A729-F645397D573A}</Project>
       <Name>Android.NUnitLite</Name>
     </ProjectReference>
     -->
-    <ProjectReference Include="..\Mono.Reactive.Testing\android_Mono.Reactive.Testing.csproj">
-      <Project>{CB2AB716-BFCB-43BC-A03B-A3BDA427746C}</Project>
-      <Name>android_Mono.Reactive.Testing</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Core\android_System.Reactive.Core.csproj">
-      <Project>{FEF62C23-10CD-4DEF-A5AE-54A8B309E970}</Project>
-      <Name>android_System.Reactive.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Debugger\android_System.Reactive.Debugger.csproj">
-      <Project>{9360E845-D79D-4288-9100-63A80FAD2BF0}</Project>
-      <Name>android_System.Reactive.Debugger</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Interfaces\android_System.Reactive.Interfaces.csproj">
-      <Project>{4FA878DC-6E88-43C4-B37B-8C1151CEC56F}</Project>
-      <Name>android_System.Reactive.Interfaces</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Linq\android_System.Reactive.Linq.csproj">
-      <Project>{EC704077-EA31-4852-AD24-6732244174C0}</Project>
-      <Name>android_System.Reactive.Linq</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.PlatformServices\android_System.Reactive.PlatformServices.csproj">
-      <Project>{D263C126-9D3C-4299-A0C1-F25C703D07C9}</Project>
-      <Name>android_System.Reactive.PlatformServices</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Experimental\android_System.Reactive.Experimental.csproj">
-      <Project>{00DC3654-E373-4E3F-80FE-109F795ADF1F}</Project>
-      <Name>android_System.Reactive.Experimental</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Providers\android_System.Reactive.Providers.csproj">
-      <Project>{E662282B-4341-4F86-AAAA-A942335B47FB}</Project>
-      <Name>android_System.Reactive.Providers</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\System.Reactive.Runtime.Remoting\android_System.Reactive.Runtime.Remoting.csproj">
-      <Project>{A153A379-670C-42C2-9018-FC0D933A4F7F}</Project>
-      <Name>android_System.Reactive.Runtime.Remoting</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <!--
-    <Compile Include="..\..\..\Microsoft.Reactive.Testing\ColdObservable.cs">
-      <Link>ColdObservable.cs</Link>
-    </Compile>
-    -->
     <Compile Include="..\..\..\..\Tests.System.Reactive\App.cs">
       <Link>App.cs</Link>
     </Compile>
@@ -105,6 +96,9 @@
     </Compile>
     <Compile Include="..\..\..\..\Tests.System.Reactive\Stress\Core\Disposables\Serial.cs">
       <Link>Stress\Core\Disposables\Serial.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\Tests.System.Reactive\Stress\Core\Schedulers\EventLoop.cs">
+      <Link>Stress\Core\Schedulers\EventLoop.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\Tests.System.Reactive\Stress\Core\Disposables\SingleAssignment.cs">
       <Link>Stress\Core\Disposables\SingleAssignment.cs</Link>
@@ -129,6 +123,9 @@
     </Compile>
     <Compile Include="..\..\..\..\Tests.System.Reactive\TestLongRunningScheduler.cs">
       <Link>TestLongRunningScheduler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\Tests.System.Reactive\Tests\Aliases.cs">
+      <Link>Tests\Aliases.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\Tests.System.Reactive\Tests\AnonymousTest.cs">
       <Link>Tests\AnonymousTest.cs</Link>
@@ -219,6 +216,9 @@
     </Compile>
     <Compile Include="..\..\..\..\Tests.System.Reactive\Tests\Linq\ObservableExtensionsTest.cs">
       <Link>Tests\Linq\ObservableExtensionsTest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\Tests.System.Reactive\Tests\Linq\ObservableExTest.cs">
+      <Link>Tests\Linq\ObservableExTest.cs</Link>
     </Compile>
     <Compile Include="..\..\..\..\Tests.System.Reactive\Tests\Linq\ObservableImperativeTest.cs">
       <Link>Tests\Linq\ObservableImperativeTest.cs</Link>
@@ -340,6 +340,13 @@
     <Compile Include="..\..\..\..\Tests.System.Reactive\Utils.cs">
       <Link>Utils.cs</Link>
     </Compile>
+
+    <!--
+    <Compile Include="..\..\..\Microsoft.Reactive.Testing\ColdObservable.cs">
+      <Link>ColdObservable.cs</Link>
+    </Compile>
+    -->
+
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
 </Project>

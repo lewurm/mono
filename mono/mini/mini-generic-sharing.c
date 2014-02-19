@@ -1424,7 +1424,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			if (call_sig == mono_method_signature (method)) {
 			} else {
 				sig = mono_method_signature (method);
-				gsig = mono_method_signature (callee_ji->method); 
+				gsig = mono_method_signature (jinfo_get_method (callee_ji)); 
 
 				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, callee_gji->generic_sharing_context, -1, FALSE);
 
@@ -2697,6 +2697,13 @@ mini_class_is_generic_sharable (MonoClass *klass)
 		return FALSE;
 
 	return (klass->generic_class && mono_generic_context_is_sharable (&klass->generic_class->context, FALSE));
+}
+
+
+gboolean
+mini_is_gsharedvt_variable_klass (MonoCompile *cfg, MonoClass *klass)
+{
+	return mini_is_gsharedvt_variable_type (cfg, &klass->byval_arg);
 }
 
 #if defined(MONOTOUCH) || defined(MONO_EXTENSIONS)
