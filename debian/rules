@@ -61,18 +61,6 @@ else
 	MONO_BOEHM_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=boehm $(TIMEOUT) make test; $(KILL_MONO)
 	MONO_SGEN_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=sgen $(TIMEOUT) make test; $(KILL_MONO)
 endif
-ifeq ($(DEB_BUILD_ARCH), powerpc)
-	MONO_SGEN_TEST = true
-endif
-
-MDB_REL = mono-debugger
-ifeq ($(DISTRO), Ubuntu)
-	MDB_VARS =  -Vmdb:Suggests=$(MDB_REL)
-	MDB_VARS += -Vmdb:Recommends=
-else
-	MDB_VARS =  -Vmdb:Suggests=
-	MDB_VARS += -Vmdb:Recommends=$(MDB_REL)
-endif
 
 DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/buildflags.mk
@@ -356,8 +344,7 @@ binary-indep: build-stamp install-stamp
 	# mono-1.0/2.0-gac needs special runtime dep, to prevent circular dep (mono-runtime <-> mono-1.0/2.0-gac)
 	debian/dh_clideps -p mono-2.0-gac -r $(DH_INTERNAL_MONO_PARAM)
 	debian/dh_clideps -p mono-4.0-gac -r $(DH_INTERNAL_MONO_PARAM)
-	dh_gencontrol -i -- -Vmono:upversion=$(UPVERSION) -Vmono:next-upversion=$(NEXT_UPVERSION) \
-	  $(MDB_VARS)
+	dh_gencontrol -i -- -Vmono:upversion=$(UPVERSION) -Vmono:next-upversion=$(NEXT_UPVERSION)
 	dh_md5sums -i
 	dh_builddeb -i
 
