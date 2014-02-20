@@ -16,6 +16,7 @@ NEXT_UPVERSION = $(shell perl -e '$$_=pop; s/(\d+)$$/$$1+1/e; print' $(UPVERSION
 DEB_SOURCE_NAME = $(shell dpkg-parsechangelog -l$(DEBIAN_DIR)/changelog | grep ^Source | cut -d" " -f2)
 
 RUN_MONO = LD_LIBRARY_PATH=debian/tmp/usr/lib MONO_PATH=debian/tmp/usr/lib/mono/4.0 debian/tmp/usr/bin/mono
+KILL_MONO = pgrep mono | xargs kill -9
 DH_INTERNAL_MONO_PARAM = --internal-mono
 ifeq ($(shell dpkg --compare-versions $$(dpkg-query -f '$${Version}' -W debhelper) lt 7.1; echo $$?), 0)
 	DH_INTERNAL_MONO_PARAM = internal-mono
@@ -56,7 +57,6 @@ ifneq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
 	MONO_SGEN_TEST = true
 else
 	TIMEOUT = timeout -k 1h 1h
-	KILL_MONO = killall -9 mono
 	MINI_TEST = cd mono/mini && $(TIMEOUT) make check; $(KILL_MONO)
 	MONO_BOEHM_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=boehm $(TIMEOUT) make test; $(KILL_MONO)
 	MONO_SGEN_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=sgen $(TIMEOUT) make test; $(KILL_MONO)
@@ -130,6 +130,7 @@ test-stamp: build-stamp
 	-$(MINI_TEST)
 	-$(MONO_BOEHM_TEST)
 	-$(MONO_SGEN_TEST)
+	-$(KILL_MONO)
 	# funny bug-459094.cs creates too long directory names which
 	# pbuilder is unable to remove, eh
 	rm -rf mono/tests/abcde12345abcde12345abcde12345abcde12345/
