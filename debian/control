@@ -325,13 +325,13 @@ Depends: ${misc:Depends},
          libmono-corlib4.0-cil (= ${source:Version}),
          libmono-corlib4.5-cil (= ${source:Version}),
          libmono-cscompmgd8.0-cil (= ${source:Version}),
-         libmono-csharp4.0b-cil (= ${source:Version}),
+         libmono-csharp4.0c-cil (= ${source:Version}),
          libmono-custommarshalers4.0-cil (= ${source:Version}),
          libmono-data-tds2.0-cil (= ${source:Version}),
          libmono-data-tds4.0-cil (= ${source:Version}),
          libmono-db2-1.0-cil (= ${source:Version}),
-         libmono-debugger-soft2.0-cil (= ${source:Version}),
-         libmono-debugger-soft4.0-cil (= ${source:Version}),
+         libmono-debugger-soft2.0a-cil (= ${source:Version}),
+         libmono-debugger-soft4.0a-cil (= ${source:Version}),
          libmono-entityframework6.0-cil (= ${source:Version}),
          libmono-entityframework-sqlserver6.0-cil (= ${source:Version}),
          libmono-http4.0-cil (= ${source:Version}),
@@ -362,8 +362,8 @@ Depends: ${misc:Depends},
          libmono-oracle2.0-cil (= ${source:Version}),
          libmono-oracle4.0-cil (= ${source:Version}),
          libmono-parallel4.0-cil (= ${source:Version}),
-         libmono-peapi2.0-cil (= ${source:Version}),
-         libmono-peapi4.0-cil (= ${source:Version}),
+         libmono-peapi2.0a-cil (= ${source:Version}),
+         libmono-peapi4.0a-cil (= ${source:Version}),
          libmono-posix2.0-cil (= ${source:Version}),
          libmono-posix4.0-cil (= ${source:Version}),
          libmono-rabbitmq2.0-cil (= ${source:Version}),
@@ -561,9 +561,9 @@ Description: Mono.CompilerServices.SymbolWriter library (for CLI 4.0)
  This package contains the Mono.CompilerServices.SymbolWriter library
  for CLI 4.0.
 
-Package: libmono-csharp4.0b-cil
-Conflicts: libmono-csharp4.0-cil (<< 3.2.1), libmono-csharp4.0a-cil (<< 3.2.3)
-Replaces: libmono-csharp4.0-cil (<< 3.2.1), libmono-csharp4.0a-cil (<< 3.2.1)
+Package: libmono-csharp4.0c-cil
+Conflicts: libmono-csharp4.0-cil (<< 3.2.1), libmono-csharp4.0a-cil (<< 3.2.3), libmono-csharp4.0b-cil (<< 3.2.8)
+Replaces: libmono-csharp4.0-cil (<< 3.2.1), libmono-csharp4.0a-cil (<< 3.2.3), libmono-csharp4.0b-cil (<< 3.2.8)
 Architecture: all
 Depends: ${misc:Depends}, ${cli:Depends}
 Description: Mono.CSharp library (for CLI 4.0)
@@ -2798,9 +2798,10 @@ Description: Mono Microsoft.Web.Infrastructure library (for CLI 4.0)
  This package contains the Mono Microsoft.Web.Infrastructure library
  version 1.0, for CLI 4.0.
 
-Package: libmono-peapi2.0-cil
+Package: libmono-peapi2.0a-cil
 Architecture: all
-Replaces: mono-classlib-2.0 (<< 1.1.13.6), mono-classlib-2.0-dbg (<< 1.1.13.6)
+Replaces: libmono-peapi2.0-cil
+Conflicts: libmono-peapi2.0-cil
 Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono PEAPI library (for CLI 2.0)
@@ -2812,8 +2813,10 @@ Description: Mono PEAPI library (for CLI 2.0)
  .
  This package contains the Mono PEAPI library for CLI 2.0.
 
-Package: libmono-peapi4.0-cil
+Package: libmono-peapi4.0a-cil
 Architecture: all
+Replaces: libmono-peapi4.0-cil
+Conflicts: libmono-peapi4.0-cil
 Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono PEAPI library (for CLI 4.0)
@@ -2852,10 +2855,10 @@ Description: Mono Relaxng library (for CLI 4.0)
  .
  This package contains the Mono Relaxng library for CLI 4.0.
 
-Package: libmono-debugger-soft2.0-cil
+Package: libmono-debugger-soft2.0a-cil
 Architecture: all
-Replaces: libmono-debugger-soft0.0-cil
-Conflicts: libmono-debugger-soft0.0-cil
+Replaces: libmono-debugger-soft0.0-cil, libmono-debugger-soft2.0-cil
+Conflicts: libmono-debugger-soft0.0-cil, libmono-debugger-soft2.0-cil
 Depends: ${misc:Depends},
          ${cli:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
@@ -2868,8 +2871,10 @@ Description: Mono Soft Debugger library (for CLI 2.0)
  .
  This package contains the Mono Soft Debugger library for CLI 2.0.
 
-Package: libmono-debugger-soft4.0-cil
+Package: libmono-debugger-soft4.0a-cil
 Architecture: all
+Replaces: libmono-debugger-soft4.0-cil
+Conflicts: libmono-debugger-soft4.0-cil
 Depends: ${misc:Depends},
          ${cli:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
