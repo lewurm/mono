@@ -1,3 +1,24 @@
+mono (3.2.8+dfsg-1) experimental; urgency=low
+
+  * The "Debian 9.0 Zurg" release
+
+  * [9972bf8] Imported Upstream version 3.2.8+dfsg
+  * [c9f9468] README is gone, ship README.md instead since it might be useful
+  * [029af3f] Refresh symbols files for libmono*
+  * [e2acadb] Don't use killall to kill stray Mono processes, it doesn't work 
+    as desired. (Closes: #738277)
+  * [0b1a48e] Delete some corner-case build rules for working around arch 
+    issues
+  * [26e5fbc] Bump System.Reactive to 2.2
+  * [660166e] Fix up XBuild paths
+  * [ea9afdc] Add new Facades to mono-devel
+  * [8305898] Add new XBuild 12.0 files to mono-xbuild package
+  * [4575803] Add new Mono.XBuild.Tasks library
+  * [66a2288] Refreshed clilibs versioning and renamed packages as required 
+    by ABI changes
+
+ -- Jo Shields <directhex@apebox.org>  Thu, 20 Feb 2014 20:45:09 +0000
+
 mono (3.2.3+dfsg-7) experimental; urgency=medium
 
   [ Mirco Bauer ]
