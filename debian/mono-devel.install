@@ -134,12 +134,16 @@ debian/tmp/usr/lib/mono/4.5/Facades/System.Net.Primitives.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Net.Requests.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.ObjectModel.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Reflection.dll
+debian/tmp/usr/lib/mono/4.5/Facades/System.Reflection.Emit.dll
+debian/tmp/usr/lib/mono/4.5/Facades/System.Reflection.Emit.ILGeneration.dll
+debian/tmp/usr/lib/mono/4.5/Facades/System.Reflection.Emit.Lightweight.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Reflection.Extensions.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Reflection.Primitives.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Resources.ResourceManager.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.Extensions.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.InteropServices.dll
+debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.InteropServices.WindowsRuntime.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.Numerics.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.Serialization.Json.dll
 debian/tmp/usr/lib/mono/4.5/Facades/System.Runtime.Serialization.Primitives.dll
