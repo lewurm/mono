@@ -479,7 +479,8 @@ Depends: ${misc:Depends},
          libmono-webmatrix-data4.0-cil (= ${source:Version}),
          libmono-windowsbase3.0-cil (= ${source:Version}),
          libmono-windowsbase4.0-cil (= ${source:Version}),
-         libmono-winforms2.0-cil (= ${source:Version}),
+         libmono-xbuild-tasks2.0-cil (= ${source:Version}),
+         libmono-xbuild-tasks4.0-cil (= ${source:Version}),
          libnunit-cil-dev (>= 2.4)
 Description: Mono Base Class Libraries (BCL) - Development files
  This package contains development headers for the Mono Base Class Libraries.
@@ -2946,6 +2947,34 @@ Description: Mono WindowsBase library (for CLI 4.0)
  .
  This package contains the WindowsBase library for CLI 4.0 which provides
  the System.IO.Packaging namespace.
+
+Package: libmono-xbuild-tasks2.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Mono.XBuild.Tasks library (for CLI 2.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono.XBuild.Tasks library for CLI 2.0 which provides
+ the Mono.XBuild.Tasks namespace.
+
+Package: libmono-xbuild-tasks4.0-cil
+Architecture: all
+Depends: ${misc:Depends},
+         ${cli:Depends}
+Description: Mono Mono.XBuild.Tasks library (for CLI 4.0)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package contains the Mono.XBuild.Tasks library for CLI 4.0 which provides
+ the Mono.XBuild.Tasks namespace.
 
 Package: libmono-webmatrix-data4.0-cil
 Architecture: all
