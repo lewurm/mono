@@ -120,12 +120,14 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_class_get_type@VER_1 3.2.1+dfsg
  mono_class_get_type_token@VER_1 3.2.1+dfsg
  mono_class_get_variant_class@VER_1 3.2.1+dfsg
+ mono_class_implements_interface@VER_1 3.2.8+dfsg
  mono_class_inflate_generic_method@VER_1 3.2.1+dfsg
  mono_class_inflate_generic_type@VER_1 3.2.1+dfsg
  mono_class_init@VER_1 3.2.1+dfsg
  mono_class_instance_size@VER_1 3.2.1+dfsg
  mono_class_interface_offset@VER_1 3.2.1+dfsg
  mono_class_is_assignable_from@VER_1 3.2.1+dfsg
+ mono_class_is_delegate@VER_1 3.2.8+dfsg
  mono_class_is_enum@VER_1 3.2.1+dfsg
  mono_class_is_subclass_of@VER_1 3.2.1+dfsg
  mono_class_is_valid_enum@VER_1 3.2.1+dfsg
@@ -166,6 +168,7 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_counters_dump@VER_1 3.2.1+dfsg
  mono_counters_enable@VER_1 3.2.1+dfsg
  mono_counters_register@VER_1 3.2.1+dfsg
+ mono_current_single_method@VER_1 3.2.8+dfsg
  mono_custom_attrs_construct@VER_1 3.2.1+dfsg
  mono_custom_attrs_free@VER_1 3.2.1+dfsg
  mono_custom_attrs_from_assembly@VER_1 3.2.1+dfsg
@@ -183,11 +186,10 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_debug_cleanup@VER_1 3.2.1+dfsg
  mono_debug_close_image@VER_1 3.2.1+dfsg
  mono_debug_close_mono_symbol_file@VER_1 3.2.1+dfsg
- mono_debug_debugger_version@VER_1 3.2.1+dfsg
  mono_debug_domain_create@VER_1 3.2.1+dfsg
  mono_debug_domain_unload@VER_1 3.2.1+dfsg
+ mono_debug_enabled@VER_1 3.2.8+dfsg
  mono_debug_find_method@VER_1 3.2.1+dfsg
- mono_debug_format@VER_1 3.2.1+dfsg
  mono_debug_free_method_jit_info@VER_1 3.2.1+dfsg
  mono_debug_free_source_location@VER_1 3.2.1+dfsg
  mono_debug_il_offset_from_address@VER_1 3.2.1+dfsg
@@ -211,39 +213,11 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_debug_symfile_lookup_locals@VER_1 3.2.1+dfsg
  mono_debug_symfile_lookup_location@VER_1 3.2.1+dfsg
  mono_debug_symfile_lookup_method@VER_1 3.2.1+dfsg
- mono_debug_using_mono_debugger@VER_1 3.2.1+dfsg
  mono_debugger_agent_register_transport@VER_1 3.2.1+dfsg
- mono_debugger_breakpoint_callback@VER_1 3.2.1+dfsg
- mono_debugger_call_exception_handler@VER_1 3.2.1+dfsg
- mono_debugger_check_breakpoints@VER_1 3.2.1+dfsg
- mono_debugger_check_interruption@VER_1 3.2.1+dfsg
- mono_debugger_check_runtime_version@VER_1 3.2.1+dfsg
  mono_debugger_class_init_func@VER_1 3.2.1+dfsg
- mono_debugger_class_initialized@VER_1 3.2.1+dfsg
- mono_debugger_class_loaded_methods_func@VER_1 3.2.1+dfsg
- mono_debugger_cleanup@VER_1 3.2.1+dfsg
- mono_debugger_event@VER_1 3.2.1+dfsg
- mono_debugger_event_create_appdomain@VER_1 3.2.1+dfsg
- mono_debugger_event_handler@VER_1 3.2.1+dfsg
- mono_debugger_event_unload_appdomain@VER_1 3.2.1+dfsg
- mono_debugger_extended_notification@VER_1 3.2.1+dfsg
- mono_debugger_handle_exception@VER_1 3.2.1+dfsg
- mono_debugger_initialize@VER_1 3.2.1+dfsg
  mono_debugger_insert_breakpoint@VER_1 3.2.1+dfsg
- mono_debugger_insert_breakpoint_full@VER_1 3.2.1+dfsg
- mono_debugger_insert_method_breakpoint@VER_1 3.2.1+dfsg
- mono_debugger_lock@VER_1 3.2.1+dfsg
  mono_debugger_method_has_breakpoint@VER_1 3.2.1+dfsg
- mono_debugger_register_class_init_callback@VER_1 3.2.1+dfsg
- mono_debugger_remove_breakpoint@VER_1 3.2.1+dfsg
- mono_debugger_remove_class_init_callback@VER_1 3.2.1+dfsg
- mono_debugger_remove_method_breakpoint@VER_1 3.2.1+dfsg
  mono_debugger_run_finally@VER_1 3.2.1+dfsg
- mono_debugger_thread_cleanup@VER_1 3.2.1+dfsg
- mono_debugger_thread_created@VER_1 3.2.1+dfsg
- mono_debugger_thread_table@VER_1 3.2.1+dfsg
- mono_debugger_trampoline_compiled@VER_1 3.2.1+dfsg
- mono_debugger_unlock@VER_1 3.2.1+dfsg
  mono_declsec_flags_from_assembly@VER_1 3.2.1+dfsg
  mono_declsec_flags_from_class@VER_1 3.2.1+dfsg
  mono_declsec_flags_from_method@VER_1 3.2.1+dfsg
@@ -262,6 +236,7 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_dl_fallback_unregister@VER_1 3.2.1+dfsg
  mono_dllmap_insert@VER_1 3.2.1+dfsg
  mono_do_signal_chaining@VER_1 3.2.1+dfsg
+ mono_do_single_method_regression@VER_1 3.2.8+dfsg
  mono_do_x86_stack_align@VER_1 3.2.1+dfsg
  mono_domain_add_class_static_data@VER_1 3.2.1+dfsg
  mono_domain_assembly_open@VER_1 3.2.1+dfsg
@@ -365,6 +340,9 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_gc_pthread_detach@VER_1 3.2.1+dfsg
  mono_gc_pthread_exit@VER_1 3.2.1+dfsg
  mono_gc_pthread_join@VER_1 3.2.1+dfsg
+ mono_gc_reference_queue_add@VER_1 3.2.8+dfsg
+ mono_gc_reference_queue_free@VER_1 3.2.8+dfsg
+ mono_gc_reference_queue_new@VER_1 3.2.8+dfsg
  mono_gc_walk_heap@VER_1 3.2.1+dfsg
  mono_gc_wbarrier_arrayref_copy@VER_1 3.2.1+dfsg
  mono_gc_wbarrier_generic_nostore@VER_1 3.2.1+dfsg
@@ -822,9 +800,13 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_signature_get_return_type@VER_1 3.2.1+dfsg
  mono_signature_hash@VER_1 3.2.1+dfsg
  mono_signature_is_instance@VER_1 3.2.1+dfsg
+ mono_signature_param_is_out@VER_1 3.2.8+dfsg
  mono_signature_vararg_start@VER_1 3.2.1+dfsg
  mono_signbit_double@VER_1 3.2.1+dfsg
  mono_signbit_float@VER_1 3.2.1+dfsg
+ mono_single_method_hash@VER_1 3.2.8+dfsg
+ mono_single_method_list@VER_1 3.2.8+dfsg
+ mono_single_method_regression_opt@VER_1 3.2.8+dfsg
  mono_stack_walk@VER_1 3.2.1+dfsg
  mono_stack_walk_no_il@VER_1 3.2.1+dfsg
  mono_store_remote_field@VER_1 3.2.1+dfsg
@@ -847,7 +829,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_string_to_utf8_checked@VER_1 3.2.1+dfsg
  mono_stringify_assembly_name@VER_1 3.2.1+dfsg
  mono_strtod_mutex@VER_1 3.2.1+dfsg
- mono_symbol_table@VER_1 3.2.1+dfsg
  mono_table_info_get_rows@VER_1 3.2.1+dfsg
  mono_thread_attach@VER_1 3.2.1+dfsg
  mono_thread_attach_aborted_cb@VER_1 3.2.1+dfsg
@@ -865,9 +846,12 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_thread_set_main@VER_1 3.2.1+dfsg
  mono_thread_set_manage_callback@VER_1 3.2.1+dfsg
  mono_thread_stop@VER_1 3.2.1+dfsg
+ mono_threads_create_thread@VER_1 3.2.8+dfsg
  mono_threads_get_default_stacksize@VER_1 3.2.1+dfsg
  mono_threads_request_thread_dump@VER_1 3.2.1+dfsg
  mono_threads_set_default_stacksize@VER_1 3.2.1+dfsg
+ mono_tls_key_get_offset@VER_1 3.2.8+dfsg
+ mono_tls_key_set_offset@VER_1 3.2.8+dfsg
  mono_trace_set_level_string@VER_1 3.2.1+dfsg
  mono_trace_set_mask_string@VER_1 3.2.1+dfsg
  mono_trampoline_code@VER_1 3.2.1+dfsg
