@@ -1,3 +1,12 @@
+mono (3.2.8+dfsg-2) experimental; urgency=low
+
+  * [2192ca9] Only trigger mono-gac postinst on upgrades. This should fix 
+    an edge case when GAC-installing libraries which rely on 
+    machine.config's key remapping at the same time as mono-gac 
+    first-install, such as F#. Thanks to Christopher James Halse Rogers.
+
+ -- Jo Shields <directhex@apebox.org>  Tue, 25 Feb 2014 23:55:52 +0000
+
 mono (3.2.8+dfsg-1) experimental; urgency=low
 
   * The "Debian 9.0 Zurg" release
