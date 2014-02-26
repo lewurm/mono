@@ -1,3 +1,9 @@
+mono (3.2.8+dfsg-3) experimental; urgency=low
+
+  * [6a91386] -z and -n do the same thing, right? Fixes autopkgtest for real.
+
+ -- Jo Shields <directhex@apebox.org>  Wed, 26 Feb 2014 10:28:38 +0000
+
 mono (3.2.8+dfsg-2) experimental; urgency=low
 
   * [2192ca9] Only trigger mono-gac postinst on upgrades. This should fix 
