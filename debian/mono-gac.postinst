@@ -5,7 +5,7 @@
 #
 # We only need to do this on upgrade; on first configure we know
 # that any GAC libraries will call gac-install-package later.
-if [ -z "$2" ]; then
+if [ -n "$2" ]; then
     # Install the GAC
     if [ -x /usr/share/cli-common/gac-install ]; then
 	/usr/share/cli-common/gac-install mono
