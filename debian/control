@@ -479,6 +479,7 @@ Depends: ${misc:Depends},
          libmono-webmatrix-data4.0-cil (= ${source:Version}),
          libmono-windowsbase3.0-cil (= ${source:Version}),
          libmono-windowsbase4.0-cil (= ${source:Version}),
+         libmono-winforms2.0-cil (= ${source:Version}),
          libmono-xbuild-tasks2.0-cil (= ${source:Version}),
          libmono-xbuild-tasks4.0-cil (= ${source:Version}),
          libnunit-cil-dev (>= 2.4)
