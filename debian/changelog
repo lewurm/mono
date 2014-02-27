@@ -1,3 +1,10 @@
+mono (3.2.8+dfsg-4) experimental; urgency=low
+
+  * [3930eef] Add missing libmono-winforms2.0-cil dependency to 
+    libmono-cil-dev.
+
+ -- Jo Shields <directhex@apebox.org>  Thu, 27 Feb 2014 23:29:17 +0000
+
 mono (3.2.8+dfsg-3) experimental; urgency=low
 
   * [6a91386] -z and -n do the same thing, right? Fixes autopkgtest for real.
