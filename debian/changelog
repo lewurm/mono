@@ -1,3 +1,14 @@
+mono (3.0.6+dfsg2-12) unstable; urgency=medium
+
+  [ Jo Shields ]
+  * [0410495] Only trigger mono-gac postinst on upgrades. This should fix an
+    edge case when GAC-installing libraries which rely on machine.config's key
+    remapping at the same time as mono-gac first-install, such as F#. Thanks to
+    Christopher James Halse Rogers.
+  * [173a0cf] -z and -n do the same thing, right? Fixes autopkgtest for real.
+
+ -- Mirco Bauer <meebey@debian.org>  Thu, 27 Mar 2014 10:21:21 +0100
+
 mono (3.0.6+dfsg2-11) unstable; urgency=medium
 
   * The "Hello F#" release
