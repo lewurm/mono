@@ -1,3 +1,13 @@
+mono (3.2.8+dfsg-5) unstable; urgency=medium
+
+  [ Jo Shields ]
+  * [c1dd2a1] Enforce strict dependency versioning on 
+    libmono-cecil-private-cil. This ensures that packages depending on it 
+    are upgraded in lockstep. This works around the unreliable ABI 
+    versioning on this library. (Closes: #728911)
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 06 Jul 2014 16:01:19 +0100
+
 mono (3.2.8+dfsg-4) experimental; urgency=low
 
   * [3930eef] Add missing libmono-winforms2.0-cil dependency to 
@@ -272,6 +282,117 @@ mono (3.2.1+dfsg-1) experimental; urgency=low
     down, as it broke Banshee.
 
  -- Jo Shields <directhex@apebox.org>  Sun, 22 Sep 2013 18:35:43 +0100
+
+mono (3.0.6+dfsg2-12) unstable; urgency=medium
+
+  [ Jo Shields ]
+  * [0410495] Only trigger mono-gac postinst on upgrades. This should fix an
+    edge case when GAC-installing libraries which rely on machine.config's key
+    remapping at the same time as mono-gac first-install, such as F#. Thanks to
+    Christopher James Halse Rogers.
+  * [173a0cf] -z and -n do the same thing, right? Fixes autopkgtest for real.
+
+ -- Mirco Bauer <meebey@debian.org>  Thu, 27 Mar 2014 10:21:21 +0100
+
+mono (3.0.6+dfsg2-11) unstable; urgency=medium
+
+  * The "Hello F#" release
+
+  [ Christopher James Halse Rogers ]
+  * [d953ce1] Do the framework-install/framework-remove dance in mono-gac maint scripts.
+    This ensures our 3rd-party-ish framework libraries end up in the right place
+    on upgrades.
+    cf: gac-install/gac-remove
+  * [9303f0c] Add dh_installcliframework support to mono.runtime-script
+  * [a0ea7e3] Make the install-framework commmand idempotent
+
+ -- Mirco Bauer <meebey@debian.org>  Tue, 11 Feb 2014 02:46:08 +0100
+
+mono (3.0.6+dfsg2-10) unstable; urgency=low
+
+  [ Marek Safar ]
+  * [3fc971b] Add test from Jb Evain to test biner with user method types
+    (cherry picked from commit 80d342ff7555e95bfa3917543ce66910175cf61d)
+
+  [ Jo Shields ]
+  * [fae7653] Really remove SPARC from list of architectures (Closes: #731253)
+
+ -- Jo Shields <directhex@apebox.org>  Tue, 03 Dec 2013 23:55:11 +0000
+
+mono (3.0.6+dfsg2-9) unstable; urgency=low
+
+  * [24232d8] Enforce strict dependency versioning on 
+    libmono-cecil-private-cil. This ensures that packages depending 
+    on it are upgraded in lockstep. This works around the unreliable 
+    ABI versioning on this library. (Closes: #728911)
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 17 Nov 2013 20:21:43 +0000
+
+mono (3.0.6+dfsg2-8) unstable; urgency=low
+
+  * [a87c24d] Remove SPARC. It's a dead architecture in Mono upstream 
+    (and elsewhere). (Closes: #727542)
+  * [b6e4975] Fix package descriptions to not mention SPARC or IA64, 
+    and exchange S/390 with S/390x
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 27 Oct 2013 14:09:33 +0000
+
+mono (3.0.6+dfsg2-7) unstable; urgency=low
+
+  [ Jeffrey Stedfast ]
+  * [235060d] [eglib] Fixed g_utf8_to_utf16_general() to handle invalid 
+    utf8 (cherry picked from commit a81cd6dae81a7077a7f014948c78075da08f02f7)
+    (Closes: #716689)
+
+  [ Atsushi Eno ]
+  * [5c90cf9] Fix build (giconv.c) 
+    (cherry picked from commit 37e7f2fb50e2f357ae4068d3b7551ff411f9f77c)
+
+ -- Jo Shields <directhex@apebox.org>  Sat, 12 Oct 2013 23:54:26 +0100
+
+mono (3.0.6+dfsg2-6) unstable; urgency=low
+
+  [ Mirco Bauer ]
+  * [c920c13] Removed mono_arch_get_lmf_addr from s390x specific symbols
+  * [7b291a4] Added new armel specific symbols to libmono-2.0-1.symbols.armel
+
+  [ Atsushi Eno ]
+  * [15e60b3] Add Assembly version attributes to hopefully fix bug #10002.
+    (cherry picked from commit cd6dc32e0b936645bf2f89e1bf61c6ae04c3258a)
+    The new files are modified by this commit but were not present in the
+    packaged release.
+  * [5b98c36] [rx] Add missing AssemblyInfos.
+    (cherry picked from commit 7890e1e824b91b1fd30d375b8cfb19d5abb23c5a)
+  * [7cb9532] remove wrong EOLs after Libs: in reactive.pc.in. Third attempt to fix bug #10002.
+    (cherry picked from commit 5c228f3dd0e9b32a5b0d4aaaf0903ebaeae5a6d9)
+
+  [ Carlos Martín Nieto ]
+  * [b85c794] Create package for Reactive Extensions.
+    Now that they have a version, let's create binary packages for them.
+
+  [ Alex Rønne Petersen ]
+  * [172471f] Support a MONO_ARCH_HAVE_TLS_INIT variable.
+    Setting this on an architecture makes Mini call
+    mono_arch_tls_init () on thread attach.
+    This is primarily useful for architectures that have not
+    had their LMF code ported to the new infrastructure due to
+    a general lack of maintenance or hardware to do it on.
+    (cherry picked from commit f87a4f127d1a0ea1cf4145f9605c5698af08c6cf)
+
+  [ Jo Shields ]
+  * [1eacac9] Kill IA64 support. It's dead upstream and not coming back.
+
+ -- Mirco Bauer <meebey@meebey.net>  Fri, 11 Oct 2013 11:25:53 +0200
+
+mono (3.0.6+dfsg2-5) unstable; urgency=low
+
+  * [8b43de0] [monodoc] Ensure we don't try to use <Parameters> when 
+    it might be null. Fixes Gendarme doc generation. 
+    (cherry picked from commit ba222d4eb939ef097dd2b77b1fea5c3b8a60b310)
+  * [478f26a] Switch debian/gbp.conf to use non-Experimental branches
+  * [0dde9cb] Fix compilation failure to due to uninitialized variable.
+
+ -- Jo Shields <directhex@apebox.org>  Wed, 09 Oct 2013 23:21:56 +0200
 
 mono (3.0.6+dfsg2-4) unstable; urgency=low
 
