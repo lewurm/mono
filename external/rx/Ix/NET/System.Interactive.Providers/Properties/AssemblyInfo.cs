@@ -12,13 +12,9 @@ using System.Security;
 #else
 [assembly: AssemblyConfiguration("Retail")]
 #endif
-[assembly: AssemblyCompany("Microsoft Corporation")]
-#if STABLE
+[assembly: AssemblyCompany("Microsoft Open Technologies, Inc.")]
 [assembly: AssemblyProduct("Interactive Extensions")]
-#else
-[assembly: AssemblyProduct("Interactive Extensions (Experimental Release)")]
-#endif
-[assembly: AssemblyCopyright("\x00a9 Microsoft Corporation.  All rights reserved.")]
+[assembly: AssemblyCopyright("\x00a9 Microsoft Open Technologies, Inc.  All rights reserved.")]
 [assembly: NeutralResourcesLanguage("en-US")]
 
 #if !PLIB
@@ -27,11 +23,16 @@ using System.Security;
 
 [assembly: CLSCompliant(true)]
 
-#if DESKTOPCLR && NO_CODECOVERAGE
+#if HAS_APTCA && NO_CODECOVERAGE
 [assembly: AllowPartiallyTrustedCallers]
 #endif
 
-//
-// Note: Assembly (file) version numbers get inserted by the build system on the fly. Inspect the Team Build workflows
-//       and the custom activity in Build/Source/Activities/AppendVersionInfo.cs for more information.
-//
+
+// ===========================================================================
+//  DO NOT EDIT OR REMOVE ANYTHING BELOW THIS COMMENT.
+//  Version numbers are automatically generated in the msbuild files based on regular expressions 
+// ===========================================================================
+
+[assembly: AssemblyVersion("1.2.0.0")]   
+[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyInformationalVersion("1.2.0.0")]

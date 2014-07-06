@@ -38,6 +38,7 @@
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-tls.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/atomic.h"
 #include <string.h>
 #include <errno.h>
 
@@ -71,11 +72,12 @@ typedef struct _MonoRemotingMethods MonoRemotingMethods;
 /* 
  * This mutex protects the various marshalling related caches in MonoImage
  * and a few other data structures static to this file.
- * Note that when this lock is held it is not possible to take other runtime
- * locks like the loader lock.
+ *
+ * The marshal lock is a non-recursive complex lock that sits below the domain lock in the
+ * runtime locking latice. Which means it can take simple locks suck as the image lock.
  */
-#define mono_marshal_lock() EnterCriticalSection (&marshal_mutex)
-#define mono_marshal_unlock() LeaveCriticalSection (&marshal_mutex)
+#define mono_marshal_lock() mono_locks_acquire (&marshal_mutex, MarshalLock)
+#define mono_marshal_unlock() mono_locks_release (&marshal_mutex, MarshalLock)
 static CRITICAL_SECTION marshal_mutex;
 static gboolean marshal_mutex_initialized;
 
@@ -97,7 +99,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 static void 
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
-void *
+MONO_API void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
 static void *
@@ -122,10 +124,13 @@ static void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
 
 static void
+mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum);
+
+static void
 mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *eltype, guint32 elnum);
 
-static MonoObject *
-mono_remoting_wrapper (MonoMethod *method, gpointer *params);
+static void
+mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum);
 
 static MonoAsyncResult *
 mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
@@ -142,8 +147,14 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push);
 static gboolean
 mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image);
 
-void
+#ifndef DISABLE_REMOTING
+static MonoObject *
+mono_remoting_wrapper (MonoMethod *method, gpointer *params);
+
+MONO_API void
 mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentProxy *tproxy);
+
+#endif
 
 static MonoReflectionType *
 type_from_handle (MonoType *handle);
@@ -201,6 +212,13 @@ mono_signature_no_pinvoke (MonoMethod *method)
 }
 
 void
+mono_marshal_init_tls (void)
+{
+	mono_native_tls_alloc (&last_error_tls_id, NULL);
+	mono_native_tls_alloc (&load_type_info_tls_id, NULL);
+}
+
+void
 mono_marshal_init (void)
 {
 	static gboolean module_initialized = FALSE;
@@ -209,8 +227,6 @@ mono_marshal_init (void)
 		module_initialized = TRUE;
 		InitializeCriticalSection (&marshal_mutex);
 		marshal_mutex_initialized = TRUE;
-		mono_native_tls_alloc (&last_error_tls_id, NULL);
-		mono_native_tls_alloc (&load_type_info_tls_id, NULL);
 
 		register_icall (ves_icall_System_Threading_Thread_ResetAbort, "ves_icall_System_Threading_Thread_ResetAbort", "void", TRUE);
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
@@ -229,7 +245,9 @@ mono_marshal_init (void)
 		register_icall (mono_array_to_lparray, "mono_array_to_lparray", "ptr object", FALSE);
 		register_icall (mono_free_lparray, "mono_free_lparray", "void object ptr", FALSE);
 		register_icall (mono_byvalarray_to_array, "mono_byvalarray_to_array", "void object ptr ptr int32", FALSE);
+		register_icall (mono_byvalarray_to_byte_array, "mono_byvalarray_to_byte_array", "void object ptr int32", FALSE);
 		register_icall (mono_array_to_byvalarray, "mono_array_to_byvalarray", "void ptr object ptr int32", FALSE);
+		register_icall (mono_array_to_byte_byvalarray, "mono_array_to_byte_byvalarray", "void ptr object int32", FALSE);
 		register_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", "ptr object", FALSE);
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
 		register_icall (mono_marshal_asany, "mono_marshal_asany", "ptr object int32 int32", FALSE);
@@ -248,7 +266,6 @@ mono_marshal_init (void)
 		register_icall (g_free, "g_free", "void ptr", FALSE);
 		register_icall (mono_object_isinst, "mono_object_isinst", "object object ptr", FALSE);
 		register_icall (mono_struct_delete_old, "mono_struct_delete_old", "void ptr ptr", FALSE);
-		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
 		register_icall (mono_delegate_begin_invoke, "mono_delegate_begin_invoke", "object object ptr", FALSE);
 		register_icall (mono_delegate_end_invoke, "mono_delegate_end_invoke", "object object ptr", FALSE);
 		register_icall (mono_marshal_xdomain_copy_value, "mono_marshal_xdomain_copy_value", "object object", FALSE);
@@ -258,11 +275,14 @@ mono_marshal_init (void)
 		register_icall (mono_compile_method, "mono_compile_method", "ptr ptr", FALSE);
 		register_icall (mono_context_get, "mono_context_get", "object", FALSE);
 		register_icall (mono_context_set, "mono_context_set", "void object", FALSE);
-		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
 		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_gc_wbarrier_generic_nostore, "wb_generic", "void ptr", FALSE);
 		register_icall (mono_gchandle_get_target, "mono_gchandle_get_target", "object int32", TRUE);
 
+#ifndef DISABLE_REMOTING
+		register_icall (mono_remoting_wrapper, "mono_remoting_wrapper", "object ptr ptr", FALSE);
+		register_icall (mono_upgrade_remote_class_wrapper, "mono_upgrade_remote_class_wrapper", "void object object", FALSE);
+#endif
 		mono_cominterop_init ();
 	}
 }
@@ -278,9 +298,9 @@ mono_marshal_cleanup (void)
 	marshal_mutex_initialized = FALSE;
 }
 
-MonoClass *byte_array_class;
+#ifndef DISABLE_REMOTING
+static MonoClass *byte_array_class;
 static MonoMethod *method_rs_serialize, *method_rs_deserialize, *method_exc_fixexc, *method_rs_appdomain_target;
-static MonoMethod *method_set_context, *method_get_context;
 static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_rs_serialize_exc;
 
 static void
@@ -302,11 +322,6 @@ mono_remoting_marshal_init (void)
 		klass = mono_defaults.exception_class;
 		method_exc_fixexc = mono_class_get_method_from_name (klass, "FixRemotingException", -1);
 	
-		klass = mono_defaults.thread_class;
-		method_get_context = mono_class_get_method_from_name (klass, "get_CurrentContext", -1);
-	
-		klass = mono_defaults.appdomain_class;
-		method_set_context = mono_class_get_method_from_name (klass, "InternalSetContext", -1);
 		byte_array_class = mono_array_class_get (mono_defaults.byte_class, 1);
 	
 		klass = mono_class_from_name (mono_defaults.corlib, "System.Runtime.Remoting.Messaging", "CallContext");
@@ -318,6 +333,7 @@ mono_remoting_marshal_init (void)
 		module_initialized = TRUE;
 	}
 }
+#endif
 
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate)
@@ -540,10 +556,13 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 	if (ptr) {
 		uint32_t gchandle;
 		void **method_data;
+		MonoMethod *method;
+
 		ji = mono_jit_info_table_find (mono_domain_get (), mono_get_addr_from_ftnptr (ptr));
 		g_assert (ji);
 
-		method_data = ((MonoMethodWrapper*)ji->method)->method_data;
+		method = mono_jit_info_get_method (ji);
+		method_data = ((MonoMethodWrapper*)method)->method_data;
 
 		/*the target gchandle is the first entry after size and the wrapper itself.*/
 		gchandle = GPOINTER_TO_UINT (method_data [2]);
@@ -551,7 +570,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 		if (gchandle)
 			mono_gchandle_free (gchandle);
 
-		mono_runtime_free_method (mono_object_domain (delegate), ji->method);
+		mono_runtime_free_method (mono_object_domain (delegate), method);
 	}
 }
 
@@ -582,11 +601,13 @@ mono_array_to_savearray (MonoArray *array)
 gpointer
 mono_array_to_lparray (MonoArray *array)
 {
+#ifndef DISABLE_COM
 	gpointer *nativeArray = NULL;
 	int nativeArraySize = 0;
 
 	int i = 0;
 	MonoClass *klass;
+#endif
 
 	if (!array)
 		return NULL;
@@ -598,14 +619,12 @@ mono_array_to_lparray (MonoArray *array)
 	case MONO_TYPE_VOID:
 		g_assert_not_reached ();
 		break;
-#ifndef DISABLE_COM
 	case MONO_TYPE_CLASS:
 		nativeArraySize = array->max_length;
 		nativeArray = malloc(sizeof(gpointer) * nativeArraySize);
 		for(i = 0; i < nativeArraySize; ++i) 	
 			nativeArray[i] = ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal(((gpointer*)array->vector)[i]);
 		return nativeArray;
-#endif
 	case MONO_TYPE_U1:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
@@ -685,6 +704,12 @@ mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclas
 }
 
 static void
+mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum)
+{
+	mono_byvalarray_to_array (arr, native_arr, mono_defaults.byte_class, elnum);
+}
+
+static void
 mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclass, guint32 elnum)
 {
 	g_assert (arr->obj.vtable->klass->element_class == mono_defaults.char_class);
@@ -705,6 +730,12 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 	} else {
 		g_assert_not_reached ();
 	}
+}
+
+static void
+mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum)
+{
+	mono_array_to_byvalarray (native_arr, arr, mono_defaults.byte_class, elnum);
 }
 
 void
@@ -1024,7 +1055,7 @@ mono_string_new_len_wrapper (const char *text, guint length)
 }
 
 #ifndef DISABLE_JIT
-
+#ifndef DISABLE_REMOTING
 static int
 mono_mb_emit_proxy_check (MonoMethodBuilder *mb, int branch_code)
 {
@@ -1074,6 +1105,7 @@ mono_mb_emit_contextbound_check (MonoMethodBuilder *mb, int branch_code)
 	mono_mb_emit_icon (mb, 0);
 	return mono_mb_emit_branch (mb, branch_code);
 }
+#endif /* DISABLE_REMOTING */
 
 /*
  * mono_mb_emit_exception_marshal_directive:
@@ -1093,6 +1125,8 @@ mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, char *msg)
 	}
 	mono_mb_emit_exception_full (mb, "System.Runtime.InteropServices", "MarshalDirectiveException", s);
 }
+
+#endif /* !DISABLE_JIT */
 
 guint
 mono_type_to_ldind (MonoType *type)
@@ -1204,6 +1238,8 @@ handle_enum:
 	}
 	return -1;
 }
+
+#ifndef DISABLE_JIT
 
 static void
 emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec)
@@ -1333,9 +1369,8 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_ldloc (mb, 0);
-		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_icall (mb, mono_byvalarray_to_array);
+		mono_mb_emit_icall (mb, mono_byvalarray_to_byte_array);
 		break;
 	}
 	case MONO_MARSHAL_CONV_STR_BYVALSTR: 
@@ -1708,9 +1743,8 @@ emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);	
 		mono_mb_emit_byte (mb, CEE_LDIND_REF);
-		mono_mb_emit_ptr (mb, mono_defaults.byte_class);
 		mono_mb_emit_icon (mb, mspec->data.array_data.num_elem);
-		mono_mb_emit_icall (mb, mono_array_to_byvalarray);
+		mono_mb_emit_icall (mb, mono_array_to_byte_byvalarray);
 		mono_mb_patch_short_branch (mb, pos);
 		break;
 	}
@@ -1965,13 +1999,12 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 			}
 			case MONO_TYPE_OBJECT: {
 #ifndef DISABLE_COM
-				mono_init_com_types ();
 				if (to_object) {
 					static MonoMethod *variant_clear = NULL;
 					static MonoMethod *get_object_for_native_variant = NULL;
 
 					if (!variant_clear)
-						variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
+						variant_clear = mono_class_get_method_from_name (mono_class_get_variant_class (), "Clear", 0);
 					if (!get_object_for_native_variant)
 						get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
 					mono_mb_emit_ldloc (mb, 1);
@@ -2116,10 +2149,11 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 	if (mcast_delegate->prev != NULL)
 		mono_raise_exception (mono_get_exception_argument (NULL, "The delegate must have only one target"));
 
+#ifndef DISABLE_REMOTING
 	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
 
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
-		if (!tp->remote_class->proxy_class->contextbound || tp->rp->context != (MonoObject *) mono_context_get ()) {
+		if (!mono_class_is_contextbound (tp->remote_class->proxy_class) || tp->rp->context != (MonoObject *) mono_context_get ()) {
 
 			/* If the target is a proxy, make a direct call. Is proxy's work
 			// to make the call asynchronous.
@@ -2143,6 +2177,7 @@ mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params)
 			return ares;
 		}
 	}
+#endif
 
 	klass = delegate->object.vtable->klass;
 
@@ -2561,7 +2596,14 @@ mono_marshal_method_from_wrapper (MonoMethod *wrapper)
 		res = mono_marshal_get_wrapper_info (wrapper);
 		if (res == NULL)
 			return wrapper;
-		return res;
+		if (wrapper->is_inflated)
+			/*
+			 * A method cannot be inflated and a wrapper at the same time, so the wrapper info
+			 * contains an uninflated method.
+			 */
+			return mono_class_inflate_generic_method (res, mono_method_get_context (wrapper));
+		else
+			return res;
 	case MONO_WRAPPER_MANAGED_TO_NATIVE:
 		info = mono_marshal_get_wrapper_info (wrapper);
 		if (info && (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT))
@@ -2655,6 +2697,130 @@ get_wrapper_target_class (MonoImage *image)
 	return klass;
 }
 
+/*
+ * Wrappers for generic methods should be instances of generic wrapper methods, i.e .the wrapper for Sort<int> should be
+ * an instance of the wrapper for Sort<T>. This is required for full-aot to work.
+ */
+
+/*
+ * check_generic_wrapper_cache:
+ *
+ *   Check CACHE for the wrapper of the generic instance ORIG_METHOD, and return it if it is found.
+ * KEY should be the key for ORIG_METHOD in the cache, while DEF_KEY should be the key of its
+ * generic method definition.
+ */
+static MonoMethod*
+check_generic_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, gpointer key, gpointer def_key)
+{
+	MonoMethod *res;
+	MonoMethod *inst, *def;
+	MonoGenericContext *ctx;
+	MonoMethod *def_method;
+
+	g_assert (orig_method->is_inflated);
+	def_method = ((MonoMethodInflated*)orig_method)->declaring;
+	ctx = mono_method_get_context (orig_method);
+
+	/*
+	 * Look for the instance
+	 */
+	res = mono_marshal_find_in_cache (cache, key);
+	if (res)
+		return res;
+
+	/*
+	 * Look for the definition
+	 */
+	def = mono_marshal_find_in_cache (cache, def_key);
+	if (def) {
+		inst = mono_class_inflate_generic_method (def, ctx);
+		/* Cache it */
+		mono_memory_barrier ();
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, key);
+		if (!res) {
+			g_hash_table_insert (cache, key, inst);
+			res = inst;
+		}
+		mono_marshal_unlock ();
+		return res;
+	}
+	return NULL;
+}
+
+static MonoMethod*
+cache_generic_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx, gpointer key)
+{
+	MonoMethod *inst, *res;
+
+	/*
+	 * We use the same cache for the generic definition and the instances.
+	 */
+	inst = mono_class_inflate_generic_method (def, ctx);
+	mono_memory_barrier ();
+	mono_marshal_lock ();
+	res = g_hash_table_lookup (cache, key);
+	if (!res) {
+		g_hash_table_insert (cache, key, inst);
+		res = inst;
+	}
+	mono_marshal_unlock ();
+	return res;
+}
+
+static MonoMethod*
+check_generic_delegate_wrapper_cache (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def_method, MonoGenericContext *ctx)
+{
+	MonoMethod *res;
+	MonoMethod *inst, *def;
+
+	/*
+	 * Look for the instance
+	 */
+	res = mono_marshal_find_in_cache (cache, orig_method->klass);
+	if (res)
+		return res;
+
+	/*
+	 * Look for the definition
+	 */
+	def = mono_marshal_find_in_cache (cache, def_method->klass);
+	if (def) {
+		inst = mono_class_inflate_generic_method (def, ctx);
+		/* Cache it */
+		mono_memory_barrier ();
+		mono_marshal_lock ();
+		res = g_hash_table_lookup (cache, orig_method->klass);
+		if (!res) {
+			g_hash_table_insert (cache, orig_method->klass, inst);
+			res = inst;
+		}
+		mono_marshal_unlock ();
+		return res;
+	}
+	return NULL;
+}
+
+static MonoMethod*
+cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, MonoMethod *def, MonoGenericContext *ctx)
+{
+	MonoMethod *inst, *res;
+
+	/*
+	 * We use the same cache for the generic definition and the instances.
+	 */
+	inst = mono_class_inflate_generic_method (def, ctx);
+	mono_memory_barrier ();
+	mono_marshal_lock ();
+	res = g_hash_table_lookup (cache, orig_method->klass);
+	if (!res) {
+		g_hash_table_insert (cache, orig_method->klass, inst);
+		res = inst;
+	}
+	mono_marshal_unlock ();
+	return res;
+}
+
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 {
@@ -2664,22 +2830,46 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	GHashTable *cache;
 	int params_var;
 	char *name;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "BeginInvoke"));
 
+	/*
+	 * For generic delegates, create a generic wrapper, and returns an instance to help AOT.
+	 */
+	if (method->is_inflated) {
+		orig_method = method;
+		ctx = &((MonoMethodInflated*)method)->context;
+		method = ((MonoMethodInflated*)method)->declaring;
+	}
+
 	sig = mono_signature_no_pinvoke (method);
 
-	cache = get_cache (&method->klass->image->delegate_begin_invoke_cache,
-					   (GHashFunc)mono_signature_hash, 
-					   (GCompareFunc)mono_metadata_signature_equal);
-	if ((res = mono_marshal_find_in_cache (cache, sig)))
-		return res;
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = get_cache (&method->klass->image->delegate_begin_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
+		if (res)
+			return res;
+	} else {
+		cache = get_cache (&method->klass->image->delegate_begin_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
+		if ((res = mono_marshal_find_in_cache (cache, sig)))
+			return res;
+	}
 
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "begin_invoke");
-	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
+	if (ctx)
+		mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
+	else
+		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
 #ifndef DISABLE_JIT
@@ -2691,7 +2881,14 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 
-	res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
+	} else {
+		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+	}
+
 	mono_mb_free (mb);
 	return res;
 }
@@ -2739,14 +2936,17 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 		return NULL;
 	}
 
-	if (delegate->target && mono_object_class (delegate->target) == mono_defaults.transparent_proxy_class) {
+#ifndef DISABLE_REMOTING
+	if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 		MonoTransparentProxy* tp = (MonoTransparentProxy *)delegate->target;
 		msg = (MonoMethodMessage *)mono_object_new (domain, mono_defaults.mono_method_message_class);
 		mono_message_init (domain, msg, delegate->method_info, NULL);
 		msg->call_type = CallType_EndInvoke;
 		MONO_OBJECT_SETREF (msg, async_result, ares);
 		res = mono_remoting_invoke ((MonoObject *)tp->rp, msg, &exc, &out_args);
-	} else {
+	} else
+#endif
+	{
 		res = mono_thread_pool_finish (ares, &out_args, &exc);
 	}
 
@@ -2815,6 +3015,12 @@ mono_mb_emit_restore_result (MonoMethodBuilder *mb, MonoType *return_type)
 		mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 		break;
 	}
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR: {
+		MonoClass *klass = mono_class_from_mono_type (return_type);
+		mono_mb_emit_op (mb, CEE_UNBOX_ANY, klass);
+		break;
+	}
 	default:
 		g_warning ("type 0x%x not handled", return_type->type);
 		g_assert_not_reached ();
@@ -2834,22 +3040,46 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	GHashTable *cache;
 	int params_var;
 	char *name;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "EndInvoke"));
 
+	/*
+	 * For generic delegates, create a generic wrapper, and returns an instance to help AOT.
+	 */
+	if (method->is_inflated) {
+		orig_method = method;
+		ctx = &((MonoMethodInflated*)method)->context;
+		method = ((MonoMethodInflated*)method)->declaring;
+	}
+
 	sig = mono_signature_no_pinvoke (method);
 
-	cache = get_cache (&method->klass->image->delegate_end_invoke_cache,
-					   (GHashFunc)mono_signature_hash, 
-					   (GCompareFunc)mono_metadata_signature_equal);
-	if ((res = mono_marshal_find_in_cache (cache, sig)))
-		return res;
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = get_cache (&method->klass->image->delegate_end_invoke_generic_cache, mono_aligned_addr_hash, NULL);
+		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
+		if (res)
+			return res;
+	} else {
+		cache = get_cache (&method->klass->image->delegate_end_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
+		if ((res = mono_marshal_find_in_cache (cache, sig)))
+			return res;
+	}
 
 	g_assert (sig->hasthis);
 
 	name = mono_signature_to_name (sig, "end_invoke");
-	mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_END_INVOKE);
+	if (ctx)
+		mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_END_INVOKE);
+	else
+		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
 #ifndef DISABLE_JIT
@@ -2866,12 +3096,20 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 		mono_mb_emit_restore_result (mb, sig->ret);
 #endif
 
-	res = mono_mb_create_and_cache (cache, sig,
-										 mb, sig, sig->param_count + 16);
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
+	} else {
+		res = mono_mb_create_and_cache (cache, sig,
+										mb, sig, sig->param_count + 16);
+	}
 	mono_mb_free (mb);
 
 	return res;
 }
+
+#ifndef DISABLE_REMOTING
 
 static MonoObject *
 mono_remoting_wrapper (MonoMethod *method, gpointer *params)
@@ -2889,7 +3127,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	/* skip the this pointer */
 	params++;
 
-	if (this->remote_class->proxy_class->contextbound && this->rp->context == (MonoObject *) mono_context_get ())
+	if (mono_class_is_contextbound (this->remote_class->proxy_class) && this->rp->context == (MonoObject *) mono_context_get ())
 	{
 		int i;
 		MonoMethodSignature *sig = mono_method_signature (method);
@@ -2943,11 +3181,11 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 	/* this seems to be the best plase to put this, as all remoting invokes seem to get filtered through here */
 #ifndef DISABLE_COM
-	if (method->klass->is_com_object || method->klass == mono_defaults.com_object_class) {
+	if (mono_class_is_com_object (method->klass) || method->klass == mono_class_get_com_object_class ()) {
 		MonoVTable *vtable = mono_class_vtable (mono_domain_get (), method->klass);
 		g_assert (vtable); /*FIXME do proper error handling*/
 
-		if (!vtable->remote) {
+		if (!mono_vtable_is_remote (vtable)) {
 			return mono_cominterop_get_invoke (method);
 		}
 	}
@@ -2987,6 +3225,9 @@ mono_marshal_get_remoting_invoke (MonoMethod *method)
 
 	return res;
 }
+
+#endif /* DISABLE_REMOTING */
+
 
 /* mono_get_xdomain_marshal_type()
  * Returns the kind of marshalling that a type needs for cross domain calls.
@@ -3126,7 +3367,9 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 	}
 }
 
-#ifndef DISABLE_JIT
+
+#if !(defined (DISABLE_JIT) || defined (DISABLE_REMOTING))
+
 static void
 mono_marshal_emit_xdomain_copy_value (MonoMethodBuilder *mb, MonoClass *pclass)
 {
@@ -3141,15 +3384,17 @@ mono_marshal_emit_xdomain_copy_out_value (MonoMethodBuilder *mb, MonoClass *pcla
 }
 #endif
 
+#ifndef DISABLE_REMOTING
 /* mono_marshal_supports_fast_xdomain()
  * Returns TRUE if the method can use the fast xdomain wrapper.
  */
 static gboolean
 mono_marshal_supports_fast_xdomain (MonoMethod *method)
 {
-	return !method->klass->contextbound &&
+	return !mono_class_is_contextbound (method->klass) &&
 		   !((method->flags & METHOD_ATTRIBUTE_SPECIAL_NAME) && (strcmp (".ctor", method->name) == 0));
 }
+#endif
 
 static gint32
 mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
@@ -3168,7 +3413,7 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
 	return current_domain->domain_id;
 }
 
-#ifndef DISABLE_JIT
+#if !(defined (DISABLE_JIT) || defined (DISABLE_REMOTING))
 static void
 mono_marshal_emit_switch_domain (MonoMethodBuilder *mb)
 {
@@ -3214,6 +3459,8 @@ mono_marshal_check_domain_image (gint32 domain_id, MonoImage *image)
 	
 	return tmp != NULL;
 }
+
+#ifndef DISABLE_REMOTING
 
 /* mono_marshal_get_xappdomain_dispatch ()
  * Generates a method that dispatches a method call from another domain into
@@ -3887,6 +4134,8 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	return res;
 }
 
+#endif /* DISABLE_REMOTING */
+
 typedef struct
 {
 	MonoMethodSignature *sig;
@@ -3946,6 +4195,7 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	MonoGenericContext *ctx = NULL;
 	MonoGenericContainer *container = NULL;
 	MonoMethod *orig_method = NULL;
+	WrapperInfo *info;
 
 	/*
 	 * If the delegate target is null, and the target method is not static, a virtual 
@@ -3976,8 +4226,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		closed_over_null = sig->param_count == mono_method_signature (del->method)->param_count;
 
 	if (del && del->method && mono_method_signature (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC)) {
+		g_assert (!callvirt);
 		invoke_sig = mono_method_signature (del->method);
-		target_method = del->method;
+		target_method = NULL;
 		static_method_with_first_arg_bound = TRUE;
 	}
 
@@ -4001,39 +4252,24 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	 * Check cache
 	 */
 	if (ctx) {
-		MonoMethod *def, *inst;
-
-		/*
-		 * Look for the instance
-		 */
 		cache = get_cache (&method->klass->image->delegate_invoke_generic_cache, mono_aligned_addr_hash, NULL);
-		res = mono_marshal_find_in_cache (cache, orig_method->klass);
+		res = check_generic_delegate_wrapper_cache (cache, orig_method, method, ctx);
 		if (res)
 			return res;
-
+	} else if (static_method_with_first_arg_bound) {
+		cache = get_cache (&method->klass->image->delegate_bound_static_invoke_cache,
+						   (GHashFunc)mono_signature_hash, 
+						   (GCompareFunc)mono_metadata_signature_equal);
 		/*
-		 * Look for the definition
+		 * The wrapper is based on sig+invoke_sig, but sig can be derived from invoke_sig.
 		 */
-		def = mono_marshal_find_in_cache (cache, method->klass);
-		if (def) {
-			inst = mono_class_inflate_generic_method (def, ctx);
-			/* Cache it */
-			mono_memory_barrier ();
-			mono_marshal_lock ();
-			res = g_hash_table_lookup (cache, orig_method->klass);
-			if (!res) {
-				g_hash_table_insert (cache, orig_method->klass, inst);
-				res = inst;
-			}
-			mono_marshal_unlock ();
+		res = mono_marshal_find_in_cache (cache, invoke_sig);
+		if (res)
 			return res;
-		}
-	} else if (callvirt || static_method_with_first_arg_bound) {
+	} else if (callvirt) {
 		GHashTable **cache_ptr;
-		if (static_method_with_first_arg_bound)
-			cache_ptr = &method->klass->image->delegate_bound_static_invoke_cache;
-		else
-			cache_ptr = &method->klass->image->delegate_abstract_invoke_cache;
+
+		cache_ptr = &method->klass->image->delegate_abstract_invoke_cache;
 
 		/* We need to cache the signature+method pair */
 		mono_marshal_lock ();
@@ -4060,7 +4296,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 	if (!static_method_with_first_arg_bound)
 		invoke_sig = static_sig;
 
-	name = mono_signature_to_name (sig, "invoke");
+	if (static_method_with_first_arg_bound)
+		name = mono_signature_to_name (invoke_sig, "invoke_bound_");
+	else
+		name = mono_signature_to_name (sig, "invoke");
 	if (ctx)
 		mb = mono_mb_new (method->klass, name, MONO_WRAPPER_DELEGATE_INVOKE);
 	else
@@ -4176,23 +4415,16 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 #endif /* DISABLE_JIT */
 
 	if (ctx) {
-		MonoMethod *def, *inst;
+		MonoMethod *def;
 
-		/*
-		 * We use the same cache for the generic definition and the instances.
-		 */
 		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
+	} else if (static_method_with_first_arg_bound) {
+		res = mono_mb_create_and_cache (cache, invoke_sig, mb, sig, sig->param_count + 16);
 
-		inst = mono_class_inflate_generic_method (def, ctx);
-		mono_memory_barrier ();
-		mono_marshal_lock ();
-		res = g_hash_table_lookup (cache, orig_method->klass);
-		if (!res) {
-			g_hash_table_insert (cache, orig_method->klass, inst);
-			res = inst;
-		}
-		mono_marshal_unlock ();
-	} else if (static_method_with_first_arg_bound || callvirt) {
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND);
+		mono_marshal_set_wrapper_info (res, info);
+	} else if (callvirt) {
 		// From mono_mb_create_and_cache
 		newm = mono_mb_create_method (mb, sig, sig->param_count + 16);
 		/*We perform double checked locking, so must fence before publishing*/
@@ -4206,7 +4438,10 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 			if (static_method_with_first_arg_bound)
 				new_key->sig = signature_dup (del->method->klass->image, key.sig);
 			g_hash_table_insert (cache, new_key, res);
-			mono_marshal_set_wrapper_info (res, new_key);
+
+			info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL);
+			mono_marshal_set_wrapper_info (res, info);
+
 			mono_marshal_unlock ();
 		} else {
 			mono_marshal_unlock ();
@@ -4214,6 +4449,9 @@ mono_marshal_get_delegate_invoke (MonoMethod *method, MonoDelegate *del)
 		}
 	} else {
 		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
+		mono_marshal_set_wrapper_info (res, info);
 	}
 	mono_mb_free (mb);
 
@@ -4310,9 +4548,12 @@ mono_marshal_get_string_ctor_signature (MonoMethod *method)
 static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
-	if (t->byref)
+	if (t->byref) {
+		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+			return t;
 		/* Can't share this with 'I' as that needs another indirection */
-		return t;
+		return &mono_defaults.int_class->this_arg;
+	}
 
 	if (MONO_TYPE_IS_REFERENCE (t))
 		return &mono_defaults.object_class->byval_arg;
@@ -4323,18 +4564,21 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 
 handle_enum:
 	switch (t->type) {
+		/* Can't share these as the argument needs to be loaded using sign/zero extension */
+		/*
 	case MONO_TYPE_U1:
 		return &mono_defaults.sbyte_class->byval_arg;
 	case MONO_TYPE_U2:
 		return &mono_defaults.int16_class->byval_arg;
 	case MONO_TYPE_U4:
 		return &mono_defaults.int32_class->byval_arg;
+		*/
 	case MONO_TYPE_U8:
 		return &mono_defaults.int64_class->byval_arg;
 	case MONO_TYPE_BOOLEAN:
-		return &mono_defaults.sbyte_class->byval_arg;
+		return &mono_defaults.byte_class->byval_arg;
 	case MONO_TYPE_CHAR:
-		return &mono_defaults.int16_class->byval_arg;
+		return &mono_defaults.uint16_class->byval_arg;
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 		return &mono_defaults.int_class->byval_arg;
@@ -4728,20 +4972,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 		/* Can't share this as we push a string as this */
 		need_direct_wrapper = TRUE;
 	} else {
-		if (method->klass->valuetype && mono_method_signature (method)->hasthis) {
-			/* 
-			 * Valuetype methods receive a managed pointer as the this argument.
-			 * Create a new signature to reflect this.
-			 */
-			callsig = signature_dup_add_this (method->klass->image, mono_method_signature (method), method->klass);
-			/* Can't share this as it would be shared with static methods taking an IntPtr argument */
-			need_direct_wrapper = TRUE;
-		} else {
-			if (method->dynamic)
-				callsig = signature_dup (method->klass->image, mono_method_signature (method));
-			else
-				callsig = mono_method_signature (method);
-		}
+		if (method->dynamic)
+			callsig = signature_dup (method->klass->image, mono_method_signature (method));
+		else
+			callsig = mono_method_signature (method);
 	}
 
 	target_klass = get_wrapper_target_class (method->klass->image);
@@ -4762,9 +4996,15 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 
 		callsig = mono_marshal_get_runtime_invoke_sig (callsig);
 
-		cache = get_cache (&target_klass->image->runtime_invoke_cache, 
-						   (GHashFunc)mono_signature_hash, 
-						   (GCompareFunc)runtime_invoke_signature_equal);
+		if (method->klass->valuetype && mono_method_signature (method)->hasthis)
+			/* These have a different csig */
+			cache = get_cache (&target_klass->image->runtime_invoke_vtype_cache,
+							   (GHashFunc)mono_signature_hash,
+							   (GCompareFunc)runtime_invoke_signature_equal);
+		else
+			cache = get_cache (&target_klass->image->runtime_invoke_cache,
+							   (GHashFunc)mono_signature_hash,
+							   (GCompareFunc)runtime_invoke_signature_equal);
 
 		/* from mono_marshal_find_in_cache */
 		mono_marshal_lock ();
@@ -4788,7 +5028,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 
 	csig->ret = &mono_defaults.object_class->byval_arg;
 	if (method->klass->valuetype && mono_method_signature (method)->hasthis)
-		csig->params [0] = callsig->params [0];
+		csig->params [0] = get_runtime_invoke_type (&method->klass->this_arg, FALSE);
 	else
 		csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
@@ -4840,6 +5080,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual)
 				g_hash_table_insert (cache, callsig, res);
 				/* Can't insert it into wrapper_hash since the key is a signature */
 				g_hash_table_insert (method->klass->image->runtime_invoke_direct_cache, method, res);
+				info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_RUNTIME_INVOKE_NORMAL);
+				info->d.runtime_invoke.sig = callsig;
+				mono_marshal_set_wrapper_info (res, info);
 			} else {
 				mono_free_method (newm);
 			}
@@ -4967,14 +5210,14 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif /* DISABLE_JIT */
 
-	mono_loader_lock ();
+	mono_marshal_lock ();
 	/* double-checked locking */
 	if (!method) {
 		method = mono_mb_create_method (mb, csig, 16);
 		info = mono_wrapper_info_create (method, WRAPPER_SUBTYPE_RUNTIME_INVOKE_DYNAMIC);
 		mono_marshal_set_wrapper_info (method, info);
 	}
-	mono_loader_unlock ();
+	mono_marshal_unlock ();
 
 	mono_mb_free (mb);
 
@@ -4992,6 +5235,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 }
 #endif
 
+#ifndef DISABLE_REMOTING
 /*
  * mono_marshal_get_ldfld_remote_wrapper:
  * @klass: The return type
@@ -5201,6 +5445,10 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		}
+		break;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		mono_mb_emit_op (mb, CEE_LDOBJ, klass);
 		break;
 	default:
 		g_warning ("type %x not implemented", type->type);
@@ -5530,6 +5778,8 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 		mono_mb_emit_op (mb, CEE_STOBJ, klass);
 		break;
 	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
 		mono_mb_emit_op (mb, CEE_STOBJ, klass);
 		break;
 	default:
@@ -5546,6 +5796,7 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	
 	return res;
 }
+#endif /* DISABLE_REMOTING */
 
 /*
  * generates IL code for the icall wrapper (the generated method
@@ -5580,7 +5831,9 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
-	mono_mb_emit_native_call (mb, csig2, (gpointer) func);
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func);
+	mono_mb_emit_calli (mb, csig2);
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -5595,18 +5848,23 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	mono_mb_free (mb);
 
 	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_ICALL_WRAPPER);
+	info->d.icall.func = (gpointer)func;
 	mono_marshal_set_wrapper_info (res, info);
 	
 	return res;
 }
 
-#ifndef DISABLE_JIT
 static int
 emit_marshal_custom (EmitMarshalContext *m, int argnum, MonoType *t,
 					 MonoMarshalSpec *spec, 
 					 int conv_arg, MonoType **conv_arg_type, 
 					 MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN && t->type == MONO_TYPE_VALUETYPE)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+	return conv_arg;
+#else
 	MonoType *mtype;
 	MonoClass *mklass;
 	static MonoClass *ICustomMarshaler = NULL;
@@ -5900,8 +6158,9 @@ handle_exception:
 	default:
 		g_assert_not_reached ();
 	}
-		
 	return conv_arg;
+#endif
+
 }
 
 static int
@@ -5910,6 +6169,7 @@ emit_marshal_asany (EmitMarshalContext *m, int argnum, MonoType *t,
 					int conv_arg, MonoType **conv_arg_type, 
 					MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -5946,7 +6206,7 @@ emit_marshal_asany (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -5956,6 +6216,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 					int conv_arg, MonoType **conv_arg_type, 
 					MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass, *date_time_class;
 	int pos = 0, pos2;
@@ -6178,6 +6439,9 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 			break;
 		}
 
+		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_IN) && !(t->attrs & PARAM_ATTRIBUTE_OUT))
+			break;
+
 		/* Check for null */
 		mono_mb_emit_ldarg (mb, argnum);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
@@ -6229,7 +6493,7 @@ emit_marshal_vtype (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -6239,6 +6503,16 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 					 int conv_arg, MonoType **conv_arg_type, 
 					 MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	}
+#else
 	MonoMethodBuilder *mb = m->mb;
 	MonoMarshalNative encoding = mono_marshal_get_string_encoding (m->piinfo, spec);
 	MonoMarshalConv conv = mono_marshal_get_string_to_ptr_conv (m->piinfo, spec);
@@ -6396,15 +6670,20 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
+
 
 static int
 emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t, 
 			 MonoMarshalSpec *spec, int conv_arg, 
 			 MonoType **conv_arg_type, MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+#else
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action){
@@ -6555,15 +6834,20 @@ emit_marshal_safehandle (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		printf ("Unhandled case for MarshalAction: %d\n", action);
 	}
-
+#endif
 	return conv_arg;
 }
+
 
 static int
 emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t, 
 			MonoMarshalSpec *spec, int conv_arg, 
 			MonoType **conv_arg_type, MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+#else
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action){
@@ -6616,9 +6900,10 @@ emit_marshal_handleref (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		fprintf (stderr, "Unhandled case for MarshalAction: %d\n", action);
 	}
-
+#endif
 	return conv_arg;
 }
+
 
 static int
 emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
@@ -6626,6 +6911,10 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 		     int conv_arg, MonoType **conv_arg_type, 
 		     MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	if (action == MARSHAL_ACTION_CONV_IN)
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+#else
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type (t);
 	int pos, pos2, loc;
@@ -6670,7 +6959,7 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			}
 #endif
 
-			if (t->byref && !t->attrs & PARAM_ATTRIBUTE_IN && t->attrs & PARAM_ATTRIBUTE_OUT)
+			if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && (t->attrs & PARAM_ATTRIBUTE_OUT))
 				break;
 
 			if (conv == -1) {
@@ -7099,10 +7388,11 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
+#ifndef DISABLE_JIT
 
 #ifndef DISABLE_COM
 
@@ -7116,8 +7406,6 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod *get_object_for_native_variant = NULL;
 	static MonoMethod *get_native_variant_for_object = NULL;
 
-	mono_init_com_types ();
-	
 	if (!get_object_for_native_variant)
 		get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
 	g_assert (get_object_for_native_variant);
@@ -7128,12 +7416,12 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN: {
-		conv_arg = mono_mb_add_local (mb, &mono_defaults.variant_class->byval_arg);
+		conv_arg = mono_mb_add_local (mb, &mono_class_get_variant_class ()->byval_arg);
 		
 		if (t->byref)
-			*conv_arg_type = &mono_defaults.variant_class->this_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->this_arg;
 		else
-			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->byval_arg;
 
 		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
@@ -7150,7 +7438,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		static MonoMethod *variant_clear = NULL;
 
 		if (!variant_clear)
-			variant_clear = mono_class_get_method_from_name (mono_defaults.variant_class, "Clear", 0);
+			variant_clear = mono_class_get_method_from_name (mono_class_get_variant_class (), "Clear", 0);
 		g_assert (variant_clear);
 
 
@@ -7183,9 +7471,9 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
 
 		if (t->byref)
-			*conv_arg_type = &mono_defaults.variant_class->this_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->this_arg;
 		else
-			*conv_arg_type = &mono_defaults.variant_class->byval_arg;
+			*conv_arg_type = &mono_class_get_variant_class ()->byval_arg;
 
 		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
@@ -7222,6 +7510,7 @@ emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 #endif /* DISABLE_COM */
+#endif /* DISABLE_JIT */
 
 static gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
@@ -7241,12 +7530,23 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 	}
 }
 
+
 static int
 emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 					MonoMarshalSpec *spec, 
 					int conv_arg, MonoType **conv_arg_type, 
 					MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		*conv_arg_type = &mono_defaults.object_class->byval_arg;
+		break;
+	case MARSHAL_ACTION_MANAGED_CONV_IN:
+		*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		break;
+	}
+#else
 	MonoMethodBuilder *mb = m->mb;
 	MonoClass *klass = mono_class_from_mono_type (t);
 	gboolean need_convert, need_free;
@@ -7919,8 +8219,54 @@ emit_marshal_array (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
+}
+
+static MonoType*
+marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
+{
+	if (spec == NULL) {
+		return &mono_defaults.int32_class->byval_arg;
+	} else {
+		switch (spec->native) {
+		case MONO_NATIVE_I1:
+		case MONO_NATIVE_U1:
+			return &mono_defaults.byte_class->byval_arg;
+		case MONO_NATIVE_VARIANTBOOL:
+			if (ldc_op) *ldc_op = CEE_LDC_I4_M1;
+			return &mono_defaults.int16_class->byval_arg;
+		case MONO_NATIVE_BOOLEAN:
+			return &mono_defaults.int32_class->byval_arg;
+		default:
+			g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+			return &mono_defaults.int32_class->byval_arg;
+		}
+	}
+}
+
+static MonoClass*
+marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/)
+{
+	MonoClass* conv_arg_class = mono_defaults.int32_class;
+	if (spec) {
+		switch (spec->native) {
+		case MONO_NATIVE_I1:
+		case MONO_NATIVE_U1:
+			conv_arg_class = mono_defaults.byte_class;
+			if (ldop) *ldop = CEE_LDIND_I1;
+			break;
+		case MONO_NATIVE_VARIANTBOOL:
+			conv_arg_class = mono_defaults.int16_class;
+			if (ldop) *ldop = CEE_LDIND_I2;
+			break;
+		case MONO_NATIVE_BOOLEAN:
+			break;
+		default:
+			g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
+		}
+	}
+	return conv_arg_class;
 }
 
 static int
@@ -7929,6 +8275,26 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		      int conv_arg, MonoType **conv_arg_type, 
 		      MarshalAction action)
 {
+#ifdef DISABLE_JIT
+	switch (action) {
+	case MARSHAL_ACTION_CONV_IN:
+		if (t->byref)
+			*conv_arg_type = &mono_defaults.int_class->byval_arg;
+		else
+			*conv_arg_type = marshal_boolean_conv_in_get_local_type (spec, NULL);
+		break;
+
+	case MARSHAL_ACTION_MANAGED_CONV_IN: {
+		MonoClass* conv_arg_class = marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
+		if (t->byref)
+			*conv_arg_type = &conv_arg_class->this_arg;
+		else
+			*conv_arg_type = &conv_arg_class->byval_arg;
+		break;
+	}
+
+	}
+#else
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -7937,27 +8303,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		int label_false;
 		guint8 ldc_op = CEE_LDC_I4_1;
 
-		if (spec == NULL) {
-			local_type = &mono_defaults.int32_class->byval_arg;
-		} else {
-			switch (spec->native) {
-			case MONO_NATIVE_I1:
-			case MONO_NATIVE_U1:
-				local_type = &mono_defaults.byte_class->byval_arg;
-				break;
-			case MONO_NATIVE_VARIANTBOOL:
-				local_type = &mono_defaults.int16_class->byval_arg;
-				ldc_op = CEE_LDC_I4_M1;
-				break;
-			case MONO_NATIVE_BOOLEAN:
-				local_type = &mono_defaults.int32_class->byval_arg;
-				break;
-			default:
-				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
-				local_type = &mono_defaults.int32_class->byval_arg;
-				break;
-			}
-		}
+		local_type = marshal_boolean_conv_in_get_local_type (spec, &ldc_op);
 		if (t->byref)
 			*conv_arg_type = &mono_defaults.int_class->byval_arg;
 		else
@@ -8015,25 +8361,8 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 		guint8 ldop = CEE_LDIND_I4;
 		int label_null, label_false;
 
+		conv_arg_class = marshal_boolean_managed_conv_in_get_conv_arg_class (spec, &ldop);
 		conv_arg = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-
-		if (spec) {
-			switch (spec->native) {
-			case MONO_NATIVE_I1:
-			case MONO_NATIVE_U1:
-				conv_arg_class = mono_defaults.byte_class;
-				ldop = CEE_LDIND_I1;
-				break;
-			case MONO_NATIVE_VARIANTBOOL:
-				conv_arg_class = mono_defaults.int16_class;
-				ldop = CEE_LDIND_I2;
-				break;
-			case MONO_NATIVE_BOOLEAN:
-				break;
-			default:
-				g_warning ("marshalling bool as native type %x is currently not supported", spec->native);
-			}
-		}
 
 		if (t->byref)
 			*conv_arg_type = &conv_arg_class->this_arg;
@@ -8106,7 +8435,7 @@ emit_marshal_boolean (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		g_assert_not_reached ();
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8115,6 +8444,7 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 		  MonoMarshalSpec *spec, int conv_arg, 
 		  MonoType **conv_arg_type, MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -8140,7 +8470,7 @@ emit_marshal_ptr (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8149,6 +8479,7 @@ emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t,
 		   MonoMarshalSpec *spec, int conv_arg, 
 		   MonoType **conv_arg_type, MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -8167,7 +8498,7 @@ emit_marshal_char (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8176,6 +8507,7 @@ emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MonoMarshalSpec *spec, int conv_arg, 
 		     MonoType **conv_arg_type, MarshalAction action)
 {
+#ifndef DISABLE_JIT
 	MonoMethodBuilder *mb = m->mb;
 
 	switch (action) {
@@ -8191,7 +8523,7 @@ emit_marshal_scalar (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-
+#endif
 	return conv_arg;
 }
 
@@ -8267,10 +8599,10 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		else
 			return emit_marshal_object (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	}
-
 	return conv_arg;
 }
 
+#ifndef DISABLE_JIT
 /**
  * mono_marshal_emit_native_wrapper:
  * @image: the image to use for looking up custom marshallers
@@ -8490,8 +8822,8 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 
 	mono_mb_emit_byte (mb, CEE_RET);
 }
-
 #endif /* DISABLE_JIT */
+
 
 G_GNUC_UNUSED static void
 code_for (MonoMethod *method) {
@@ -8549,13 +8881,14 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		pinvoke = TRUE;
 
 	if (!piinfo->addr) {
-		if (pinvoke)
+		if (pinvoke) {
 			if (method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)
 				exc_arg = "Method contains unsupported native code";
-			else
+			else if (!aot)
 				mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
-		else
+		} else {
 			piinfo->addr = mono_lookup_internal_call (method);
+		}
 	}
 
 	/* hack - redirect certain string constructors to CreateString */
@@ -8613,21 +8946,26 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	mb->method->save_lmf = 1;
 
-#ifndef DISABLE_JIT
 	/*
 	 * In AOT mode and embedding scenarios, it is possible that the icall is not
 	 * registered in the runtime doing the AOT compilation.
 	 */
 	if (!piinfo->addr && !aot) {
+#ifndef DISABLE_JIT
 		mono_mb_emit_exception (mb, exc_class, exc_arg);
+#endif
 		csig = signature_dup (method->klass->image, sig);
 		csig->pinvoke = 0;
 		res = mono_mb_create_and_cache (cache, method,
 										mb, csig, csig->param_count + 16);
 		mono_mb_free (mb);
+
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+		mono_marshal_set_wrapper_info (res, info);
+
 		return res;
 	}
-#endif
 
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
@@ -8828,7 +9166,6 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	return res;
 }
 
-#ifndef DISABLE_JIT
 /*
  * mono_marshal_emit_managed_wrapper:
  *
@@ -8840,6 +9177,39 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
+#ifdef DISABLE_JIT
+	MonoMethodSignature *sig, *csig;
+	int i;
+
+	sig = m->sig;
+	csig = m->csig;
+
+	/* we first do all conversions */
+	for (i = 0; i < sig->param_count; i ++) {
+		MonoType *t = sig->params [i];
+
+		switch (t->type) {
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_ARRAY:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_BOOLEAN:
+			emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+		}
+	}
+
+	if (!sig->ret->byref) {
+		switch (sig->ret->type) {
+		case MONO_TYPE_STRING:
+			csig->ret = &mono_defaults.int_class->byval_arg;
+			break;
+		default:
+			break;
+		}
+	}
+#else
 	MonoMethodSignature *sig, *csig;
 	int i, *tmp_locals;
 	gboolean closed = FALSE;
@@ -9021,8 +9391,8 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 
 	if (closed)
 		g_free (sig);
+#endif
 }
-#endif /* DISABLE_JIT */
 
 static void 
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig)
@@ -9154,9 +9524,10 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			MonoBoolean set_last_error = 0;
 			MonoBoolean best_fit_mapping = 0;
 			MonoBoolean throw_on_unmappable = 0;
+			MonoError error;
 
-			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo);
-
+			mono_reflection_create_custom_attr_data_args (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &arginfo, &error);
+			g_assert (mono_error_ok (&error));
 			g_assert (mono_array_length (typed_args) == 1);
 
 			/* typed args */
@@ -9196,9 +9567,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			mono_custom_attrs_free (cinfo);
 	}
 
-#ifndef DISABLE_JIT
 	mono_marshal_emit_managed_wrapper (mb, invoke_sig, mspecs, &m, method, target_handle);
-#endif
 
 	if (!target_handle) {
 		WrapperInfo *info;
@@ -9268,9 +9637,9 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
-#ifndef DISABLE_JIT
 		mono_marshal_emit_managed_wrapper (mb, sig, mspecs, &m, method, 0);
 
+#ifndef DISABLE_JIT
 		mb->dynamic = 1;
 #endif
 		method = mono_mb_create_method (mb, csig, sig->param_count + 16);
@@ -9547,7 +9916,10 @@ mono_marshal_get_isinst (MonoClass *klass)
 	static MonoMethodSignature *isint_sig = NULL;
 	GHashTable *cache;
 	MonoMethod *res;
-	int pos_was_ok, pos_failed, pos_end, pos_end2;
+	int pos_was_ok, pos_end;
+#ifndef DISABLE_REMOTING
+	int pos_end2, pos_failed;
+#endif
 	char *name;
 	MonoMethodBuilder *mb;
 
@@ -9574,11 +9946,11 @@ mono_marshal_get_isinst (MonoClass *klass)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_op (mb, CEE_MONO_CISINST, klass);
 
-	/* The result of MONO_ISINST can be:
+	/* The result of MONO_CISINST can be:
 	   	0) the type check succeeded
 		1) the type check did not succeed
 		2) a CanCastTo call is needed */
-	
+#ifndef DISABLE_REMOTING
 	mono_mb_emit_byte (mb, CEE_DUP);
 	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
@@ -9608,7 +9980,25 @@ mono_marshal_get_isinst (MonoClass *klass)
 	mono_mb_patch_branch (mb, pos_end);
 	mono_mb_patch_branch (mb, pos_end2);
 	mono_mb_emit_byte (mb, CEE_RET);
-#endif
+#else
+	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+	/* fail */
+
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	pos_end = mono_mb_emit_branch (mb, CEE_BR);
+
+	/* success */
+
+	mono_mb_patch_branch (mb, pos_was_ok);
+	mono_mb_emit_ldarg (mb, 0);
+
+	/* the end */
+
+	mono_mb_patch_branch (mb, pos_end);
+	mono_mb_emit_byte (mb, CEE_RET);
+#endif /* DISABLE_REMOTING */
+#endif /* DISABLE_JIT */
 
 	res = mono_mb_create_and_cache (cache, klass, mb, isint_sig, isint_sig->param_count + 16);
 	mono_mb_free (mb);
@@ -9632,7 +10022,9 @@ mono_marshal_get_castclass (MonoClass *klass)
 	static MonoMethodSignature *castclass_sig = NULL;
 	GHashTable *cache;
 	MonoMethod *res;
+#ifndef DISABLE_REMOTING
 	int pos_was_ok, pos_was_ok2;
+#endif
 	char *name;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
@@ -9660,12 +10052,12 @@ mono_marshal_get_castclass (MonoClass *klass)
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_op (mb, CEE_MONO_CCASTCLASS, klass);
 
-	/* The result of MONO_ISINST can be:
+	/* The result of MONO_CCASTCLASS can be:
 	   	0) the cast is valid
 		1) cast of unknown proxy type
 		or an exception if the cast is is invalid
 	*/
-	
+#ifndef DISABLE_REMOTING
 	pos_was_ok = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
 	/* get the real proxy from the transparent proxy*/
@@ -9680,11 +10072,16 @@ mono_marshal_get_castclass (MonoClass *klass)
 	/* success */
 	mono_mb_patch_branch (mb, pos_was_ok);
 	mono_mb_patch_branch (mb, pos_was_ok2);
+#else
+	/* MONO_CCASTCLASS leaves an int in the stack with the result, pop it. */
+	mono_mb_emit_byte (mb, CEE_POP);
+#endif /* DISABLE_REMOTING */
+
 	mono_mb_emit_ldarg (mb, 0);
 	
 	/* the end */
 	mono_mb_emit_byte (mb, CEE_RET);
-#endif
+#endif /* DISABLE_JIT */
 
 	res = mono_mb_create_and_cache (cache, klass, mb, castclass_sig, castclass_sig->param_count + 16);
 	mono_mb_free (mb);
@@ -9695,6 +10092,7 @@ mono_marshal_get_castclass (MonoClass *klass)
 	return res;
 }
 
+#ifndef DISABLE_REMOTING
 MonoMethod *
 mono_marshal_get_proxy_cancast (MonoClass *klass)
 {
@@ -9783,6 +10181,7 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype, MonoTransparentPro
 	klass = mono_class_from_mono_type (rtype->type);
 	mono_upgrade_remote_class (domain, (MonoObject*)tproxy, klass);
 }
+#endif /*DISABLE_REMOTING */
 
 /**
  * mono_marshal_get_struct_to_ptr:
@@ -9947,6 +10346,19 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	WrapperInfo *info;
 	MonoMethodSignature *sig;
 	MonoMethod *res;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
+	MonoGenericContainer *container = NULL;
+
+	if (method->is_inflated && !mono_method_get_context (method)->method_inst) {
+		orig_method = method;
+		ctx = &((MonoMethodInflated*)method)->context;
+		method = ((MonoMethodInflated*)method)->declaring;
+		container = mono_method_get_generic_container (method);
+		if (!container)
+			container = method->klass->generic_container;
+		g_assert (container);
+	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
 #ifndef DISABLE_JIT
@@ -9959,6 +10371,8 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_SYNCHRONIZED_INNER);
 	info->d.synchronized_inner.method = method;
 	mono_marshal_set_wrapper_info (res, info);
+	if (ctx)
+		res = mono_class_inflate_generic_method (res, ctx);
 	return res;
 }
 
@@ -9976,15 +10390,39 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	MonoMethod *res;
 	GHashTable *cache;
 	int i, pos, this_local, ret_local = 0;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
+	MonoGenericContainer *container = NULL;
 
 	g_assert (method);
 
 	if (method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED)
 		return method;
 
-	cache = get_cache (&method->klass->image->synchronized_cache, mono_aligned_addr_hash, NULL);
-	if ((res = mono_marshal_find_in_cache (cache, method)))
-		return res;
+	/* FIXME: Support generic methods too */
+	if (method->is_inflated && !mono_method_get_context (method)->method_inst) {
+		orig_method = method;
+		ctx = &((MonoMethodInflated*)method)->context;
+		method = ((MonoMethodInflated*)method)->declaring;
+		container = mono_method_get_generic_container (method);
+		if (!container)
+			container = method->klass->generic_container;
+		g_assert (container);
+	}
+
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = get_cache (&method->klass->image->synchronized_generic_cache, mono_aligned_addr_hash, NULL);
+		res = check_generic_wrapper_cache (cache, orig_method, orig_method, method);
+		if (res)
+			return res;
+	} else {
+		cache = get_cache (&method->klass->image->synchronized_cache, mono_aligned_addr_hash, NULL);
+		if ((res = mono_marshal_find_in_cache (cache, method)))
+			return res;
+	}
 
 	sig = signature_dup (method->klass->image, mono_method_signature (method));
 	sig->pinvoke = 0;
@@ -10025,7 +10463,7 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
 #endif
 
-	mono_loader_lock ();
+	mono_marshal_lock ();
 
 	if (!enter_method) {
 		MonoMethodDesc *desc;
@@ -10041,12 +10479,12 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 		mono_method_desc_free (desc);
 
 		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
-		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.monotype_class->parent);
+		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
 		g_assert (gettypefromhandle_method);
 		mono_method_desc_free (desc);
 	}
 
-	mono_loader_unlock ();
+	mono_marshal_unlock ();
 
 #ifndef DISABLE_JIT
 	/* Push this or the type object */
@@ -10075,7 +10513,10 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	for (i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 
-	mono_mb_emit_managed_call (mb, method, NULL);
+	if (ctx)
+		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method (method, &container->context), NULL);
+	else
+		mono_mb_emit_managed_call (mb, method, NULL);
 
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_emit_stloc (mb, ret_local);
@@ -10100,8 +10541,14 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	mono_mb_set_clauses (mb, 1, clause);
 #endif
 
-	res = mono_mb_create_and_cache (cache, method,
-									mb, sig, sig->param_count + 16);
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
+		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
+	} else {
+		res = mono_mb_create_and_cache (cache, method,
+										mb, sig, sig->param_count + 16);
+	}
 	mono_mb_free (mb);
 
 	return res;	
@@ -10186,7 +10633,7 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_INTERFACE;
 #endif
 	/*Arrays are sealed but are covariant on their element type, We can't use any of the fast paths.*/
-	if (element_class->marshalbyref || element_class->rank || mono_class_has_variant_generic_params (element_class))
+	if (mono_class_is_marshalbyref (element_class) || element_class->rank || mono_class_has_variant_generic_params (element_class))
 		return STELEMREF_COMPLEX;
 	if (element_class->flags & TYPE_ATTRIBUTE_SEALED)
 		return STELEMREF_SEALED_CLASS;
@@ -10247,23 +10694,19 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
  *	- Maybe mve some MonoClass field into the vtable to reduce the number of loads
  *	- Add a case for arrays of arrays.
  */
-MonoMethod*
-mono_marshal_get_virtual_stelemref (MonoClass *array_class)
+static MonoMethod*
+get_virtual_stelemref_wrapper (int kind)
 {
 	static MonoMethod *cached_methods [STELEMREF_KIND_COUNT] = { NULL }; /*object iface sealed regular*/
 	static MonoMethodSignature *signature;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	int kind;
 	char *name;
 	const char *param_names [16];
 	guint32 b1, b2, b3;
 	int aklass, vklass, vtable, uiid;
 	int array_slot_addr;
 	WrapperInfo *info;
-
-	g_assert (array_class->rank == 1);
-	kind = get_virtual_stelemref_kind (array_class->element_class);
 
 	if (cached_methods [kind])
 		return cached_methods [kind];
@@ -10630,6 +11073,30 @@ mono_marshal_get_virtual_stelemref (MonoClass *array_class)
 
 	mono_mb_free (mb);
 	return cached_methods [kind];
+}
+
+MonoMethod*
+mono_marshal_get_virtual_stelemref (MonoClass *array_class)
+{
+	int kind;
+
+	g_assert (array_class->rank == 1);
+	kind = get_virtual_stelemref_kind (array_class->element_class);
+
+	return get_virtual_stelemref_wrapper (kind);
+}
+
+MonoMethod**
+mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
+{
+	MonoMethod **res;
+	int i;
+
+	*nwrappers = STELEMREF_KIND_COUNT;
+	res = g_malloc0 (STELEMREF_KIND_COUNT * sizeof (MonoMethod*));
+	for (i = 0; i < STELEMREF_KIND_COUNT; ++i)
+		res [i] = get_virtual_stelemref_wrapper (i);
+	return res;
 }
 
 /*
@@ -11039,6 +11506,76 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	return ret;
 }
 
+/*
+ * mono_marshal_get_array_accessor_wrapper:
+ *
+ *   Return a wrapper which just calls METHOD, which should be an Array Get/Set/Address method.
+ */
+MonoMethod *
+mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
+{
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	int i;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
+	MonoGenericContainer *container = NULL;
+	WrapperInfo *info;
+
+	/*
+	 * These wrappers are needed to avoid the JIT replacing the calls to these methods with intrinsics
+	 * inside runtime invoke wrappers, thereby making the wrappers not unshareable.
+	 * FIXME: Use generic methods.
+	 */
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = NULL;
+		g_assert_not_reached ();
+	} else {
+		cache = get_cache (&method->klass->image->array_accessor_cache, mono_aligned_addr_hash, NULL);
+		if ((res = mono_marshal_find_in_cache (cache, method)))
+			return res;
+	}
+
+	sig = signature_dup (method->klass->image, mono_method_signature (method));
+	sig->pinvoke = 0;
+
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
+
+#ifndef DISABLE_JIT
+	/* Call the method */
+	if (sig->hasthis)
+		mono_mb_emit_ldarg (mb, 0);
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
+
+	if (ctx)
+		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method (method, &container->context), NULL);
+	else
+		mono_mb_emit_managed_call (mb, method, NULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+#endif
+
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache (cache, method, mb, sig, sig->param_count + 16);
+		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
+	} else {
+		res = mono_mb_create_and_cache (cache, method,
+										mb, sig, sig->param_count + 16);
+		info = mono_wrapper_info_create (res, WRAPPER_SUBTYPE_ARRAY_ACCESSOR);
+		info->d.array_accessor.method = method;
+		mono_marshal_set_wrapper_info (res, info);
+	}
+	mono_mb_free (mb);
+
+	return res;	
+}
+
 void*
 mono_marshal_alloc (gulong size)
 {
@@ -11144,7 +11681,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *s
 	element_size = mono_array_element_size (src->obj.vtable->klass);
 
 	/* no references should be involved */
-	source_addr = mono_array_addr_with_size (src, element_size, start_index);
+	source_addr = mono_array_addr_with_size_fast (src, element_size, start_index);
 
 	memcpy (dest, source_addr, length * element_size);
 }
@@ -11173,125 +11710,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_copy_from_unmanaged (gpointer s
 	element_size = mono_array_element_size (dest->obj.vtable->klass);
 	  
 	/* no references should be involved */
-	dest_addr = mono_array_addr_with_size (dest, element_size, start_index);
+	dest_addr = mono_array_addr_with_size_fast (dest, element_size, start_index);
 
 	memcpy (dest_addr, src, length * element_size);
-}
-
-#if NO_UNALIGNED_ACCESS
-#define RETURN_UNALIGNED(type, addr) \
-	{ \
-		type val; \
-		memcpy(&val, p + offset, sizeof(val)); \
-		return val; \
-	}
-#define WRITE_UNALIGNED(type, addr, val) \
-	memcpy(addr, &val, sizeof(type))
-#else
-#define RETURN_UNALIGNED(type, addr) \
-	return *(type*)(p + offset);
-#define WRITE_UNALIGNED(type, addr, val) \
-	(*(type *)(addr) = (val))
-#endif
-
-gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_ReadIntPtr (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	RETURN_UNALIGNED(gpointer, p + offset);
-}
-
-unsigned char
-ves_icall_System_Runtime_InteropServices_Marshal_ReadByte (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	return *(unsigned char*)(p + offset);
-}
-
-gint16
-ves_icall_System_Runtime_InteropServices_Marshal_ReadInt16 (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	RETURN_UNALIGNED(gint16, p + offset);
-}
-
-gint32
-ves_icall_System_Runtime_InteropServices_Marshal_ReadInt32 (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	RETURN_UNALIGNED(gint32, p + offset);
-}
-
-gint64
-ves_icall_System_Runtime_InteropServices_Marshal_ReadInt64 (gpointer ptr, gint32 offset)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	RETURN_UNALIGNED(gint64, p + offset);
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteByte (gpointer ptr, gint32 offset, unsigned char val)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	*(unsigned char*)(p + offset) = val;
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteIntPtr (gpointer ptr, gint32 offset, gpointer val)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	WRITE_UNALIGNED(gpointer, p + offset, val);
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteInt16 (gpointer ptr, gint32 offset, gint16 val)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	WRITE_UNALIGNED(gint16, p + offset, val);
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteInt32 (gpointer ptr, gint32 offset, gint32 val)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	WRITE_UNALIGNED(gint32, p + offset, val);
-}
-
-void
-ves_icall_System_Runtime_InteropServices_Marshal_WriteInt64 (gpointer ptr, gint32 offset, gint64 val)
-{
-	char *p = ptr;
-
-	MONO_ARCH_SAVE_REGS;
-
-	WRITE_UNALIGNED(gint64, p + offset, val);
 }
 
 MonoString *
@@ -11463,7 +11884,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 
 	MONO_ARCH_SAVE_REGS;
 
-	MONO_CHECK_ARG_NULL (src);
+	if (src == NULL)
+		return NULL;
 	MONO_CHECK_ARG_NULL (type);
 
 	klass = mono_class_from_mono_type (type->type);
@@ -11736,7 +12158,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem (gpointer ptr,
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index)
 {
-	return mono_array_addr_with_size (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
+	return mono_array_addr_with_size_fast (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
 }
 
 MonoDelegate*
@@ -11791,12 +12213,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 	if (!klass->inited)
 		mono_class_init (klass);
 
-	mono_loader_lock ();
-
-	if (klass->marshal_info) {
-		mono_loader_unlock ();
+	if (klass->marshal_info)
 		return klass->marshal_info;
-	}
 
 	/*
 	 * This function can recursively call itself, so we keep the list of classes which are
@@ -11872,7 +12290,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT:
 			size = mono_marshal_type_size (field->type, info->fields [j].mspec, 
 						       &align, TRUE, klass->unicode);
-			min_align = packing;
+			min_align = MAX (align, min_align);
 			info->fields [j].offset = field->offset - sizeof (MonoObject);
 			info->native_size = MAX (info->native_size, info->fields [j].offset + size);
 			break;
@@ -11886,9 +12304,12 @@ mono_marshal_load_type_info (MonoClass* klass)
 		 * If the provided Size is equal or larger than the calculated size, and there
 		 * was no Pack attribute, we set min_align to 1 to avoid native_size being increased
 		 */
-		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT)
+		if (layout == TYPE_ATTRIBUTE_EXPLICIT_LAYOUT) {
 			if (native_size && native_size == info->native_size && klass->packing_size == 0)
 				min_align = 1;
+			else
+				min_align = MIN (min_align, packing);
+		}
 	}
 
 	if (info->native_size & (min_align - 1)) {
@@ -11911,12 +12332,13 @@ mono_marshal_load_type_info (MonoClass* klass)
 	loads_list = g_slist_remove (loads_list, klass);
 	mono_native_tls_set_value (load_type_info_tls_id, loads_list);
 
-	/*We do double-checking locking on marshal_info */
-	mono_memory_barrier ();
-
-	klass->marshal_info = info;
-
-	mono_loader_unlock ();
+	mono_marshal_lock ();
+	if (!klass->marshal_info) {
+		/*We do double-checking locking on marshal_info */
+		mono_memory_barrier ();
+		klass->marshal_info = info;
+	}
+	mono_marshal_unlock ();
 
 	return klass->marshal_info;
 }
@@ -12525,8 +12947,6 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 */
 	if (image->runtime_invoke_direct_cache)
 		g_hash_table_remove (image->runtime_invoke_direct_cache, method);
-	if (image->delegate_bound_static_invoke_cache)
-		g_hash_table_foreach_remove (image->delegate_bound_static_invoke_cache, signature_method_pair_matches_method, method);
 	if (image->delegate_abstract_invoke_cache)
 		g_hash_table_foreach_remove (image->delegate_abstract_invoke_cache, signature_method_pair_matches_method, method);
 
@@ -12577,6 +12997,8 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
                g_hash_table_remove (method->klass->image->delegate_invoke_cache, sig);
        if (sig && method->klass->image->runtime_invoke_cache)
                g_hash_table_remove (method->klass->image->runtime_invoke_cache, sig);
+       if (sig && method->klass->image->runtime_invoke_vtype_cache)
+               g_hash_table_remove (method->klass->image->runtime_invoke_vtype_cache, sig);
 
         /*
          * indexed by SignatureMethodPair
@@ -12584,10 +13006,6 @@ mono_marshal_free_inflated_wrappers (MonoMethod *method)
        if (sig && method->klass->image->delegate_abstract_invoke_cache)
                g_hash_table_foreach_remove (method->klass->image->delegate_abstract_invoke_cache,
                                             signature_method_pair_matches_signature, (gpointer)sig);
-
-       if (sig && method->klass->image->delegate_bound_static_invoke_cache)
-                g_hash_table_foreach_remove (method->klass->image->delegate_bound_static_invoke_cache,
-                                             signature_method_pair_matches_signature, (gpointer)sig);
 
         /*
          * indexed by MonoMethod pointers

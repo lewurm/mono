@@ -2720,6 +2720,20 @@ namespace ReactiveTests.Tests
         }
 
         [TestMethod]
+        public void Interval_TimeSpan_Zero_DefaultScheduler()
+        {
+            var scheduler = new TestScheduler();
+            var observer = scheduler.CreateObserver<long>();
+            var completed = new ManualResetEventSlim();
+
+            Observable.Interval(TimeSpan.Zero).TakeWhile(i => i < 10).Subscribe(observer.OnNext, completed.Set);
+
+            completed.Wait();
+            
+            Assert.AreEqual(10, observer.Messages.Count);
+        }
+
+        [TestMethod]
         public void Interval_TimeSpan_Disposed()
         {
             var scheduler = new TestScheduler();
@@ -7457,6 +7471,20 @@ namespace ReactiveTests.Tests
         }
 
         [TestMethod]
+        public void OneShotTimer_TimeSpan_Zero_DefaultScheduler()
+        {
+            var scheduler = new TestScheduler();
+            var observer = scheduler.CreateObserver<long>();
+            var completed = new ManualResetEventSlim();
+
+            Observable.Timer(TimeSpan.Zero).Subscribe(observer.OnNext, completed.Set);
+
+            completed.Wait();
+            
+            Assert.AreEqual(1, observer.Messages.Count);
+        }
+
+        [TestMethod]
         public void OneShotTimer_TimeSpan_Negative()
         {
             var scheduler = new TestScheduler();
@@ -7571,6 +7599,20 @@ namespace ReactiveTests.Tests
                 OnNext(201, 0L),
                 OnCompleted<long>(201)
             );
+        }
+
+        [TestMethod]
+        public void RepeatingTimer_TimeSpan_Zero_DefaultScheduler()
+        {
+            var scheduler = new TestScheduler();
+            var observer = scheduler.CreateObserver<long>();
+            var completed = new ManualResetEventSlim();
+
+            Observable.Timer(TimeSpan.Zero, TimeSpan.Zero).TakeWhile(i => i < 10).Subscribe(observer.OnNext, completed.Set);
+
+            completed.Wait();
+
+            Assert.AreEqual(10, observer.Messages.Count);
         }
 
         [TestMethod]

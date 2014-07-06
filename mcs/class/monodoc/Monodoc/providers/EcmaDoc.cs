@@ -54,7 +54,17 @@ namespace Monodoc.Providers
 						nsSummaries[nsName] = nsElements = new XElement ("elements",
 						                                                 new XElement ("summary"),
 						                                                 new XElement ("remarks"));
+			        //Add namespace summary and remarks data from file, if available
+					var nsFileName = Path.Combine(asm, String.Format("ns-{0}.xml", nsName));
+					if(File.Exists(nsFileName)){
+						var nsEl = XElement.Load (nsFileName);
 
+						nsElements.Element ("summary").ReplaceWith (nsEl.Descendants ("summary").First ());
+						nsElements.Element ("remarks").ReplaceWith (nsEl.Descendants ("remarks").First ());
+					}else{
+						Console.WriteLine ("Error reading namespace XML for " + nsName);
+					}
+			       
 					foreach (var type in ns.Elements ("Type")) {
 						// Add the XML file corresponding to the type to our storage
 						var id = indexGenerator (type);
@@ -212,7 +222,10 @@ namespace Monodoc.Providers
 			currentNode = result;
 			result = null;
 			searchNode.Caption = desc.ToCompleteTypeName ();
-			index = currentNode.ChildNodes.BinarySearch (searchNode, EcmaTypeNodeComparer.Instance);
+			if (!desc.GenericTypeArgumentsIsNumeric)
+				index = currentNode.ChildNodes.BinarySearch (searchNode, EcmaTypeNodeComparer.Instance);
+			else
+				index = GenericTypeBacktickSearch (currentNode.ChildNodes, desc);
 			if (index >= 0)
 				result = currentNode.ChildNodes[index];
 			if ((desc.DescKind == EcmaDesc.Kind.Type && !desc.IsEtc) || index < 0)
@@ -247,6 +260,48 @@ namespace Monodoc.Providers
 			result = result.ChildNodes[index];
 
 			return result;
+		}
+
+		static int GenericTypeBacktickSearch (IList<Node> childNodes, EcmaDesc desc)
+		{
+			/* Our strategy is to search for the non-generic variant of the type
+			 * (which in most case should fail) and then use the closest index
+			 * to linearily search for the generic variant with the right generic arg number
+			 */
+			var searchNode = new Node () { Caption = desc.TypeName };
+			int index = childNodes.BinarySearch (searchNode, EcmaTypeNodeComparer.Instance);
+			// Place the index in the right start position
+			if (index < 0)
+				index = ~index;
+
+			for (int i = index; i < childNodes.Count; i++) {
+				var currentNode = childNodes[i];
+				// Find the index of the generic argument list
+				int genericIndex = currentNode.Caption.IndexOf ('<');
+				// If we are not on the same base type name anymore, there is no point
+				int captionSlice = genericIndex != -1 ? genericIndex : currentNode.Caption.LastIndexOf (' ');
+				if (string.Compare (searchNode.Caption, 0,
+				                    currentNode.Caption, 0,
+				                    Math.Max (captionSlice, searchNode.Caption.Length),
+				                    StringComparison.Ordinal) != 0)
+					break;
+
+				var numGenerics = CountTypeGenericArguments (currentNode.Caption, genericIndex);
+				if (numGenerics == desc.GenericTypeArguments.Count) {
+					// Simple comparison if we are not looking for an inner type
+					if (desc.NestedType == null)
+						return i;
+					// If more complicated, we fallback to using EcmaUrlParser
+					var caption = currentNode.Caption;
+					caption = "T:" + caption.Substring (0, caption.LastIndexOf (' ')).Replace ('.', '+');
+					EcmaDesc otherDesc;
+					var parser = new EcmaUrlParser ();
+					if (parser.TryParse (caption, out otherDesc) && desc.NestedType.Equals (otherDesc.NestedType))
+						return i;
+				}
+			}
+
+			return -1;
 		}
 
 		// This comparer returns the answer straight from caption comparison
@@ -381,8 +436,11 @@ namespace Monodoc.Providers
 		public static int GetNodeLevel (Node node)
 		{
 			int i = 0;
-			for (; !node.Element.StartsWith ("root:/", StringComparison.OrdinalIgnoreCase); i++)
+			for (; !node.Element.StartsWith ("root:/", StringComparison.OrdinalIgnoreCase); i++) {
 				node = node.Parent;
+				if (node == null)
+					return i - 1;
+			}
 			return i - 1;
 		}
 
@@ -428,12 +486,39 @@ namespace Monodoc.Providers
 			}
 		}
 
-		public static Node FindNodeForCaption (List<Node> nodes, string caption)
+		public static Node FindNodeForCaption (IList<Node> nodes, string caption)
 		{
 			foreach (var node in nodes)
 				if (node.Caption.Equals (caption, StringComparison.OrdinalIgnoreCase))
 					return node;
 			return null;
+		}
+
+		public static int CountTypeGenericArguments (string typeDefinition, int startIndex = 0)
+		{
+			int nestedLevel = 0;
+			int count = 0;
+			bool started = false;
+
+			foreach (char c in typeDefinition.Skip (startIndex)) {
+				switch (c) {
+				case '<':
+					if (!started)
+						count = 1;
+					started = true;
+					nestedLevel++;
+					break;
+				case ',':
+					if (started && nestedLevel == 1)
+						count++;
+					break;
+				case '>':
+					nestedLevel--;
+					break;
+				}
+			}
+
+			return count;
 		}
 
 		internal static string MakeOperatorSignature (XElement member, out string memberSignature)
@@ -485,17 +570,15 @@ namespace Monodoc.Providers
 				var fullName = reader.GetAttribute ("FullName");
 				reader.ReadToFollowing ("AssemblyName");
 				var assemblyName = reader.ReadElementString ();
-				reader.ReadToFollowing ("summary");
-				var summary = reader.ReadInnerXml ();
-				reader.ReadToFollowing ("remarks");
-				var remarks = reader.ReadInnerXml ();
+				var summary = reader.ReadToFollowing ("summary") ? XElement.Load (reader.ReadSubtree ()) : new XElement ("summary");
+				var remarks = reader.ReadToFollowing ("remarks") ? XElement.Load (reader.ReadSubtree ()) : new XElement ("remarks");
 
 				return new XElement ("class",
 				                     new XAttribute ("name", name ?? string.Empty),
 				                     new XAttribute ("fullname", fullName ?? string.Empty),
 				                     new XAttribute ("assembly", assemblyName ?? string.Empty),
-				                     new XElement ("summary", new XCData (summary)),
-				                     new XElement ("remarks", new XCData (remarks)));
+				                     summary,
+				                     remarks);
 			}
 		}
 	}

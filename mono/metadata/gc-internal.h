@@ -112,10 +112,10 @@ extern void mono_gc_set_stack_end (void *stack_end) MONO_INTERNAL;
 /* only valid after the RECLAIM_START GC event and before RECLAIM_END
  * Not exported in public headers, but can be linked to (unsupported).
  */
-extern gboolean mono_object_is_alive (MonoObject* obj);
-extern gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
-extern gpointer mono_gc_out_of_memory (size_t size);
-extern void     mono_gc_enable_events (void);
+extern MONO_API gboolean mono_object_is_alive (MonoObject* obj);
+extern MONO_API gboolean mono_gc_is_finalizer_thread (MonoThread *thread);
+extern MONO_API gpointer mono_gc_out_of_memory (size_t size);
+extern MONO_API void     mono_gc_enable_events (void);
 
 /* disappearing link functionality */
 void        mono_gc_weak_link_add    (void **link_addr, MonoObject *obj, gboolean track) MONO_INTERNAL;
@@ -146,7 +146,7 @@ typedef void (*MonoGCMarkFunc)     (void **addr);
 typedef void (*MonoGCRootMarkFunc) (void *addr, MonoGCMarkFunc mark_func);
 
 /* Create a descriptor with a user defined marking function */
-void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
+MONO_API void *mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker);
 
 /* Return whenever user defined marking functions are supported */
 gboolean mono_gc_user_markers_supported (void) MONO_INTERNAL;
@@ -219,8 +219,8 @@ typedef struct {
 	int alloc_type;
 } AllocatorWrapperInfo;
 
-MonoMethod* mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box) MONO_INTERNAL;
-MonoMethod* mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank) MONO_INTERNAL;
+MonoMethod* mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box) MONO_INTERNAL;
+MonoMethod* mono_gc_get_managed_array_allocator (MonoClass *klass) MONO_INTERNAL;
 MonoMethod *mono_gc_get_managed_allocator_by_type (int atype) MONO_INTERNAL;
 
 guint32 mono_gc_get_managed_allocator_types (void) MONO_INTERNAL;
@@ -335,14 +335,12 @@ gboolean mono_gc_precise_stack_mark_enabled (void) MONO_INTERNAL;
 
 FILE *mono_gc_get_logfile (void) MONO_INTERNAL;
 
-typedef void (*mono_reference_queue_callback) (void *user_data);
-
-typedef struct _MonoReferenceQueue MonoReferenceQueue;
 typedef struct _RefQueueEntry RefQueueEntry;
 
 struct _RefQueueEntry {
 	void *dis_link;
 	guint32 gchandle;
+	MonoDomain *domain;
 	void *user_data;
 	RefQueueEntry *next;
 };
@@ -354,16 +352,18 @@ struct _MonoReferenceQueue {
 	gboolean should_be_deleted;
 };
 
-MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_callback callback) MONO_INTERNAL;
-void mono_gc_reference_queue_free (MonoReferenceQueue *queue) MONO_INTERNAL;
-gboolean mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data) MONO_INTERNAL;
-
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved) MONO_INTERNAL;
 #endif
 
-void mono_gc_bzero (void *dest, size_t size) MONO_INTERNAL;
-void mono_gc_memmove (void *dest, const void *src, size_t size) MONO_INTERNAL;
+/*
+Those functions must be used when it's possible that either destination is not
+word aligned or size is not a multiple of word size.
+*/
+void mono_gc_bzero_atomic (void *dest, size_t size) MONO_INTERNAL;
+void mono_gc_bzero_aligned (void *dest, size_t size) MONO_INTERNAL;
+void mono_gc_memmove_atomic (void *dest, const void *src, size_t size) MONO_INTERNAL;
+void mono_gc_memmove_aligned (void *dest, const void *src, size_t size) MONO_INTERNAL;
 
 guint mono_gc_get_vtable_bits (MonoClass *class) MONO_INTERNAL;
 

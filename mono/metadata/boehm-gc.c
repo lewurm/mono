@@ -13,7 +13,6 @@
 #define GC_I_HIDE_POINTERS
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/mono-gc.h>
-#include <mono/metadata/gc-internal.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/method-builder.h>
@@ -22,11 +21,14 @@
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
+#include <mono/utils/atomic.h>
 #include <mono/utils/mono-logger-internal.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/dtrace.h>
 #include <mono/utils/gc_wrapper.h>
+#include <mono/utils/mono-mutex.h>
 
 #if HAVE_BOEHM_GC
 
@@ -47,6 +49,7 @@ void *pthread_get_stackaddr_np(pthread_t);
 #define MIN_BOEHM_MAX_HEAP_SIZE (MIN_BOEHM_MAX_HEAP_SIZE_IN_MB << 20)
 
 static gboolean gc_initialized = FALSE;
+static mono_mutex_t mono_gc_lock;
 
 static void*
 boehm_thread_register (MonoThreadInfo* info, void *baseptr);
@@ -61,7 +64,7 @@ void
 mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
-	char *env;
+	const char *env;
 
 	if (gc_initialized)
 		return;
@@ -74,7 +77,7 @@ mono_gc_base_init (void)
 	 * we used to do this only when running on valgrind,
 	 * but it happens also in other setups.
 	 */
-#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
+#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK) && !defined(__native_client__)
 	{
 		size_t size;
 		void *sstart;
@@ -147,7 +150,7 @@ mono_gc_base_init (void)
 	GC_allow_register_threads();
 #endif
 
-	if ((env = getenv ("MONO_GC_PARAMS"))) {
+	if ((env = g_getenv ("MONO_GC_PARAMS"))) {
 		char **ptr, **opts = g_strsplit (env, ",", -1);
 		for (ptr = opts; *ptr; ++ptr) {
 			char *opt = *ptr;
@@ -186,6 +189,7 @@ mono_gc_base_init (void)
 #endif
 	
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
+	mono_mutex_init (&mono_gc_lock);
 
 	mono_gc_enable_events ();
 	gc_initialized = TRUE;
@@ -564,9 +568,9 @@ mono_gc_alloc_fixed (size_t size, void *descr)
 	/*
 	static int count;
 	count ++;
-	if (count == atoi (getenv ("COUNT2")))
+	if (count == atoi (g_getenv ("COUNT2")))
 		printf ("HIT!\n");
-	if (count > atoi (getenv ("COUNT2")))
+	if (count > atoi (g_getenv ("COUNT2")))
 		return GC_MALLOC (size);
 	*/
 
@@ -615,13 +619,19 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
-	mono_gc_memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
+	mono_gc_memmove_aligned (dest_ptr, src_ptr, count * sizeof (gpointer));
 }
 
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	*(void**)ptr = value;
+}
+
+void
+mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
+{
+	InterlockedWritePointer (ptr, value);
 }
 
 void
@@ -632,14 +642,14 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	mono_gc_memmove (dest, src, count * mono_class_value_size (klass, NULL));
+	mono_gc_memmove_atomic (dest, src, count * mono_class_value_size (klass, NULL));
 }
 
 void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	/* do not copy the sync state */
-	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+	mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 			mono_object_class (obj)->instance_size - sizeof (MonoObject));
 }
 
@@ -681,7 +691,7 @@ enum {
 };
 
 static MonoMethod*
-create_allocator (int atype, int offset)
+create_allocator (int atype, int tls_key)
 {
 	int index_var, bytes_var, my_fl_var, my_entry_var;
 	guint32 no_freelist_branch, not_small_enough_branch = 0;
@@ -760,7 +770,7 @@ create_allocator (int atype, int offset)
 	/* my_fl = ((GC_thread)tsd) -> ptrfree_freelists + index; */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, 0x0D); /* CEE_MONO_TLS */
-	mono_mb_emit_i4 (mb, offset);
+	mono_mb_emit_i4 (mb, tls_key);
 	if (atype == ATYPE_FREEPTR || atype == ATYPE_FREEPTR_FOR_BOX || atype == ATYPE_STRING)
 		mono_mb_emit_icon (mb, G_STRUCT_OFFSET (struct GC_Thread_Rep, ptrfree_freelists));
 	else if (atype == ATYPE_NORMAL)
@@ -911,11 +921,10 @@ mono_gc_is_critical_method (MonoMethod *method)
  */
 
 MonoMethod*
-mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
+mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
 {
 	int offset = -1;
 	int atype;
-	MonoClass *klass = vtable->klass;
 	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
 
 	/*g_print ("thread tls: %d\n", offset);*/
@@ -923,9 +932,11 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 		return NULL;
 	if (!SMALL_ENOUGH (klass->instance_size))
 		return NULL;
-	if (mono_class_has_finalizer (klass) || klass->marshalbyref || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
+	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass) || (mono_profiler_get_events () & MONO_PROFILE_ALLOCATIONS))
 		return NULL;
 	if (klass->rank)
+		return NULL;
+	if (mono_class_is_open_constructed_type (&klass->byval_arg))
 		return NULL;
 	if (klass->byval_arg.type == MONO_TYPE_STRING) {
 		atype = ATYPE_STRING;
@@ -949,7 +960,7 @@ mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
 }
 
 MonoMethod*
-mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
+mono_gc_get_managed_array_allocator (MonoClass *klass)
 {
 	return NULL;
 }
@@ -966,11 +977,22 @@ mono_gc_get_managed_allocator_by_type (int atype)
 	MonoMethod *res;
 	MONO_THREAD_VAR_OFFSET (GC_thread_tls, offset);
 
-	mono_loader_lock ();
+	mono_tls_key_set_offset (TLS_KEY_BOEHM_GC_THREAD, offset);
+
 	res = alloc_method_cache [atype];
-	if (!res)
-		res = alloc_method_cache [atype] = create_allocator (atype, offset);
-	mono_loader_unlock ();
+	if (res)
+		return res;
+
+	res = create_allocator (atype, TLS_KEY_BOEHM_GC_THREAD);
+	mono_mutex_lock (&mono_gc_lock);
+	if (alloc_method_cache [atype]) {
+		mono_free_method (res);
+		res = alloc_method_cache [atype];
+	} else {
+		mono_memory_barrier ();
+		alloc_method_cache [atype] = res;
+	}
+	mono_mutex_unlock (&mono_gc_lock);
 	return res;
 }
 
@@ -996,13 +1018,13 @@ mono_gc_is_critical_method (MonoMethod *method)
 }
 
 MonoMethod*
-mono_gc_get_managed_allocator (MonoVTable *vtable, gboolean for_box)
+mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
 {
 	return NULL;
 }
 
 MonoMethod*
-mono_gc_get_managed_array_allocator (MonoVTable *vtable, int rank)
+mono_gc_get_managed_array_allocator (MonoClass *klass)
 {
 	return NULL;
 }
@@ -1143,6 +1165,19 @@ mono_gc_set_stack_end (void *stack_end)
 
 void mono_gc_set_skip_thread (gboolean value)
 {
+}
+
+void
+mono_gc_register_for_finalization (MonoObject *obj, void *user_data)
+{
+	guint offset = 0;
+
+#ifndef GC_DEBUG
+	/* This assertion is not valid when GC_DEBUG is defined */
+	g_assert (GC_base (obj) == (char*)obj - offset);
+#endif
+
+	GC_REGISTER_FINALIZER_NO_ORDER ((char*)obj - offset, user_data, GUINT_TO_POINTER (offset), NULL, NULL);
 }
 
 /*

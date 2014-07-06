@@ -13,21 +13,20 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProductSignAssembly>true</ProductSignAssembly>
+    <NoWarn>1591</NoWarn>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="..\Common.targets" />
   <PropertyGroup>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugPL' Or '$(Configuration)' == 'ReleasePL' ">
-    <TargetFrameworkProfile>Profile1</TargetFrameworkProfile>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" Condition=" '$(BuildPlatform)' == 'SILVERLIGHT' " />
+    <Reference Include="mscorlib" Condition=" '$(BuildPlatform)' == 'SILVERLIGHT' or '$(TargetFrameworkIdentifier)' == '.NETPortable' " />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Observable" Condition=" '$(BuildFlavor)' == 'SILVERLIGHTM7' " />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IAwaitable.cs" />
     <Compile Include="EnumerableEx.Imperative.cs" />
     <Compile Include="EnumerableEx.Multiple.cs" />
     <Compile Include="EnumerableEx.Single.cs" />
@@ -35,6 +34,7 @@
     <Compile Include="EnumerableEx.Creation.cs" />
     <Compile Include="EnumerableEx.Buffering.cs" />
     <Compile Include="EnumerableEx.Aggregates.cs" />
+    <Compile Include="IYielder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="..\Import.targets" />

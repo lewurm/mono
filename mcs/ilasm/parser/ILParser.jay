@@ -2463,7 +2463,6 @@ instr			: INSTR_NONE
                                         case MiscInstr.ldc_r8:
 						fpdata = (byte []) $2;
 						if (!BitConverter.IsLittleEndian) {
-							// FIXME: handle the stupid ARM FPA format
 							System.Array.Reverse (fpdata, 0, 8);
 						}
                                                 double d = BitConverter.ToDouble (fpdata, 0);
@@ -3209,7 +3208,7 @@ exptype_head		: D_CLASS K_EXTERN expt_attr comp_name
 					}
 			;
 
-expt_attr 		: /* EMPTY */
+expt_attr 		: { $$ = 0; } /* EMPTY */
 			| expt_attr K_PRIVATE                   { $$ = (TypeAttr)$1 | TypeAttr.Private; }
 			| expt_attr K_PUBLIC                    { $$ = (TypeAttr)$1 | TypeAttr.Public; }
 			| expt_attr K_NESTED K_PUBLIC           { $$ = (TypeAttr)$1 | TypeAttr.NestedPublic; }

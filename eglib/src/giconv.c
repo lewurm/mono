@@ -34,6 +34,13 @@
 #endif
 #include <errno.h>
 
+#ifdef _MSC_VER
+#define FORCE_INLINE(RET_TYPE) __forceinline RET_TYPE
+#else
+#define FORCE_INLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
+#endif
+
+
 #define UNROLL_DECODE_UTF8 0
 #define UNROLL_ENCODE_UTF8 0
 
@@ -61,7 +68,7 @@ static int encode_utf16be (gunichar c, char *outbuf, size_t outleft);
 static int decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar);
 static int encode_utf16le (gunichar c, char *outbuf, size_t outleft);
 
-static int decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
+static FORCE_INLINE (int) decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
 static int encode_utf8 (gunichar c, char *outbuf, size_t outleft);
 
 static int decode_latin1 (char *inbuf, size_t inleft, gunichar *outchar);
@@ -167,14 +174,34 @@ gsize
 g_iconv (GIConv cd, gchar **inbytes, gsize *inbytesleft,
 	 gchar **outbytes, gsize *outbytesleft)
 {
-	size_t inleft, outleft;
+	gsize inleft, outleft;
 	char *inptr, *outptr;
 	gunichar c;
 	int rc = 0;
 	
 #ifdef HAVE_ICONV
-	if (cd->cd != (iconv_t) -1)
-		return iconv (cd->cd, inbytes, inbytesleft, outbytes, outbytesleft);
+	if (cd->cd != (iconv_t) -1) {
+		/* Note: gsize may have a different size than size_t, so we need to
+		   remap inbytesleft and outbytesleft to size_t's. */
+		size_t *outleftptr, *inleftptr;
+		size_t n_outleft, n_inleft;
+		
+		if (inbytesleft) {
+			n_inleft = *inbytesleft;
+			inleftptr = &n_inleft;
+		} else {
+			inleftptr = NULL;
+		}
+		
+		if (outbytesleft) {
+			n_outleft = *outbytesleft;
+			outleftptr = &n_outleft;
+		} else {
+			outleftptr = NULL;
+		}
+		
+		return iconv (cd->cd, inbytes, inleftptr, outbytes, outleftptr);
+	}
 #endif
 	
 	if (outbytes == NULL || outbytesleft == NULL) {
@@ -480,7 +507,7 @@ encode_utf16le (gunichar c, char *outbuf, size_t outleft)
 	}
 }
 
-static int
+static FORCE_INLINE (int)
 decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
 {
 	unsigned char *inptr = (unsigned char *) inbuf;
@@ -633,7 +660,7 @@ gchar *
 g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *from_charset,
 	   gsize *bytes_read, gsize *bytes_written, GError **err)
 {
-	size_t outsize, outused, outleft, inleft, grow, rc;
+	gsize outsize, outused, outleft, inleft, grow, rc;
 	char *result, *outbuf, *inbuf;
 	gboolean flush = FALSE;
 	gboolean done = FALSE;
@@ -669,7 +696,7 @@ g_convert (const gchar *str, gssize len, const gchar *to_charset, const gchar *f
 		else
 			rc = g_iconv (cd, NULL, NULL, &outbuf, &outleft);
 		
-		if (rc == (size_t) -1) {
+		if (rc == (gsize) -1) {
 			switch (errno) {
 			case E2BIG:
 				/* grow our result buffer */
@@ -828,7 +855,7 @@ g_unichar_to_utf8 (gunichar c, gchar *outbuf)
 	return n;
 }
 
-static int
+static FORCE_INLINE (int)
 g_unichar_to_utf16 (gunichar c, gunichar2 *outbuf)
 {
 	gunichar c2;

@@ -98,6 +98,20 @@ namespace Mono.CSharp
 		//
 		public virtual IList<TypeSpec> Interfaces {
 			get {
+				if ((state & StateFlags.InterfacesImported) == 0) {
+					state |= StateFlags.InterfacesImported;
+
+					//
+					// Delay interfaces expansion to save memory and once all
+					// base types has been imported to avoid problems where
+					// interface references type before its base was imported
+					//
+					var imported = MemberDefinition as ImportedTypeDefinition;
+					if (imported != null && Kind != MemberKind.MissingType)
+						imported.DefineInterfaces (this);
+
+				}
+
 				return ifaces;
 			}
 			set {
@@ -197,7 +211,7 @@ namespace Mono.CSharp
 		//
 		// Returns true for instances of IList<T>, IEnumerable<T>, ICollection<T>
 		//
-		public virtual bool IsGenericIterateInterface {
+		public virtual bool IsArrayGenericInterface {
 			get {
 				return false;
 			}
@@ -307,6 +321,9 @@ namespace Mono.CSharp
 				if (Kind == MemberKind.Void)
 					return true;
 
+				if (Kind == MemberKind.TypeParameter)
+					return false;
+
 				if (IsNested && DeclaringType.IsGenericOrParentIsGeneric)
 					return false;
 
@@ -361,7 +378,7 @@ namespace Mono.CSharp
 				throw new InternalErrorException ("Modifying expanded interface list");
 
 			if (ifaces == null) {
-				ifaces = new List<TypeSpec> () { iface };
+				ifaces = new List<TypeSpec> { iface };
 				return true;
 			}
 
@@ -639,6 +656,20 @@ namespace Mono.CSharp
 			}
 		}
 
+		public static bool IsNonNullableValueType (TypeSpec t)
+		{
+			switch (t.Kind) {
+			case MemberKind.TypeParameter:
+				return ((TypeParameterSpec) t).IsValueType;
+			case MemberKind.Struct:
+				return !t.IsNullableType;
+			case MemberKind.Enum:
+				return true;
+			default:
+				return false;
+			}
+		}
+
 		public static bool IsValueType (TypeSpec t)
 		{
 			switch (t.Kind) {
@@ -710,22 +741,22 @@ namespace Mono.CSharp
 			return this;
 		}
 
-		public override List<TypeSpec> ResolveMissingDependencies ()
+		public override List<MissingTypeSpecReference> ResolveMissingDependencies (MemberSpec caller)
 		{
-			List<TypeSpec> missing = null;
+			List<MissingTypeSpecReference> missing = null;
 
 			if (Kind == MemberKind.MissingType) {
-				missing = new List<TypeSpec> ();
-				missing.Add (this);
+				missing = new List<MissingTypeSpecReference> ();
+				missing.Add (new MissingTypeSpecReference (this, caller));
 				return missing;
 			}
 
 			foreach (var targ in TypeArguments) {
 				if (targ.Kind == MemberKind.MissingType) {
 					if (missing == null)
-						missing = new List<TypeSpec> ();
+						missing = new List<MissingTypeSpecReference> ();
 
-					missing.Add (targ);
+					missing.Add (new MissingTypeSpecReference (targ, caller));
 				}
 			}
 
@@ -733,19 +764,19 @@ namespace Mono.CSharp
 				foreach (var iface in Interfaces) {
 					if (iface.Kind == MemberKind.MissingType) {
 						if (missing == null)
-							missing = new List<TypeSpec> ();
+							missing = new List<MissingTypeSpecReference> ();
 
-						missing.Add (iface);
+						missing.Add (new MissingTypeSpecReference (iface, caller));
 					}
 				}
 			}
 
 			if (MemberDefinition.TypeParametersCount > 0) {
 				foreach (var tp in MemberDefinition.TypeParameters) {
-					var tp_missing = tp.GetMissingDependencies ();
+					var tp_missing = tp.GetMissingDependencies (this);
 					if (tp_missing != null) {
 						if (missing == null)
-							missing = new List<TypeSpec> ();
+							missing = new List<MissingTypeSpecReference> ();
 
 						missing.AddRange (tp_missing);
 					}
@@ -755,7 +786,7 @@ namespace Mono.CSharp
 			if (missing != null || BaseType == null)
 				return missing;
 
-			return BaseType.ResolveMissingDependencies ();
+			return BaseType.ResolveMissingDependencies (this);
 		}
 
 		public void SetMetaInfo (MetaType info)
@@ -769,6 +800,31 @@ namespace Mono.CSharp
 		public void SetExtensionMethodContainer ()
 		{
 			modifiers |= Modifiers.METHOD_EXTENSION;
+		}
+
+		public void UpdateInflatedInstancesBaseType ()
+		{
+			//
+			// When nested class has a partial part the situation where parent type
+			// is inflated before its base type is defined can occur. In such case
+			// all inflated (should be only 1) instansted need to be updated
+			//
+			// partial class A<T> {
+			//   partial class B : A<int> { }
+			// }
+			//
+			// partial class A<T> : X {}
+			//
+			if (inflated_instances == null)
+				return;
+
+			foreach (var inflated in inflated_instances) {
+				//
+				// Don't need to inflate possible generic type because for now the method
+				// is always used from within the nested type
+				//
+				inflated.Value.BaseType = base_type;
+			}
 		}
 	}
 
@@ -1360,6 +1416,7 @@ namespace Mono.CSharp
 		bool IsPartial { get; }
 		bool IsComImport { get; }
 		bool IsTypeForwarder { get; }
+		bool IsCyclicTypeForwarder { get; }
 		int TypeParametersCount { get; }
 		TypeParameterSpec[] TypeParameters { get; }
 
@@ -1426,6 +1483,12 @@ namespace Mono.CSharp
 		}
 
 		bool ITypeDefinition.IsTypeForwarder {
+			get {
+				return false;
+			}
+		}
+
+		bool ITypeDefinition.IsCyclicTypeForwarder {
 			get {
 				return false;
 			}
@@ -1556,6 +1619,12 @@ namespace Mono.CSharp
 		}
 
 		bool ITypeDefinition.IsTypeForwarder {
+			get {
+				return false;
+			}
+		}
+
+		bool ITypeDefinition.IsCyclicTypeForwarder {
 			get {
 				return false;
 			}
@@ -1921,5 +1990,17 @@ namespace Mono.CSharp
 
 			return pc;
 		}
+	}
+
+	public class MissingTypeSpecReference
+	{
+		public MissingTypeSpecReference (TypeSpec type, MemberSpec caller)
+		{
+			Type = type;
+			Caller = caller;
+		}
+
+		public TypeSpec Type { get; private set; }
+		public MemberSpec Caller { get; private set; }
 	}
 }

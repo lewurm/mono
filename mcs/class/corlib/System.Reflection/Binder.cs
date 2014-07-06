@@ -32,6 +32,7 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace System.Reflection
 {
@@ -57,11 +58,11 @@ namespace System.Reflection
 			}
 		}
 		
-		internal bool ConvertArgs (object[] args, ParameterInfo[] pinfo, CultureInfo culture, bool exactMatch)
+		internal void ConvertValues (object[] args, ParameterInfo[] pinfo, CultureInfo culture, bool exactMatch)
 		{
 			if (args == null) {
 				if (pinfo.Length == 0)
-					return true;
+					return;
 				
 				throw new TargetParameterCountException ();
 			}
@@ -77,20 +78,204 @@ namespace System.Reflection
 					continue;
 				}
 
-				if (arg != null && arg.GetType () == pi.ParameterType)
-					continue;
+				args [i] = ConvertValue (arg, pi.ParameterType, culture, exactMatch);
+			}
+		}
 
-				if (exactMatch)
-					return false;
+		internal object ConvertValue (object value, Type type, CultureInfo culture, bool exactMatch)
+		{
+			bool failed = false;
+			var res = TryConvertToType (value, type, ref failed);
+			if (!failed)
+				return res;
 
-				object v = ChangeType (arg, pi.ParameterType, culture);
-				if (v == null && args [i] != null)
-					return false;
-	
-				args [i] = v;
+			if (exactMatch || this == default_binder)
+				throw new ArgumentException ("Object type " + value.GetType() + " cannot be converted to target type: " + type.FullName);
+
+			return ChangeType (value, type, culture);
+		}
+
+		object TryConvertToType (object value, Type type, ref bool failed)
+		{
+			if (type.IsInstanceOfType (value)) {
+				return value;
 			}
 
-			return true;
+			if (type.IsByRef) {
+        		var elementType = type.GetElementType ();
+        		if (value == null || elementType.IsInstanceOfType (value)) {
+					return value;
+				}
+			}
+
+			if (value == null)
+				return value;
+
+			if (type.IsEnum) {
+				type = Enum.GetUnderlyingType (type);
+				if (type == value.GetType ())
+					return value;
+			}
+
+			if (type.IsPrimitive) {
+				var res = IsConvertibleToPrimitiveType (value, type);
+				if (res != null)
+					return res;
+			} else if (type.IsPointer) {
+				var vtype = value.GetType ();
+				if (vtype == typeof (IntPtr) || vtype == typeof (UIntPtr))
+					return value;
+			}
+
+			failed = true;
+			return null;
+		}
+
+		// Binder uses some incompatible conversion rules. For example
+		// int value cannot be used with decimal parameter but in other
+		// ways it's more flexible than normal convertor, for example
+		// long value can be used with int based enum
+		static object IsConvertibleToPrimitiveType (object value, Type targetType)		
+		{
+			var type = value.GetType ();
+			if (type.IsEnum) {
+				type = Enum.GetUnderlyingType (type);
+				if (type == targetType)
+					return value;
+			}
+
+			var from = Type.GetTypeCode (type);
+			var to = Type.GetTypeCode (targetType);
+
+			switch (to) {
+				case TypeCode.Char:
+					switch (from) {
+						case TypeCode.Byte:
+							return (Char) (Byte) value;
+						case TypeCode.UInt16:
+							return value;
+					}
+					break;
+				case TypeCode.Int16:
+					switch (from) {
+						case TypeCode.Byte:
+							return (Int16) (Byte) value;
+						case TypeCode.SByte:
+							return (Int16) (SByte) value;						
+					}
+					break;
+				case TypeCode.UInt16:
+					switch (from) {
+						case TypeCode.Byte:
+							return (UInt16) (Byte) value;
+						case TypeCode.Char:
+							return value;
+					}
+					break;
+				case TypeCode.Int32:
+					switch (from) {
+						case TypeCode.Byte:
+							return (Int32) (Byte) value;
+						case TypeCode.SByte:
+							return (Int32) (SByte) value;
+						case TypeCode.Char:
+							return (Int32) (Char) value;
+						case TypeCode.Int16:
+							return (Int32) (Int16) value;
+						case TypeCode.UInt16:
+							return (Int32) (UInt16) value;
+					}
+					break;
+				case TypeCode.UInt32:
+					switch (from) {
+						case TypeCode.Byte:
+							return (UInt32) (Byte) value;
+						case TypeCode.Char:
+							return (UInt32) (Char) value;
+						case TypeCode.UInt16:
+							return (UInt32) (UInt16) value;
+					}
+					break;
+				case TypeCode.Int64:
+					switch (from) {
+						case TypeCode.Byte:
+							return (Int64) (Byte) value;
+						case TypeCode.SByte:
+							return (Int64) (SByte) value;							
+						case TypeCode.Int16:
+							return (Int64) (Int16) value;
+						case TypeCode.Char:
+							return (Int64) (Char) value;
+						case TypeCode.UInt16:
+							return (Int64) (UInt16) value;
+						case TypeCode.Int32:
+							return (Int64) (Int32) value;
+						case TypeCode.UInt32:
+							return (Int64) (UInt32) value;
+					}
+					break;
+				case TypeCode.UInt64:
+					switch (from) {
+						case TypeCode.Byte:
+							return (UInt64) (Byte) value;
+						case TypeCode.Char:
+							return (UInt64) (Char) value;
+						case TypeCode.UInt16:
+							return (UInt64) (UInt16) value;
+						case TypeCode.UInt32:
+							return (UInt64) (UInt32) value;
+					}
+					break;
+				case TypeCode.Single:
+					switch (from) {
+						case TypeCode.Byte:
+							return (Single) (Byte) value;
+						case TypeCode.SByte:
+							return (Single) (SByte) value;
+						case TypeCode.Int16:
+							return (Single) (Int16) value;
+						case TypeCode.Char:
+							return (Single) (Char) value;
+						case TypeCode.UInt16:
+							return (Single) (UInt16) value;
+						case TypeCode.Int32:
+							return (Single) (Int32) value;
+						case TypeCode.UInt32:
+							return (Single) (UInt32) value;
+						case TypeCode.Int64:
+							return (Single) (Int64) value;
+						case TypeCode.UInt64:
+							return (Single) (UInt64) value;
+					}
+					break;
+				case TypeCode.Double:
+					switch (from) {
+						case TypeCode.Byte:
+							return (Double) (Byte) value;
+						case TypeCode.SByte:
+							return (Double) (SByte) value;
+						case TypeCode.Char:
+							return (Double) (Char) value;
+						case TypeCode.Int16:
+							return (Double) (Int16) value;
+						case TypeCode.UInt16:
+							return (Double) (UInt16) value;
+						case TypeCode.Int32:
+							return (Double) (Int32) value;
+						case TypeCode.UInt32:
+							return (Double) (UInt32) value;
+						case TypeCode.Int64:
+							return (Double) (Int64) value;
+						case TypeCode.UInt64:
+							return (Double) (UInt64) value;
+						case TypeCode.Single:
+							return (Double) (Single) value;
+					}
+					break;
+			}
+
+			// Everything else is rejected
+			return null;
 		}
 
 		internal static int GetDerivedLevel (Type type) 
@@ -188,8 +373,15 @@ namespace System.Reflection
 						 * Find the corresponding parameter for each parameter name,
 						 * reorder types/modifiers array during the search.
 						 */
-						Type[] newTypes = (Type[])types.Clone ();
-						ParameterModifier[] newModifiers = modifiers != null ? (ParameterModifier[])modifiers.Clone () : null;
+						Type[] newTypes = new Type [types.Length];
+						Array.FastCopy (types, 0, newTypes, 0, types.Length);
+
+						ParameterModifier[] newModifiers = null;
+						if (modifiers != null) {
+							newModifiers = new ParameterModifier [modifiers.Length];
+							Array.FastCopy (modifiers, 0, newModifiers, 0, modifiers.Length);
+						}
+
 						for (i = 0; i < names.Length; ++i) {
 							/* Find the corresponding parameter */
 							int nindex = -1;
@@ -209,12 +401,12 @@ namespace System.Reflection
 						if (i < names.Length)
 							continue;
 
-						selected = SelectMethod (bindingAttr, new MethodBase [] { m }, newTypes, newModifiers, true, args);
+						selected = SelectMethod (bindingAttr, new MethodBase [] { m }, newTypes, newModifiers, true, ref args);
 						if (selected != null)
 							break;
 					}
 				} else {
-					selected = SelectMethod (bindingAttr, match, types, modifiers, true, args);
+					selected = SelectMethod (bindingAttr, match, types, modifiers, true, ref args);
 				}
 
 				state = null;
@@ -278,47 +470,10 @@ namespace System.Reflection
 					}
 				Array.Copy (newArgs, args, args.Length);
 			}
-
-			static bool IsArrayAssignable (Type object_type, Type target_type)
-			{
-				if (object_type.IsArray && target_type.IsArray)
-					return IsArrayAssignable (object_type.GetElementType (), target_type.GetElementType ());
-						
-				if (target_type.IsAssignableFrom (object_type))
-					return true;
-
-				return false;
-			}
 			
 			public override object ChangeType (object value, Type type, CultureInfo culture)
 			{
-				if (value == null)
-					return null;
-				Type vtype = value.GetType ();
-				if (type.IsByRef)
-					type = type.GetElementType ();
-				if (vtype == type || type.IsInstanceOfType (value))
-					return value;
-				if (vtype.IsArray && type.IsArray){
-					if (IsArrayAssignable (vtype.GetElementType (), type.GetElementType ()))
-						return value;
-				}
-
-				if (check_type (vtype, type)) {
-					// These are not supported by Convert
-					if (type.IsEnum)
-						return Enum.ToObject (type, value);
-					if (vtype == typeof (Char)) {
-						if (type == typeof (double))
-							return (double)(char)value;
-						if (type == typeof (float))
-							return (float)(char)value;
-					}
-					if (vtype == typeof (IntPtr) && type.IsPointer)
-						return value;
-					return Convert.ChangeType (value, type);
-				}
-				return null;
+				throw new NotSupportedException ();
 			}
 
 			[MonoTODO ("This method does not do anything in Mono")]
@@ -464,11 +619,11 @@ namespace System.Reflection
 
 			public override MethodBase SelectMethod (BindingFlags bindingAttr, MethodBase [] match, Type [] types, ParameterModifier [] modifiers)
 			{
-				return SelectMethod (bindingAttr, match, types, modifiers,
-					false, null);
+				object[] args = null;
+				return SelectMethod (bindingAttr, match, types, modifiers, false, ref args);
 			}
 
-			MethodBase SelectMethod (BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers, bool allowByRefMatch, object[] arguments)
+			MethodBase SelectMethod (BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers, bool allowByRefMatch, ref object[] arguments)
 			{
 				MethodBase m;
 				int i, j;
@@ -531,22 +686,57 @@ namespace System.Reflection
 					return null;
 
 				MethodBase result = null;
+				ParameterInfo[] result_pi = null;
 				for (i = 0; i < match.Length; ++i) {
 					m = match [i];
-					ParameterInfo[] args = m.GetParametersInternal ();
-					if (args.Length != types.Length)
-						continue;
-					if (!check_arguments (types, args, allowByRefMatch))
+					var pi = m.GetParametersInternal ();
+					var full_pi = pi;
+					if (pi.Length != types.Length) {
+						if ((bindingAttr & BindingFlags.OptionalParamBinding) == 0)
+							continue;
+
+						List<ParameterInfo> pi_reduced = null;
+						for (var ii = pi.Length - 1; ii >= 0; --ii) {
+							if ((pi [ii].Attributes & ParameterAttributes.HasDefault) == 0)
+								break;
+
+							if (pi_reduced == null) {
+								pi_reduced = new List<ParameterInfo> (pi);
+							}
+
+							pi_reduced.RemoveAt (ii);
+						}
+
+						if (pi_reduced == null || pi_reduced.Count != types.Length)
+							continue;
+
+						pi = pi_reduced.ToArray ();
+					}
+
+					if (!check_arguments (types, pi, allowByRefMatch))
 						continue;
 
-					if (result != null)
+					if (result != null) {
 						result = GetBetterMethod (result, m, types);
-					else
-						result = m;
+						if (result != m)
+							continue;
+					}
+
+					result = m;
+					result_pi = full_pi;
 				}
 
-				if (result != null || arguments == null || types.Length != arguments.Length)
+				if (result != null) {
+					i = arguments == null ? 0 : arguments.Length;
+					Array.Resize (ref arguments, result_pi.Length);
+					for (; i < arguments.Length; ++i)
+						arguments [i] = result_pi [i].DefaultValue;
+
 					return result;
+				}
+
+				if (arguments == null || types.Length != arguments.Length)
+					return null;
 
 				// Xamarin-5278: try with parameters that are COM objects
 				// REVIEW: do we also need to implement best method match?

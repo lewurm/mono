@@ -128,6 +128,9 @@ namespace Mono.CSharp
 		PredefinedTypes predefined_types;
 		PredefinedMembers predefined_members;
 
+		public Binary.PredefinedOperator[] OperatorsBinaryEqualityLifted;
+		public Binary.PredefinedOperator[] OperatorsBinaryLifted;
+
 		static readonly string[] attribute_targets = new string[] { "assembly", "module" };
 
 		public ModuleContainer (CompilerContext context)
@@ -184,9 +187,6 @@ namespace Mono.CSharp
 		}
 
 		public int CounterAnonymousTypes { get; set; }
-		public int CounterAnonymousMethods { get; set; }
-		public int CounterAnonymousContainers { get; set; }
-		public int CounterSwitchTypes { get; set; }
 
 		public AssemblyDefinition DeclaringAssembly {
 			get {
@@ -311,7 +311,7 @@ namespace Mono.CSharp
 
 		public override void AddTypeContainer (TypeContainer tc)
 		{
-			containers.Add (tc);
+			AddTypeContainerMember (tc);
 		}
 
 		public override void ApplyAttributeBuilder (Attribute a, MethodSpec ctor, byte[] cdata, PredefinedAttributes pa)
@@ -529,11 +529,37 @@ namespace Mono.CSharp
 			return "<module>";
 		}
 
+		public Binary.PredefinedOperator[] GetPredefinedEnumAritmeticOperators (TypeSpec enumType, bool nullable)
+		{
+			TypeSpec underlying;
+			Binary.Operator mask = 0;
+
+			if (nullable) {
+				underlying = Nullable.NullableInfo.GetEnumUnderlyingType (this, enumType);
+				mask = Binary.Operator.NullableMask;
+			} else {
+				underlying = EnumSpec.GetUnderlyingType (enumType);
+			}
+
+			var operators = new[] {
+				new Binary.PredefinedOperator (enumType, underlying,
+					mask | Binary.Operator.AdditionMask | Binary.Operator.SubtractionMask | Binary.Operator.DecomposedMask, enumType),
+				new Binary.PredefinedOperator (underlying, enumType,
+					mask | Binary.Operator.AdditionMask | Binary.Operator.SubtractionMask | Binary.Operator.DecomposedMask, enumType),
+				new Binary.PredefinedOperator (enumType, mask | Binary.Operator.SubtractionMask, underlying)
+			};
+
+			return operators;
+		}
+
 		public void InitializePredefinedTypes ()
 		{
 			predefined_attributes = new PredefinedAttributes (this);
 			predefined_types = new PredefinedTypes (this);
 			predefined_members = new PredefinedMembers (this);
+
+			OperatorsBinaryEqualityLifted = Binary.CreateEqualityLiftedOperatorsTable (this);
+			OperatorsBinaryLifted = Binary.CreateStandardLiftedOperatorsTable (this);
 		}
 
 		public override bool IsClsComplianceRequired ()

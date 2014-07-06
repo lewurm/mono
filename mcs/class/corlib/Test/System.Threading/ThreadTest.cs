@@ -837,6 +837,13 @@ namespace MonoTests.System.Threading
 			}
 		}
 
+		[Test]
+		public void GetNamedDataSlotTest ()
+		{
+			Assert.IsNotNull (Thread.GetNamedDataSlot ("te#st"), "#1");
+			Assert.AreSame (Thread.GetNamedDataSlot ("te#st"), Thread.GetNamedDataSlot ("te#st"), "#2");
+		}
+
 		void CheckIsRunning (string s, Thread t)
 		{
 			int c = counter;
@@ -1120,6 +1127,60 @@ namespace MonoTests.System.Threading
 				exception_occured = true;
 			}
 			Assert.IsTrue (exception_occured, "Thread1 Started Invalid Exception Occured");
+		}
+
+		[Test]
+		public void TestSetApartmentStateSameState ()
+		{
+			Thread t1 = new Thread (new ThreadStart (Start));
+			t1.SetApartmentState (ApartmentState.STA);
+			Assert.AreEqual (ApartmentState.STA, t1.ApartmentState, "Thread1 Set Once");
+
+			t1.SetApartmentState (ApartmentState.STA);
+			Assert.AreEqual (ApartmentState.STA, t1.ApartmentState, "Thread1 Set twice");
+		}
+
+		[Test]
+		[ExpectedException(typeof(InvalidOperationException))]
+		public void TestSetApartmentStateDiffState ()
+		{
+			Thread t1 = new Thread (new ThreadStart (Start));
+			t1.SetApartmentState (ApartmentState.STA);
+			Assert.AreEqual (ApartmentState.STA, t1.ApartmentState, "Thread1 Set Once");
+
+			t1.SetApartmentState (ApartmentState.MTA);
+		}
+
+		[Test]
+		public void TestTrySetApartmentState ()
+		{
+			Thread t1 = new Thread (new ThreadStart (Start));
+			t1.SetApartmentState (ApartmentState.STA);
+			Assert.AreEqual (ApartmentState.STA, t1.ApartmentState, "#1");
+
+			bool result = t1.TrySetApartmentState (ApartmentState.MTA);
+			Assert.IsFalse (result, "#2");
+
+			result = t1.TrySetApartmentState (ApartmentState.STA);
+			Assert.IsTrue (result, "#3");
+		}
+
+		[Test]
+		public void TestTrySetApartmentStateRunning ()
+		{
+			Thread t1 = new Thread (new ThreadStart (Start));
+			t1.SetApartmentState (ApartmentState.STA);
+			Assert.AreEqual (ApartmentState.STA, t1.ApartmentState, "#1");
+
+			t1.Start ();
+
+			try {
+				t1.TrySetApartmentState (ApartmentState.STA);
+				Assert.Fail ("#2");
+			} catch (ThreadStateException) {
+			}
+
+			t1.Join ();
 		}
 
 		[Test]

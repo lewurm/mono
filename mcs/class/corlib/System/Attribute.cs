@@ -40,7 +40,11 @@ namespace System
 	[ComVisible (true)]
 	[ComDefaultInterface (typeof (_Attribute))]
 	[ClassInterfaceAttribute (ClassInterfaceType.None)]
+#if MOBILE
+	public abstract class Attribute {
+#else
 	public abstract class Attribute : _Attribute {
+#endif
 		protected Attribute ()
 		{
 		}
@@ -254,7 +258,7 @@ namespace System
 
 		public override int GetHashCode ()
 		{
-			int result = TypeId.GetHashCode ();
+			int result = GetType ().GetHashCode ();
 
 			FieldInfo[] fields = GetType ().GetFields (BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 			foreach (FieldInfo field in fields) {
@@ -420,6 +424,7 @@ namespace System
 			return ValueType.DefaultEquals (this, obj);
 		}
 
+#if !MOBILE
 		void _Attribute.GetIDsOfNames ([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
 		{
 			throw new NotImplementedException ();
@@ -440,5 +445,6 @@ namespace System
 		{
 			throw new NotImplementedException ();
 		}
+#endif
 	}
 }

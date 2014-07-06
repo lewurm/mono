@@ -77,6 +77,7 @@ RESOURCE_FILES = \
 	$(IMAGES)
 
 EXTRA_DISTFILES = \
+	jay.sh \
 	monodoc.dll.config.in   \
 	$(RESOURCE_FILES)   \
 	Monodoc.Ecma/EcmaUrlParser.jay \
@@ -116,7 +117,9 @@ LIB_MCS_FLAGS = \
 	/r:System.Xml.Linq.dll                                            \
 	/r:System.Configuration.dll
 
-TEST_MCS_FLAGS = /r:System.Core.dll /r:System.Xml.dll
+CLEAN_FILES += $(the_lib).config
+
+TEST_MCS_FLAGS = /r:System.dll /r:System.Core.dll /r:System.Xml.dll
 
 DOC_SOURCE_DIRS = \
 	../../docs \
@@ -137,8 +140,8 @@ dist-local: Monodoc.Ecma/EcmaUrlParser.cs
 $(the_lib).config: Makefile monodoc.dll.config.in
 	sed 's,@monodoc_refdir@,$(mono_libdir)/monodoc,g' monodoc.dll.config.in > $@
 
-Monodoc.Ecma/EcmaUrlParser.cs: Monodoc.Ecma/EcmaUrlParser.jay $(topdir)/jay/skeleton.cs
-	$(topdir)/jay/jay $(JAY_FLAGS) < $(topdir)/jay/skeleton.cs $< > jay-tmp.out && mv jay-tmp.out $@
+Monodoc.Ecma/EcmaUrlParser.cs: Monodoc.Ecma/EcmaUrlParser.jay $(topdir)/jay/skeleton.cs jay.sh
+	$(topdir)/$(thisdir)/jay.sh $(topdir) $< $@ $(JAY_FLAGS)
 
 parser.exe: Monodoc.Ecma/EcmaUrlParser.cs Monodoc.Ecma/EcmaUrlTokenizer.cs Monodoc.Ecma/EcmaUrlParserDriver.cs Monodoc.Ecma/EcmaDesc.cs
 	mcs /out:$@ /debug $^

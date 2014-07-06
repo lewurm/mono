@@ -2,8 +2,7 @@ using System;
 using System.Threading.Tasks;
 
 // contextual async, parser tests
-
-class A
+class A : Iasync
 {
 	async Task<int> async ()
 	{
@@ -21,11 +20,20 @@ class A
 		var res = (int) await async ();
 		var res2 = (Int32) await async ();
 	}
+	
+	async void Iasync.async ()
+	{
+	}
 
 	public static int Main ()
 	{
 		return 0;
 	}
+}
+
+interface Iasync
+{
+	void async ();
 }
 
 class B
@@ -49,6 +57,15 @@ class C
 		get {
 			return 3;
 		}
+	}
+}
+
+class D
+{
+	enum E {}
+
+	async Task M ()
+	{
 	}
 }
 

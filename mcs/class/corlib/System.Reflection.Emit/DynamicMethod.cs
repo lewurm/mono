@@ -138,7 +138,7 @@ namespace System.Reflection.Emit {
 				if (ilgen == null || ilgen.ILOffset == 0)
 					throw new InvalidOperationException ("Method '" + name + "' does not have a method body.");
 
-				ilgen.label_fixup ();
+				ilgen.label_fixup (this);
 
 				// Have to create all DynamicMethods referenced by this one
 				try {
@@ -162,6 +162,9 @@ namespace System.Reflection.Emit {
 		}
 
 		[ComVisible (true)]
+#if NET_4_5
+		sealed override
+#endif
 		public Delegate CreateDelegate (Type delegateType)
 		{
 			if (delegateType == null)
@@ -176,6 +179,9 @@ namespace System.Reflection.Emit {
 		}
 
 		[ComVisible (true)]
+#if NET_4_5
+		sealed override
+#endif
 		public Delegate CreateDelegate (Type delegateType, object target)
 		{
 			if (delegateType == null)
@@ -257,7 +263,7 @@ namespace System.Reflection.Emit {
 
 			ParameterInfo[] retval = new ParameterInfo [parameters.Length];
 			for (int i = 0; i < parameters.Length; i++) {
-				retval [i] = new ParameterInfo (pinfo == null ? null : pinfo [i + 1], parameters [i], this, i + 1);
+				retval [i] = ParameterInfo.New (pinfo == null ? null : pinfo [i + 1], parameters [i], this, i + 1);
 			}
 			return retval;
 		}
@@ -443,7 +449,7 @@ namespace System.Reflection.Emit {
 			return m.AddRef (str);
 		}
 
-		public int GetToken (MethodInfo method, Type[] opt_param_types) {
+		public int GetToken (MethodBase method, Type[] opt_param_types) {
 			throw new InvalidOperationException ();
 		}
 

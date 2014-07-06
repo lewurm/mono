@@ -1618,6 +1618,126 @@ public class ArrayTest
 		}
 	}
 
+
+	[Test]
+	public void FindIndexTest ()
+	{
+		var a = new int[] { 2, 2, 2, 3, 2 };
+		Assert.AreEqual (2, Array.FindIndex (a, 2, 2, l => true));
+	}
+
+	[Test]
+	public void FindIndex_Invalid ()
+	{
+		var array = new int [] { 1, 2, 3, 4, 5 };
+
+		try {
+			Array.FindIndex (array, null);
+			Assert.Fail ("#1");
+		} catch (ArgumentNullException) {
+		}
+
+		try {
+			Array.FindIndex (array, -1, l => true);
+			Assert.Fail ("#2");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindIndex (array, -1, 0, l => true);
+			Assert.Fail ("#2b");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindIndex (array, 0, -1, l => true);
+			Assert.Fail ("#3");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindIndex (array, 100, l => true);
+			Assert.Fail ("#4");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindIndex (array, 100, 0, l => true);
+			Assert.Fail ("#4b");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindIndex (array, 7, 2, l => true);
+			Assert.Fail ("#5");
+		} catch (ArgumentOutOfRangeException) {
+		}
+	}
+
+	[Test, ExpectedException (typeof (ArgumentNullException))]
+	public void FindLastNullTest ()
+	{
+		var array = new int [] { 1, 2, 3, 4, 5 };		
+		Array.FindLast (array, null);
+	}
+
+	[Test]
+	public void FindLastIndexTest ()
+	{
+		var array = new int [] { 1, 2, 3, 4, 5 };
+
+		Assert.AreEqual (2, Array.FindLastIndex (array, 2, 3, l => true));
+		Assert.AreEqual (2, Array.FindLastIndex (array, 2, 2, l => true));
+		Assert.AreEqual (1, Array.FindLastIndex (array, 1, 2, l => true));
+	}
+
+	[Test]
+	public void FindLastIndex_Invalid ()
+	{
+		var array = new int [] { 1, 2, 3, 4, 5 };
+		try {
+			Array.FindLastIndex (array, null);
+			Assert.Fail ("#1");
+		} catch (ArgumentNullException) {
+		}
+
+		try {
+			Array.FindLastIndex (array, -1, l => true);
+			Assert.Fail ("#2");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindLastIndex (array, -1, 0, l => true);
+			Assert.Fail ("#2b");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindLastIndex (array, 0, -1, l => true);
+			Assert.Fail ("#3");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindLastIndex (array, 100, l => true);
+			Assert.Fail ("#4");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindLastIndex (array, 100, 0, l => true);
+			Assert.Fail ("#4b");
+		} catch (ArgumentOutOfRangeException) {
+		}
+
+		try {
+			Array.FindLastIndex (array, 2, 4, l => true);
+			Assert.Fail ("#5");
+		} catch (ArgumentOutOfRangeException) {
+		}
+	}
+
 	[Test]
 	public void TestReverse() {
 		{
@@ -3290,6 +3410,16 @@ public class ArrayTest
 			if (y == null) return -1;
 			return ((string)x).CompareTo((string)y);
 		}
+	}
+
+	[Test] //bxc #11184
+	public void UnalignedArrayClear ()
+	{
+		byte[] input = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+		byte[] expected = new byte[] { 1, 2, 3, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		Array.Clear (input, 5, 11);
+		
+		Assert.AreEqual (input, expected);
 	}
 
 #if NET_4_0

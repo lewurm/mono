@@ -30,9 +30,13 @@
 
 #if SECURITY_DEP
 
+#if MONOTOUCH
+using Mono.Security.Protocol.Tls;
+#else
 extern alias MonoSecurity;
-
 using MonoSecurity::Mono.Security.Protocol.Tls;
+#endif
+
 #endif
 
 using System.IO;
@@ -58,7 +62,7 @@ namespace System.Net
 	{
 		ServicePoint sPoint;
 		Stream nstream;
-		Socket socket;
+		internal Socket socket;
 		object socketLock = new object ();
 		WebExceptionStatus status;
 		WaitCallback initConn;
@@ -93,19 +97,15 @@ namespace System.Net
 		Exception connect_exception;
 		static object classLock = new object ();
 		static Type sslStream;
+#if !MONOTOUCH
 		static PropertyInfo piClient;
 		static PropertyInfo piServer;
 		static PropertyInfo piTrustFailure;
+#endif
 
 #if MONOTOUCH
-                static MethodInfo start_wwan;
-
-                static WebConnection ()
-                {
-                        Type type = Type.GetType ("MonoTouch.ObjCRuntime.Runtime, monotouch");
-			if (type != null)
-	                        start_wwan = type.GetMethod ("StartWWAN", new Type [] { typeof (System.Uri) });
-                }
+		[System.Runtime.InteropServices.DllImport ("__Internal")]
+		static extern void monotouch_start_wwan (string uri);
 #endif
 
 		public WebConnection (WebConnectionGroup group, ServicePoint sPoint)
@@ -165,10 +165,8 @@ namespace System.Net
 
 				if (hostEntry == null) {
 #if MONOTOUCH
-					if (start_wwan != null) {
-						start_wwan.Invoke (null, new object [1] { sPoint.Address });
-						hostEntry = sPoint.HostEntry;
-					}
+					monotouch_start_wwan (sPoint.Address.ToString ());
+					hostEntry = sPoint.HostEntry;
 					if (hostEntry == null) {
 #endif
 						status = sPoint.UsesProxy ? WebExceptionStatus.ProxyNameResolutionFailure :
@@ -253,9 +251,11 @@ namespace System.Net
 					throw new NotSupportedException (msg);
 				}
 #endif
+#if !MONOTOUCH
 				piClient = sslStream.GetProperty ("SelectedClientCertificate");
 				piServer = sslStream.GetProperty ("ServerCertificate");
 				piTrustFailure = sslStream.GetProperty ("TrustFailure");
+#endif
 			}
 		}
 
@@ -434,14 +434,17 @@ namespace System.Net
 							if (!ok)
 								return false;
 						}
-
-						object[] args = new object [4] { serverStream,
-										request.ClientCertificates,
-										request, buffer};
-						nstream = (Stream) Activator.CreateInstance (sslStream, args);
 #if SECURITY_DEP
+#if MONOTOUCH
+						nstream = new HttpsClientStream (serverStream, request.ClientCertificates, request, buffer);
+#else
+						object[] args = new object [4] { serverStream,
+							request.ClientCertificates,
+							request, buffer};
+						nstream = (Stream) Activator.CreateInstance (sslStream, args);
+#endif
 						SslClientStream scs = (SslClientStream) nstream;
-						var helper = new ServicePointManager.ChainValidationHelper (request);
+						var helper = new ServicePointManager.ChainValidationHelper (request, request.Address.Host);
 						scs.ServerCertValidation2 += new CertificateValidationCallback2 (helper.ValidateChain);
 #endif
 						certsAvailable = false;
@@ -562,7 +565,7 @@ namespace System.Net
 
 			cnc.position = 0;
 
-			WebConnectionStream stream = new WebConnectionStream (cnc);
+			WebConnectionStream stream = new WebConnectionStream (cnc, data);
 			bool expect_content = ExpectContent (data.StatusCode, data.request.Method);
 			string tencoding = null;
 			if (expect_content)
@@ -610,11 +613,17 @@ namespace System.Net
 			return (statusCode >= 200 && statusCode != 204 && statusCode != 304);
 		}
 
-		internal void GetCertificates () 
+		internal void GetCertificates (Stream stream) 
 		{
 			// here the SSL negotiation have been done
-			X509Certificate client = (X509Certificate) piClient.GetValue (nstream, null);
-			X509Certificate server = (X509Certificate) piServer.GetValue (nstream, null);
+#if SECURITY_DEP && MONOTOUCH
+			HttpsClientStream s = (stream as HttpsClientStream);
+			X509Certificate client = s.SelectedClientCertificate;
+			X509Certificate server = s.ServerCertificate;
+#else
+			X509Certificate client = (X509Certificate) piClient.GetValue (stream, null);
+			X509Certificate server = (X509Certificate) piServer.GetValue (stream, null);
+#endif
 			sPoint.SetCertificates (client, server);
 			certsAvailable = (server != null);
 		}
@@ -741,6 +750,8 @@ namespace System.Net
 		{
 			HttpWebRequest request = (HttpWebRequest) state;
 			request.WebConnection = this;
+			if (request.ReuseConnection)
+				request.StoredConnection = this;
 
 			if (request.Aborted)
 				return;
@@ -936,20 +947,23 @@ namespace System.Net
 			}
 
 			int nbytes = 0;
+			bool done = false;
 			WebAsyncResult wr = null;
 			IAsyncResult nsAsync = ((WebAsyncResult) result).InnerAsyncResult;
 			if (chunkedRead && (nsAsync is WebAsyncResult)) {
 				wr = (WebAsyncResult) nsAsync;
 				IAsyncResult inner = wr.InnerAsyncResult;
-				if (inner != null && !(inner is WebAsyncResult))
+				if (inner != null && !(inner is WebAsyncResult)) {
 					nbytes = s.EndRead (inner);
+					done = nbytes == 0;
+				}
 			} else if (!(nsAsync is WebAsyncResult)) {
 				nbytes = s.EndRead (nsAsync);
 				wr = (WebAsyncResult) result;
+				done = nbytes == 0;
 			}
 
 			if (chunkedRead) {
-				bool done = (nbytes == 0);
 				try {
 					chunkStream.WriteAndReadBack (wr.Buffer, wr.Offset, wr.Size, ref nbytes);
 					if (!done && nbytes == 0 && chunkStream.WantMore)
@@ -1130,16 +1144,16 @@ namespace System.Net
 			lock (this) {
 				if (Data.request != request)
 					throw new ObjectDisposedException (typeof (NetworkStream).FullName);
-				if (nstream == null)
-					return false;
 				s = nstream;
+				if (s == null)
+					return false;
 			}
 
 			try {
 				s.Write (buffer, offset, size);
 				// here SSL handshake should have been done
 				if (ssl && !certsAvailable)
-					GetCertificates ();
+					GetCertificates (s);
 			} catch (Exception e) {
 				err_msg = e.Message;
 				WebExceptionStatus wes = WebExceptionStatus.SendFailure;
@@ -1150,9 +1164,16 @@ namespace System.Net
 				}
 
 				// if SSL is in use then check for TrustFailure
-				if (ssl && (bool) piTrustFailure.GetValue (nstream, null)) {
-					wes = WebExceptionStatus.TrustFailure;
-					msg = "Trust failure";
+				if (ssl) {
+#if SECURITY_DEP && MONOTOUCH
+					HttpsClientStream https = (s as HttpsClientStream);
+					if (https.TrustFailure) {
+#else
+					if ((bool) piTrustFailure.GetValue (s , null)) {
+#endif
+						wes = WebExceptionStatus.TrustFailure;
+						msg = "Trust failure";
+					}
 				}
 
 				HandleError (wes, e, msg);
@@ -1164,6 +1185,11 @@ namespace System.Net
 		internal void Close (bool sendNext)
 		{
 			lock (this) {
+				if (Data != null && Data.request != null && Data.request.ReuseConnection) {
+					Data.request.ReuseConnection = false;
+					return;
+				}
+
 				if (nstream != null) {
 					try {
 						nstream.Close ();

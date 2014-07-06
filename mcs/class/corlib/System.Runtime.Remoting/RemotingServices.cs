@@ -107,10 +107,17 @@ namespace System.Runtime.Remoting
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static MethodBase GetVirtualMethod (Type type, MethodBase method);
 
+#if DISABLE_REMOTING
+		public static bool IsTransparentProxy (object proxy)
+		{
+			throw new NotSupportedException ();
+		}
+#else
 		[ReliabilityContractAttribute (Consistency.WillNotCorruptState, Cer.Success)]
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		public extern static bool IsTransparentProxy (object proxy);
-		
+#endif
+
 		internal static IMethodReturnMessage InternalExecuteMessage (
 		        MarshalByRefObject target, IMethodCallMessage reqMsg)
 		{
@@ -789,7 +796,7 @@ namespace System.Runtime.Remoting
 			if (obj is CACD) {
 				CACD cad = (CACD) obj;
 				obj = cad.d;
-				CallContext.UpdateCurrentCallContext ((LogicalCallContext) cad.c);
+				CallContext.UpdateCurrentLogicalCallContext ((LogicalCallContext) cad.c);
 			}
 			return obj;
 		}

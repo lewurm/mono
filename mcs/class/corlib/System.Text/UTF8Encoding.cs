@@ -663,7 +663,7 @@ fail_no_space:
 			throw new ArgumentOutOfRangeException ("charIndex", _("ArgRange_Array"));
 		}
 
-		if (charIndex == chars.Length)
+		if (charIndex == chars.Length && byteCount == 0)
 			return 0;
 
 		fixed (char* cptr = chars) {
@@ -688,10 +688,14 @@ fail_no_space:
 		if (leftOverCount == 0) {
 			int end = byteIndex + byteCount;
 			for (; byteIndex < end; posn++, byteIndex++, byteCount--) {
-				if (bytes [byteIndex] < 0x80)
+				if (bytes [byteIndex] < 0x80) {
+					if (posn >= length) {
+						throw new ArgumentException (_("Arg_InsufficientSpace"), "chars");
+					}
 					chars [posn] = (char) bytes [byteIndex];
-				else
+				} else {
 					break;
+				}
 			}
 		}
 
@@ -848,7 +852,14 @@ fail_no_space:
 		if (charCount < 0) {
 			throw new ArgumentOutOfRangeException ("charCount", _("ArgRange_NonNegative"));
 		}
-		return charCount * 4;
+
+		// Add 1 to charCount since there may be a lead surrogate left from the previous call to GetBytes/Encoder.Convert
+		charCount = charCount + 1;
+		if (EncoderFallback.MaxCharCount > 1) {
+			charCount = charCount * EncoderFallback.MaxCharCount;
+		}
+
+		return charCount * 3;
 	}
 
 	// Get the maximum number of characters needed to decode a
@@ -858,7 +869,14 @@ fail_no_space:
 		if (byteCount < 0) {
 			throw new ArgumentOutOfRangeException ("byteCount", _("ArgRange_NonNegative"));
 		}
-		return byteCount;
+
+		// Add 1 to byteCount since there may be the bytes from part of a surrogate pair left from the previous call to GetChars/Decoder.Convert
+		int maxCharCount = byteCount + 1;
+		if (DecoderFallback.MaxCharCount > 1) {
+			maxCharCount = maxCharCount * DecoderFallback.MaxCharCount;
+		}
+
+		return maxCharCount;
 	}
 
 	// Get a UTF8-specific decoder that is attached to this instance.

@@ -580,7 +580,6 @@ namespace MonoTests.System.Reflection
 		}
 
 		[Test]
-		[Category ("MobileNotWorking")] // bug #10266
 		public void NullableTests ()
 		{
 			MethodInfo mi = typeof (MethodInfoTest).GetMethod ("pass_nullable");
@@ -710,6 +709,9 @@ namespace MonoTests.System.Reflection
 
 		[Test]
 		[ExpectedException (typeof (ArgumentException))]
+#if MOBILE
+		[Category ("NotWorking")] // #10552
+#endif
 		public void MakeGenericMethodRespectConstraints ()
 		{
 			var m = typeof (MethodInfoTest).GetMethod ("TestMethod");
@@ -769,6 +771,18 @@ namespace MonoTests.System.Reflection
 		}
 #endif
 
+
+		public int? Bug12856 ()
+		{
+			return null;
+		}
+
+		[Test] //Bug #12856
+		public void MethodToStringShouldPrintFullNameOfGenericStructs ()
+		{
+			var m = GetType ().GetMethod ("Bug12856");
+			Assert.AreEqual ("System.Nullable`1[System.Int32] Bug12856()", m.ToString (), "#1");
+		}
 	}
 	
 #if NET_2_0

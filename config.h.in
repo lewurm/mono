@@ -69,6 +69,13 @@
 /* Disable assembly saving support in reflection emit */
 #undef DISABLE_REFLECTION_EMIT_SAVE
 
+/* Disable remoting support (This disables type proxies and make com
+   non-functional) */
+#undef DISABLE_REMOTING
+
+/* Disable CAS/CoreCLR security */
+#undef DISABLE_SECURITY
+
 /* Disable major=copying support in SGEN. */
 #undef DISABLE_SGEN_MAJOR_COPYING
 
@@ -132,8 +139,14 @@
 /* Define to 1 if you have the <alloca.h> header file. */
 #undef HAVE_ALLOCA_H
 
-/* "Host supports ARMV6 instructions" */
+/* ARM v5 */
+#undef HAVE_ARMV5
+
+/* ARM v6 */
 #undef HAVE_ARMV6
+
+/* ARM v7 */
+#undef HAVE_ARMV7
 
 /* Supports C99 array initialization */
 #undef HAVE_ARRAY_ELEM_INIT
@@ -167,6 +180,34 @@
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
+
+/* Define to 1 if you have the declaration of `InterlockedAdd', and to 0 if
+   you don't. */
+#undef HAVE_DECL_INTERLOCKEDADD
+
+/* Define to 1 if you have the declaration of `InterlockedAdd64', and to 0 if
+   you don't. */
+#undef HAVE_DECL_INTERLOCKEDADD64
+
+/* Define to 1 if you have the declaration of `InterlockedCompareExchange64',
+   and to 0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64
+
+/* Define to 1 if you have the declaration of `InterlockedDecrement64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDDECREMENT64
+
+/* Define to 1 if you have the declaration of `InterlockedExchange64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDEXCHANGE64
+
+/* Define to 1 if you have the declaration of `InterlockedIncrement64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDINCREMENT64
+
+/* Define to 1 if you have the declaration of `__readfsdword', and to 0 if you
+   don't. */
+#undef HAVE_DECL___READFSDWORD
 
 /* Support for the deprecated attribute */
 #undef HAVE_DEPRECATED
@@ -222,11 +263,17 @@
 /* Define to 1 if you have the <fstab.h> header file. */
 #undef HAVE_FSTAB_H
 
+/* Define to 1 if you have the `fstatat' function. */
+#undef HAVE_FSTATAT
+
 /* Define to 1 if you have the `fstatfs' function. */
 #undef HAVE_FSTATFS
 
 /* Define to 1 if you have the `fstatvfs' function. */
 #undef HAVE_FSTATVFS
+
+/* Define to 1 if you have the `futimens' function. */
+#undef HAVE_FUTIMENS
 
 /* Define to 1 if you have the `futimes' function. */
 #undef HAVE_FUTIMES
@@ -384,6 +431,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define to 1 if you have the `mknodat' function. */
+#undef HAVE_MKNODAT
+
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
 
@@ -395,6 +445,9 @@
 
 /* Have MSG_NOSIGNAL */
 #undef HAVE_MSG_NOSIGNAL
+
+/* Define to 1 if you have the <nacl/nacl_dyncode.h> header file. */
+#undef HAVE_NACL_NACL_DYNCODE_H
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H
@@ -431,6 +484,9 @@
 
 /* Define to 1 if you have the `posix_madvise' function. */
 #undef HAVE_POSIX_MADVISE
+
+/* Define to 1 if you have the `preadv' function. */
+#undef HAVE_PREADV
 
 /* Define to 1 if you have the `psignal' function. */
 #undef HAVE_PSIGNAL
@@ -471,6 +527,15 @@
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
 
+/* Define to 1 if you have the `pwritev' function. */
+#undef HAVE_PWRITEV
+
+/* Define to 1 if you have the `readlinkat' function. */
+#undef HAVE_READLINKAT
+
+/* Define to 1 if you have the `readv' function. */
+#undef HAVE_READV
+
 /* Define to 1 if you have the `remap_file_pages' function. */
 #undef HAVE_REMAP_FILE_PAGES
 
@@ -509,6 +574,9 @@
 
 /* Define to 1 if you have the `sethostname' function. */
 #undef HAVE_SETHOSTNAME
+
+/* Define to 1 if you have the `setpgid' function. */
+#undef HAVE_SETPGID
 
 /* Define to 1 if you have the `setpriority' function. */
 #undef HAVE_SETPRIORITY
@@ -591,6 +659,9 @@
 /* Define to 1 if the system has the type `struct flock'. */
 #undef HAVE_STRUCT_FLOCK
 
+/* Define to 1 if the system has the type `struct iovec'. */
+#undef HAVE_STRUCT_IOVEC
+
 /* Have struct ip_mreq */
 #undef HAVE_STRUCT_IP_MREQ
 
@@ -611,6 +682,15 @@
 
 /* Define to 1 if `f_flags' is a member of `struct statfs'. */
 #undef HAVE_STRUCT_STATFS_F_FLAGS
+
+/* Define to 1 if `st_atim' is a member of `struct stat'. */
+#undef HAVE_STRUCT_STAT_ST_ATIM
+
+/* Define to 1 if `st_ctim' is a member of `struct stat'. */
+#undef HAVE_STRUCT_STAT_ST_CTIM
+
+/* Define to 1 if `st_mtim' is a member of `struct stat'. */
+#undef HAVE_STRUCT_STAT_ST_MTIM
 
 /* Define to 1 if the system has the type `struct timespec'. */
 #undef HAVE_STRUCT_TIMESPEC
@@ -636,8 +716,14 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
 
+/* Define to 1 if you have the <sys/auxv.h> header file. */
+#undef HAVE_SYS_AUXV_H
+
 /* Define to 1 if you have the <sys/epoll.h> header file. */
 #undef HAVE_SYS_EPOLL_H
+
+/* Define to 1 if you have the <sys/event.h> header file. */
+#undef HAVE_SYS_EVENT_H
 
 /* Define to 1 if you have the <sys/extattr.h> header file. */
 #undef HAVE_SYS_EXTATTR_H
@@ -744,7 +830,7 @@
 /* Have timezone variable */
 #undef HAVE_TIMEZONE
 
-/* tld_model available */
+/* tls_model available */
 #undef HAVE_TLS_MODEL_ATTR
 
 /* Have tm_gmtoff */
@@ -765,6 +851,9 @@
 /* Define to 1 if you have /usr/include/malloc.h. */
 #undef HAVE_USR_INCLUDE_MALLOC_H
 
+/* Define to 1 if you have the `utimensat' function. */
+#undef HAVE_UTIMENSAT
+
 /* Define to 1 if you have the <utime.h> header file. */
 #undef HAVE_UTIME_H
 
@@ -783,8 +872,14 @@
 /* Have a working sigaltstack */
 #undef HAVE_WORKING_SIGALTSTACK
 
+/* Define to 1 if you have the `writev' function. */
+#undef HAVE_WRITEV
+
 /* Have system zlib */
 #undef HAVE_ZLIB
+
+/* Define to 1 if you have the `_finite' function. */
+#undef HAVE__FINITE
 
 /* Host Platform is Win32 */
 #undef HOST_WIN32
@@ -841,6 +936,9 @@
 /* Define if Unix sockets cannot be created in an anonymous namespace */
 #undef NEED_LINK_UNLINK
 
+/* Define to 1 if your C compiler doesn't accept -c and -o together. */
+#undef NO_MINUS_C_MINUS_O
+
 /* Name of package */
 #undef PACKAGE
 
@@ -895,6 +993,9 @@
 /* byte order of target */
 #undef TARGET_BYTE_ORDER
 
+/* ... */
+#undef TARGET_IA64
+
 /* The JIT/AOT targets iOS */
 #undef TARGET_IOS
 
@@ -922,6 +1023,12 @@
 /* ... */
 #undef TARGET_S390X
 
+/* ... */
+#undef TARGET_SPARC
+
+/* ... */
+#undef TARGET_SPARC64
+
 /* Target OS is Win32/MinGW */
 #undef TARGET_WIN32
 
@@ -930,6 +1037,9 @@
 
 /* ... */
 #undef TARGET_XBOX360
+
+/* ... */
+#undef USE_GCC_ATOMIC_OPS
 
 /* Use jump tables in JIT */
 #undef USE_JUMP_TABLES
@@ -943,14 +1053,17 @@
 /* Use malloc for each single mempool allocation */
 #undef USE_MALLOC_FOR_MEMPOOLS
 
-/* Use mono_mutex_t */
-#undef USE_MONO_MUTEX
-
 /* Version number of package */
 #undef VERSION
+
+/* ... */
+#undef __default_codegen__
 
 /* 64 bit mode with 4 byte longs and pointers */
 #undef __mono_ilp32__
 
 /* ... */
 #undef __mono_ppc64__
+
+/* ... */
+#undef __native_client_codegen__

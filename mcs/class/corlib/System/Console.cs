@@ -7,7 +7,7 @@
 //
 // (C) Ximian, Inc.  http://www.ximian.com
 // (C) 2004,2005 Novell, Inc. (http://www.novell.com)
-//
+// Copyright 2013 Xamarin Inc. (http://www.xamarin.com)
 
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -39,7 +39,7 @@ using System.Text;
 
 namespace System
 {
-	public static class Console
+	public static partial class Console
 	{
 #if !NET_2_1
 		private class WindowsConsole
@@ -93,12 +93,6 @@ namespace System
 		internal static TextWriter stdout;
 		private static TextWriter stderr;
 		private static TextReader stdin;
-
-#if NET_4_5
-		static TextWriter console_stdout;
-		static TextWriter console_stderr;
-		static TextReader console_stdin;
-#endif
 
 		static Console ()
 		{
@@ -157,17 +151,19 @@ namespace System
 				stdin = new CStreamReader (OpenStandardInput (0), inputEncoding);
 			} else {
 #endif
-#if FULL_AOT_RUNTIME
-				Type nslogwriter = Type.GetType ("MonoTouch.Foundation.NSLogWriter, monotouch, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
-				stdout = (TextWriter) Activator.CreateInstance (nslogwriter);
+// FULL_AOT_RUNTIME is used (instead of MONOTOUCH) since we only want this code when running on 
+// iOS (simulator or devices) and *not* when running tools (e.g. btouch #12179) that needs to use 
+// the mscorlib.dll shipped with Xamarin.iOS
+#if MONOTOUCH && FULL_AOT_RUNTIME
+				stdout = new NSLogWriter ();
 #else
 				stdout = new UnexceptionalStreamWriter (OpenStandardOutput (0), outputEncoding);
 				((StreamWriter)stdout).AutoFlush = true;
 #endif
 				stdout = TextWriter.Synchronized (stdout, true);
 
-#if FULL_AOT_RUNTIME
-				stderr = (TextWriter) Activator.CreateInstance (nslogwriter);
+#if MONOTOUCH && FULL_AOT_RUNTIME
+				stderr = new NSLogWriter ();
 #else
 				stderr = new UnexceptionalStreamWriter (OpenStandardError (0), outputEncoding); 
 				((StreamWriter)stderr).AutoFlush = true;
@@ -178,12 +174,6 @@ namespace System
 				stdin = TextReader.Synchronized (stdin);
 #if !NET_2_1
 			}
-#endif
-
-#if NET_4_5
-			console_stderr = stderr;
-			console_stdout = stdout;
-			console_stdin = stdin;
 #endif
 
 #if MONODROID
@@ -673,19 +663,19 @@ namespace System
 #if NET_4_5
 		public static bool IsErrorRedirected {
 			get {
-				return stderr != console_stderr || ConsoleDriver.IsErrorRedirected;
+				return ConsoleDriver.IsErrorRedirected;
 			}
 		}
 
 		public static bool IsOutputRedirected {
 			get {
-				return stdout != console_stdout || ConsoleDriver.IsOutputRedirected;
+				return ConsoleDriver.IsOutputRedirected;
 			}
 		}
 
 		public static bool IsInputRedirected {
 			get {
-				return stdin != console_stdin || ConsoleDriver.IsInputRedirected;
+				return ConsoleDriver.IsInputRedirected;
 			}
 		}
 #endif

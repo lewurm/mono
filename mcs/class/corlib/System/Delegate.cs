@@ -429,10 +429,8 @@ namespace System
 			return MemberwiseClone ();
 		}
 
-		public override bool Equals (object obj)
+		internal bool Compare (Delegate d)
 		{
-			Delegate d = obj as Delegate;
-			
 			if (d == null)
 				return false;
 			
@@ -449,6 +447,11 @@ namespace System
 			}
 
 			return false;
+		}
+
+		public override bool Equals (object obj)
+		{
+			return Compare (obj as Delegate);
 		}
 
 		public override int GetHashCode ()
@@ -524,7 +527,7 @@ namespace System
 				return source;
 
 			if (source.GetType () != value.GetType ())
-				throw new ArgumentException ("Delegate type mismatch");
+				throw new ArgumentException (Locale.GetText ("Incompatible Delegate Types. First is {0} second is {1}.", source.GetType ().FullName, value.GetType ().FullName));
 
 			return source.RemoveImpl (value);
 		}
@@ -565,7 +568,7 @@ namespace System
 
 		internal bool IsTransparentProxy ()
 		{
-#if MONOTOUCH
+#if DISABLE_REMOTING
 			return false;
 #else
 			return RemotingServices.IsTransparentProxy (m_target);

@@ -744,6 +744,12 @@ namespace System.Linq
 			if (list != null)
 				return list [index];
 
+#if NET_4_5
+			var readOnlyList = source as IReadOnlyList<TSource>;
+			if (readOnlyList != null)
+				return readOnlyList[index];
+#endif
+
 			return source.ElementAt (index, Fallback.Throw);
 		}
 
@@ -761,6 +767,12 @@ namespace System.Linq
 			var list = source as IList<TSource>;
 			if (list != null)
 				return index < list.Count ? list [index] : default (TSource);
+
+#if NET_4_5
+			var readOnlyList = source as IReadOnlyList<TSource>;
+			if (readOnlyList != null)
+				return index < readOnlyList.Count ? readOnlyList [index] : default (TSource);
+#endif
 
 			return source.ElementAt (index, Fallback.Default);
 		}
@@ -1099,7 +1111,7 @@ namespace System.Linq
 
 			foreach (TOuter element in outer) {
 				TKey outerKey = outerKeySelector (element);
-				if (innerKeys.Contains (outerKey))
+				if (outerKey != null && innerKeys.Contains (outerKey))
 					yield return resultSelector (element, innerKeys [outerKey]);
 				else
 					yield return resultSelector (element, Empty<TInner> ());
@@ -1166,7 +1178,7 @@ namespace System.Linq
 
 			foreach (TOuter element in outer) {
 				TKey outerKey = outerKeySelector (element);
-				if (innerKeys.Contains (outerKey)) {
+				if (outerKey != null && innerKeys.Contains (outerKey)) {
 					foreach (TInner innerElement in innerKeys [outerKey])
 						yield return resultSelector (element, innerElement);
 				}
@@ -2885,7 +2897,7 @@ namespace System.Linq
 				collection.CopyTo (array, 0);
 				return array;
 			}
-			
+
 			int pos = 0;
 			array = EmptyOf<TSource>.Instance;
 			foreach (var element in source) {
@@ -3105,6 +3117,11 @@ namespace System.Linq
 		{
 			Check.SourceAndPredicate (source, predicate);
 
+			// It cannot be IList<TSource> because it may break on user implementation
+			var array = source as TSource[];
+			if (array != null)
+				return CreateWhereIterator (array, predicate);
+
 			return CreateWhereIterator (source, predicate);
 		}
 
@@ -3115,20 +3132,42 @@ namespace System.Linq
 					yield return element;
 		}
 
+		static IEnumerable<TSource> CreateWhereIterator<TSource> (TSource[] source, Func<TSource, bool> predicate)
+		{
+			for (int i = 0; i < source.Length; ++i) {
+				var element = source [i];
+				if (predicate (element))
+					yield return element;
+			}
+		}	
+
 		public static IEnumerable<TSource> Where<TSource> (this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
 		{
 			Check.SourceAndPredicate (source, predicate);
 
+			var array = source as TSource[];
+			if (array != null)
+				return CreateWhereIterator (array, predicate);
+
 			return CreateWhereIterator (source, predicate);
 		}
 
-		static IEnumerable<TSource> CreateWhereIterator<TSource> (this IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
+		static IEnumerable<TSource> CreateWhereIterator<TSource> (IEnumerable<TSource> source, Func<TSource, int, bool> predicate)
 		{
 			int counter = 0;
 			foreach (TSource element in source) {
 				if (predicate (element, counter))
 					yield return element;
 				counter++;
+			}
+		}
+
+		static IEnumerable<TSource> CreateWhereIterator<TSource> (TSource[] source, Func<TSource, int, bool> predicate)
+		{
+			for (int i = 0; i < source.Length; ++i) {
+				var element = source [i];
+				if (predicate (element, i))
+					yield return element;
 			}
 		}
 

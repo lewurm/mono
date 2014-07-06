@@ -29,11 +29,17 @@
 
 #if SECURITY_DEP
 
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-
+#if MONOTOUCH
 using Mono.Security;
 using Mono.Security.Cryptography;
+#else
+extern alias MonoSecurity;
+using MonoSecurity::Mono.Security;
+using MonoSecurity::Mono.Security.Cryptography;
+#endif
+
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace System.Security.Cryptography {
 

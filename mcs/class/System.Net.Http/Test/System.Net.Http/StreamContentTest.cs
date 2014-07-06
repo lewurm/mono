@@ -309,6 +309,21 @@ namespace MonoTests.System.Net.Http
 		}
 
 		[Test]
+		public void Headers_Multi ()
+		{
+			var sc = new StreamContent (MemoryStream.Null);
+			var headers = sc.Headers;
+
+			headers.Add ("Allow", "");
+			headers.Add ("Allow", "a , b, c");
+
+			Assert.AreEqual (3, headers.Allow.Count, "#1a");
+			Assert.IsTrue (headers.Allow.SequenceEqual (
+				new[] { "a", "b", "c" }
+			), "#1b");
+		}
+
+		[Test]
 		public void LoadIntoBuffer ()
 		{
 			var ms = new MemoryStream ();
@@ -331,7 +346,7 @@ namespace MonoTests.System.Net.Http
 				Assert.IsTrue (sc.LoadIntoBufferAsync (50).Wait (200));
 				Assert.Fail ("#1");
 			} catch (AggregateException e) {
-				Assert.IsInstanceOfType (typeof (HttpRequestException), e.InnerException, "#2");
+				Assert.IsTrue (e.InnerException is HttpRequestException, "#2");
 			}
 		}
 

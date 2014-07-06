@@ -105,7 +105,7 @@ namespace System.Reflection {
 
 		static internal ParameterInfo GetReturnParameterInfo (MonoMethod method)
 		{
-			return new ParameterInfo (GetReturnType (method.mhandle), method, get_retval_marshal (method.mhandle));
+			return ParameterInfo.New (GetReturnType (method.mhandle), method, get_retval_marshal (method.mhandle));
 		}
 	};
 	
@@ -206,8 +206,7 @@ namespace System.Reflection {
 
 			/*Avoid allocating an array every time*/
 			ParameterInfo[] pinfo = GetParametersInternal ();
-			if (!binder.ConvertArgs (parameters, pinfo, culture, (invokeAttr & BindingFlags.ExactBinding) != 0))
-				throw new ArgumentException ("failed to convert parameters");
+			binder.ConvertValues (parameters, pinfo, culture, (invokeAttr & BindingFlags.ExactBinding) != 0);
 
 #if !NET_2_1
 			if (SecurityManager.SecurityEnabled) {
@@ -323,15 +322,10 @@ namespace System.Reflection {
 			return attrs;
 		}
 
-		static bool ShouldPrintFullName (Type type) {
-			return type.IsClass && (!type.IsPointer ||
- 				(!type.GetElementType ().IsPrimitive && !type.GetElementType ().IsNested));
-		}
-
 		public override string ToString () {
 			StringBuilder sb = new StringBuilder ();
 			Type retType = ReturnType;
-			if (ShouldPrintFullName (retType))
+			if (Type.ShouldPrintFullName (retType))
 				sb.Append (retType.ToString ());
 			else
 				sb.Append (retType.Name);
@@ -348,21 +342,10 @@ namespace System.Reflection {
 				sb.Append ("]");
 			}
 			sb.Append ("(");
-			ParameterInfo[] p = GetParametersInternal ();
-			for (int i = 0; i < p.Length; ++i) {
-				if (i > 0)
-					sb.Append (", ");
-				Type pt = p[i].ParameterType;
-				bool byref = pt.IsByRef;
-				if (byref)
-					pt = pt.GetElementType ();
-				if (ShouldPrintFullName (pt))
-					sb.Append (pt.ToString ());
-				else
-					sb.Append (pt.Name);
-				if (byref)
-					sb.Append (" ByRef");
-			}
+
+			var p = GetParametersInternal ();
+			ParameterInfo.FormatParameters (sb, p);
+
 			if ((CallingConvention & CallingConventions.VarArgs) != 0) {
 				if (p.Length > 0)
 					sb.Append (", ");
@@ -465,6 +448,7 @@ namespace System.Reflection {
 #endif
 	}
 	
+	[Serializable()]
 	[StructLayout (LayoutKind.Sequential)]
 	internal class MonoCMethod : ConstructorInfo, ISerializable
 	{
@@ -496,7 +480,7 @@ namespace System.Reflection {
 		}
 
 		/*
-		 * InternalInvoke() receives the parameters corretcly converted by the binder
+		 * InternalInvoke() receives the parameters correctly converted by the binder
 		 * to match the types of the method signature.
 		 */
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -504,15 +488,26 @@ namespace System.Reflection {
 
 		[DebuggerHidden]
 		[DebuggerStepThrough]
-		public override Object Invoke (Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture) 
+		public override object Invoke (object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) 
+		{
+			if (obj == null) {
+				if (!IsStatic)
+					throw new TargetException ("Instance constructor requires a target");
+			} else if (!DeclaringType.IsInstanceOfType (obj)) {
+				throw new TargetException ("Constructor does not match target type");				
+			}
+
+			return DoInvoke (obj, invokeAttr, binder, parameters, culture);
+		}
+
+		object DoInvoke (object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) 
 		{
 			if (binder == null)
 				binder = Binder.DefaultBinder;
 
 			ParameterInfo[] pinfo = MonoMethodInfo.GetParametersInfo (mhandle, this);
 
-			if (!binder.ConvertArgs (parameters, pinfo, culture, (invokeAttr & BindingFlags.ExactBinding) != 0))
-				throw new ArgumentException ("failed to convert parameters");
+			binder.ConvertValues (parameters, pinfo, culture, (invokeAttr & BindingFlags.ExactBinding) != 0);
 
 #if !NET_2_1
 			if (SecurityManager.SecurityEnabled) {
@@ -530,7 +525,12 @@ namespace System.Reflection {
 				throw new MemberAccessException (String.Format ("Cannot create an instance of {0} because it is an abstract class", DeclaringType));
 			}
 
-			Exception exc = null;
+			return InternalInvoke (obj, parameters);
+		}
+
+		public object InternalInvoke (object obj, object[] parameters)
+		{
+			Exception exc;
 			object o = null;
 
 			try {
@@ -545,14 +545,15 @@ namespace System.Reflection {
 
 			if (exc != null)
 				throw exc;
-			return (obj == null) ? o : null;
+
+			return obj == null ? o : null;
 		}
 
 		[DebuggerHidden]
 		[DebuggerStepThrough]
 		public override Object Invoke (BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
 		{
-			return Invoke (null, invokeAttr, binder, parameters, culture);
+			return DoInvoke (null, invokeAttr, binder, parameters, culture);
 		}
 
 		public override RuntimeMethodHandle MethodHandle { 
