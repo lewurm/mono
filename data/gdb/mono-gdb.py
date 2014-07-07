@@ -30,7 +30,7 @@ class StringPrinter:
         while i < len:
             val = (chars.cast(gdb.lookup_type ("gint64")) + (i * 2)).cast(gdb.lookup_type ("gunichar2").pointer ()).dereference ()
             if val >= 256:
-                c = "\u%X" % val
+                c = "\\u%X" % val
             else:
                 c = chr (val)
             res.append (c)
@@ -109,8 +109,8 @@ class ObjectPrinter:
             except:
                 return {}.__iter__ ()
         except:
-            print sys.exc_info ()[0]
-            print sys.exc_info ()[1]
+            print(sys.exc_info ()[0])
+            print(sys.exc_info ()[1])
             return {}.__iter__ ()
 
     def to_string(self):
@@ -134,8 +134,8 @@ class ObjectPrinter:
                 return "%s.%s" % (class_ns, class_name)
             return class_name
         except:
-            print sys.exc_info ()[0]
-            print sys.exc_info ()[1]
+            print(sys.exc_info ()[0])
+            print(sys.exc_info ()[1])
             # FIXME: This can happen because we don't have liveness information
             return self.val.cast (gdb.lookup_type ("guint64"))
         
@@ -197,7 +197,7 @@ class MonoGenericInstPrinter:
         inst_args = inst ["type_argv"]
         inst_str = ""
         for i in range(0, inst_len):
-            print inst_args
+            print(inst_args)
             type_printer = MonoTypePrinter (inst_args [i])
             if i > 0:
                 inst_str = inst_str + ", "
@@ -277,7 +277,7 @@ class MonoMethodRgctxPrinter:
         inst_args = inst ["type_argv"]
         inst_str = ""
         for i in range(0, inst_len):
-            print inst_args
+            print(inst_args)
             type_printer = MonoTypePrinter (inst_args [i])
             if i > 0:
                 inst_str = inst_str + ", "
@@ -348,6 +348,6 @@ XdbCommand ()
 
 gdb.execute ("set environment MONO_XDEBUG gdb")
 
-print "Mono support loaded."
+print("Mono support loaded.")
 
 
