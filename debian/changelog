@@ -1,3 +1,9 @@
+mono (3.2.8+dfsg-7) unstable; urgency=medium
+
+  * [10016c2] Build libmono-2.0-1 and libmono-2.0-dev for mipsel
+
+ -- Iain Lane <laney@debian.org>  Thu, 10 Jul 2014 11:19:02 +0100
+
 mono (3.2.8+dfsg-6) unstable; urgency=medium
 
   * [9a7e4fb] Properly support Python 3 as Python version linked by 
