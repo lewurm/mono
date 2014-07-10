@@ -180,7 +180,7 @@ Description: complete Mono runtime, development tools and all libraries
  You should build-depend on cli-common-dev and the needed libraries instead.
 
 Package: libmono-2.0-1
-Architecture: amd64 armel armhf i386 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x
+Architecture: amd64 armel armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x
 Replaces: libmono-dev (<= 1.1.6-4)
 Conflicts: mono-utils (<< 1.2.3.1-4)
 Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version})
@@ -194,7 +194,7 @@ Description: Mono JIT library (Default version)
  bytecode (aka assemblies), and a class library.
 
 Package: libmono-2.0-dev
-Architecture: amd64 armel armhf i386 kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x
+Architecture: amd64 armel armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 s390x
 Depends: ${misc:Depends}, libmonoboehm-2.0-dev (= ${binary:Version})
 Description: Mono JIT library - Development files (Default version)
  Header files and static libraries for libmono-2.0.
