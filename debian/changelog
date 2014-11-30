@@ -1,3 +1,10 @@
+mono (3.2.8+dfsg-8) unstable; urgency=medium
+
+  * [835c4ca] Add support for non-assembly files installed to the GAC. 
+    This is the first half of a fix to bug #767507.
+
+ -- Jo Shields <jo.shields@xamarin.com>  Wed, 05 Nov 2014 11:44:40 +0000
+
 mono (3.2.8+dfsg-7) unstable; urgency=medium
 
   * [10016c2] Build libmono-2.0-1 and libmono-2.0-dev for mipsel
