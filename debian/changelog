@@ -1,3 +1,14 @@
+mono (3.2.8+dfsg-9) unstable; urgency=medium
+
+  [ Mirco Bauer ]
+  * [c8efb3b] Enable IPv6 support by default (closes: #771389)
+
+  [ Jo Shields ]
+  * [0d67f80] Fix missing contents in mono-runtime-dbg package
+    (Closes: #773509, #773511)
+
+ -- Mirco Bauer <meebey@meebey.net>  Fri, 19 Dec 2014 11:47:22 +0000
+
 mono (3.2.8+dfsg-8) unstable; urgency=medium
 
   * [835c4ca] Add support for non-assembly files installed to the GAC. 
