@@ -1,6 +1,7 @@
 libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  VER_1@VER_1 3.2.1+dfsg
  mono_add_internal_call@VER_1 3.2.1+dfsg
+ mono_aot_get_method@VER_1 4.0.1.34
  mono_aot_only@VER_1 3.2.1+dfsg
  mono_aot_register_globals@VER_1 3.2.1+dfsg
  mono_aot_register_module@VER_1 3.2.1+dfsg
@@ -85,6 +86,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_class_from_name@VER_1 3.2.1+dfsg
  mono_class_from_name_case@VER_1 3.2.1+dfsg
  mono_class_from_typeref@VER_1 3.2.1+dfsg
+ mono_class_from_typeref_checked@VER_1 3.12.0
  mono_class_get@VER_1 3.2.1+dfsg
  mono_class_get_byref_type@VER_1 3.2.1+dfsg
  mono_class_get_com_object_class@VER_1 3.2.1+dfsg
@@ -152,6 +154,12 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_code_manager_size@VER_1 3.2.1+dfsg
  mono_compile_aot@VER_1 3.2.1+dfsg
  mono_compile_method@VER_1 3.2.1+dfsg
+ mono_conc_hashtable_destroy@VER_1 4.0.1.34
+ mono_conc_hashtable_insert@VER_1 4.0.1.34
+ mono_conc_hashtable_lookup@VER_1 4.0.1.34
+ mono_conc_hashtable_new@VER_1 4.0.1.34
+ mono_conc_hashtable_new_full@VER_1 4.0.1.34
+ mono_conc_hashtable_remove@VER_1 4.0.1.34
  mono_config_cleanup@VER_1 3.2.1+dfsg
  mono_config_for_assembly@VER_1 3.2.1+dfsg
  mono_config_parse@VER_1 3.2.1+dfsg
@@ -161,10 +169,21 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_context_get_desc@VER_1 3.2.1+dfsg
  mono_context_init@VER_1 3.2.1+dfsg
  mono_context_set@VER_1 3.2.1+dfsg
+ mono_counter_get_name@VER_1 3.6.0
+ mono_counter_get_section@VER_1 3.6.0
+ mono_counter_get_size@VER_1 3.6.0
+ mono_counter_get_type@VER_1 3.6.0
+ mono_counter_get_unit@VER_1 3.6.0
+ mono_counter_get_variance@VER_1 3.6.0
  mono_counters_cleanup@VER_1 3.2.1+dfsg
  mono_counters_dump@VER_1 3.2.1+dfsg
  mono_counters_enable@VER_1 3.2.1+dfsg
+ mono_counters_foreach@VER_1 3.6.0
+ mono_counters_init@VER_1 4.0.0~alpha1
+ mono_counters_on_register@VER_1 4.0.0~alpha1
  mono_counters_register@VER_1 3.2.1+dfsg
+ mono_counters_register_with_size@VER_1 3.6.0
+ mono_counters_sample@VER_1 3.6.0
  mono_current_single_method@VER_1 3.2.8+dfsg
  mono_custom_attrs_construct@VER_1 3.2.1+dfsg
  mono_custom_attrs_free@VER_1 3.2.1+dfsg
@@ -190,9 +209,10 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_debug_free_method_jit_info@VER_1 3.2.1+dfsg
  mono_debug_free_source_location@VER_1 3.2.1+dfsg
  mono_debug_il_offset_from_address@VER_1 3.2.1+dfsg
+ mono_debug_image_has_debug_info@VER_1 4.0.0~alpha1
  mono_debug_init@VER_1 3.2.1+dfsg
- mono_debug_list_add@VER_1 3.2.1+dfsg
- mono_debug_list_remove@VER_1 3.2.1+dfsg
+#MISSING: 4.0.0~alpha1# mono_debug_list_add@VER_1 3.2.1+dfsg
+#MISSING: 4.0.0~alpha1# mono_debug_list_remove@VER_1 3.2.1+dfsg
  mono_debug_lookup_locals@VER_1 3.2.1+dfsg
  mono_debug_lookup_method@VER_1 3.2.1+dfsg
  mono_debug_lookup_method_addresses@VER_1 3.2.1+dfsg
@@ -211,10 +231,13 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_debug_symfile_lookup_location@VER_1 3.2.1+dfsg
  mono_debug_symfile_lookup_method@VER_1 3.2.1+dfsg
  mono_debugger_agent_register_transport@VER_1 3.2.1+dfsg
- mono_debugger_class_init_func@VER_1 3.2.1+dfsg
+#MISSING: 4.0.0~alpha1# mono_debugger_class_init_func@VER_1 3.2.1+dfsg
  mono_debugger_insert_breakpoint@VER_1 3.2.1+dfsg
  mono_debugger_method_has_breakpoint@VER_1 3.2.1+dfsg
  mono_debugger_run_finally@VER_1 3.2.1+dfsg
+ mono_decimal_addsub@VER_1 4.0.0~alpha1
+ mono_decimal_divide@VER_1 4.0.0~alpha1
+ mono_decimal_from_number@VER_1 4.0.0~alpha1
  mono_declsec_flags_from_assembly@VER_1 3.2.1+dfsg
  mono_declsec_flags_from_class@VER_1 3.2.1+dfsg
  mono_declsec_flags_from_method@VER_1 3.2.1+dfsg
@@ -232,6 +255,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_dl_fallback_register@VER_1 3.2.1+dfsg
  mono_dl_fallback_unregister@VER_1 3.2.1+dfsg
  mono_dllmap_insert@VER_1 3.2.1+dfsg
+ mono_do_crash_chaining@VER_1 3.6.0
  mono_do_signal_chaining@VER_1 3.2.1+dfsg
  mono_do_single_method_regression@VER_1 3.2.8+dfsg
  mono_do_x86_stack_align@VER_1 3.2.1+dfsg
@@ -250,14 +274,15 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_domain_is_unloading@VER_1 3.2.1+dfsg
  mono_domain_owns_vtable_slot@VER_1 3.2.1+dfsg
  mono_domain_set@VER_1 3.2.1+dfsg
+ mono_domain_set_config@VER_1 3.8.0
  mono_domain_set_internal@VER_1 3.2.1+dfsg
  mono_domain_try_type_resolve@VER_1 3.2.1+dfsg
  mono_domain_try_unload@VER_1 3.2.1+dfsg
  mono_domain_unload@VER_1 3.2.1+dfsg
  mono_dont_free_domains@VER_1 3.2.1+dfsg
- mono_dont_free_global_codeman@VER_1 3.2.1+dfsg
  mono_dwarf_escape_path@VER_1 3.2.1+dfsg
  mono_emit_native_call@VER_1 3.2.1+dfsg
+ mono_enable_debug_domain_unload@VER_1 3.6.0
  mono_environment_exitcode_get@VER_1 3.2.1+dfsg
  mono_environment_exitcode_set@VER_1 3.2.1+dfsg
  mono_error_cleanup@VER_1 3.2.1+dfsg
@@ -340,8 +365,10 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_gc_reference_queue_add@VER_1 3.2.8+dfsg
  mono_gc_reference_queue_free@VER_1 3.2.8+dfsg
  mono_gc_reference_queue_new@VER_1 3.2.8+dfsg
+ mono_gc_register_finalizer_callbacks@VER_1 3.8.0
+ mono_gc_toggleref_add@VER_1 3.6.0
+ mono_gc_toggleref_register_callback@VER_1 3.6.0
  mono_gc_register_bridge_callbacks@VER_1 3.2.8+dfsg
- mono_gc_scan_for_specific_ref@VER_1 3.2.8+dfsg
  mono_gc_toggleref_add@VER_1 3.2.8+dfsg
  mono_gc_toggleref_register_callback@VER_1 3.2.8+dfsg
  mono_gc_wait_for_bridge_processing@VER_1 3.2.8+dfsg
@@ -413,6 +440,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_get_int32_class@VER_1 3.2.1+dfsg
  mono_get_int64_class@VER_1 3.2.1+dfsg
  mono_get_intptr_class@VER_1 3.2.1+dfsg
+ mono_get_jit_info_from_method@VER_1 4.0.1.34
  mono_get_machine_config@VER_1 3.2.1+dfsg
  mono_get_method@VER_1 3.2.1+dfsg
  mono_get_method_constrained@VER_1 3.2.1+dfsg
@@ -509,6 +537,11 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_load_remote_field@VER_1 3.2.1+dfsg
  mono_load_remote_field_new@VER_1 3.2.1+dfsg
  mono_local_deadce@VER_1 3.2.1+dfsg
+ mono_lock_free_queue_dequeue@VER_1 4.0.1.34
+ mono_lock_free_queue_enqueue@VER_1 4.0.1.34
+ mono_lock_free_queue_init@VER_1 4.0.1.34
+ mono_lock_free_queue_node_free@VER_1 4.0.1.34
+ mono_lock_free_queue_node_init@VER_1 4.0.1.34
  mono_locks_dump@VER_1 3.2.1+dfsg
  mono_lookup_icall_symbol@VER_1 3.2.1+dfsg
  mono_lookup_internal_call@VER_1 3.2.1+dfsg
@@ -562,7 +595,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_metadata_implmap_from_method@VER_1 3.2.1+dfsg
  mono_metadata_init@VER_1 3.2.1+dfsg
  mono_metadata_interfaces_from_typedef@VER_1 3.2.1+dfsg
- mono_metadata_load_generic_param_constraints@VER_1 3.2.1+dfsg
+ mono_metadata_load_generic_param_constraints_checked@VER_1 3.12.0
  mono_metadata_load_generic_params@VER_1 3.2.1+dfsg
  mono_metadata_locate@VER_1 3.2.1+dfsg
  mono_metadata_locate_token@VER_1 3.2.1+dfsg
@@ -642,6 +675,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_module_file_get_object@VER_1 3.2.1+dfsg
  mono_module_get_object@VER_1 3.2.1+dfsg
  mono_monitor_enter@VER_1 3.2.1+dfsg
+ mono_monitor_enter_v4@VER_1 4.0.0~alpha1
  mono_monitor_exit@VER_1 3.2.1+dfsg
  mono_monitor_try_enter@VER_1 3.2.1+dfsg
  mono_mprotect@VER_1 3.2.1+dfsg
@@ -678,6 +712,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_path_canonicalize@VER_1 3.2.1+dfsg
  mono_path_resolve_symlinks@VER_1 3.2.1+dfsg
  mono_pe_file_open@VER_1 3.2.1+dfsg
+ mono_perfcounter_foreach@VER_1 4.0.0~alpha1
  mono_perfcounters_init@VER_1 3.2.1+dfsg
  mono_pmip@VER_1 3.2.1+dfsg
  mono_poll@VER_1 3.2.1+dfsg
@@ -718,6 +753,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_profiler_install_transition@VER_1 3.2.1+dfsg
  mono_profiler_load@VER_1 3.2.1+dfsg
  mono_profiler_set_events@VER_1 3.2.1+dfsg
+ mono_profiler_set_statistical_mode@VER_1 3.12.0
  mono_property_get_flags@VER_1 3.2.1+dfsg
  mono_property_get_get_method@VER_1 3.2.1+dfsg
  mono_property_get_name@VER_1 3.2.1+dfsg
@@ -734,6 +770,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_ptr_class_get@VER_1 3.2.1+dfsg
  mono_raise_exception@VER_1 3.2.1+dfsg
  mono_realloc_native_code@VER_1 3.2.1+dfsg
+ mono_reflection_assembly_get_assembly@VER_1 3.8.0
  mono_reflection_free_type_info@VER_1 3.2.1+dfsg
  mono_reflection_get_custom_attrs@VER_1 3.2.1+dfsg
  mono_reflection_get_custom_attrs_blob@VER_1 3.2.1+dfsg
@@ -766,7 +803,9 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_runtime_resource_limit@VER_1 3.2.1+dfsg
  mono_runtime_resource_set_callback@VER_1 3.2.1+dfsg
  mono_runtime_run_main@VER_1 3.2.1+dfsg
+ mono_runtime_set_main_args@VER_1 3.6.0
  mono_runtime_set_shutting_down@VER_1 3.2.1+dfsg
+ mono_save_seq_point_info@VER_1 4.0.0~alpha1
  mono_security_core_clr_get_options@VER_1 3.2.1+dfsg
  mono_security_core_clr_require_elevated_permissions@VER_1 3.2.1+dfsg
  mono_security_core_clr_set_options@VER_1 3.2.1+dfsg
@@ -779,6 +818,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_set_assemblies_path@VER_1 3.2.1+dfsg
  mono_set_break_policy@VER_1 3.2.1+dfsg
  mono_set_config_dir@VER_1 3.2.1+dfsg
+ mono_set_crash_chaining@VER_1 3.6.0
  mono_set_defaults@VER_1 3.2.1+dfsg
  mono_set_dirs@VER_1 3.2.1+dfsg
  mono_set_is_debugger_attached@VER_1 3.2.1+dfsg
@@ -810,6 +850,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_single_method_list@VER_1 3.2.8+dfsg
  mono_single_method_regression_opt@VER_1 3.2.8+dfsg
  mono_stack_walk@VER_1 3.2.1+dfsg
+ mono_stack_walk_async_safe@VER_1 3.10.0
  mono_stack_walk_no_il@VER_1 3.2.1+dfsg
  mono_store_remote_field@VER_1 3.2.1+dfsg
  mono_store_remote_field_new@VER_1 3.2.1+dfsg
@@ -817,6 +858,7 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_string_equal@VER_1 3.2.1+dfsg
  mono_string_from_bstr@VER_1 3.2.1+dfsg
  mono_string_from_utf16@VER_1 3.2.1+dfsg
+ mono_string_from_utf32@VER_1 3.10.0
  mono_string_hash@VER_1 3.2.1+dfsg
  mono_string_intern@VER_1 3.2.1+dfsg
  mono_string_is_interned@VER_1 3.2.1+dfsg
@@ -825,8 +867,10 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_string_new_len@VER_1 3.2.1+dfsg
  mono_string_new_size@VER_1 3.2.1+dfsg
  mono_string_new_utf16@VER_1 3.2.1+dfsg
+ mono_string_new_utf32@VER_1 3.10.0
  mono_string_new_wrapper@VER_1 3.2.1+dfsg
  mono_string_to_utf16@VER_1 3.2.1+dfsg
+ mono_string_to_utf32@VER_1 3.10.0
  mono_string_to_utf8@VER_1 3.2.1+dfsg
  mono_string_to_utf8_checked@VER_1 3.2.1+dfsg
  mono_stringify_assembly_name@VER_1 3.2.1+dfsg
@@ -838,9 +882,20 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_thread_create@VER_1 3.2.1+dfsg
  mono_thread_current@VER_1 3.2.1+dfsg
  mono_thread_detach@VER_1 3.2.1+dfsg
+ mono_thread_detach_if_exiting@VER_1 3.10.0
  mono_thread_exit@VER_1 3.2.1+dfsg
  mono_thread_get_main@VER_1 3.2.1+dfsg
  mono_thread_get_undeniable_exception@VER_1 3.2.1+dfsg
+ mono_thread_info_clear_interruption@VER_1 3.12.0
+ mono_thread_info_exit@VER_1 3.6.0
+ mono_thread_info_finish_interrupt@VER_1 3.12.0
+ mono_thread_info_get_stack_bounds@VER_1 3.6.0
+ mono_thread_info_interrupt@VER_1 3.12.0
+ mono_thread_info_open_handle@VER_1 3.6.0
+ mono_thread_info_prepare_interrupt@VER_1 3.12.0
+ mono_thread_info_self_interrupt@VER_1 3.12.0
+ mono_thread_info_tls_get@VER_1 3.6.0
+ mono_thread_info_tls_set@VER_1 3.6.0
  mono_thread_init@VER_1 3.2.1+dfsg
  mono_thread_is_foreign@VER_1 3.2.1+dfsg
  mono_thread_manage@VER_1 3.2.1+dfsg
@@ -848,6 +903,11 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_thread_set_main@VER_1 3.2.1+dfsg
  mono_thread_set_manage_callback@VER_1 3.2.1+dfsg
  mono_thread_stop@VER_1 3.2.1+dfsg
+ mono_threads_attach_tools_thread@VER_1 3.12.0
+ mono_threads_core_clear_interruption@VER_1 3.12.0
+ mono_threads_core_finish_interrupt@VER_1 3.12.0
+ mono_threads_core_prepare_interrupt@VER_1 3.12.0
+ mono_threads_core_self_interrupt@VER_1 3.12.0
  mono_threads_create_thread@VER_1 3.2.8+dfsg
  mono_threads_get_default_stacksize@VER_1 3.2.1+dfsg
  mono_threads_request_thread_dump@VER_1 3.2.1+dfsg
@@ -855,7 +915,10 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_tls_key_get_offset@VER_1 3.2.8+dfsg
  mono_tls_key_set_offset@VER_1 3.2.8+dfsg
  mono_trace_set_level_string@VER_1 3.2.1+dfsg
+ mono_trace_set_log_handler@VER_1 3.10.0
  mono_trace_set_mask_string@VER_1 3.2.1+dfsg
+ mono_trace_set_print_handler@VER_1 3.10.0
+ mono_trace_set_printerr_handler@VER_1 3.10.0
  mono_trampoline_code@VER_1 3.2.1+dfsg
  mono_type_create_from_typespec@VER_1 3.2.1+dfsg
  mono_type_full_name@VER_1 3.2.1+dfsg
