@@ -195,11 +195,6 @@ namespace Mono.CSharp {
 
 			return name + "`" + args.Count;
 		}
-
-		public static string MakeName (string name, int count)
-		{
-			return name + "`" + count;
-		}
 	}
 
 	public class SimpleMemberName
@@ -303,7 +298,7 @@ namespace Mono.CSharp {
 		/// </summary>
 		internal Flags caching_flags;
 
-		public MemberCore (TypeContainer parent, MemberName name, Attributes attrs)
+		protected MemberCore (TypeContainer parent, MemberName name, Attributes attrs)
 		{
 			this.Parent = parent;
 			member_name = name;
@@ -435,7 +430,7 @@ namespace Mono.CSharp {
 				if ((mod_flags & Modifiers.COMPILER_GENERATED) != 0)
 					return true;
 
-				return Parent == null ? false : Parent.IsCompilerGenerated;
+				return Parent != null && Parent.IsCompilerGenerated;
 			}
 		}
 
@@ -675,13 +670,13 @@ namespace Mono.CSharp {
 		// Does extension methods look up to find a method which matches name and extensionType.
 		// Search starts from this namespace and continues hierarchically up to top level.
 		//
-		public ExtensionMethodCandidates LookupExtensionMethod (TypeSpec extensionType, string name, int arity)
+		public ExtensionMethodCandidates LookupExtensionMethod (string name, int arity)
 		{
 			var m = Parent;
 			do {
 				var ns = m as NamespaceContainer;
 				if (ns != null)
-					return ns.LookupExtensionMethod (this, extensionType, name, arity, 0);
+					return ns.LookupExtensionMethod (this, name, arity, 0);
 
 				m = m.Parent;
 			} while (m != null);
@@ -884,7 +879,7 @@ namespace Mono.CSharp {
 				if (GetAttributeObsolete () != null)
 					return true;
 
-				return Parent == null ? false : Parent.IsObsolete;
+				return Parent != null && Parent.IsObsolete;
 			}
 		}
 
@@ -893,7 +888,7 @@ namespace Mono.CSharp {
 				if ((ModFlags & Modifiers.UNSAFE) != 0)
 					return true;
 
-				return Parent == null ? false : Parent.IsUnsafe;
+				return Parent != null && Parent.IsUnsafe;
 			}
 		}
 
@@ -1130,7 +1125,7 @@ namespace Mono.CSharp {
 
 		public virtual string GetSignatureForError ()
 		{
-			var bf = MemberDefinition as Property.BackingField;
+			var bf = MemberDefinition as Property.BackingFieldDeclaration;
 			string name;
 			if (bf == null) {
 				name = Name;
