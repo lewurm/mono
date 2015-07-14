@@ -29,7 +29,7 @@
 
 #if SECURITY_DEP
 
-#if MONOTOUCH
+#if MONOTOUCH || MONODROID
 using Mono.Security;
 using Mono.Security.Cryptography;
 using MX = Mono.Security.X509;
@@ -48,9 +48,7 @@ using System.Text;
 
 namespace System.Security.Cryptography.X509Certificates {
 
-#if NET_4_0
 	[Serializable]
-#endif
 	public class X509Certificate2 : X509Certificate {
 #if !SECURITY_DEP
 		// Used in Mono.Security HttpsClientStream
@@ -428,7 +426,19 @@ namespace System.Security.Cryptography.X509Certificates {
 
 		private MX.X509Certificate ImportPkcs12 (byte[] rawData, string password)
 		{
-			MX.PKCS12 pfx = (password == null) ? new MX.PKCS12 (rawData) : new MX.PKCS12 (rawData, password);
+			MX.PKCS12 pfx = null;
+			if (string.IsNullOrEmpty (password)) {
+				try {
+					// Support both unencrypted PKCS#12..
+					pfx = new MX.PKCS12 (rawData, (string)null);
+				} catch {
+					// ..and PKCS#12 encrypted with an empty password
+					pfx = new MX.PKCS12 (rawData, string.Empty);
+				}
+			} else {
+				pfx = new MX.PKCS12 (rawData, password);
+			}
+
 			if (pfx.Certificates.Count == 0) {
 				// no certificate was found
 				return null;

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <asm/cachectl.h>
 
+#include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-mmap.h>
@@ -56,9 +57,9 @@ enum {
 };
 
 /* This mutex protects architecture specific caches */
-#define mono_mini_arch_lock() EnterCriticalSection (&mini_arch_mutex)
-#define mono_mini_arch_unlock() LeaveCriticalSection (&mini_arch_mutex)
-static CRITICAL_SECTION mini_arch_mutex;
+#define mono_mini_arch_lock() mono_mutex_lock (&mini_arch_mutex)
+#define mono_mini_arch_unlock() mono_mutex_unlock (&mini_arch_mutex)
+static mono_mutex_t mini_arch_mutex;
 
 int mono_exc_esp_offset = 0;
 static int tls_mode = TLS_MODE_DETECT;
@@ -551,8 +552,8 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		start = code = mono_global_codeman_reserve (16);
 
 		/* Replace the this argument with the target */
-		mips_lw (code, mips_temp, mips_a0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		mips_lw (code, mips_a0, mips_a0, G_STRUCT_OFFSET (MonoDelegate, target));
+		mips_lw (code, mips_temp, mips_a0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mips_lw (code, mips_a0, mips_a0, MONO_STRUCT_OFFSET (MonoDelegate, target));
 		mips_jr (code, mips_temp);
 		mips_nop (code);
 
@@ -565,7 +566,7 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		size = 16 + param_count * 4;
 		start = code = mono_global_codeman_reserve (size);
 
-		mips_lw (code, mips_temp, mips_a0, G_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mips_lw (code, mips_temp, mips_a0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		/* slide down the arguments */
 		for (i = 0; i < param_count; ++i) {
 			mips_move (code, mips_a0 + i, mips_a0 + i + 1);
@@ -669,6 +670,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 }
 
 gpointer
+mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, int offset, gboolean load_imt_reg)
+{
+	return NULL;
+}
+
+gpointer
 mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 {
 	g_assert(regs);
@@ -700,7 +707,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	InitializeCriticalSection (&mini_arch_mutex);
+	mono_mutex_init_recursive (&mini_arch_mutex);
 
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
 	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ|MONO_MMAP_32BIT);
@@ -713,7 +720,7 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
-	DeleteCriticalSection (&mini_arch_mutex);
+	mono_mutex_destroy (&mini_arch_mutex);
 }
 
 /*
@@ -3298,8 +3305,8 @@ emit_reserve_param_area (MonoCompile *cfg, guint8 *code)
 	if (ppc_is_imm16 (-size)) {
 		ppc_stwu (code, ppc_r0, -size, ppc_sp);
 	} else {
-		ppc_load (code, ppc_r11, -size);
-		ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
+		ppc_load (code, ppc_r12, -size);
+		ppc_stwux (code, ppc_r0, ppc_sp, ppc_r12);
 	}
 #endif
 	return code;
@@ -3320,8 +3327,8 @@ emit_unreserve_param_area (MonoCompile *cfg, guint8 *code)
 	if (ppc_is_imm16 (size)) {
 		ppc_stwu (code, ppc_r0, size, ppc_sp);
 	} else {
-		ppc_load (code, ppc_r11, size);
-		ppc_stwux (code, ppc_r0, ppc_sp, ppc_r11);
+		ppc_load (code, ppc_r12, size);
+		ppc_stwux (code, ppc_r0, ppc_sp, ppc_r12);
 	}
 #endif
 	return code;
@@ -3387,6 +3394,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_REACHED:
 		case OP_NOT_NULL:
 			break;
+		case OP_IL_SEQ_POINT:
+			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
+			break;
 		case OP_SEQ_POINT: {
 			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
 				guint32 addr = (guint32)ss_trigger_page;
@@ -3424,9 +3434,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mips_mfhi (code, ins->dreg+1);
 			break;
 		case OP_MEMORY_BARRIER:
-#if 0
-			ppc_sync (code);
-#endif
+			mips_sync (code, 0);
 			break;
 		case OP_STOREI1_MEMBASE_IMM:
 			mips_load_const (code, mips_temp, ins->inst_imm);
@@ -3712,8 +3720,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_DIV_IMM:
 			g_assert_not_reached ();
 #if 0
-			ppc_load (code, ppc_r11, ins->inst_imm);
-			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r11);
+			ppc_load (code, ppc_r12, ins->inst_imm);
+			ppc_divwod (code, ins->dreg, ins->sreg1, ppc_r12);
 			ppc_mfspr (code, ppc_r0, ppc_xer);
 			ppc_andisd (code, ppc_r0, ppc_r0, (1<<14));
 			/* FIXME: use OverflowException for 0x80000000/-1 */
@@ -3904,6 +3912,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1) {
 				mips_fmovd (code, ins->dreg, ins->sreg1);
 			}
+			break;
+		case OP_MOVE_F_TO_I4:
+			mips_cvtsd (code, mips_ftemp, ins->sreg1);
+			mips_mfc1 (code, ins->dreg, mips_ftemp);
+			break;
+		case OP_MOVE_I4_TO_F:
+			mips_mtc1 (code, ins->dreg, ins->sreg1);
+			mips_cvtds (code, ins->dreg, ins->dreg);
 			break;
 		case OP_MIPS_CVTSD:
 			/* Convert from double to float and leave it there */
@@ -5844,8 +5860,6 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->sc_regs [reg];
 }
 
-#ifdef MONO_ARCH_HAVE_IMT
-
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 #define MIPS_LOAD_SEQUENCE_LENGTH	8
@@ -5999,7 +6013,6 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 {
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
-#endif
 
 MonoVTable*
 mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
@@ -6142,3 +6155,9 @@ mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
 }
 
 #endif /* MONO_ARCH_SOFT_DEBUG_SUPPORTED */
+
+gboolean
+mono_arch_opcode_supported (int opcode)
+{
+	return FALSE;
+}

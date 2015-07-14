@@ -54,10 +54,10 @@ static GHashTable *loaded_images_refonly_hash;
 
 static gboolean debug_assembly_unload = FALSE;
 
-#define mono_images_lock() if (mutex_inited) EnterCriticalSection (&images_mutex)
-#define mono_images_unlock() if (mutex_inited) LeaveCriticalSection (&images_mutex)
+#define mono_images_lock() if (mutex_inited) mono_mutex_lock (&images_mutex)
+#define mono_images_unlock() if (mutex_inited) mono_mutex_unlock (&images_mutex)
 static gboolean mutex_inited;
-static CRITICAL_SECTION images_mutex;
+static mono_mutex_t images_mutex;
 
 typedef struct ImageUnloadHook ImageUnloadHook;
 struct ImageUnloadHook {
@@ -184,7 +184,7 @@ mono_image_rva_map (MonoImage *image, guint32 addr)
 void
 mono_images_init (void)
 {
-	InitializeCriticalSection (&images_mutex);
+	mono_mutex_init_recursive (&images_mutex);
 
 	loaded_images_hash = g_hash_table_new (g_str_hash, g_str_equal);
 	loaded_images_refonly_hash = g_hash_table_new (g_str_hash, g_str_equal);
@@ -205,7 +205,7 @@ mono_images_cleanup (void)
 	GHashTableIter iter;
 	MonoImage *image;
 
-	DeleteCriticalSection (&images_mutex);
+	mono_mutex_destroy (&images_mutex);
 
 	g_hash_table_iter_init (&iter, loaded_images_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&image))
@@ -534,7 +534,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
 	MonoTableInfo *t, *mt;
 	t = &image->tables [MONO_TABLE_TYPEDEF];
 	mt = &image->tables [MONO_TABLE_METHOD];
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		/* FIXME: */
 		image->checked_module_cctor = TRUE;
 		return;
@@ -671,12 +671,15 @@ class_next_value (gpointer value)
 void
 mono_image_init (MonoImage *image)
 {
+	mono_mutex_init_recursive (&image->lock);
+	mono_mutex_init_recursive (&image->szarray_cache_lock);
+
 	image->mempool = mono_mempool_new_size (512);
 	mono_internal_hash_table_init (&image->class_cache,
 				       g_direct_hash,
 				       class_key_extract,
 				       class_next_value);
-	image->field_cache = g_hash_table_new (NULL, NULL);
+	image->field_cache = mono_conc_hashtable_new (&image->lock, NULL, NULL);
 
 	image->typespec_cache = g_hash_table_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
@@ -684,8 +687,6 @@ mono_image_init (MonoImage *image)
 	image->method_signatures = g_hash_table_new (NULL, NULL);
 
 	image->property_hash = mono_property_hash_new ();
-	InitializeCriticalSection (&image->lock);
-	InitializeCriticalSection (&image->szarray_cache_lock);
 }
 
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
@@ -1539,7 +1540,7 @@ mono_image_close_except_pools (MonoImage *image)
 	 * assemblies, so we can't release these references in mono_assembly_close () since the
 	 * MonoImage might outlive its associated MonoAssembly.
 	 */
-	if (image->references && !image->dynamic) {
+	if (image->references && !image_is_dynamic (image)) {
 		for (i = 0; i < image->nreferences; i++) {
 			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
 				if (!mono_assembly_close_except_image_pools (image->references [i]))
@@ -1602,7 +1603,7 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->methodref_cache)
 		g_hash_table_destroy (image->methodref_cache);
 	mono_internal_hash_table_destroy (&image->class_cache);
-	g_hash_table_destroy (image->field_cache);
+	mono_conc_hashtable_destroy (image->field_cache);
 	if (image->array_cache) {
 		g_hash_table_foreach (image->array_cache, free_array_cache_entry, NULL);
 		g_hash_table_destroy (image->array_cache);
@@ -1617,6 +1618,10 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	free_hash (image->native_wrapper_cache);
+	free_hash (image->native_wrapper_aot_cache);
+	free_hash (image->native_wrapper_check_cache);
+	free_hash (image->native_wrapper_aot_check_cache);
+	free_hash (image->native_func_wrapper_cache);
 	free_hash (image->managed_wrapper_cache);
 	free_hash (image->delegate_begin_invoke_cache);
 	free_hash (image->delegate_end_invoke_cache);
@@ -1693,11 +1698,11 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->modules_loaded)
 		g_free (image->modules_loaded);
 
-	DeleteCriticalSection (&image->szarray_cache_lock);
-	DeleteCriticalSection (&image->lock);
+	mono_mutex_destroy (&image->szarray_cache_lock);
+	mono_mutex_destroy (&image->lock);
 
 	/*g_print ("destroy image %p (dynamic: %d)\n", image, image->dynamic);*/
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		/* Dynamic images are GC_MALLOCed */
 		g_free ((char*)image->module_name);
 		mono_dynamic_image_free ((MonoDynamicImage*)image);
@@ -1713,7 +1718,7 @@ mono_image_close_finish (MonoImage *image)
 {
 	int i;
 
-	if (image->references && !image->dynamic) {
+	if (image->references && !image_is_dynamic (image)) {
 		for (i = 0; i < image->nreferences; i++) {
 			if (image->references [i] && image->references [i] != REFERENCE_MISSING)
 				mono_assembly_close_finish (image->references [i]);
@@ -1734,7 +1739,7 @@ mono_image_close_finish (MonoImage *image)
 	mono_perfcounters->loader_bytes -= mono_mempool_get_allocated (image->mempool);
 #endif
 
-	if (!image->dynamic) {
+	if (!image_is_dynamic (image)) {
 		if (debug_assembly_unload)
 			mono_mempool_invalidate (image->mempool);
 		else {
@@ -1744,8 +1749,10 @@ mono_image_close_finish (MonoImage *image)
 	} else {
 		if (debug_assembly_unload)
 			mono_mempool_invalidate (image->mempool);
-		else
+		else {
 			mono_mempool_destroy (image->mempool);
+			mono_dynamic_image_free_image ((MonoDynamicImage*)image);
+		}
 	}
 }
 
@@ -1995,21 +2002,27 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 	if (fileidx < 1 || fileidx > t->rows)
 		return NULL;
 
-	mono_loader_lock ();
+	mono_image_lock (image);
 	if (image->files && image->files [fileidx - 1]) {
-		mono_loader_unlock ();
+		mono_image_unlock (image);
 		return image->files [fileidx - 1];
 	}
-
-	if (!image->files)
-		image->files = g_new0 (MonoImage*, t->rows);
 
 	fname_id = mono_metadata_decode_row_col (t, fileidx - 1, MONO_FILE_NAME);
 	fname = mono_metadata_string_heap (image, fname_id);
 	base_dir = g_path_get_dirname (image->name);
 	name = g_build_filename (base_dir, fname, NULL);
 	res = mono_image_open (name, NULL);
-	if (res) {
+	if (!res)
+		goto done;
+
+	mono_image_lock (image);
+	if (image->files && image->files [fileidx - 1]) {
+		MonoImage *old = res;
+		res = image->files [fileidx - 1];
+		mono_loader_unlock ();
+		mono_image_close (old);
+	} else {
 		int i;
 		/* g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly); */
 		res->assembly = image->assembly;
@@ -2018,13 +2031,18 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 				res->modules [i]->assembly = image->assembly;
 		}
 
+		if (!image->files)
+			image->files = g_new0 (MonoImage*, t->rows);
 		image->files [fileidx - 1] = res;
+		mono_loader_unlock ();
+		/* vtable fixup can't happen with the image lock held */
 #ifdef HOST_WIN32
 		if (res->is_module_handle)
 			mono_image_fixup_vtable (res);
 #endif
 	}
-	mono_loader_unlock ();
+
+done:
 	g_free (name);
 	g_free (base_dir);
 	return res;
@@ -2103,7 +2121,7 @@ mono_image_get_public_key (MonoImage *image, guint32 *size)
 	const char *pubkey;
 	guint32 len, tok;
 
-	if (image->dynamic) {
+	if (image_is_dynamic (image)) {
 		if (size)
 			*size = ((MonoDynamicImage*)image)->public_key_len;
 		return (char*)((MonoDynamicImage*)image)->public_key;
@@ -2200,7 +2218,7 @@ mono_image_get_assembly (MonoImage *image)
 gboolean
 mono_image_is_dynamic (MonoImage *image)
 {
-	return image->dynamic;
+	return image_is_dynamic (image);
 }
 
 /**
@@ -2364,7 +2382,7 @@ void
 mono_image_append_class_to_reflection_info_set (MonoClass *class)
 {
 	MonoImage *image = class->image;
-	g_assert (image->dynamic);
+	g_assert (image_is_dynamic (image));
 	mono_image_lock (image);
 	image->reflection_info_unregister_classes = g_slist_prepend_mempool (image->mempool, image->reflection_info_unregister_classes, class);
 	mono_image_unlock (image);

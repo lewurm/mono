@@ -31,8 +31,8 @@ install-bin-data:
 	$(INSTALL_DATA) data/xbuild.rsp $(DESTDIR)$(XBUILD_BIN_DIR)
 	$(INSTALL_DATA) data/$(XBUILD_VERSION)/Microsoft.Common.tasks $(DESTDIR)$(XBUILD_BIN_DIR)
 	$(INSTALL_DATA) data/$(XBUILD_VERSION)/Microsoft.Common.targets $(DESTDIR)$(XBUILD_BIN_DIR)
+	$(INSTALL_DATA) data/$(XBUILD_VERSION)/Microsoft.CSharp.targets $(DESTDIR)$(XBUILD_BIN_DIR)
 	$(INSTALL_DATA) data/Microsoft.Build.xsd $(DESTDIR)$(XBUILD_BIN_DIR)
-	$(INSTALL_DATA) data/Microsoft.CSharp.targets $(DESTDIR)$(XBUILD_BIN_DIR)
 	$(INSTALL_DATA) data/Microsoft.VisualBasic.targets $(DESTDIR)$(XBUILD_BIN_DIR)
 	$(INSTALL_DATA) data/MSBuild/Microsoft.Build.CommonTypes.xsd $(DESTDIR)$(XBUILD_BIN_DIR)/MSBuild
 	$(INSTALL_DATA) data/MSBuild/Microsoft.Build.Core.xsd $(DESTDIR)$(XBUILD_BIN_DIR)/MSBuild
@@ -41,18 +41,28 @@ install-bin-data:
 install-frameworks:
 	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v$(FRAMEWORK_VERSION)/RedistList
 	$(INSTALL_DATA) frameworks/net_$(FRAMEWORK_VERSION).xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v$(FRAMEWORK_VERSION)/RedistList/FrameworkList.xml
+	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v2.0/RedistList
+	$(INSTALL_DATA) frameworks/net_2.0.xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v2.0/RedistList/FrameworkList.xml
 	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v3.0/RedistList
 	$(INSTALL_DATA) frameworks/net_3.0.xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v3.0/RedistList/FrameworkList.xml
+	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v3.5/RedistList
+	$(INSTALL_DATA) frameworks/net_3.5.xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v3.5/RedistList/FrameworkList.xml
 	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v4.0/RedistList
 	$(INSTALL_DATA) frameworks/net_4.0.xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v4.0/RedistList/FrameworkList.xml
 	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v4.0/Profile/Client/RedistList
 	$(INSTALL_DATA) frameworks/net_4.0_client.xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v4.0/Profile/Client/RedistList/FrameworkList.xml
+	$(MKINSTALLDIRS) $(DESTDIR)$(NETFRAMEWORK_DIR)/v4.5.1/RedistList
+	$(INSTALL_DATA) frameworks/net_4.5.1.xml $(DESTDIR)$(NETFRAMEWORK_DIR)/v4.5.1/RedistList/FrameworkList.xml
 
 install-pcl-targets:
 	$(MKINSTALLDIRS) $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.0
+	$(INSTALL_DATA) targets/Microsoft.Portable.Common.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.0/Microsoft.Portable.Common.targets
 	$(INSTALL_DATA) targets/Microsoft.Portable.CSharp_4.0.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.0/Microsoft.Portable.CSharp.targets
+	$(INSTALL_DATA) targets/Microsoft.Portable.VisualBasic_4.0.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.0/Microsoft.Portable.VisualBasic.targets
 	$(MKINSTALLDIRS) $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.5
+	$(INSTALL_DATA) targets/Microsoft.Portable.Common.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.5/Microsoft.Portable.Common.targets
 	$(INSTALL_DATA) targets/Microsoft.Portable.CSharp_4.5.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.5/Microsoft.Portable.CSharp.targets
+	$(INSTALL_DATA) targets/Microsoft.Portable.VisualBasic_4.5.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/v4.5/Microsoft.Portable.VisualBasic.targets
 	$(INSTALL_DATA) targets/Microsoft.Portable.Core.targets $(DESTDIR)$(PORTABLE_TARGETS_DIR)/Microsoft.Portable.Core.targets
 	$(INSTALL_DATA) targets/Microsoft.Portable.Core.props $(DESTDIR)$(PORTABLE_TARGETS_DIR)/Microsoft.Portable.Core.props
 
@@ -72,11 +82,17 @@ EXTRA_DISTFILES = \
 	data/3.5/Microsoft.Common.tasks \
 	data/4.0/Microsoft.Common.tasks \
 	data/12.0/Microsoft.Common.tasks \
+	data/14.0/Microsoft.Common.tasks \
 	data/2.0/Microsoft.Common.targets \
 	data/3.5/Microsoft.Common.targets \
 	data/4.0/Microsoft.Common.targets \
 	data/12.0/Microsoft.Common.targets \
-	data/Microsoft.CSharp.targets \
+	data/14.0/Microsoft.Common.targets \
+	data/2.0/Microsoft.CSharp.targets \
+	data/3.5/Microsoft.CSharp.targets \
+	data/4.0/Microsoft.CSharp.targets \
+	data/12.0/Microsoft.CSharp.targets \
+	data/14.0/Microsoft.CSharp.targets \
 	data/Microsoft.VisualBasic.targets \
 	data/MSBuild/Microsoft.Build.CommonTypes.xsd \
 	data/MSBuild/Microsoft.Build.Core.xsd \
@@ -86,10 +102,14 @@ EXTRA_DISTFILES = \
 	frameworks/net_4.0.xml \
 	frameworks/net_4.0_client.xml \
 	frameworks/net_4.5.xml \
+	frameworks/net_4.5.1.xml \
 	targets/Microsoft.Portable.CSharp_4.0.targets \
 	targets/Microsoft.Portable.CSharp_4.5.targets \
+	targets/Microsoft.Portable.Common.targets \
 	targets/Microsoft.Portable.Core.targets \
 	targets/Microsoft.Portable.Core.props \
 	targets/Microsoft.WebApplication.targets \
+	targets/Microsoft.Portable.VisualBasic_4.0.targets \
+	targets/Microsoft.Portable.VisualBasic_4.5.targets \
 	xbuild.make \
 	xbuild_test.make

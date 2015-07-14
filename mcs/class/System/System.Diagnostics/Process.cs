@@ -39,7 +39,7 @@ using System.ComponentModel.Design;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
-using System.Collections;
+using System.Collections.Generic;
 using System.Security;
 using System.Threading;
 
@@ -170,6 +170,8 @@ namespace System.Diagnostics {
 		[MonitoringDescription ("Handle for this process.")]
 		public IntPtr Handle {
 			get {
+				if (process_handle == IntPtr.Zero)
+					throw new InvalidOperationException ("No process is associated with this object.");
 				return(process_handle);
 			}
 		}
@@ -344,23 +346,21 @@ namespace System.Diagnostics {
 			}
 		}
 
-		[MonoTODO]
 		[Obsolete ("Use PagedMemorySize64")]
 		[DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
 		[MonitoringDescription ("The number of bytes that are paged.")]
 		public int PagedMemorySize {
 			get {
-				return(0);
+				return(int)PagedMemorySize64;
 			}
 		}
 
-		[MonoTODO]
 		[Obsolete ("Use PagedSystemMemorySize64")]
 		[DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
 		[MonitoringDescription ("The amount of paged system memory in bytes.")]
 		public int PagedSystemMemorySize {
 			get {
-				return(0);
+				return(int)PagedMemorySize64;
 			}
 		}
 
@@ -404,23 +404,22 @@ namespace System.Diagnostics {
 			}
 		}
 
-		[MonoTODO]
 		[DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
 		[MonitoringDescription ("The number of bytes that are paged.")]
 		[ComVisible (false)]
 		public long PagedMemorySize64 {
 			get {
-				return(0);
+				int error;
+				return GetProcessData (pid, 12, out error);
 			}
 		}
 
-		[MonoTODO]
 		[DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
 		[MonitoringDescription ("The amount of paged system memory in bytes.")]
 		[ComVisible (false)]
 		public long PagedSystemMemorySize64 {
 			get {
-				return(0);
+				return PagedMemorySize64;
 			}
 		}
 
@@ -830,13 +829,13 @@ namespace System.Diagnostics {
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static int[] GetProcesses_internal();
 
-		public static Process[] GetProcesses()
+		public static Process[] GetProcesses ()
 		{
 			int [] pids = GetProcesses_internal ();
 			if (pids == null)
 				return new Process [0];
 
-			ArrayList proclist = new ArrayList (pids.Length);
+			var proclist = new List<Process> (pids.Length);
 			for (int i = 0; i < pids.Length; i++) {
 				try {
 					proclist.Add (GetProcessById (pids [i]));
@@ -849,7 +848,7 @@ namespace System.Diagnostics {
 				}
 			}
 
-			return ((Process []) proclist.ToArray (typeof (Process)));
+			return proclist.ToArray ();
 		}
 
 		[MonoTODO ("There is no support for retrieving process information from a remote machine")]
@@ -869,7 +868,7 @@ namespace System.Diagnostics {
 			if (pids == null)
 				return new Process [0];
 			
-			ArrayList proclist = new ArrayList (pids.Length);
+			var proclist = new List<Process> (pids.Length);
 			for (int i = 0; i < pids.Length; i++) {
 				try {
 					Process p = GetProcessById (pids [i]);
@@ -884,7 +883,7 @@ namespace System.Diagnostics {
 				}
 			}
 
-			return ((Process []) proclist.ToArray (typeof (Process)));
+			return proclist.ToArray ();
 		}
 
 		[MonoTODO]
@@ -938,7 +937,7 @@ namespace System.Diagnostics {
 							       ref proc_info);
 			} finally {
 				if (proc_info.Password != IntPtr.Zero)
-					Marshal.FreeBSTR (proc_info.Password);
+					Marshal.ZeroFreeBSTR (proc_info.Password);
 				proc_info.Password = IntPtr.Zero;
 			}
 			if (!ret) {
@@ -1078,7 +1077,7 @@ namespace System.Diagnostics {
 							      ref proc_info);
 			} finally {
 				if (proc_info.Password != IntPtr.Zero)
-					Marshal.FreeBSTR (proc_info.Password);
+					Marshal.ZeroFreeBSTR (proc_info.Password);
 				proc_info.Password = IntPtr.Zero;
 			}
 			if (!ret) {
@@ -1134,7 +1133,7 @@ namespace System.Diagnostics {
 		// Note that ProcInfo.Password must be freed.
 		private static void FillUserInfo (ProcessStartInfo startInfo, ref ProcInfo proc_info)
 		{
-			if (startInfo.UserName != null) {
+			if (startInfo.UserName.Length != 0) {
 				proc_info.UserName = startInfo.UserName;
 				proc_info.Domain = startInfo.Domain;
 				if (startInfo.Password != null)
@@ -1148,7 +1147,7 @@ namespace System.Diagnostics {
 		private static bool Start_common (ProcessStartInfo startInfo,
 						  Process process)
 		{
-			if (startInfo.FileName == null || startInfo.FileName.Length == 0)
+			if (startInfo.FileName.Length == 0)
 				throw new InvalidOperationException("File name has not been set");
 			
 			if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
@@ -1157,8 +1156,8 @@ namespace System.Diagnostics {
 				throw new InvalidOperationException ("StandardOutputEncoding is only supported when standard output is redirected");
 			
 			if (startInfo.UseShellExecute) {
-				if (!String.IsNullOrEmpty (startInfo.UserName))
-					throw new InvalidOperationException ("UserShellExecute must be false if an explicit UserName is specified when starting a process");
+				if (startInfo.UserName.Length != 0)
+					throw new InvalidOperationException ("UseShellExecute must be false if an explicit UserName is specified when starting a process");
 				return (Start_shell (startInfo, process));
 			} else {
 				return (Start_noshell (startInfo, process));
@@ -1229,6 +1228,10 @@ namespace System.Diagnostics {
 			int ms = milliseconds;
 			if (ms == int.MaxValue)
 				ms = -1;
+
+			if (process_handle == IntPtr.Zero)
+				throw new InvalidOperationException ("No process is associated with this object.");
+
 
 			DateTime start = DateTime.UtcNow;
 			if (async_output != null && !async_output.IsCompleted) {
@@ -1514,8 +1517,8 @@ namespace System.Diagnostics {
 		[ComVisibleAttribute(false)] 
 		public void CancelErrorRead ()
 		{
-			if (process_handle == IntPtr.Zero || output_stream == null || StartInfo.RedirectStandardOutput == false)
-				throw new InvalidOperationException ("Standard output has not been redirected or process has not been started.");
+			if (process_handle == IntPtr.Zero || error_stream == null || StartInfo.RedirectStandardError == false)
+				throw new InvalidOperationException ("Standard error has not been redirected or process has not been started.");
 
 			if ((async_mode & AsyncModes.SyncOutput) != 0)
 				throw new InvalidOperationException ("OutputStream is not enabled for asynchronous read operations.");

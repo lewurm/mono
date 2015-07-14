@@ -13,7 +13,7 @@ using System;
 using System.Linq;
 using SLE = System.Linq.Expressions;
 
-#if NET_4_0 || MONODROID
+#if NET_4_0 || MOBILE_DYNAMIC
 using System.Dynamic;
 #endif
 
@@ -48,7 +48,7 @@ namespace Mono.CSharp
 			this.loc = loc;
 		}
 
-		public override TypeSpec ResolveAsType (IMemberContext ec)
+		public override TypeSpec ResolveAsType (IMemberContext ec, bool allowUnboundTypeArguments)
 		{
 			eclass = ExprClass.Type;
 			type = ec.Module.Compiler.BuiltinTypes.Dynamic;
@@ -63,7 +63,7 @@ namespace Mono.CSharp
 	//
 	public class RuntimeValueExpression : Expression, IDynamicAssign, IMemoryLocation
 	{
-#if !NET_4_0 && !MONODROID
+#if !NET_4_0 && !MOBILE_DYNAMIC
 		public class DynamicMetaObject
 		{
 			public TypeSpec RuntimeType;
@@ -146,7 +146,7 @@ namespace Mono.CSharp
 			return base.MakeExpression (ctx);
 #else
 
-#if NET_4_0 || MONODROID
+#if NET_4_0 || MOBILE_DYNAMIC
 				if (type.IsStruct && !obj.Expression.Type.IsValueType)
 					return SLE.Expression.Unbox (obj.Expression, type.GetMetaInfo ());
 
@@ -181,7 +181,7 @@ namespace Mono.CSharp
 			return this;
 		}
 
-#if NET_4_0 || MONODROID
+#if NET_4_0 || MOBILE_DYNAMIC
 		public override SLE.Expression MakeExpression (BuilderContext ctx)
 		{
 #if STATIC
@@ -289,6 +289,13 @@ namespace Mono.CSharp
 
 		protected bool DoResolveCore (ResolveContext rc)
 		{
+			foreach (var arg in arguments) {
+				if (arg.Type == InternalType.VarOutType) {
+					// Should be special error message about dynamic dispatch
+					rc.Report.Error (8047, arg.Expr.Location, "Declaration expression cannot be used in this context");
+				}
+			}
+
 			if (rc.CurrentTypeParameters != null && rc.CurrentTypeParameters[0].IsMethodTypeParameter)
 				context_mvars = rc.CurrentTypeParameters;
 
@@ -534,7 +541,7 @@ namespace Mono.CSharp
 					}
 				}
 
-				Expression target = new DelegateInvocation (new MemberAccess (site_field_expr, "Target", loc).Resolve (bc), args, loc).Resolve (bc);
+				Expression target = new DelegateInvocation (new MemberAccess (site_field_expr, "Target", loc).Resolve (bc), args, false, loc).Resolve (bc);
 				if (target != null)
 					target.Emit (ec);
 			}
@@ -780,7 +787,7 @@ namespace Mono.CSharp
 
 			if (member != null && member.HasTypeArguments) {
 				TypeArguments ta = member.TypeArguments;
-				if (ta.Resolve (ec)) {
+				if (ta.Resolve (ec, false)) {
 					var targs = new ArrayInitializer (ta.Count, loc);
 					foreach (TypeSpec t in ta.Arguments)
 						targs.Add (new TypeOf (t, loc));
