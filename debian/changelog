@@ -1,3 +1,62 @@
+mono (3.2.8+dfsg-10) unstable; urgency=high
+
+  * [037e3b5] Mono's implementation of the SSL/TLS stack failed to check
+    the order of the handshake messages. Which would allow various attacks on
+    the protocol to succeed. ("SKIP-TLS" attack).
+    (Closes: #780751, CVE-2015-2318)
+  * [38d3725] Remove the client-side SSLv2 fallback. There's almost no SSLv3
+    web site left so a v2 fallback is only extra code we do not need to carry
+    forward. (Closes: #780751, CVE-2015-2320)
+  * [00e66d6] Remove the EXPORT ciphers and related code path. That was still
+    useful in 2003/2004 but the technical and legal landscape changed a lot
+    since then. Removing the old, limited key size, cipher suites also allow
+    removed additional parts of the code that deals with them.
+    ("FREAK" attack) (Closes: #780751, CVE-2015-2319)
+
+ -- Jo Shields <jo.shields@xamarin.com>  Thu, 19 Mar 2015 10:30:24 +0000
+
+mono (3.2.8+dfsg-9) unstable; urgency=medium
+
+  [ Mirco Bauer ]
+  * [c8efb3b] Enable IPv6 support by default (closes: #771389)
+
+  [ Jo Shields ]
+  * [0d67f80] Fix missing contents in mono-runtime-dbg package
+    (Closes: #773509, #773511)
+
+ -- Mirco Bauer <meebey@meebey.net>  Fri, 19 Dec 2014 11:47:22 +0000
+
+mono (3.2.8+dfsg-8) unstable; urgency=medium
+
+  * [835c4ca] Add support for non-assembly files installed to the GAC. 
+    This is the first half of a fix to bug #767507.
+
+ -- Jo Shields <jo.shields@xamarin.com>  Wed, 05 Nov 2014 11:44:40 +0000
+
+mono (3.2.8+dfsg-7) unstable; urgency=medium
+
+  * [10016c2] Build libmono-2.0-1 and libmono-2.0-dev for mipsel
+
+ -- Iain Lane <laney@debian.org>  Thu, 10 Jul 2014 11:19:02 +0100
+
+mono (3.2.8+dfsg-6) unstable; urgency=medium
+
+  * [9a7e4fb] Properly support Python 3 as Python version linked by 
+    GDB. Thanks to Matthias Klose <doko@debian.org>
+    (Closes: #752661)
+
+ -- Jo Shields <directhex@apebox.org>  Mon, 07 Jul 2014 21:52:07 +0100
+
+mono (3.2.8+dfsg-5) unstable; urgency=medium
+
+  [ Jo Shields ]
+  * [c1dd2a1] Enforce strict dependency versioning on 
+    libmono-cecil-private-cil. This ensures that packages depending on it 
+    are upgraded in lockstep. This works around the unreliable ABI 
+    versioning on this library. (Closes: #728911)
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 06 Jul 2014 16:01:19 +0100
+
 mono (3.2.8+dfsg-4) experimental; urgency=low
 
   * [3930eef] Add missing libmono-winforms2.0-cil dependency to 
