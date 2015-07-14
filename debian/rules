@@ -74,10 +74,6 @@ CONFIGURE =	CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)"   \
 		  --disable-quiet-build \
 		  --disable-system-aot
 
-# Mono's build system doesn't like -j > 1
-MAKE_FLAGS += -j1
-export MAKEFLAGS=$(MAKE_FLAGS)
-
 ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
 	NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
 	EGLIB_MAKE_FLAGS += -j$(NUMJOBS)
