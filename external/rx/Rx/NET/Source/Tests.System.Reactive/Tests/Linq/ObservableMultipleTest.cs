@@ -1873,6 +1873,9 @@ namespace ReactiveTests.Tests
             res.Messages.AssertEqual(expected);
         }
 
+#if MONODROID
+		[IgnoreAttribute ("monodroid runtime bug causes it blocking")]
+#endif
         [TestMethod]
         public void Catch_TailRecursive2()
         {

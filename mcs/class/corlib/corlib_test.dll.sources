@@ -25,6 +25,7 @@ System/ModuleHandleTest.cs
 System/ObsoleteAttributeTest.cs
 System/IntegerTryParse.cs
 System/LazyTest.cs
+System/TupleTest.cs
 System.Collections/ArrayListTest.cs
 System.Collections/BitArrayTest.cs
 System.Collections/CaseInsensitiveComparerTest.cs
@@ -56,6 +57,7 @@ System/DecimalFormatterTest.cs
 System/DecimalTest2.cs
 System/DecimalTest.cs
 System.Diagnostics/DebuggerDisplayAttributeTest.cs
+System.Diagnostics/DebuggerTypeProxyAttribute.cs
 System.Diagnostics/StackFrameTest.cs
 System.Diagnostics/StackTraceTest.cs
 System.Diagnostics.Contracts/ContractAssertTest.cs
@@ -79,6 +81,7 @@ System.Globalization/DateTimeFormatInfoTest.cs
 System.Globalization/DaylightTimeTest.cs
 System.Globalization/EastAsianLunisolarCalendarTest.cs
 System.Globalization/IdnMappingTest.cs
+System.Globalization/NumberFormatInfoTest.cs
 System.Globalization/RegionInfoTest.cs
 System.Globalization/SortKeyTest.cs
 System.Globalization/StringInfoTest.cs

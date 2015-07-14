@@ -49,8 +49,8 @@ namespace System.Threading.Tasks
 		
 		// parent is the outer task in which this task is created
 		readonly Task parent;
-		// contAncestor is the Task on which this continuation was setup
-		readonly Task contAncestor;
+		// A reference to a Task on which this continuation is attached to
+		Task contAncestor;
 		
 		static int          id = -1;
 		static readonly TaskFactory defaultFactory = new TaskFactory ();
@@ -182,6 +182,9 @@ namespace System.Threading.Tasks
 			if (IsContinuation)
 				throw new InvalidOperationException ("Start may not be called on a continuation task");
 
+			if (IsPromise)
+				throw new InvalidOperationException ("Start may not be called on a promise-style task");
+
 			SetupScheduler (scheduler);
 			Schedule ();
 		}
@@ -208,6 +211,9 @@ namespace System.Threading.Tasks
 			if (IsContinuation)
 				throw new InvalidOperationException ("RunSynchronously may not be called on a continuation task");
 
+			if (IsPromise)
+				throw new InvalidOperationException ("RunSynchronously may not be called on a promise-style task");
+
 			RunSynchronouslyCore (scheduler);
 		}
 
@@ -220,11 +226,13 @@ namespace System.Threading.Tasks
 				if (scheduler.RunInline (this, false))
 					return;
 			} catch (Exception inner) {
-				throw new TaskSchedulerException (inner);
+				var ex = new TaskSchedulerException (inner);
+				TrySetException (new AggregateException (ex), false, true);
+				throw ex;
 			}
 
 			Schedule ();
-			Wait ();
+			WaitCore (Timeout.Infinite, CancellationToken.None, false);
 		}
 		#endregion
 		
@@ -330,18 +338,28 @@ namespace System.Threading.Tasks
 			ContinueWith (new TaskContinuation (continuation, options));
 		}
 		
-		internal void ContinueWith (IContinuation continuation)
+		internal bool ContinueWith (IContinuation continuation, bool canExecuteInline = true)
 		{
 			if (IsCompleted) {
+				if (!canExecuteInline)
+					return false;
+
 				continuation.Execute ();
-				return;
+				return true;
 			}
 			
 			continuations.Add (continuation);
 			
 			// Retry in case completion was achieved but event adding was too late
-			if (IsCompleted && continuations.Remove (continuation))
+			if (IsCompleted) {
+				continuations.Remove (continuation);
+				if (!canExecuteInline)
+					return false;
+
 				continuation.Execute ();
+			}
+
+			return true;
 		}
 
 		internal void RemoveContinuation (IContinuation continuation)
@@ -438,7 +456,7 @@ namespace System.Threading.Tasks
 			return true;
 		}
 
-		internal bool TrySetException (AggregateException aggregate)
+		internal bool TrySetException (AggregateException aggregate, bool cancellation, bool observed)
 		{
 			if (IsCompleted)
 				return false;
@@ -450,8 +468,19 @@ namespace System.Threading.Tasks
 
 				return false;
 			}
-			
-			HandleGenericException (aggregate);
+
+			if (cancellation) {
+				ExceptionSlot.Exception = aggregate;
+				Thread.MemoryBarrier ();
+
+				CancelReal ();
+			} else {
+				HandleGenericException (aggregate);
+			}
+
+			if (observed)
+				exSlot.Observed = true;
+
 			return true;
 		}
 
@@ -500,7 +529,9 @@ namespace System.Threading.Tasks
 		void InnerInvoke ()
 		{
 			if (IsContinuation) {
-				invoker.Invoke (contAncestor, state, this);
+				var ancestor = contAncestor;
+				contAncestor = null;
+				invoker.Invoke (ancestor, state, this);
 			} else {
 				invoker.Invoke (this, state, this);
 			}
@@ -639,7 +670,7 @@ namespace System.Threading.Tasks
 			if (millisecondsTimeout < -1)
 				throw new ArgumentOutOfRangeException ("millisecondsTimeout");
 
-			bool result = WaitCore (millisecondsTimeout, cancellationToken);
+			bool result = WaitCore (millisecondsTimeout, cancellationToken, true);
 
 			if (IsCanceled)
 				throw new AggregateException (new TaskCanceledException (this));
@@ -651,13 +682,13 @@ namespace System.Threading.Tasks
 			return result;
 		}
 
-		internal bool WaitCore (int millisecondsTimeout, CancellationToken cancellationToken)
+		internal bool WaitCore (int millisecondsTimeout, CancellationToken cancellationToken, bool runInline)
 		{
 			if (IsCompleted)
 				return true;
 
 			// If the task is ready to be run and we were supposed to wait on it indefinitely without cancellation, just run it
-			if (Status == TaskStatus.WaitingToRun && millisecondsTimeout == Timeout.Infinite && scheduler != null && !cancellationToken.CanBeCanceled)
+			if (runInline && Status == TaskStatus.WaitingToRun && millisecondsTimeout == Timeout.Infinite && scheduler != null && !cancellationToken.CanBeCanceled)
 				scheduler.RunInline (this, true);
 
 			bool result = true;
@@ -957,11 +988,23 @@ namespace System.Threading.Tasks
 			if (millisecondsDelay < -1)
 				throw new ArgumentOutOfRangeException ("millisecondsDelay");
 
-			var task = new Task (TaskActionInvoker.Delay, millisecondsDelay, cancellationToken, TaskCreationOptions.None, null, TaskConstants.Finished);
+			if (cancellationToken.IsCancellationRequested)
+				return TaskConstants.Canceled;
+
+			var task = new Task (TaskActionInvoker.Empty, null, cancellationToken, TaskCreationOptions.None, null, null);
 			task.SetupScheduler (TaskScheduler.Default);
-			
-			if (millisecondsDelay != Timeout.Infinite)
-				task.scheduler.QueueTask (task);
+
+			if (millisecondsDelay != Timeout.Infinite) {
+				var timer = new Timer (delegate (object state) {
+					var t = (Task) state;
+					if (t.Status == TaskStatus.WaitingForActivation) {
+						t.Status = TaskStatus.Running;
+						t.Finish ();
+					}
+				}, task, millisecondsDelay, -1);
+
+				task.ContinueWith (new DisposeContinuation (timer));
+			}
 
 			return task;
 		}
@@ -1068,6 +1111,9 @@ namespace System.Threading.Tasks
 
 		internal static Task<TResult[]> WhenAllCore<TResult> (IList<Task<TResult>> tasks)
 		{
+			if (tasks.Count == 0)
+				return FromResult(new TResult[0]);
+
 			foreach (var t in tasks) {
 				if (t == null)
 					throw new ArgumentException ("tasks", "the tasks argument contains a null element");
@@ -1228,7 +1274,7 @@ namespace System.Threading.Tasks
 		
 		public AggregateException Exception {
 			get {
-				if (exSlot == null)
+				if (exSlot == null || !IsFaulted)
 					return null;
 				exSlot.Observed = true;
 				return exSlot.Exception;
@@ -1269,7 +1315,7 @@ namespace System.Threading.Tasks
 			}
 		}
 
-		TaskExceptionSlot ExceptionSlot {
+		internal TaskExceptionSlot ExceptionSlot {
 			get {
 				if (exSlot != null)
 					return exSlot;
@@ -1311,6 +1357,12 @@ namespace System.Threading.Tasks
 		bool IsContinuation {
 			get {
 				return contAncestor != null;
+			}
+		}
+
+		bool IsPromise {
+			get {
+				return invoker == TaskActionInvoker.Promise;
 			}
 		}
 

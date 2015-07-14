@@ -140,7 +140,7 @@ sgen_card_table_wbarrier_value_copy (gpointer dest, gpointer src, int count, Mon
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
 #endif
-	mono_gc_memmove (dest, src, size);
+	mono_gc_memmove_atomic (dest, src, size);
 	sgen_card_table_mark_range ((mword)dest, size);
 #ifdef DISABLE_CRITICAL_REGION
 	UNLOCK_GC;
@@ -160,7 +160,7 @@ sgen_card_table_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	TLAB_ACCESS_INIT;
 	ENTER_CRITICAL_REGION;
 #endif
-	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+	mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 			size - sizeof (MonoObject));
 	sgen_card_table_mark_range ((mword)obj, size);
 #ifdef DISABLE_CRITICAL_REGION
@@ -629,7 +629,7 @@ LOOP_HEAD:
 			else
 				index = ARRAY_OBJ_INDEX (start, obj, elem_size);
 
-			elem = first_elem = (char*)mono_array_addr_with_size ((MonoArray*)obj, elem_size, index);
+			elem = first_elem = (char*)mono_array_addr_with_size_fast ((MonoArray*)obj, elem_size, index);
 			if (klass->element_class->valuetype) {
 				ScanVTypeFunc scan_vtype_func = sgen_get_current_object_ops ()->scan_vtype;
 

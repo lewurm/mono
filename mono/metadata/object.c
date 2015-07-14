@@ -1311,6 +1311,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 		if (mono_class_has_variant_generic_params (iface))
 			has_variant_iface = TRUE;
 
+		mono_class_setup_methods (iface);
 		vt_slot = interface_offset;
 		for (method_slot_in_interface = 0; method_slot_in_interface < iface->method.count; method_slot_in_interface++) {
 			MonoMethod *method;
@@ -2013,7 +2014,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *class, gboolean
 					bitmap = default_bitmap;
 				} else if (mono_type_is_struct (field->type)) {
 					fclass = mono_class_from_mono_type (field->type);
-					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, 0, &max_set, FALSE);
+					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(sizeof (MonoObject) / sizeof (gpointer)), &max_set, FALSE);
 					numbits = max_set + 1;
 				} else {
 					default_bitmap [0] = 0;
@@ -2969,7 +2970,7 @@ handle_enum:
 			MonoClass *class = mono_class_from_mono_type (type);
 			int size = mono_class_value_size (class, NULL);
 			if (value == NULL)
-				mono_gc_bzero (dest, size);
+				mono_gc_bzero_atomic (dest, size);
 			else
 				mono_gc_wbarrier_value_copy (dest, value, 1, class);
 		}
@@ -3418,9 +3419,9 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
 		if (param_class->has_references)
 			mono_gc_wbarrier_value_copy (buf + klass->fields [0].offset - sizeof (MonoObject), mono_object_unbox (value), 1, param_class);
 		else
-			mono_gc_memmove (buf + klass->fields [0].offset - sizeof (MonoObject), mono_object_unbox (value), mono_class_value_size (param_class, NULL));
+			mono_gc_memmove_atomic (buf + klass->fields [0].offset - sizeof (MonoObject), mono_object_unbox (value), mono_class_value_size (param_class, NULL));
 	} else {
-		mono_gc_bzero (buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+		mono_gc_bzero_atomic (buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
 	}
 }
 
@@ -3448,7 +3449,7 @@ mono_nullable_box (guint8 *buf, MonoClass *klass)
 		if (param_class->has_references)
 			mono_gc_wbarrier_value_copy (mono_object_unbox (o), buf + klass->fields [0].offset - sizeof (MonoObject), 1, param_class);
 		else
-			mono_gc_memmove (mono_object_unbox (o), buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+			mono_gc_memmove_atomic (mono_object_unbox (o), buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
 		return o;
 	}
 	else
@@ -4046,8 +4047,6 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	}
 	mono_thread_init_apartment_state ();
 
-	mono_debugger_event (MONO_DEBUGGER_EVENT_REACHED_MAIN, 0, 0);
-
 	/* FIXME: check signature of method */
 	if (mono_method_signature (method)->ret->type == MONO_TYPE_I4) {
 		MonoObject *res;
@@ -4072,8 +4071,6 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			mono_environment_exitcode_set (rval);
 		}
 	}
-
-	mono_debugger_event (MONO_DEBUGGER_EVENT_MAIN_EXITED, (guint64) (gsize) rval, 0);
 
 	return rval;
 }
@@ -4594,7 +4591,7 @@ mono_object_clone (MonoObject *obj)
 	} else {
 		int size = obj->vtable->klass->instance_size;
 		/* do not copy the sync state */
-		mono_gc_memmove ((char*)o + sizeof (MonoObject), (char*)obj + sizeof (MonoObject), size - sizeof (MonoObject));
+		mono_gc_memmove_atomic ((char*)o + sizeof (MonoObject), (char*)obj + sizeof (MonoObject), size - sizeof (MonoObject));
 	}
 	if (G_UNLIKELY (profile_allocs))
 		mono_profiler_allocation (o, obj->vtable->klass);
@@ -4627,14 +4624,14 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
-			mono_value_copy_array (dest, 0, mono_array_addr_with_size (src, 0, 0), mono_array_length (src));
+			mono_value_copy_array (dest, 0, mono_array_addr_with_size_fast (src, 0, 0), mono_array_length (src));
 		else
-			mono_gc_memmove (&dest->vector, &src->vector, size);
+			mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 	} else {
 		mono_array_memcpy_refs (dest, 0, src, 0, mono_array_length (src));
 	}
 #else
-	mono_gc_memmove (&dest->vector, &src->vector, size);
+	mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 #endif
 }
 
@@ -4664,14 +4661,14 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 #ifdef HAVE_SGEN_GC
 		if (klass->element_class->valuetype) {
 			if (klass->element_class->has_references)
-				mono_value_copy_array (o, 0, mono_array_addr_with_size (array, 0, 0), mono_array_length (array));
+				mono_value_copy_array (o, 0, mono_array_addr_with_size_fast (array, 0, 0), mono_array_length (array));
 			else
-				mono_gc_memmove (&o->vector, &array->vector, size);
+				mono_gc_memmove_atomic (&o->vector, &array->vector, size);
 		} else {
 			mono_array_memcpy_refs (o, 0, array, 0, mono_array_length (array));
 		}
 #else
-		mono_gc_memmove (&o->vector, &array->vector, size);
+		mono_gc_memmove_atomic (&o->vector, &array->vector, size);
 #endif
 		return o;
 	}
@@ -4687,14 +4684,14 @@ mono_array_clone_in_domain (MonoDomain *domain, MonoArray *array)
 #ifdef HAVE_SGEN_GC
 	if (klass->element_class->valuetype) {
 		if (klass->element_class->has_references)
-			mono_value_copy_array (o, 0, mono_array_addr_with_size (array, 0, 0), mono_array_length (array));
+			mono_value_copy_array (o, 0, mono_array_addr_with_size_fast (array, 0, 0), mono_array_length (array));
 		else
-			mono_gc_memmove (&o->vector, &array->vector, size);
+			mono_gc_memmove_atomic (&o->vector, &array->vector, size);
 	} else {
 		mono_array_memcpy_refs (o, 0, array, 0, mono_array_length (array));
 	}
 #else
-	mono_gc_memmove (&o->vector, &array->vector, size);
+	mono_gc_memmove_atomic (&o->vector, &array->vector, size);
 #endif
 
 	return o;
@@ -5111,7 +5108,7 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 	mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, class);
 #else
 #if NO_UNALIGNED_ACCESS
-	mono_gc_memmove ((char *)res + sizeof (MonoObject), value, size);
+	mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
 #else
 	switch (size) {
 	case 1:
@@ -5127,7 +5124,7 @@ mono_value_box (MonoDomain *domain, MonoClass *class, gpointer value)
 		*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
 		break;
 	default:
-		mono_gc_memmove ((char *)res + sizeof (MonoObject), value, size);
+		mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
 	}
 #endif
 #endif
@@ -5166,7 +5163,7 @@ void
 mono_value_copy_array (MonoArray *dest, int dest_idx, gpointer src, int count)
 {
 	int size = mono_array_element_size (dest->obj.vtable->klass);
-	char *d = mono_array_addr_with_size (dest, size, dest_idx);
+	char *d = mono_array_addr_with_size_fast (dest, size, dest_idx);
 	g_assert (size == mono_class_value_size (mono_object_class (dest)->element_class, NULL));
 	mono_gc_wbarrier_value_copy (d, src, count, mono_object_class (dest)->element_class);
 }
@@ -6189,7 +6186,7 @@ mono_delegate_ctor (MonoObject *this, MonoObject *target, gpointer addr)
 	if (!ji && domain != mono_get_root_domain ())
 		ji = mono_jit_info_table_find (mono_get_root_domain (), mono_get_addr_from_ftnptr (addr));
 	if (ji) {
-		method = ji->method;
+		method = mono_jit_info_get_method (ji);
 		g_assert (!method->klass->generic_container);
 	}
 
@@ -6294,10 +6291,10 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 					if (class->has_references)
 						mono_gc_wbarrier_value_copy (*((gpointer *)params [i]), arg + sizeof (MonoObject), 1, class);
 					else
-						mono_gc_memmove (*((gpointer *)params [i]), arg + sizeof (MonoObject), size);
+						mono_gc_memmove_atomic (*((gpointer *)params [i]), arg + sizeof (MonoObject), size);
 				} else {
 					size = mono_class_value_size (mono_class_from_mono_type (pt), NULL);
-					mono_gc_bzero (*((gpointer *)params [i]), size);
+					mono_gc_bzero_atomic (*((gpointer *)params [i]), size);
 				}
 			}
 
