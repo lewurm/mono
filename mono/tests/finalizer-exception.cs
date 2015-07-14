@@ -2,9 +2,12 @@ using System;
 using System.Threading;
 
 public class FinalizerException {
+
 	~FinalizerException () {
 		throw new Exception ();
 	}
+
+	static IntPtr aptr;
 
 	/*
 	 * We allocate the exception object deep down the stack so
@@ -13,6 +16,7 @@ public class FinalizerException {
 	public static unsafe void MakeException (int depth) {
 		// Avoid tail calls
 		int* values = stackalloc int [20];
+		aptr = new IntPtr (values);
 		if (depth <= 0) {
 			new FinalizerException ();
 			return;
@@ -26,7 +30,9 @@ public class FinalizerException {
 			Environment.Exit (0);
 		};
 
-		MakeException (1024);
+		var t = new Thread (delegate () { MakeException (1024); });
+		t.Start ();
+		t.Join ();
 
 		GC.Collect ();
 		GC.WaitForPendingFinalizers ();

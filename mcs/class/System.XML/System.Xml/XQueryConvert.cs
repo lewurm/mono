@@ -27,7 +27,6 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-#if NET_2_0
 
 using System;
 using System.Globalization;
@@ -566,17 +565,17 @@ namespace System.Xml
 			return XmlConvert.ToDateTime (value);
 		}
 
-		public static long StringToUnsignedInt (string value)
+		public static UInt32 StringToUnsignedInt (string value)
 		{
 			return XmlConvert.ToUInt32 (value);
 		}
 
-		public static decimal StringToUnsignedLong (string value)
+		public static UInt64 StringToUnsignedLong (string value)
 		{
 			return XmlConvert.ToUInt64 (value);
 		}
 
-		public static int StringToUnsignedShort (string value)
+		public static UInt16 StringToUnsignedShort (string value)
 		{
 			return XmlConvert.ToUInt16 (value);
 		}
@@ -588,4 +587,3 @@ namespace System.Xml
 	}
 }
 
-#endif

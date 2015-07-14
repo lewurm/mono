@@ -3,7 +3,14 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+#if NUNIT
+using NUnit.Framework;
+using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
+using TestMethodAttribute = NUnit.Framework.TestAttribute;
+using TestInitializeAttribute = NUnit.Framework.SetUpAttribute;
+#else
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+#endif
 using System.Collections;
 
 namespace Tests
@@ -39,6 +46,27 @@ namespace Tests
             var f = ((IEnumerable)res).GetEnumerator();
             Assert.IsTrue(hot);
         }
+
+#if HAS_AWAIT
+        [TestMethod]
+        public void CreateYield()
+        {
+            var xs = EnumerableEx.Create<int>(async yield => {
+                var i = 0;
+                while (i < 10) {
+                    await yield.Return(i++);
+                }
+            });
+
+            int j = 0;
+            foreach (int elem in xs) {
+                Assert.AreEqual(elem, j);
+                j++;
+            }
+
+            Assert.AreEqual(j, 10);
+        }
+#endif 
 
         private static IEnumerator<int> MyEnumerator()
         {

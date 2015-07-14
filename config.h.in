@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* The architecture this is running on */
 #undef ARCHITECTURE
@@ -121,6 +121,9 @@
 /* Extension module enabled */
 #undef ENABLE_EXTENSION_MODULE
 
+/* Gsharing */
+#undef ENABLE_GSHAREDVT
+
 /* Icall export enabled */
 #undef ENABLE_ICALL_EXPORT
 
@@ -129,6 +132,9 @@
 
 /* Enable the LLVM back end */
 #undef ENABLE_LLVM
+
+/* Enable using `perf` for profiling on Linux */
+#undef ENABLE_PERF_EVENTS
 
 /* Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY */
 #undef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
@@ -147,6 +153,9 @@
 
 /* ARM v7 */
 #undef HAVE_ARMV7
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#undef HAVE_ARPA_INET_H
 
 /* Supports C99 array initialization */
 #undef HAVE_ARRAY_ELEM_INIT
@@ -180,6 +189,34 @@
 
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
+
+/* Define to 1 if you have the declaration of `InterlockedAdd', and to 0 if
+   you don't. */
+#undef HAVE_DECL_INTERLOCKEDADD
+
+/* Define to 1 if you have the declaration of `InterlockedAdd64', and to 0 if
+   you don't. */
+#undef HAVE_DECL_INTERLOCKEDADD64
+
+/* Define to 1 if you have the declaration of `InterlockedCompareExchange64',
+   and to 0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDCOMPAREEXCHANGE64
+
+/* Define to 1 if you have the declaration of `InterlockedDecrement64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDDECREMENT64
+
+/* Define to 1 if you have the declaration of `InterlockedExchange64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDEXCHANGE64
+
+/* Define to 1 if you have the declaration of `InterlockedIncrement64', and to
+   0 if you don't. */
+#undef HAVE_DECL_INTERLOCKEDINCREMENT64
+
+/* Define to 1 if you have the declaration of `__readfsdword', and to 0 if you
+   don't. */
+#undef HAVE_DECL___READFSDWORD
 
 /* Support for the deprecated attribute */
 #undef HAVE_DEPRECATED
@@ -259,6 +296,9 @@
 /* Define to 1 if you have the <gc.h> header file. */
 #undef HAVE_GC_H
 
+/* Have getaddrinfo */
+#undef HAVE_GETADDRINFO
+
 /* Define to 1 if you have the `getdomainname' function. */
 #undef HAVE_GETDOMAINNAME
 
@@ -274,6 +314,12 @@
 /* Define to 1 if you have the `getgrnam_r' function. */
 #undef HAVE_GETGRNAM_R
 
+/* Have gethostbyname */
+#undef HAVE_GETHOSTBYNAME
+
+/* Have gethostbyname2 */
+#undef HAVE_GETHOSTBYNAME2
+
 /* Have gethostbyname2_r */
 #undef HAVE_GETHOSTBYNAME2_R
 
@@ -286,11 +332,17 @@
 /* Define to 1 if you have the `getlogin_r' function. */
 #undef HAVE_GETLOGIN_R
 
+/* Have getnameinfo */
+#undef HAVE_GETNAMEINFO
+
 /* Define to 1 if you have the `getpriority' function. */
 #undef HAVE_GETPRIORITY
 
-/* Define to 1 if you have the `GetProcessId' function. */
+/* Define if GetProcessId is available */
 #undef HAVE_GETPROCESSID
+
+/* Have getprotobyname */
+#undef HAVE_GETPROTOBYNAME
 
 /* Define to 1 if you have the `getpwent' function. */
 #undef HAVE_GETPWENT
@@ -303,6 +355,9 @@
 
 /* Define to 1 if you have the `getresuid' function. */
 #undef HAVE_GETRESUID
+
+/* Define to 1 if you have the `getrlimit' function. */
+#undef HAVE_GETRLIMIT
 
 /* Define to 1 if you have the `getrusage' function. */
 #undef HAVE_GETRUSAGE
@@ -321,6 +376,9 @@
 
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
+
+/* Have inet_ntop */
+#undef HAVE_INET_NTOP
 
 /* Define to 1 if you have the `inet_pton' function. */
 #undef HAVE_INET_PTON
@@ -391,6 +449,9 @@
 /* Define to 1 if you have the <linux/rtnetlink.h> header file. */
 #undef HAVE_LINUX_RTNETLINK_H
 
+/* Define to 1 if you have the <linux/serial.h> header file. */
+#undef HAVE_LINUX_SERIAL_H
+
 /* Define to 1 if you have the `lockf' function. */
 #undef HAVE_LOCKF
 
@@ -402,6 +463,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Have mincore */
+#undef HAVE_MINCORE
 
 /* Define to 1 if you have the `mknodat' function. */
 #undef HAVE_MKNODAT
@@ -496,6 +560,9 @@
 /* Define to 1 if you have the <pthread_np.h> header file. */
 #undef HAVE_PTHREAD_NP_H
 
+/* Define to 1 if you have the `pthread_setname_np' function. */
+#undef HAVE_PTHREAD_SETNAME_NP
+
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
 
@@ -546,6 +613,9 @@
 
 /* Define to 1 if you have the `sethostname' function. */
 #undef HAVE_SETHOSTNAME
+
+/* Define to 1 if you have the `setpgid' function. */
+#undef HAVE_SETPGID
 
 /* Define to 1 if you have the `setpriority' function. */
 #undef HAVE_SETPRIORITY
@@ -691,6 +761,9 @@
 /* Define to 1 if you have the <sys/epoll.h> header file. */
 #undef HAVE_SYS_EPOLL_H
 
+/* Define to 1 if you have the <sys/event.h> header file. */
+#undef HAVE_SYS_EVENT_H
+
 /* Define to 1 if you have the <sys/extattr.h> header file. */
 #undef HAVE_SYS_EXTATTR_H
 
@@ -721,6 +794,9 @@
 /* Define to 1 if you have the <sys/poll.h> header file. */
 #undef HAVE_SYS_POLL_H
 
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
 /* Define to 1 if you have the <sys/sdt.h> header file. */
 #undef HAVE_SYS_SDT_H
 
@@ -750,6 +826,9 @@
 
 /* Define to 1 if you have the <sys/syscall.h> header file. */
 #undef HAVE_SYS_SYSCALL_H
+
+/* Define to 1 if you have the <sys/sysctl.h> header file. */
+#undef HAVE_SYS_SYSCTL_H
 
 /* Define to 1 if you have the <sys/time.h> header file. */
 #undef HAVE_SYS_TIME_H
@@ -856,15 +935,6 @@
 /* Enable lazy gc thread creation by the embedding host. */
 #undef LAZY_GC_THREAD_CREATION
 
-/* Major version of LLVM libraries */
-#undef LLVM_MAJOR_VERSION
-
-/* Minor version of LLVM libraries */
-#undef LLVM_MINOR_VERSION
-
-/* Whenever we are using the mono branch of LLVM */
-#undef LLVM_MONO_BRANCH
-
 /* Full version of LLVM libraties */
 #undef LLVM_VERSION
 
@@ -884,8 +954,8 @@
 /* The LLVM back end is dynamically loaded */
 #undef MONO_LLVM_LOADED
 
-/* Sizeof sock_un.sun_path */
-#undef MONO_SIZEOF_SUNPATH
+/* native types */
+#undef MONO_NATIVE_TYPES
 
 /* Reduce runtime requirements (and capabilities) */
 #undef MONO_SMALL_CONFIG
@@ -955,6 +1025,9 @@
 
 /* ... */
 #undef TARGET_ARM
+
+/* ... */
+#undef TARGET_ARM64
 
 /* byte order of target */
 #undef TARGET_BYTE_ORDER

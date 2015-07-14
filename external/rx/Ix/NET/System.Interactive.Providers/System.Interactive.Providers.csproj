@@ -13,19 +13,17 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProductSignAssembly>true</ProductSignAssembly>
+    <NoWarn>1591</NoWarn>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="..\Common.targets" />
   <PropertyGroup>
     <DocumentationFile>$(OutputPath)\$(AssemblyName).XML</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugPL' Or '$(Configuration)' == 'ReleasePL' ">
-    <TargetFrameworkProfile>Profile1</TargetFrameworkProfile>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="mscorlib" Condition=" '$(BuildPlatform)' == 'SILVERLIGHT' " />
+    <Reference Include="mscorlib" Condition=" '$(BuildPlatform)' == 'SILVERLIGHT' or '$(TargetFrameworkIdentifier)' == '.NETPortable' " />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Observable" Condition=" '$(BuildFlavor)' == 'SILVERLIGHTM7' " />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />

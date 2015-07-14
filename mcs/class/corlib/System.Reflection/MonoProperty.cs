@@ -299,7 +299,7 @@ namespace System.Reflection {
 		{
 			if (index == null || index.Length == 0) {
 				/*FIXME we should check if the number of arguments matches the expected one, otherwise the error message will be pretty criptic.*/
-#if !MONOTOUCH
+#if !FULL_AOT_RUNTIME
 				if (cached_getter == null) {
 					MethodInfo method = GetGetMethod (true);
 					if (!DeclaringType.IsValueType && !method.ContainsGenericParameters) { //FIXME find a way to build an invoke delegate for value types.
@@ -410,10 +410,8 @@ namespace System.Reflection {
 				ToString(), MemberTypes.Property);
 		}
 
-#if NET_4_0
 		public override IList<CustomAttributeData> GetCustomAttributesData () {
 			return CustomAttributeData.GetCustomAttributes (this);
 		}
-#endif
 	}
 }
