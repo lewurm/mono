@@ -144,6 +144,19 @@ Description: Mono utilities
  This package includes various tools useful for CLI developers, like
  pedump, monodis and monograph.
 
+Package: ca-certificates-mono
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${cli:Depends}, ca-certificates (>= 20121114)
+Description: Common CA certificates (Mono keystore)
+ Mono is a platform for running and developing applications based on the
+ ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
+ Mono provides a complete CLR (Common Language Runtime) including compiler and
+ runtime, which can produce and execute CIL (Common Intermediate Language)
+ bytecode (aka assemblies), and a class library.
+ .
+ This package uses the hooks of the ca-certificates package to update the
+ Mono keystore.
+
 Package: mono-complete
 Architecture: amd64 armel armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 powerpc ppc64 ppc64el s390x
 Depends: ${misc:Depends},
@@ -160,7 +173,8 @@ Depends: ${misc:Depends},
          mono-4.0-service (= ${source:Version}),
          monodoc-base (= ${source:Version}),
          monodoc-manual (= ${source:Version}),
-         libmono-cil-dev (= ${source:Version})
+         libmono-cil-dev (= ${source:Version}),
+         ca-certificates-mono (= ${source:Version})
 Description: complete Mono runtime, development tools and all libraries
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
@@ -785,6 +799,7 @@ Description: Mono.Parallel library (for CLI 4.0)
 Package: libmono-system4.0-cil
 Architecture: all
 Suggests: ${cli:Suggests}
+Recommends: ca-certificates-mono (= ${source:Version})
 Depends: ${misc:Depends},
          ${cli:Depends},
          mono-runtime (>= ${mono:upversion}), mono-runtime (<< ${mono:next-upversion})
@@ -1107,6 +1122,7 @@ Description: Mono System.Messaging library (for CLI 4.0)
 
 Package: libmono-security4.0-cil
 Architecture: all
+Recommends: ca-certificates-mono (= ${source:Version})
 Depends: ${misc:Depends},
          ${cli:Depends}
 Description: Mono Security library (for CLI 4.0)
