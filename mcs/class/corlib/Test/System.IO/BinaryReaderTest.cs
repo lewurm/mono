@@ -274,6 +274,20 @@ namespace MonoTests.System.IO
 			}
 		}
 
+		[Test]
+		public void TestReadUnicode ()
+		{
+			char testChar1 = 'H';
+			using (var stream = new MemoryStream())
+			using (var writer = new BinaryWriter(stream, Encoding.Unicode, true))
+			using (var reader = new BinaryReader(stream, Encoding.Unicode))
+			{
+				writer.Write(testChar1);
+				stream.Position = 0;
+				Assert.AreEqual ('H', reader.ReadChar ());
+			}
+		}
+
 
 		//-TODO: (TestRead[Type]*) Verify the ReadBoolean, ReadByte ....
 		// ReadBoolean, ReadByte, ReadChar, ReadInt32 Done
@@ -1457,6 +1471,88 @@ namespace MonoTests.System.IO
 			++ReadCounter;
 			return base.Read (buffer, index, count);
 		}
+	}
+
+	class ReadStringMockStream : Stream
+	{
+		int noc;
+
+		#region implemented abstract members of Stream
+
+		public override void Flush ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override int Read (byte[] buffer, int offset, int count)
+		{
+			switch (noc++) {
+			case 0:
+				buffer [0] = 42; // Length
+				return 2; 
+			default:
+				buffer [0] = 0x65;
+				return 1;
+			}
+		}
+
+		public override long Seek (long offset, SeekOrigin origin)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override void SetLength (long value)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override void Write (byte[] buffer, int offset, int count)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override bool CanRead {
+			get {
+				return true;
+			}
+		}
+
+		public override bool CanSeek {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public override bool CanWrite {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public override long Length {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public override long Position {
+			get {
+				throw new NotImplementedException ();
+			}
+			set {
+				throw new NotImplementedException ();
+			}
+		}
+
+		#endregion
+	}
+
+	[Test]
+	public void ReadSting_CustomStream ()
+	{
+		var sr = new BinaryReader (new ReadStringMockStream ());
+		var s = sr.ReadString ();
+		Assert.AreEqual ("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", s);
 	}
 
 	[Test]

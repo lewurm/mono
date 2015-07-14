@@ -66,7 +66,7 @@ else
 noinst_LTLIBRARIES = $(boehm_libraries) $(sgen_libraries)
 endif
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\"
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" $(SHARED_CFLAGS)
 
 #
 # Make sure any prefix changes are updated in the binaries too.
@@ -75,7 +75,7 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(LIBGC_CPPFLAGS) $(GLIB_CFLA
 #  mono-config.c uses MONO_CFG_DIR
 #
 # This won't result in many more false positives than AC_DEFINEing them
-# in configure.in.
+# in configure.ac.
 #
 assembly.lo mono-config.lo: Makefile
 
@@ -85,6 +85,9 @@ libmonoruntime_static_la_LIBADD = $(bundle_obj) $(libmonoruntime_la_LIBADD)
 
 null_sources = \
 	console-null.c
+
+null_gc_sources = \
+	null-gc.c
 
 common_sources = \
 	$(platform_sources)	\
@@ -105,8 +108,8 @@ common_sources = \
 	debug-helpers.c		\
 	debug-mono-symfile.h	\
 	debug-mono-symfile.c	\
-	decimal.c		\
-	decimal.h		\
+	decimal-ms.c		\
+	decimal-ms.h		\
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
@@ -117,9 +120,11 @@ common_sources = \
 	filewatcher.c		\
 	filewatcher.h		\
 	gc-internal.h		\
+	gc-memfuncs.c		\
 	icall.c			\
 	icall-def.h		\
 	image.c			\
+	jit-info.c		\
 	loader.c		\
 	locales.c		\
 	locales.h		\
@@ -143,7 +148,6 @@ common_sources = \
 	mono-debug.h		\
 	mono-debug.c		\
 	mono-debug-debugger.h	\
-	mono-debug-debugger.c	\
 	mono-endian.c		\
 	mono-endian.h		\
 	mono-hash.h		\
@@ -153,12 +157,13 @@ common_sources = \
 	mono-perfcounters.h	\
 	mono-perfcounters-def.h	\
 	mono-ptr-array.h	\
+	mono-route.c		\
+	mono-route.h		\
 	mono-wsq.c		\
 	mono-wsq.h		\
 	monitor.h		\
 	nacl-stub.c		\
 	normalization-tables.h	\
-	null-gc.c		\
 	number-formatter.h	\
 	object-internals.h	\
 	opcodes.c		\
@@ -170,8 +175,10 @@ common_sources = \
 	profiler-private.h	\
 	rand.h			\
 	rand.c			\
+	remoting.h		\
+	remoting.c		\
 	runtime.c		\
-	security.c		\
+	mono-security.c		\
 	security.h		\
 	security-core-clr.c	\
 	security-core-clr.h	\
@@ -187,9 +194,18 @@ common_sources = \
 	threadpool.c		\
 	threadpool.h		\
 	threadpool-internals.h	\
+	tpool-poll.c	\
 	verify.c		\
 	verify-internals.h	\
-	wrapper-types.h
+	wrapper-types.h	\
+	reflection-internals.h	\
+	file-mmap-posix.c	\
+	file-mmap-windows.c	\
+	file-mmap.h	\
+	object-offsets.h	\
+	abi-details.h	\
+	metadata-cross-helpers.c
+
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \
@@ -211,13 +227,13 @@ sgen_sources = \
 	sgen-gc.c		\
 	sgen-internal.c		\
 	sgen-marksweep.c	\
-	sgen-marksweep-fixed.c	\
-	sgen-marksweep-par.c	\
-	sgen-marksweep-fixed-par.c	\
 	sgen-los.c		\
 	sgen-protocol.c \
 	sgen-bridge.c		\
 	sgen-bridge.h		\
+	sgen-old-bridge.c		\
+	sgen-new-bridge.c		\
+	sgen-tarjan-bridge.c		\
 	sgen-toggleref.c		\
 	sgen-toggleref.h		\
 	sgen-gc.h		\
@@ -225,6 +241,8 @@ sgen_sources = \
 	sgen-archdep.h		\
 	sgen-cardtable.c	\
 	sgen-cardtable.h	\
+	sgen-pointer-queue.c	\
+	sgen-pointer-queue.h	\
 	sgen-pinning.c	\
 	sgen-pinning.h	\
 	sgen-pinning-stats.c	\
@@ -235,9 +253,11 @@ sgen_sources = \
 	sgen-major-copy-object.h \
 	sgen-minor-copy-object.h \
 	sgen-copy-object.h \
-	sgen-major-scan-object.h \
+	sgen-marksweep-scan-object-concurrent.h \
 	sgen-minor-scan-object.h \
+	sgen-marksweep-drain-gray-stack.h	\
 	sgen-protocol.h		\
+	sgen-protocol-def.h		\
 	sgen-scan-object.h	\
 	sgen-nursery-allocator.c	\
 	sgen-hash-table.c	\
@@ -253,9 +273,12 @@ sgen_sources = \
 	sgen-stw.c				\
 	sgen-fin-weak-hash.c	\
 	sgen-layout-stats.c	\
-	sgen-layout-stats.h
+	sgen-layout-stats.h	\
+	sgen-qsort.c	\
+	sgen-qsort.h	\
+	sgen-tagged-pointer.h
 
-libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(boehm_sources)
+libmonoruntime_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES)
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(sgen_sources)
@@ -318,16 +341,10 @@ pedump_LDADD = libmonoruntime.la ../io-layer/libwapi.la ../utils/libmonoutils.la
 	$(LIBGC_LIBS) $(GLIB_LIBS) -lm $(LIBICONV) $(PEDUMP_DTRACE_OBJECT)
 
 if PLATFORM_DARWIN
-pedump_LDFLAGS=-framework CoreFoundation
+pedump_LDFLAGS=-framework CoreFoundation -framework Foundation
 endif
 endif
 endif
 
 EXTRA_DIST = make-bundle.pl sample-bundle $(win32_sources) $(unix_sources) $(null_sources) runtime.h \
-		tpool-poll.c tpool-epoll.c tpool-kqueue.c Makefile.am.in
-
-if HAS_EXTENSION_MODULE
-else
-Makefile.am: Makefile.am.in
-	cp $< $@
-endif
+		tpool-poll.c tpool-epoll.c tpool-kqueue.c

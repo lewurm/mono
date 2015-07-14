@@ -8,6 +8,15 @@
  * Copyright 2001-2003 Ximian, Inc (http://www.ximian.com)
  * Copyright 2004-2011 Novell, Inc (http://www.novell.com)
  */
+#include <config.h>
+#include <glib.h>
+#include <errno.h>
+
+#include <mono/metadata/mono-ptr-array.h>
+#include <mono/metadata/threadpool.h>
+#include <mono/metadata/threadpool-internals.h>
+#include <mono/utils/mono-semaphore.h>
+#include <mono/utils/mono-poll.h>
 
 #define INIT_POLLFD(a, b, c) {(a)->fd = b; (a)->events = c; (a)->revents = 0;}
 struct _tp_poll_data {
@@ -22,7 +31,7 @@ static void tp_poll_shutdown (gpointer event_data);
 static void tp_poll_modify (gpointer p, int fd, int operation, int events, gboolean is_new);
 static void tp_poll_wait (gpointer p);
 
-static gpointer
+gpointer
 tp_poll_init (SocketIOData *data)
 {
 	tp_poll_data *result;
@@ -84,7 +93,7 @@ tp_poll_modify (gpointer p, int fd, int operation, int events, gboolean is_new)
 	socket_io_data = p;
 	data = socket_io_data->event_data;
 
-	LeaveCriticalSection (&socket_io_data->io_lock);
+	mono_mutex_unlock (&socket_io_data->io_lock);
 	
 	MONO_SEM_WAIT (&data->new_sem);
 	INIT_POLLFD (&data->newpfd, GPOINTER_TO_INT (fd), events);
@@ -270,11 +279,11 @@ tp_poll_wait (gpointer p)
 		if (nsock == 0)
 			continue;
 
-		EnterCriticalSection (&socket_io_data->io_lock);
+		mono_mutex_lock (&socket_io_data->io_lock);
 		if (socket_io_data->inited == 3) {
 			g_free (pfds);
 			mono_ptr_array_destroy (async_results);
-			LeaveCriticalSection (&socket_io_data->io_lock);
+			mono_mutex_unlock (&socket_io_data->io_lock);
 			return; /* cleanup called */
 		}
 
@@ -314,8 +323,8 @@ tp_poll_wait (gpointer p)
 					maxfd--;
 			}
 		}
-		LeaveCriticalSection (&socket_io_data->io_lock);
-		threadpool_append_jobs (&async_io_tp, (MonoObject **) async_results.data, nresults);
+		mono_mutex_unlock (&socket_io_data->io_lock);
+		threadpool_append_async_io_jobs ((MonoObject **) async_results.data, nresults);
 		mono_ptr_array_clear (async_results);
 	}
 }
