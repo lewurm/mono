@@ -196,7 +196,7 @@ namespace Mono.Security.Protocol.Tls
 					Fig. 1 - Message flow for a full handshake		
 		*/
 
-		internal override IAsyncResult OnBeginNegotiateHandshake(AsyncCallback callback, object state)
+		internal override IAsyncResult BeginNegotiateHandshake(AsyncCallback callback, object state)
 		{
 			// Reset the context if needed
 			if (this.context.HandshakeState != HandshakeState.None)
@@ -205,7 +205,7 @@ namespace Mono.Security.Protocol.Tls
 			}
 
 			// Obtain supported cipher suites
-			this.context.SupportedCiphers = CipherSuiteFactory.GetSupportedCiphers(this.context.SecurityProtocol);
+			this.context.SupportedCiphers = CipherSuiteFactory.GetSupportedCiphers (true, context.SecurityProtocol);
 
 			// Set handshake state
 			this.context.HandshakeState = HandshakeState.Started;
@@ -215,7 +215,7 @@ namespace Mono.Security.Protocol.Tls
 
 		}
 
-		internal override void OnNegotiateHandshakeCallback(IAsyncResult asyncResult)
+		internal override void EndNegotiateHandshake(IAsyncResult asyncResult)
 		{
 			// Receive Client Hello message and ignore it
 			this.protocol.EndReceiveRecord(asyncResult);
@@ -233,16 +233,8 @@ namespace Mono.Security.Protocol.Tls
 			// Send ServerCertificate message
 			this.protocol.SendRecord(HandshakeType.Certificate);
 
-			// If the negotiated cipher is a KeyEx cipher send ServerKeyExchange
-			if (this.context.Negotiating.Cipher.IsExportable)
-			{
-				this.protocol.SendRecord(HandshakeType.ServerKeyExchange);
-			}
-
-			// If the negotiated cipher is a KeyEx cipher or
-			// the client certificate is required send the CertificateRequest message
-			if (this.context.Negotiating.Cipher.IsExportable ||
-				((ServerContext)this.context).ClientCertificateRequired ||
+			// If the client certificate is required send the CertificateRequest message
+			if (((ServerContext)this.context).ClientCertificateRequired ||
 				((ServerContext)this.context).RequestClientCertificate)
 			{
 				this.protocol.SendRecord(HandshakeType.CertificateRequest);

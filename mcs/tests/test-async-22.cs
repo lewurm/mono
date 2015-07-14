@@ -60,6 +60,15 @@ class C
 	}
 }
 
+class D
+{
+	enum E {}
+
+	async Task M ()
+	{
+	}
+}
+
 class async
 {
 	async (async arg)
@@ -154,6 +163,24 @@ namespace AwaitNS
 			var a = new Initializer () {
 				await = 2
 			};
+		}
+	}
+
+	class MemberAccess
+	{
+		static void M ()
+		{
+			var await = new string[0];
+			var l = await.Length;			
+		}
+	}
+
+	class TypeChecks
+	{
+		static void M (object await)
+		{
+			var b = await is Exception; 
+			var c = await as Exception;
 		}
 	}
 }

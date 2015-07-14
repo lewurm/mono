@@ -4,7 +4,7 @@
 // Authors:
 //	Sebastien Pouliot  <sebastien@xamarin.com>
 //
-// Copyright 2012-2013 Xamarin Inc. All rights reserved.
+// Copyright 2012-2014 Xamarin Inc. All rights reserved.
 //
 
 #if FULL_AOT_RUNTIME
@@ -23,7 +23,7 @@ namespace System {
 			extern static void monotouch_log (string s);
 
 			[DllImport ("/usr/lib/libSystem.dylib")]
-			extern static int write (int fd, byte [] buffer, int n);
+			extern static /* ssize_t */ IntPtr write (int fd, byte [] buffer, /* size_t */ IntPtr n);
 			
 			StringBuilder sb;
 			
@@ -39,7 +39,8 @@ namespace System {
 			static void direct_write_to_stdout (string s)
 			{
 				byte [] b = Encoding.Default.GetBytes (s);
-				while (write (1, b, b.Length) == -1 && Marshal.GetLastWin32Error () == /* EINTR*/ 4)
+				var len = (IntPtr) b.Length;
+				while ((int) write (1, b, len) == -1 && Marshal.GetLastWin32Error () == /* EINTR*/ 4)
 					;
 			}
 			
@@ -79,6 +80,17 @@ namespace System {
 				catch (Exception) {
 				}
 			}
+
+			/* Called from TextWriter:WriteLine(string) */
+			public override void Write(char[] buffer, int index, int count) {
+				try {
+					sb.Append (buffer);
+					if (buffer != null && buffer.Length >= CoreNewLine.Length && EndsWithNewLine (buffer))
+						Flush ();
+				}
+				catch (Exception) {
+				}
+			}
 			
 			bool EndsWithNewLine (string value)
 			{
@@ -87,6 +99,16 @@ namespace System {
 						return false;
 				}
 				
+				return true;
+			}
+
+			bool EndsWithNewLine (char[] value)
+			{
+				for (int i = 0, v = value.Length - CoreNewLine.Length; i < CoreNewLine.Length; ++i, ++v) {
+					if (value [v] != CoreNewLine [i])
+						return false;
+				}
+
 				return true;
 			}
 			
