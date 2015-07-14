@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2009-2012 Jeroen Frijters
+  Copyright (C) 2009-2013 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -353,9 +353,47 @@ namespace IKVM.Reflection
 			throw new InvalidOperationException();
 		}
 
-		public virtual StructLayoutAttribute StructLayoutAttribute
+		public StructLayoutAttribute StructLayoutAttribute
 		{
-			get { return null; }
+			get
+			{
+				StructLayoutAttribute layout;
+				switch (this.Attributes & TypeAttributes.LayoutMask)
+				{
+					case TypeAttributes.AutoLayout:
+						layout = new StructLayoutAttribute(LayoutKind.Auto);
+						break;
+					case TypeAttributes.SequentialLayout:
+						layout = new StructLayoutAttribute(LayoutKind.Sequential);
+						break;
+					case TypeAttributes.ExplicitLayout:
+						layout = new StructLayoutAttribute(LayoutKind.Explicit);
+						break;
+					default:
+						throw new BadImageFormatException();
+				}
+				switch (this.Attributes & TypeAttributes.StringFormatMask)
+				{
+					case TypeAttributes.AnsiClass:
+						layout.CharSet = CharSet.Ansi;
+						break;
+					case TypeAttributes.UnicodeClass:
+						layout.CharSet = CharSet.Unicode;
+						break;
+					case TypeAttributes.AutoClass:
+						layout.CharSet = CharSet.Auto;
+						break;
+					default:
+						layout.CharSet = CharSet.None;
+						break;
+				}
+				if (!__GetLayout(out layout.Pack, out layout.Size))
+				{
+					// compatibility with System.Reflection
+					layout.Pack = 8;
+				}
+				return layout;
+			}
 		}
 
 		public virtual bool __GetLayout(out int packingSize, out int typeSize)
@@ -466,6 +504,7 @@ namespace IKVM.Reflection
 			return names.ToArray();
 		}
 
+#if !CORECLR
 		public string GetEnumName(object value)
 		{
 			if (!IsEnum)
@@ -501,6 +540,7 @@ namespace IKVM.Reflection
 			}
 			return null;
 		}
+#endif
 
 		public bool IsEnumDefined(object value)
 		{
@@ -1277,6 +1317,7 @@ namespace IKVM.Reflection
 			get { return IsClass && IsImport; }
 		}
 
+#if !CORECLR
 		public bool IsContextful
 		{
 			get { return IsSubclassOf(this.Module.universe.Import(typeof(ContextBoundObject))); }
@@ -1286,6 +1327,7 @@ namespace IKVM.Reflection
 		{
 			get { return IsSubclassOf(this.Module.universe.Import(typeof(MarshalByRefObject))); }
 		}
+#endif
 
 		public virtual bool IsVisible
 		{
@@ -1763,48 +1805,90 @@ namespace IKVM.Reflection
 		public InterfaceMapping GetInterfaceMap(Type interfaceType)
 		{
 			CheckBaked();
-			InterfaceMapping map = new InterfaceMapping();
-			if (!IsDirectlyImplementedInterface(interfaceType))
+			InterfaceMapping map;
+			map.InterfaceMethods = interfaceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
+			map.InterfaceType = interfaceType;
+			map.TargetMethods = new MethodInfo[map.InterfaceMethods.Length];
+			map.TargetType = this;
+			FillInInterfaceMethods(interfaceType, map.InterfaceMethods, map.TargetMethods);
+			return map;
+		}
+
+		private void FillInInterfaceMethods(Type interfaceType, MethodInfo[] interfaceMethods, MethodInfo[] targetMethods)
+		{
+			FillInExplicitInterfaceMethods(interfaceMethods, targetMethods);
+			bool direct = IsDirectlyImplementedInterface(interfaceType);
+			if (direct)
 			{
-				Type baseType = this.BaseType;
-				if (baseType == null)
+				FillInImplicitInterfaceMethods(interfaceMethods, targetMethods);
+			}
+			Type baseType = this.BaseType;
+			if (baseType != null)
+			{
+				baseType.FillInInterfaceMethods(interfaceType, interfaceMethods, targetMethods);
+				ReplaceOverriddenMethods(targetMethods);
+			}
+			if (direct)
+			{
+				for (Type type = this.BaseType; type != null && type.Module == Module; type = type.BaseType)
 				{
-					throw new ArgumentException();
-				}
-				else
-				{
-					map = baseType.GetInterfaceMap(interfaceType);
+					type.FillInImplicitInterfaceMethods(interfaceMethods, targetMethods);
 				}
 			}
-			else
+		}
+
+		private void FillInImplicitInterfaceMethods(MethodInfo[] interfaceMethods, MethodInfo[] targetMethods)
+		{
+			MethodBase[] methods = null;
+			for (int i = 0; i < targetMethods.Length; i++)
 			{
-				map.InterfaceMethods = interfaceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
-				map.InterfaceType = interfaceType;
-				map.TargetMethods = new MethodInfo[map.InterfaceMethods.Length];
-				FillInExplicitInterfaceMethods(map.InterfaceMethods, map.TargetMethods);
-				MethodInfo[] methods = GetMethods(BindingFlags.Instance | BindingFlags.Public);
-				for (int i = 0; i < map.TargetMethods.Length; i++)
+				if (targetMethods[i] == null)
 				{
-					if (map.TargetMethods[i] == null)
+					if (methods == null)
 					{
-						// TODO use proper method resolution (also take into account that no implicit base class implementation is used across assembly boundaries)
-						for (int j = 0; j < methods.Length; j++)
+						methods = __GetDeclaredMethods();
+					}
+					for (int j = 0; j < methods.Length; j++)
+					{
+						if (methods[j].IsVirtual
+							&& methods[j].Name == interfaceMethods[i].Name
+							&& methods[j].MethodSignature.Equals(interfaceMethods[i].MethodSignature))
 						{
-							if (methods[j].Name == map.InterfaceMethods[i].Name
-								&& methods[j].MethodSignature.Equals(map.InterfaceMethods[i].MethodSignature))
-							{
-								map.TargetMethods[i] = methods[j];
-							}
+							targetMethods[i] = (MethodInfo)methods[j];
+							break;
 						}
 					}
 				}
-				for (Type baseType = this.BaseType; baseType != null && interfaceType.IsAssignableFrom(baseType); baseType = baseType.BaseType)
-				{
-					baseType.FillInExplicitInterfaceMethods(map.InterfaceMethods, map.TargetMethods);
-				}
 			}
-			map.TargetType = this;
-			return map;
+		}
+
+		private void ReplaceOverriddenMethods(MethodInfo[] baseMethods)
+		{
+			__MethodImplMap impl = __GetMethodImplMap();
+			for (int i = 0; i < baseMethods.Length; i++)
+			{
+				if (baseMethods[i] != null && !baseMethods[i].IsFinal)
+				{
+					MethodInfo def = baseMethods[i].GetBaseDefinition();
+					for (int j = 0; j < impl.MethodDeclarations.Length; j++)
+					{
+						for (int k = 0; k < impl.MethodDeclarations[j].Length; k++)
+						{
+							if (impl.MethodDeclarations[j][k].GetBaseDefinition() == def)
+							{
+								baseMethods[i] = impl.MethodBodies[j];
+								goto next;
+							}
+						}
+					}
+					MethodInfo candidate = FindMethod(def.Name, def.MethodSignature) as MethodInfo;
+					if (candidate != null && candidate.IsVirtual && !candidate.IsNewSlot)
+					{
+						baseMethods[i] = candidate;
+					}
+				}
+			next: ;
+			}
 		}
 
 		internal void FillInExplicitInterfaceMethods(MethodInfo[] interfaceMethods, MethodInfo[] targetMethods)
@@ -1908,28 +1992,6 @@ namespace IKVM.Reflection
 			}
 		}
 
-		internal bool IsPseudoCustomAttribute
-		{
-			get
-			{
-				Universe u = this.Module.universe;
-				return this == u.System_NonSerializedAttribute
-					|| this == u.System_SerializableAttribute
-					|| this == u.System_Runtime_InteropServices_DllImportAttribute
-					|| this == u.System_Runtime_InteropServices_FieldOffsetAttribute
-					|| this == u.System_Runtime_InteropServices_InAttribute
-					|| this == u.System_Runtime_InteropServices_MarshalAsAttribute
-					|| this == u.System_Runtime_InteropServices_OutAttribute
-					|| this == u.System_Runtime_InteropServices_StructLayoutAttribute
-					|| this == u.System_Runtime_InteropServices_OptionalAttribute
-					|| this == u.System_Runtime_InteropServices_PreserveSigAttribute
-					|| this == u.System_Runtime_InteropServices_ComImportAttribute
-					|| this == u.System_Runtime_CompilerServices_SpecialNameAttribute
-					|| this == u.System_Runtime_CompilerServices_MethodImplAttribute
-					;
-			}
-		}
-
 		internal Type MarkNotValueType()
 		{
 			typeFlags |= TypeFlags.NotValueType;
@@ -2000,6 +2062,11 @@ namespace IKVM.Reflection
 		}
 
 		internal virtual Type SetMetadataTokenForMissing(int token, int flags)
+		{
+			return this;
+		}
+
+		internal virtual Type SetCyclicTypeForwarder()
 		{
 			return this;
 		}
@@ -2079,6 +2146,11 @@ namespace IKVM.Reflection
 		}
 
 		public virtual bool __IsTypeForwarder
+		{
+			get { return false; }
+		}
+
+		public virtual bool __IsCyclicTypeForwarder
 		{
 			get { return false; }
 		}
@@ -2635,6 +2707,8 @@ namespace IKVM.Reflection
 
 		internal static Type Make(Type type, Type[] typeArguments, CustomModifiers[] mods)
 		{
+			if (type.Universe.SupressReferenceTypeIdentityConversion)
+				return type.Universe.CanonicalizeType(new GenericTypeInstance(type, typeArguments, mods));
 			bool identity = true;
 			if (type is TypeBuilder || type is BakedType || type.__IsMissing)
 			{
@@ -2933,9 +3007,9 @@ namespace IKVM.Reflection
 			get { return type.__ContainsMissingType || ContainsMissingType(args); }
 		}
 
-		public override StructLayoutAttribute StructLayoutAttribute
+		public override bool __GetLayout(out int packingSize, out int typeSize)
 		{
-			get { return type.StructLayoutAttribute; }
+			return type.__GetLayout(out packingSize, out typeSize);
 		}
 
 		internal override int GetModuleBuilderToken()

@@ -72,7 +72,7 @@ namespace MonoTests.System.Reflection
 			}
 		}
 
-#if NET_2_0 && !NET_2_1
+#if !NET_2_1
 		public enum ParamEnum {
 			None = 0,
 			Foo = 1,
@@ -83,13 +83,11 @@ namespace MonoTests.System.Reflection
 		{
 		}
 
-#if !TARGET_JVM // No support for extern methods in TARGET_JVM
 		[DllImport ("foo")]
 		public extern static void marshalAsMethod (
 			[MarshalAs(UnmanagedType.Bool)]int p0, 
 			[MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPStr)] string [] p1,
 			[MarshalAs( UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof (Marshal1), MarshalCookie = "5")] object p2);
-#endif
 		[Test]
 		public void DefaultValueEnum () {
 			ParameterInfo[] info = typeof (ParameterInfoTest).GetMethod ("paramMethod").GetParameters ();
@@ -97,6 +95,15 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual (typeof (ParamEnum), info [5].DefaultValue.GetType (), "#1");
 			Assert.AreEqual (ParamEnum.Foo, info [5].DefaultValue, "#2");
 		}
+
+#if NET_4_5
+		[Test]
+		public void HasDefaultValueEnum () {
+			ParameterInfo[] info = typeof (ParameterInfoTest).GetMethod ("paramMethod").GetParameters ();
+
+			Assert.IsTrue (info [5].HasDefaultValue);
+		}
+#endif
 
 		public static void Sample2 ([DecimalConstantAttribute(2,2,2,2,2)] decimal a, [DateTimeConstantAttribute(123456)] DateTime b) {}
 
@@ -117,7 +124,19 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual (pi [1].DefaultValue.GetType (), typeof (Missing), "#2");
 		}
 
-		public void Sample (int a, [Optional] int b)
+#if NET_4_5
+		[Test]
+		public void TestHasDefaultValues ()
+		{
+			ParameterInfo [] pi = typeof (ParameterInfoTest).GetMethod ("Sample").GetParameters ();
+
+			Assert.IsFalse (pi [0].HasDefaultValue, "#1");
+			Assert.IsFalse (pi [1].HasDefaultValue, "#2");
+			Assert.IsTrue (pi [2].HasDefaultValue, "#3");
+		}
+#endif
+
+		public void Sample (int a, [Optional] int b, object c = null)
 		{
 		}
 
@@ -130,7 +149,6 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual (1, info[3].GetCustomAttributes (typeof (OptionalAttribute), true).Length, "#A4");
 			Assert.AreEqual (2, info[4].GetCustomAttributes (true).Length, "#A5");
 
-#if !TARGET_JVM // No support for extern methods in TARGET_JVM
 			ParameterInfo[] pi = typeof (ParameterInfoTest).GetMethod ("marshalAsMethod").GetParameters ();
 			MarshalAsAttribute attr;
 
@@ -145,7 +163,6 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual (UnmanagedType.CustomMarshaler, attr.Value, "#D1");
 			Assert.AreEqual ("5", attr.MarshalCookie, "#D2");
 			Assert.AreEqual (typeof (Marshal1), Type.GetType (attr.MarshalType), "#D3");
-#endif
 		}
 
 		[Test] // bug #342536
@@ -234,6 +251,14 @@ namespace MonoTests.System.Reflection
 			var info = typeof (ParameterInfoTest).GetMethod ("TestC").GetParameters ();
 			Assert.AreEqual (decimal.MaxValue, info [0].DefaultValue);
 		}
+
+#if NET_4_5
+		[Test]
+		public void HasDefaultValueDecimal () {
+			var info = typeof (ParameterInfoTest).GetMethod ("TestC").GetParameters ();
+			Assert.IsTrue (info [0].HasDefaultValue);
+		}
+#endif
 
 		class MyParameterInfo2 : ParameterInfo
 		{

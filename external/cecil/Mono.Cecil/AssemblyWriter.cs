@@ -82,7 +82,7 @@ namespace Mono.Cecil {
 		public static void WriteModuleTo (ModuleDefinition module, Stream stream, WriterParameters parameters)
 		{
 			if ((module.Attributes & ModuleAttributes.ILOnly) == 0)
-				throw new ArgumentException ();
+				throw new NotSupportedException ("Writing mixed-mode assemblies is not supported");
 
 			if (module.HasImage && module.ReadingMode == ReadingMode.Deferred)
 				ImmediateModuleReader.ReadModule (module);
@@ -1164,9 +1164,14 @@ namespace Mono.Cecil {
 
 		MetadataToken GetTypeRefToken (TypeReference type)
 		{
+			MetadataToken token;
+			if (module.CustomMetadataWriter != null) {
+				if (module.CustomMetadataWriter.CreateTypeRefToken (ref type, out token))
+					return token;
+			}
+
 			var row = CreateTypeRefRow (type);
 
-			MetadataToken token;
 			if (type_ref_map.TryGetValue (row, out token))
 				return token;
 

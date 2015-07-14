@@ -901,14 +901,12 @@ namespace System.Net.Sockets {
 			}
 		}
 
-#if !TARGET_JVM
 		// Creates a new system socket, returning the handle
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern IntPtr Socket_internal(AddressFamily family,
 						      SocketType type,
 						      ProtocolType proto,
 						      out int error);
-#endif		
 		
 		public Socket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
 		{
@@ -954,6 +952,12 @@ namespace System.Net.Sockets {
 #endif
 		}
 
+		[MonoTODO ("Currently hardcoded to IPv4. Ideally, support v4/v6 dual-stack.")]
+		public Socket (SocketType socketType, ProtocolType protocolType)
+			: this (AddressFamily.InterNetwork, socketType, protocolType)
+		{
+		}
+
 		~Socket ()
 		{
 			Dispose (false);
@@ -964,12 +968,10 @@ namespace System.Net.Sockets {
 			get { return address_family; }
 		}
 
-#if !TARGET_JVM
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static void Blocking_internal(IntPtr socket,
 							     bool block,
 							     out int error);
-#endif
 
 		public bool Blocking {
 			get {
@@ -1184,11 +1186,7 @@ namespace System.Net.Sockets {
 			}
 		}
 
-#if NET_4_0
 		public void Dispose ()
-#else
-		void IDisposable.Dispose ()
-#endif
 		{
 			Dispose (true);
 			GC.SuppressFinalize (this);
@@ -1253,7 +1251,7 @@ namespace System.Net.Sockets {
 				throw new SocketException (error);
 			}
 
-			if (socket_type == SocketType.Dgram && (ep.Address.Equals (IPAddress.Any) || ep.Address.Equals (IPAddress.IPv6Any)))
+			if (socket_type == SocketType.Dgram && ep != null && (ep.Address.Equals (IPAddress.Any) || ep.Address.Equals (IPAddress.IPv6Any)))
 				connected = false;
 			else
 				connected = true;
@@ -1585,7 +1583,6 @@ namespace System.Net.Sockets {
 		bool GetCheckedIPs (SocketAsyncEventArgs e, out IPAddress [] addresses)
 		{
 			addresses = null;
-#if NET_4_0
 			// Connect to the first address that match the host name, like:
 			// http://blogs.msdn.com/ncl/archive/2009/07/20/new-ncl-features-in-net-4-0-beta-2.aspx
 			// while skipping entries that do not match the address family
@@ -1597,18 +1594,13 @@ namespace System.Net.Sockets {
 				e.ConnectByNameError = null;
 					return false;
 			}
-#else
-			return false; // < NET_4_0 -> use remote endpoint
-#endif
 		}
 
 		bool ConnectAsyncReal (SocketAsyncEventArgs e)
 		{			
 			bool use_remoteep = true;
-#if NET_4_0
 			IPAddress [] addresses = null;
 			use_remoteep = !GetCheckedIPs (e, out addresses);
-#endif
 			e.curSocket = this;
 			Worker w = e.Worker;
 			w.Init (this, e, SocketOperation.Connect);
@@ -1619,7 +1611,6 @@ namespace System.Net.Sockets {
 					result.EndPoint = e.RemoteEndPoint;
 					ares = BeginConnect (e.RemoteEndPoint, SocketAsyncEventArgs.Dispatcher, e);
 				}
-#if NET_4_0
 				else {
 
 					DnsEndPoint dep = (e.RemoteEndPoint as DnsEndPoint);
@@ -1628,7 +1619,6 @@ namespace System.Net.Sockets {
 
 					ares = BeginConnect (addresses, dep.Port, SocketAsyncEventArgs.Dispatcher, e);
 				}
-#endif
 				if (ares.IsCompleted && ares.CompletedSynchronously) {
 					((SocketAsyncResult) ares).CheckIfThrowDelayedException ();
 					return false;
