@@ -35,6 +35,8 @@ using NUnit.Framework;
 using Microsoft.Build.Execution;
 using Microsoft.Build.Exceptions;
 using System.Collections.Generic;
+using Microsoft.Build.Framework;
+using Microsoft.Build.Logging;
 
 namespace MonoTests.Microsoft.Build.Internal
 {
@@ -281,6 +283,73 @@ namespace MonoTests.Microsoft.Build.Internal
 			var reader = XmlReader.Create (new StringReader (xml));
 			var root = ProjectRootElement.Create (reader);
 			new Project (root);
+		}
+		
+		[Test]
+		public void MetadataExpansion ()
+		{
+			string project_xml = @"<Project xmlns='http://schemas.microsoft.com/developer/msbuild/2003'>
+  <PropertyGroup>
+    <X>a/b/c.txt</X>
+  </PropertyGroup>
+  <Target Name='Foo'>
+    <CreateItem Include='$(X)'>
+      <Output TaskParameter='Include' ItemName='I' />
+    </CreateItem>
+    <CreateProperty Value=""@(I->'%(Filename)%(Extension)')"">
+      <Output TaskParameter='Value' PropertyName='P' />
+    </CreateProperty>
+    <Error Text=""Expected 'c.txt' but got '$(P)'"" Condition=""'$(P)'!='c.txt'"" />
+  </Target>
+</Project>";
+			var xml = XmlReader.Create (new StringReader (project_xml));
+			var root = ProjectRootElement.Create (xml);
+			var p = new ProjectInstance (root);
+			var sw = new StringWriter ();
+			var result = p.Build (new ILogger [] { new ConsoleLogger (LoggerVerbosity.Minimal, sw.WriteLine, null, null)});
+			Assert.IsTrue (result, "#1: " + sw);
+		}
+
+		[Test]
+		public void MultipleBinaryCondition ()
+		{
+			string cond = @"$(AndroidIncludeDebugSymbols) == '' And Exists ('$(_IntermediatePdbFile)') And '$(OS)' == 'Windows_NT'";
+			string project_xml = @"<Project xmlns='http://schemas.microsoft.com/developer/msbuild/2003'>
+  <PropertyGroup>
+    <X>a/b/c.txt</X>
+  </PropertyGroup>
+  <Target Name='Foo'>
+    <CreateItem Include='$(X)'>
+      <Output TaskParameter='Include' ItemName='I' />
+    </CreateItem>
+    <CreateProperty Value=""@(I->'%(Filename)%(Extension)')"">
+      <Output TaskParameter='Value' PropertyName='P' />
+    </CreateProperty>
+    <Error Text=""Expected 'c.txt' but got '$(P)'"" Condition=""" + cond + @""" />
+  </Target>
+</Project>";
+			var xml = XmlReader.Create (new StringReader (project_xml));
+			var root = ProjectRootElement.Create (xml);
+			var p = new ProjectInstance (root);
+			var sw = new StringWriter ();
+			var result = p.Build (new ILogger [] { new ConsoleLogger (LoggerVerbosity.Minimal, sw.WriteLine, null, null)});
+			Assert.IsTrue (result, "#1: " + sw);
+		}
+
+		[Test]
+		public void FunctionCall ()
+		{
+			string project_xml = @"<Project xmlns='http://schemas.microsoft.com/developer/msbuild/2003'>
+  <Target Name='Foo'>
+    <Warning Text=""$([Microsoft.Build.Utilities.ToolLocationHelper]::GetPathToStandardLibraries ('$(TargetFrameworkIdentifier)', '$(TargetFrameworkVersion)', '$(TargetFrameworkProfile)'))\mscorlib.dll'"" />
+  </Target>
+</Project>";
+			var xml = XmlReader.Create (new StringReader (project_xml));
+			var root = ProjectRootElement.Create (xml);
+			var p = new ProjectInstance (root, null, "4.0", ProjectCollection.GlobalProjectCollection);
+			var sw = new StringWriter ();
+			var result = p.Build (new ILogger [] { new ConsoleLogger (LoggerVerbosity.Minimal, sw.WriteLine, null, null)});
+			Assert.IsTrue (result, "#1: " + sw);
 		}
 	}
 }

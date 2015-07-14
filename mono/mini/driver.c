@@ -10,7 +10,9 @@
  */
 
 #include <config.h>
+#ifdef HAVE_SIGNAL_H
 #include <signal.h>
+#endif
 #if HAVE_SCHED_SETAFFINITY
 #include <sched.h>
 #endif
@@ -57,7 +59,7 @@
 #include "version.h"
 #include "debugger-agent.h"
 
-static FILE *mini_stats_fd = NULL;
+static FILE *mini_stats_fd;
 
 static void mini_usage (void);
 
@@ -140,7 +142,7 @@ extern char *nacl_mono_path;
 	MONO_OPT_ALIAS_ANALYSIS	| \
 	MONO_OPT_AOT)
 
-#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT)
+#define EXCLUDED_FROM_ALL (MONO_OPT_SHARED | MONO_OPT_PRECOMP | MONO_OPT_UNSAFE | MONO_OPT_GSHAREDVT | MONO_OPT_FLOAT32)
 
 static guint32
 parse_optimizations (const char* p)
@@ -293,7 +295,7 @@ opt_descr (guint32 flags) {
 
 	need_comma = 0;
 	for (i = 0; i < G_N_ELEMENTS (opt_names); ++i) {
-		if (flags & (1 << i)) {
+		if (flags & (1 << i) && optflag_get_name (i)) {
 			if (need_comma)
 				g_string_append_c (str, ',');
 			g_string_append (str, optflag_get_name (i));
@@ -408,8 +410,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 
 			} else {
 				cfailed++;
-				if (verbose)
-					g_print ("Test '%s' failed compilation.\n", method->name);
+				g_print ("Test '%s' failed compilation.\n", method->name);
 			}
 			if (mini_stats_fd)
 				fprintf (mini_stats_fd, "%f, ",
@@ -1308,7 +1309,6 @@ static const char info[] =
 #ifdef HOST_WIN32
 BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
-	int dummy;
 	if (!mono_gc_dllmain (module_handle, reason, reserved))
 		return FALSE;
 
@@ -1322,7 +1322,7 @@ BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 			FreeLibrary (coree_module_handle);
 		break;
 	case DLL_THREAD_DETACH:
-		mono_thread_info_dettach ();
+		mono_thread_info_detach ();
 		break;
 	
 	}
@@ -1518,9 +1518,6 @@ mono_main (int argc, char* argv[])
 	if (g_getenv ("MONO_NO_SMP"))
 		mono_set_use_smp (FALSE);
 	
-	if (!g_thread_supported ())
-		g_thread_init (NULL);
-
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
@@ -1840,6 +1837,21 @@ mono_main (int argc, char* argv[])
 		return 1;
 	}
 
+#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+	/*
+	 * If we are not embedded, use the mono runtime executable to run managed exe's.
+	 */
+	{
+		char *runtime_path;
+
+		runtime_path = wapi_process_get_path (getpid ());
+		if (runtime_path) {
+			wapi_process_set_cli_launcher (runtime_path);
+			g_free (runtime_path);
+		}
+	}
+#endif
+
 	if (g_getenv ("MONO_XDEBUG"))
 		enable_debugging = TRUE;
 
@@ -1848,8 +1860,11 @@ mono_main (int argc, char* argv[])
 		   fprintf (stderr, "This mono runtime is compiled for cross-compiling. Only the --aot option is supported.\n");
 		   exit (1);
        }
-#if SIZEOF_VOID_P == 8 && defined(TARGET_ARM)
-       fprintf (stderr, "Can't cross-compile on 64 bit platforms to arm.\n");
+#if SIZEOF_VOID_P == 8 && (defined(TARGET_ARM) || defined(TARGET_X86))
+       fprintf (stderr, "Can't cross-compile on 64-bit platforms to 32-bit architecture.\n");
+       exit (1);
+#elif SIZEOF_VOID_P == 4 && (defined(TARGET_ARM64) || defined(TARGET_AMD64))
+       fprintf (stderr, "Can't cross-compile on 32-bit platforms to 64-bit architecture.\n");
        exit (1);
 #endif
 #endif
@@ -1857,6 +1872,8 @@ mono_main (int argc, char* argv[])
 	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
 		g_set_prgname (argv[i]);
 	}
+
+	mono_counters_init ();
 
 	if (enable_profile)
 		mono_profiler_load (profile_options);
@@ -1891,6 +1908,14 @@ mono_main (int argc, char* argv[])
 	if (mixed_mode)
 		mono_load_coree (argv [i]);
 #endif
+
+	/* Set rootdir before loading config */
+	mono_set_rootdir ();
+
+	/* Parse gac loading options before loading assemblies. */
+	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
+		mono_config_parse (config_file);
+	}
 
 	mono_set_defaults (mini_verbose, opt);
 	domain = mini_init (argv [i], forced_version);
@@ -1957,11 +1982,6 @@ mono_main (int argc, char* argv[])
 		break;
 	}
 
-	/* Parse gac loading options before loading assemblies. */
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
-		mono_config_parse (config_file);
-	}
-
 #ifdef MONO_JIT_INFO_TABLE_TEST
 	if (test_jit_info_table)
 		jit_info_table_test (domain);
@@ -1987,7 +2007,7 @@ mono_main (int argc, char* argv[])
 			fprintf (stderr, "Corlib not in sync with this runtime: %s\n", error);
 			fprintf (stderr, "Loaded from: %s\n",
 				mono_defaults.corlib? mono_image_get_filename (mono_defaults.corlib): "unknown");
-			fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.go-mono.com/daily.\n");
+			fprintf (stderr, "Download a newer corlib or a newer runtime at http://www.mono-project.com/download.\n");
 			exit (1);
 		}
 
@@ -2008,31 +2028,6 @@ mono_main (int argc, char* argv[])
 #else
 		main_thread_handler (&main_args);
 		mono_thread_manage ();
-#endif
-
-	/* 
-	 * On unix, WaitForMultipleObjects for threads is implemented by waiting on
-	 * a cond variable, which is set by the thread when it exits _mono code_, 
-	 * but it could still be running libc code. On amd64, the libc thread exit 
-	 * code does a stack unwind, and if it encounters a frame pointing to native
-	 * code which is in memory which is no longer mapped (because the runtime has
-	 * shut down), it will crash:
-	 * http://mail-archives.apache.org/mod_mbox/harmony-dev/200801.mbox/%3C200801130327.41572.gshimansky@apache.org%3E
-	 * Testcase: tests/main-exit-background-change.exe.
-	 * Testcase: test/main-returns-background-abort-resetabort.exe.
-	 * To make this race less frequent, we avoid freeing the global code manager.
-	 * Since mono_main () is hopefully only used by the runtime executable, this 
-	 * will only cause a shutdown leak. This workaround also has the advantage
-	 * that it can be back-ported to 2.0 safely.
-	 * FIXME: Fix this properly by waiting for threads to really exit using 
-	 * pthread_join (). This cannot be done currently as the io-layer calls
-	 * pthread_detach ().
-	 *
-	 * This used to be an amd64 only crash, but it looks like now most glibc targets do unwinding
-	 * that requires reading the target code.
-	 */
-#if defined( __linux__ ) || defined( __native_client__ )
-		mono_dont_free_global_codeman = TRUE;
 #endif
 
 		mini_cleanup (domain);
@@ -2192,6 +2187,8 @@ mono_jit_init_version (const char *domain_name, const char *runtime_version)
 void        
 mono_jit_cleanup (MonoDomain *domain)
 {
+	mono_thread_manage ();
+
 	mini_cleanup (domain);
 }
 
@@ -2237,4 +2234,17 @@ void
 mono_set_signal_chaining (gboolean chain_signals)
 {
 	mono_do_signal_chaining = chain_signals;
+}
+
+/**
+ * mono_set_crash_chaining:
+ *
+ * Enable/disable crash chaining due to signals. When a fatal signal is delivered and
+ * Mono doesn't know how to handle it, it will invoke the crash handler. If chrash chaining
+ * is enabled, it will first print its crash information and then try to chain with the native handler.
+ */
+void
+mono_set_crash_chaining (gboolean chain_crashes)
+{
+	mono_do_crash_chaining = chain_crashes;
 }

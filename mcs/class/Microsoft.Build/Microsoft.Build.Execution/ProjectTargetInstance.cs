@@ -35,7 +35,8 @@ using System.Linq;
 
 namespace Microsoft.Build.Execution
 {
-	public sealed class ProjectTargetInstance
+	public
+	sealed class ProjectTargetInstance
 	{
 		internal ProjectTargetInstance (ProjectTargetElement xml)
 		{
@@ -72,38 +73,26 @@ namespace Microsoft.Build.Execution
 			ReturnsLocation = xml.ReturnsLocation;
 		}
 
+		public ElementLocation AfterTargetsLocation { get; private set; }
+		public ElementLocation BeforeTargetsLocation { get; private set; }
 		public IList<ProjectTargetInstanceChild> Children { get; private set; }
 		public string Condition { get; private set; }
+		public ElementLocation ConditionLocation { get; private set; }
 		public string DependsOnTargets { get; private set; }
+		public ElementLocation DependsOnTargetsLocation { get; private set; }
 		public string FullPath { get; private set; }
 		public string Inputs { get; private set; }
+		public ElementLocation InputsLocation { get; private set; }
 		public string KeepDuplicateOutputs { get; private set; }
+		public ElementLocation KeepDuplicateOutputsLocation { get; private set; }
+		public ElementLocation Location { get; private set; }
 		public string Name { get; private set; }
 		public IList<ProjectOnErrorInstance> OnErrorChildren { get; private set; }
 		public string Outputs { get; private set; }
-		public string Returns { get; private set; }
-		public ICollection<ProjectTaskInstance> Tasks { get; private set; }
-#if NET_4_5
-		public ElementLocation AfterTargetsLocation { get; private set; }
-		public ElementLocation BeforeTargetsLocation { get; private set; }
-		public ElementLocation ConditionLocation { get; private set; }
-		public ElementLocation DependsOnTargetsLocation { get; private set; }
-		public ElementLocation InputsLocation { get; private set; }
-		public ElementLocation KeepDuplicateOutputsLocation { get; private set; }
-		public ElementLocation Location { get; private set; }
 		public ElementLocation OutputsLocation { get; private set; }
+		public string Returns { get; private set; }
 		public ElementLocation ReturnsLocation { get; private set; }
-#else
-		internal ElementLocation AfterTargetsLocation { get; private set; }
-		internal ElementLocation BeforeTargetsLocation { get; private set; }
-		internal ElementLocation ConditionLocation { get; private set; }
-		internal ElementLocation DependsOnTargetsLocation { get; private set; }
-		internal ElementLocation InputsLocation { get; private set; }
-		internal ElementLocation KeepDuplicateOutputsLocation { get; private set; }
-		internal ElementLocation Location { get; private set; }
-		internal ElementLocation OutputsLocation { get; private set; }
-		internal ElementLocation ReturnsLocation { get; private set; }
-#endif
+		public ICollection<ProjectTaskInstance> Tasks { get; private set; }
 	}
 }
 

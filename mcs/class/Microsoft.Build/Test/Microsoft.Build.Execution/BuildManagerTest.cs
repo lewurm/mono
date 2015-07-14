@@ -140,7 +140,8 @@ namespace MonoTests.Microsoft.Build.Execution
 			case PlatformID.Unix:
 				break;
 			default:
-				return; // ignore, cannot run it
+				Assert.Ignore (); // ignore, cannot run it
+				break;
 			}
 			
 			var xml = XmlReader.Create (new StringReader (project_xml));
@@ -178,7 +179,7 @@ namespace MonoTests.Microsoft.Build.Execution
 			root.FullPath = "BuildManagerTest.BuildCommonResolveAssemblyReferences.proj";
 			var proj = new ProjectInstance (root);
 			var manager = new BuildManager ();
-			var parameters = new BuildParameters () { Loggers = new ILogger [] {new ConsoleLogger (LoggerVerbosity.Diagnostic)} };
+			var parameters = new BuildParameters () { Loggers = new ILogger [] {new ConsoleLogger (LoggerVerbosity.Diagnostic, TextWriter.Null.WriteLine, null, null)} };
 			var request = new BuildRequestData (proj, new string [] {"ResolveAssemblyReferences"});
 			Assert.AreEqual (string.Empty, proj.GetPropertyValue ("TargetFrameworkDirectory"), "#1-1");
 			var result = manager.Build (parameters, request);

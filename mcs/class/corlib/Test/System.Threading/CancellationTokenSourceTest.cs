@@ -90,9 +90,9 @@ namespace MonoTests.System.Threading
 			int called = 0;
 			var cts = new CancellationTokenSource ();
 			cts.Token.Register (() => called++);
-			cts.CancelAfter (20);
+			cts.CancelAfter (50);
 			cts.Dispose ();
-			Thread.Sleep (50);
+			Thread.Sleep (100);
 			Assert.AreEqual (0, called, "#1");
 		}
 
@@ -472,6 +472,21 @@ namespace MonoTests.System.Threading
 				t2.Join (500);
 			}, 500);
 		}
+
+#if NET_4_5
+		[Test]
+		public void DisposeRace ()
+		{
+			for (int i = 0; i < 1000; ++i) {
+				var c1 = new CancellationTokenSource ();
+				using (c1) {
+					var wh = c1.Token.WaitHandle;
+					c1.CancelAfter (1);
+					Thread.Sleep (1);
+				}
+			}
+		}
+#endif
 	}
 }
 

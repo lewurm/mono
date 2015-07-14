@@ -4,4 +4,6 @@ SqliteDataAdapterUnitTests.cs
 SqliteDataReaderTest.cs
 SqliteExceptionUnitTests.cs
 SqliteParameterUnitTests.cs
+SqliteFunctionTests.cs
+Bug27864.cs
 
