@@ -19,6 +19,7 @@ mono (4.0.2.5+dfsg-1) experimental; urgency=medium
   * [e74c81c] Mono's build system loves -j now
   * [c5ed64e] Actually, SMDiagnostics is from 4.2+. Delete.
   * [9a380de] symbolicate hasn't been renamed yet in 4.0
+  * [fa76bd1] Add word "metapackage" to libmono-i18n4.0-all description
 
  -- Jo Shields <jo.shields@xamarin.com>  Tue, 14 Jul 2015 18:48:53 +0100
 
