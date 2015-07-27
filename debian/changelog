@@ -1,3 +1,13 @@
+mono (4.0.2.5+dfsg-2) experimental; urgency=medium
+
+  * [7df1162] Add missing ppc64el .symbols files
+  * [f38375e] mono-threads-linux.c also applies to other OSes with
+    GNU userland.
+  * [14dd9bb] Big Endian fix by Than Ngo <than@redhat.com> from 
+    https://bugzilla.xamarin.com/show_bug.cgi?id=31779
+
+ -- Jo Shields <jo.shields@xamarin.com>  Mon, 27 Jul 2015 12:20:34 +0100
+
 mono (4.0.2.5+dfsg-1) experimental; urgency=medium
 
   * [e150a78] Imported Upstream version 4.0.2.5+dfsg
