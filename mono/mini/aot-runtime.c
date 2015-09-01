@@ -3739,7 +3739,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 }
 
 static guint32
-find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
+find_aot_method_in_amodule (MonoAotModule *amodule, MonoMethod *method, guint32 hash_full)
 {
 	guint32 table_size, entry_size, hash;
 	guint32 *table, *entry;
@@ -3750,10 +3750,9 @@ find_extra_method_in_amodule (MonoAotModule *amodule, MonoMethod *method)
 		return 0xffffff;
 
 	table_size = amodule->extra_method_table [0];
+	hash = hash_full % table_size;
 	table = amodule->extra_method_table + 1;
 	entry_size = 3;
-
-	hash = mono_aot_method_hash (method) % table_size;
 
 	entry = &table [hash * entry_size];
 
@@ -3835,10 +3834,11 @@ find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
 	guint32 index;
 	GPtrArray *modules;
 	int i;
+	guint32 hash = mono_aot_method_hash (method);
 
 	/* Try the method's module first */
 	*out_amodule = method->klass->image->aot_module;
-	index = find_extra_method_in_amodule (method->klass->image->aot_module, method);
+	index = find_aot_method_in_amodule (method->klass->image->aot_module, method, hash);
 	if (index != 0xffffff)
 		return index;
 
@@ -3860,7 +3860,7 @@ find_extra_method (MonoMethod *method, MonoAotModule **out_amodule)
 		MonoAotModule *amodule = g_ptr_array_index (modules, i);
 
 		if (amodule != method->klass->image->aot_module)
-			index = find_extra_method_in_amodule (amodule, method);
+			index = find_aot_method_in_amodule (amodule, method, hash);
 		if (index != 0xffffff) {
 			*out_amodule = amodule;
 			break;
@@ -4596,15 +4596,14 @@ get_new_trampoline_from_page (int tramp_type)
 		return code;
 	}
 	mono_aot_page_unlock ();
-	psize = mono_pagesize ();
 	/* the trampoline template page is in the mscorlib module */
 	image = mono_defaults.corlib;
 	g_assert (image);
 
+	psize = MONO_AOT_TRAMP_PAGE_SIZE;
+
 	amodule = image->aot_module;
 	g_assert (amodule);
-
-	g_assert (amodule->info.tramp_page_size == psize);
 
 	if (tramp_type == MONO_AOT_TRAMP_SPECIFIC)
 		tpage = load_function (amodule, "specific_trampolines_page");
@@ -4687,7 +4686,7 @@ get_new_specific_trampoline_from_page (gpointer tramp, gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_SPECIFIC);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
@@ -4703,7 +4702,7 @@ get_new_rgctx_trampoline_from_page (gpointer tramp, gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_STATIC_RGCTX);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
@@ -4719,7 +4718,7 @@ get_new_imt_trampoline_from_page (gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_IMT_THUNK);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	/*g_warning ("new imt trampoline at %p for data %p, (stored at %p)", code, arg, data);*/
 	return code;
@@ -4734,7 +4733,7 @@ get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
 
 	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_GSHAREDVT_ARG);
 
-	data = (gpointer*)((char*)code - mono_pagesize ());
+	data = (gpointer*)((char*)code - MONO_AOT_TRAMP_PAGE_SIZE);
 	data [0] = arg;
 	data [1] = tramp;
 	/*g_warning ("new rgctx trampoline at %p for data %p, tramp %p (stored at %p)", code, arg, tramp, data);*/
