@@ -74,6 +74,14 @@
 
 #if (defined(TARGET_AMD64) || defined(TARGET_POWERPC64)) && !defined(__mono_ilp32__)
 #define AS_POINTER_DIRECTIVE ".quad"
+#elif defined(TARGET_ARM64)
+
+#ifdef TARGET_ASM_APPLE
+#define AS_POINTER_DIRECTIVE ".quad"
+#else
+#define AS_POINTER_DIRECTIVE ".xword"
+#endif
+
 #else
 #define AS_POINTER_DIRECTIVE ".long"
 #endif
@@ -117,7 +125,7 @@
 #define USE_ELF_WRITER 1
 #endif
 
-#if defined(TARGET_ARM) && !defined(TARGET_MACH)
+#if defined(TARGET_ARM) && !defined(TARGET_MACH) && !defined(HOST_WIN32)
 #define USE_ELF_WRITER 1
 #endif
 
@@ -1713,7 +1721,7 @@ asm_writer_emit_section_change (MonoImageWriter *acfg, const char *section_name,
 		fprintf (acfg->fp, ".section __DWARF, __%s,regular,debug\n", section_name + 1);
 	} else
 		fprintf (acfg->fp, "%s\n", section_name);
-#elif defined(TARGET_ARM) || defined(TARGET_POWERPC)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_POWERPC)
 	/* ARM gas doesn't seem to like subsections of .bss */
 	if (!strcmp (section_name, ".text") || !strcmp (section_name, ".data")) {
 		fprintf (acfg->fp, "%s %d\n", section_name, subsection_index);
@@ -1834,6 +1842,19 @@ asm_writer_emit_alignment (MonoImageWriter *acfg, int size)
 	fprintf (acfg->fp, "\t.align %d\n", size);
 #endif
 }
+
+#ifndef USE_BIN_WRITER
+static void 
+asm_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
+{
+	asm_writer_emit_unset_mode (acfg);
+#if defined(TARGET_ASM_APPLE)
+	fprintf (acfg->fp, "\t.align %d, 0x%0x\n", ilog2 (size), fill);
+#else
+	asm_writer_emit_alignment (acfg, size);
+#endif
+}
+#endif
 
 #ifdef __native_client_codegen__
 static void
@@ -2139,6 +2160,19 @@ img_writer_emit_alignment (MonoImageWriter *acfg, int size)
 		asm_writer_emit_alignment (acfg, size);
 #else
 	asm_writer_emit_alignment (acfg, size);
+#endif
+}
+
+void
+img_writer_emit_alignment_fill (MonoImageWriter *acfg, int size, int fill)
+{
+#ifdef USE_BIN_WRITER
+	if (acfg->use_bin_writer)
+		bin_writer_emit_alignment (acfg, size);
+	else
+		asm_writer_emit_alignment (acfg, size);
+#else
+	asm_writer_emit_alignment_fill (acfg, size, fill);
 #endif
 }
 

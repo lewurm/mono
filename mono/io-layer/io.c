@@ -27,8 +27,6 @@
 #include <sys/mount.h>
 #endif
 #include <sys/types.h>
-#include <dirent.h>
-#include <fnmatch.h>
 #include <stdio.h>
 #include <utime.h>
 #ifdef __linux__
@@ -705,7 +703,7 @@ static gboolean file_setendoffile(gpointer handle)
 	}
 	
 #ifdef FTRUNCATE_DOESNT_EXTEND
-	/* I haven't bothered to write the configure.in stuff for this
+	/* I haven't bothered to write the configure.ac stuff for this
 	 * because I don't know if any platform needs it.  I'm leaving
 	 * this code just in case though
 	 */
@@ -1035,8 +1033,9 @@ static void console_close (gpointer handle, gpointer data)
 	DEBUG("%s: closing console handle %p", __func__, handle);
 
 	g_free (console_handle->filename);
-	
-	close (fd);
+
+	if (fd > 2)
+		close (fd);
 }
 
 static WapiFileType console_getfiletype(void)
@@ -2082,7 +2081,7 @@ ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFile
 		      const gunichar2 *backupFileName, guint32 replaceFlags, 
 		      gpointer exclude, gpointer reserved)
 {
-	int result, errno_copy, backup_fd = -1,replaced_fd = -1;
+	int result, backup_fd = -1,replaced_fd = -1;
 	gchar *utf8_replacedFileName, *utf8_replacementFileName = NULL, *utf8_backupFileName = NULL;
 	struct stat stBackup;
 	gboolean ret = FALSE;
@@ -2100,13 +2099,11 @@ ReplaceFile (const gunichar2 *replacedFileName, const gunichar2 *replacementFile
 		// Open the backup file for read so we can restore the file if an error occurs.
 		backup_fd = _wapi_open (utf8_backupFileName, O_RDONLY, 0);
 		result = _wapi_rename (utf8_replacedFileName, utf8_backupFileName);
-		errno_copy = errno;
 		if (result == -1)
 			goto replace_cleanup;
 	}
 
 	result = _wapi_rename (utf8_replacementFileName, utf8_replacedFileName);
-	errno_copy = errno;
 	if (result == -1) {
 		_wapi_set_last_path_error_from_errno (NULL, utf8_replacementFileName);
 		_wapi_rename (utf8_backupFileName, utf8_replacedFileName);
@@ -2181,8 +2178,6 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
 
 	handle = GINT_TO_POINTER (fd);
 
-	pthread_cleanup_push ((void(*)(void *))mono_mutex_unlock_in_cleanup,
-			      (void *)&stdhandle_mutex);
 	thr_ret = mono_mutex_lock (&stdhandle_mutex);
 	g_assert (thr_ret == 0);
 
@@ -2204,7 +2199,6 @@ gpointer GetStdHandle(WapiStdHandle stdhandle)
   done:
 	thr_ret = mono_mutex_unlock (&stdhandle_mutex);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 	
 	return(handle);
 }
@@ -2797,8 +2791,6 @@ gboolean FindNextFile (gpointer handle, WapiFindData *find_data)
 		return(FALSE);
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
@@ -2908,7 +2900,6 @@ retry:
 cleanup:
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 	
 	return(ret);
 }
@@ -2941,8 +2932,6 @@ gboolean FindClose (gpointer handle)
 		return(FALSE);
 	}
 
-	pthread_cleanup_push ((void(*)(void *))_wapi_handle_unlock_handle,
-			      handle);
 	thr_ret = _wapi_handle_lock_handle (handle);
 	g_assert (thr_ret == 0);
 	
@@ -2951,7 +2940,6 @@ gboolean FindClose (gpointer handle)
 
 	thr_ret = _wapi_handle_unlock_handle (handle);
 	g_assert (thr_ret == 0);
-	pthread_cleanup_pop (0);
 	
 	_wapi_handle_unref (handle);
 	
@@ -3249,9 +3237,9 @@ extern gboolean SetFileAttributes (const gunichar2 *name, guint32 attrs)
 	 * catch that case here.
 	 */
 	if (attrs & FILE_ATTRIBUTE_READONLY) {
-		result = _wapi_chmod (utf8_name, buf.st_mode & ~(S_IWRITE | S_IWOTH | S_IWGRP));
+		result = _wapi_chmod (utf8_name, buf.st_mode & ~(S_IWUSR | S_IWOTH | S_IWGRP));
 	} else {
-		result = _wapi_chmod (utf8_name, buf.st_mode | S_IWRITE);
+		result = _wapi_chmod (utf8_name, buf.st_mode | S_IWUSR);
 	}
 
 	/* Ignore the other attributes for now */
@@ -3794,7 +3782,9 @@ add_drive_string (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state)
 			ignore_entry = TRUE;
 		else
 			ignore_entry = FALSE;
-	} else
+	} else if (state->fstype_index == 3 && memcmp ("nfs", state->fstype, state->fstype_index) == 0)
+		ignore_entry = FALSE;
+	else
 		ignore_entry = TRUE;
 
 	if (!ignore_entry) {
@@ -3913,7 +3903,7 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 }
 #endif
 
-#if (defined(HAVE_STATVFS) || defined(HAVE_STATFS)) && !defined(PLATFORM_ANDROID)
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
 gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_bytes_avail,
 			    WapiULargeInteger *total_number_of_bytes,
 			    WapiULargeInteger *total_number_of_free_bytes)
@@ -3952,7 +3942,11 @@ gboolean GetDiskFreeSpaceEx(const gunichar2 *path_name, WapiULargeInteger *free_
 		block_size = fsstat.f_frsize;
 #elif defined(HAVE_STATFS)
 		ret = statfs (utf8_path_name, &fsstat);
+#if defined (MNT_RDONLY)
 		isreadonly = ((fsstat.f_flags & MNT_RDONLY) == MNT_RDONLY);
+#elif defined (MS_RDONLY)
+		isreadonly = ((fsstat.f_flags & MS_RDONLY) == MS_RDONLY);
+#endif
 		block_size = fsstat.f_bsize;
 #endif
 	} while(ret == -1 && errno == EINTR);
@@ -4269,6 +4263,7 @@ guint32 GetDriveType(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
+#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__) || defined(__FreeBSD_kernel__)
 static gchar*
 get_fstypename (gchar *utfpath)
 {
@@ -4296,7 +4291,6 @@ get_fstypename (gchar *utfpath)
 }
 
 /* Linux has struct statfs which has a different layout */
-#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__native_client__) || defined(__FreeBSD_kernel__)
 gboolean
 GetVolumeInformation (const gunichar2 *path, gunichar2 *volumename, int volumesize, int *outserial, int *maxcomp, int *fsflags, gunichar2 *fsbuffer, int fsbuffersize)
 {

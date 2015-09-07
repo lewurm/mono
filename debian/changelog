@@ -1,3 +1,38 @@
+mono (4.0.2.5+dfsg-2) experimental; urgency=medium
+
+  * [7df1162] Add missing ppc64el .symbols files
+  * [f38375e] mono-threads-linux.c also applies to other OSes with
+    GNU userland.
+  * [14dd9bb] Big Endian fix by Than Ngo <than@redhat.com> from 
+    https://bugzilla.xamarin.com/show_bug.cgi?id=31779
+
+ -- Jo Shields <jo.shields@xamarin.com>  Mon, 27 Jul 2015 12:20:34 +0100
+
+mono (4.0.2.5+dfsg-1) experimental; urgency=medium
+
+  * [e150a78] Imported Upstream version 4.0.2.5+dfsg
+  * [fa531c6] Imported Upstream version 4.0.2.4+dfsg (Closes: #778014,
+    #699334)
+  * [236b959] Handle 4-part version numbers in get-orig-source
+  * [b08017d] Don't attempt to install binary-only reference assemblies
+  * [f155271] Update symbols files for latest exported symbols
+  * [8a2faa2] All of the 2.0, 3.5 and 4.0 classlib are gone - delete 
+    libraries which are no longer distributed, and add a couple of new 
+    ones (Closes: #375871, #596769, #603997, #731875, #615145, #550385,
+    #553642, #602079)
+  * [af96cc3] Add ppc64el to arch list
+  * [823d507] Add a package to integrate Mono with the Debian SSL store,
+    and keep it in sync
+  * [aea6f48] Build AOT-accelerated libraries at install time
+  * [31a96cf] Refresh list of +dfsg changes
+  * [fec24f6] Include changelog entries from master branch
+  * [e74c81c] Mono's build system loves -j now
+  * [c5ed64e] Actually, SMDiagnostics is from 4.2+. Delete.
+  * [9a380de] symbolicate hasn't been renamed yet in 4.0
+  * [fa76bd1] Add word "metapackage" to libmono-i18n4.0-all description
+
+ -- Jo Shields <jo.shields@xamarin.com>  Tue, 14 Jul 2015 18:48:53 +0100
+
 mono (3.2.8+dfsg-10) unstable; urgency=high
 
   * [037e3b5] Mono's implementation of the SSL/TLS stack failed to check

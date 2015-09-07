@@ -26,8 +26,6 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#if NET_2_0
-
 using System;
 using System.Threading;
 
@@ -54,8 +52,9 @@ namespace Microsoft.Build.Framework
 		{
 		}
 
-		protected BuildEventArgs (string message, string helpKeyword,
-					  string senderName, DateTime eventTimestamp)
+		protected
+		BuildEventArgs (string message, string helpKeyword,
+		                string senderName, DateTime eventTimestamp)
 		{
 			this.message = message;
 			this.helpKeyword = helpKeyword;
@@ -71,9 +70,13 @@ namespace Microsoft.Build.Framework
 			}
 		}
 
+		virtual
 		public string Message {
 			get {
 				return message;
+			}
+			protected set {
+				message = value;
 			}
 		}
 
@@ -107,4 +110,3 @@ namespace Microsoft.Build.Framework
 	}
 }
 
-#endif

@@ -43,7 +43,7 @@ using System.Runtime.ConstrainedExecution;
 
 namespace System.Threading {
 	[StructLayout (LayoutKind.Sequential)]
-	internal class InternalThread : CriticalFinalizerObject {
+	sealed class InternalThread : CriticalFinalizerObject {
 #pragma warning disable 169, 414, 649
 		#region Sync with metadata/object-internals.h
 		int lock_thread_id;
@@ -406,12 +406,10 @@ namespace System.Threading {
 			ResetAbort_internal ();
 		}
 
-#if NET_4_0
 		[HostProtectionAttribute (SecurityAction.LinkDemand, Synchronization = true, ExternalThreading = true)]
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		[ReliabilityContract (Consistency.WillNotCorruptState, Cer.Success)]
 		public extern static bool Yield ();
-#endif
 
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -587,11 +585,12 @@ namespace System.Threading {
 
 		public ThreadPriority Priority {
 			get {
-				return(ThreadPriority.Lowest);
+				return (ThreadPriority)GetPriority (Internal);
 			}
 			
 			set {
-				// FIXME: Implement setter.
+				// FIXME: This doesn't do anything yet
+				SetPriority (Internal, (int)value);
 			}
 		}
 
@@ -603,6 +602,12 @@ namespace System.Threading {
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		private extern static void Abort_internal (InternalThread thread, object stateInfo);
+
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		private extern static int GetPriority (InternalThread thread);
+
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		private extern static void SetPriority (InternalThread thread, int priority);
 
 		[SecurityPermission (SecurityAction.Demand, ControlThread=true)]
 		public void Abort () 
@@ -696,8 +701,7 @@ namespace System.Threading {
 
 		public void Start() {
 			// propagate informations from the original thread to the new thread
-			if (!ExecutionContext.IsFlowSuppressed ())
-				ec_to_set = ExecutionContext.Capture ();
+			ec_to_set = ExecutionContext.Capture (false, true);
 			Internal._serialized_principal = CurrentThread.Internal._serialized_principal;
 
 			// Thread_internal creates and starts the new thread, 
@@ -812,6 +816,8 @@ namespace System.Threading {
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern public static void VolatileWrite (ref UIntPtr address, UIntPtr value);
 		
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		extern static int SystemMaxStackStize ();
 
 		static int CheckStackSize (int maxStackSize)
 		{
@@ -826,12 +832,8 @@ namespace System.Threading {
 			if ((maxStackSize % page_size) != 0) // round up to a divisible of page size
 				maxStackSize = (maxStackSize / (page_size - 1)) * page_size;
 
-			int default_stack_size = (IntPtr.Size / 4) * 1024 * 1024; // from wthreads.c
-
-			if (maxStackSize > default_stack_size)
-				return default_stack_size;
-
-			return maxStackSize; 
+			/* Respect the max stack size imposed by the system*/
+			return Math.Min (maxStackSize, SystemMaxStackStize ());
 		}
 
 		public Thread (ThreadStart start, int maxStackSize)
@@ -860,7 +862,6 @@ namespace System.Threading {
 			Internal.stack_size = CheckStackSize (maxStackSize);
 		}
 
-		[MonoTODO ("limited to CompressedStack support")]
 		public ExecutionContext ExecutionContext {
 			[ReliabilityContract (Consistency.WillNotCorruptState, Cer.MayFail)]
 			get {
@@ -868,6 +869,35 @@ namespace System.Threading {
 					_ec = new ExecutionContext ();
 				return _ec;
 			}
+			internal set {
+				_ec = value;
+			}
+		}
+
+		internal bool HasExecutionContext {
+			get {
+				return _ec != null;
+			}
+		}
+
+		internal void BranchExecutionContext (out ExecutionContext.Switcher switcher)
+		{
+			if (_ec == null) {
+				switcher =  new ExecutionContext.Switcher ();
+			} else {
+				switcher = new ExecutionContext.Switcher (_ec);
+				_ec.CopyOnWrite = true;
+			}
+		}
+
+		internal void RestoreExecutionContext (ref ExecutionContext.Switcher switcher)
+		{
+			if (switcher.IsEmpty) {
+				_ec = null;
+				return;
+			}
+
+			switcher.Restore (_ec);
 		}
 
 		public int ManagedThreadId {

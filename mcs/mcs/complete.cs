@@ -142,19 +142,19 @@ namespace Mono.CSharp {
 			}
 
 			if (targs != null) {
-				if (!targs.Resolve (rc))
+				if (!targs.Resolve (rc, true))
 					return null;
 			}
 
 			var results = new List<string> ();
-			if (expr is Namespace) {
-				Namespace nexpr = expr as Namespace;
+			var nexpr = expr as NamespaceExpression;
+			if (nexpr != null) {
 				string namespaced_partial;
 
 				if (partial_name == null)
-					namespaced_partial = nexpr.Name;
+					namespaced_partial = nexpr.Namespace.Name;
 				else
-					namespaced_partial = nexpr.Name + "." + partial_name;
+					namespaced_partial = nexpr.Namespace.Name + "." + partial_name;
 
 				rc.CurrentMemberDefinition.GetCompletionStartingWith (namespaced_partial, results);
 				if (partial_name != null)
@@ -208,6 +208,18 @@ namespace Mono.CSharp {
 		protected override void CloneTo (CloneContext clonectx, Expression t)
 		{
 			// Nothing
+		}
+	}
+
+	public class EmptyCompletion : CompletingExpression
+	{
+		protected override void CloneTo (CloneContext clonectx, Expression target)
+		{
+		}
+
+		protected override Expression DoResolve (ResolveContext rc)
+		{
+			throw new CompletionResult ("", new string [0]);
 		}
 	}
 	

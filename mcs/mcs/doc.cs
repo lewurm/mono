@@ -297,13 +297,13 @@ namespace Mono.CSharp
 				return context.LookupNamespaceOrType (mn.Name, mn.Arity, LookupMode.Probing, Location.Null);
 
 			var left = ResolveMemberName (context, mn.Left);
-			var ns = left as Namespace;
+			var ns = left as NamespaceExpression;
 			if (ns != null)
 				return ns.LookupTypeOrNamespace (context, mn.Name, mn.Arity, LookupMode.Probing, Location.Null);
 
 			TypeExpr texpr = left as TypeExpr;
 			if (texpr != null) {
-				var found = MemberCache.FindNestedType (texpr.Type, ParsedName.Name, ParsedName.Arity);
+				var found = MemberCache.FindNestedType (texpr.Type, mn.Name, mn.Arity);
 				if (found != null)
 					return new TypeExpression (found, Location.Null);
 
@@ -383,7 +383,7 @@ namespace Mono.CSharp
 					} else if (ParsedName.Left != null) {
 						fne = ResolveMemberName (mc, ParsedName.Left);
 						if (fne != null) {
-							var ns = fne as Namespace;
+							var ns = fne as NamespaceExpression;
 							if (ns != null) {
 								fne = ns.LookupTypeOrNamespace (mc, ParsedName.Name, ParsedName.Arity, LookupMode.Probing, Location.Null);
 								if (fne != null) {
@@ -695,7 +695,7 @@ namespace Mono.CSharp
 			return host.GetSignatureForError ();
 		}
 
-		public ExtensionMethodCandidates LookupExtensionMethod (TypeSpec extensionType, string name, int arity)
+		public ExtensionMethodCandidates LookupExtensionMethod (string name, int arity)
 		{
 			return null;
 		}

@@ -26,14 +26,14 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#if NET_2_0
-
 using System;
 using System.Collections.Generic;
 
 namespace Microsoft.Build.Framework {
 	[Serializable]
 	public class BuildStartedEventArgs : BuildStatusEventArgs {
+
+		IDictionary<string, string> buildEnvironment;
 	
 		protected BuildStartedEventArgs ()
 		{
@@ -41,7 +41,7 @@ namespace Microsoft.Build.Framework {
 
 		public BuildStartedEventArgs (string message,
 					      string helpKeyword)
-			: this (message, helpKeyword, DateTime.Now)
+			: base (message, helpKeyword, null)
 		{
 		}
 
@@ -50,8 +50,7 @@ namespace Microsoft.Build.Framework {
 					      IDictionary<string, string> environmentOfBuild)
 			: base (message, helpKeyword, null)
 		{
-			// deal with environmentOfBuild
-			throw new NotImplementedException ();
+			buildEnvironment = environmentOfBuild;
 		}
 
 		public BuildStartedEventArgs (string message,
@@ -68,7 +67,10 @@ namespace Microsoft.Build.Framework {
 			: base (message, helpKeyword, null, eventTimestamp, messageArgs)
 		{
 		}
+
+		public IDictionary<string, string> BuildEnvironment {
+			get { return buildEnvironment; }
+		}
 	}
 }
 
-#endif

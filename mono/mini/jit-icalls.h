@@ -67,6 +67,8 @@ gpointer mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoM
 
 guint64 mono_fconv_u8 (double v) MONO_INTERNAL;
 
+guint64 mono_rconv_u8 (float v) MONO_INTERNAL;
+
 gint64 mono_fconv_i8 (double v) MONO_INTERNAL;
 
 guint32 mono_fconv_u4 (double v) MONO_INTERNAL;
@@ -74,6 +76,12 @@ guint32 mono_fconv_u4 (double v) MONO_INTERNAL;
 gint64 mono_fconv_ovf_i8 (double v) MONO_INTERNAL;
 
 guint64 mono_fconv_ovf_u8 (double v) MONO_INTERNAL;
+
+gint64 mono_rconv_i8 (float v) MONO_INTERNAL;
+
+gint64 mono_rconv_ovf_i8 (float v) MONO_INTERNAL;
+
+guint64 mono_rconv_ovf_u8 (float v) MONO_INTERNAL;
 
 double mono_lconv_to_r8 (gint64 a) MONO_INTERNAL;
 

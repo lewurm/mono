@@ -114,10 +114,8 @@ namespace Microsoft.Build.BuildEngine {
 						ToolLocationHelper.GetPathToDotNetFramework (TargetDotNetFrameworkVersion.Version30)));
 			Toolsets.Add (new Toolset ("3.5",
 						ToolLocationHelper.GetPathToDotNetFramework (TargetDotNetFrameworkVersion.Version35)));
-#if NET_4_0
 			Toolsets.Add (new Toolset ("4.0",
 						ToolLocationHelper.GetPathToDotNetFramework (TargetDotNetFrameworkVersion.Version40)));
-#endif
 #if XBUILD_12
 			Toolsets.Add (new Toolset ("12.0", ToolLocationHelper.GetPathToBuildTools ("12.0")));
 #endif
@@ -556,16 +554,12 @@ namespace Microsoft.Build.BuildEngine {
 
 		public string DefaultToolsVersion {
 			get {
-				if (String.IsNullOrEmpty (defaultToolsVersion))
-#if NET_4_0
-					return "4.0";
-#elif NET_3_5
-					return "3.5";
-#else
-					return "2.0";
-#endif
-				
-				return defaultToolsVersion;
+				// This is used as the fall back version if the
+				// project can't find a version to use
+				return String.IsNullOrEmpty (defaultToolsVersion)
+						?
+						 "4.0"
+						: defaultToolsVersion;
 			}
 			set {
 				if (Toolsets [value] == null)

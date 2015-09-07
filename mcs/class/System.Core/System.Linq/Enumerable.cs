@@ -744,11 +744,9 @@ namespace System.Linq
 			if (list != null)
 				return list [index];
 
-#if NET_4_5
 			var readOnlyList = source as IReadOnlyList<TSource>;
 			if (readOnlyList != null)
 				return readOnlyList[index];
-#endif
 
 			return source.ElementAt (index, Fallback.Throw);
 		}
@@ -768,11 +766,9 @@ namespace System.Linq
 			if (list != null)
 				return index < list.Count ? list [index] : default (TSource);
 
-#if NET_4_5
 			var readOnlyList = source as IReadOnlyList<TSource>;
 			if (readOnlyList != null)
 				return index < readOnlyList.Count ? readOnlyList [index] : default (TSource);
-#endif
 
 			return source.ElementAt (index, Fallback.Default);
 		}
@@ -885,17 +881,6 @@ namespace System.Linq
 
 		#region GroupBy
 
-		private static List<T> ContainsGroup<K, T> (
-				Dictionary<K, List<T>> items, K key, IEqualityComparer<K> comparer)
-		{
-			IEqualityComparer<K> comparerInUse = (comparer ?? EqualityComparer<K>.Default);
-			foreach (KeyValuePair<K, List<T>> value in items) {
-				if (comparerInUse.Equals (value.Key, key))
-					return value.Value;
-			}
-			return null;
-		}
-
 		public static IEnumerable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey> (this IEnumerable<TSource> source,
 			Func<TSource, TKey> keySelector)
 		{
@@ -913,7 +898,7 @@ namespace System.Linq
 		static IEnumerable<IGrouping<TKey, TSource>> CreateGroupByIterator<TSource, TKey> (this IEnumerable<TSource> source,
 			Func<TSource, TKey> keySelector, IEqualityComparer<TKey> comparer)
 		{
-			var groups = new Dictionary<TKey, List<TSource>> ();
+			var groups = new Dictionary<TKey, List<TSource>> (comparer);
 			var nullList = new List<TSource> ();
 			int counter = 0;
 			int nullCounter = -1;
@@ -927,8 +912,8 @@ namespace System.Linq
 						counter++;
 					}
 				} else {
-					List<TSource> group = ContainsGroup<TKey, TSource> (groups, key, comparer);
-					if (group == null) {
+					List<TSource> group;
+					if (!groups.TryGetValue (key, out group)) {
 						group = new List<TSource> ();
 						groups.Add (key, group);
 						counter++;
@@ -971,7 +956,7 @@ namespace System.Linq
 		static IEnumerable<IGrouping<TKey, TElement>> CreateGroupByIterator<TSource, TKey, TElement> (this IEnumerable<TSource> source,
 			Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey> comparer)
 		{
-			var groups = new Dictionary<TKey, List<TElement>> ();
+			var groups = new Dictionary<TKey, List<TElement>> (comparer);
 			var nullList = new List<TElement> ();
 			int counter = 0;
 			int nullCounter = -1;
@@ -986,8 +971,8 @@ namespace System.Linq
 						counter++;
 					}
 				} else {
-					List<TElement> group = ContainsGroup<TKey, TElement> (groups, key, comparer);
-					if (group == null) {
+					List<TElement> group;
+					if (!groups.TryGetValue (key, out group)) {
 						group = new List<TElement> ();
 						groups.Add (key, group);
 						counter++;
@@ -2776,14 +2761,14 @@ namespace System.Linq
 		{
 			Check.Source (source);
 
+			if (count <= 0)
+				return EmptyOf<TSource>.Instance;
+
 			return CreateTakeIterator (source, count);
 		}
 
 		static IEnumerable<TSource> CreateTakeIterator<TSource> (IEnumerable<TSource> source, int count)
 		{
-			if (count <= 0)
-				yield break;
-
 			int counter = 0;
 			foreach (TSource element in source) {
 				yield return element;
@@ -3084,7 +3069,6 @@ namespace System.Linq
 
 		#endregion
 		
-#if NET_4_0
 		#region Zip
 		
 		public static IEnumerable<TResult> Zip<TFirst, TSecond, TResult> (this IEnumerable<TFirst> first, IEnumerable<TSecond> second, Func<TFirst, TSecond, TResult> resultSelector)
@@ -3109,7 +3093,6 @@ namespace System.Linq
 		}
 		
 		#endregion
-#endif		
 
 		#region Where
 

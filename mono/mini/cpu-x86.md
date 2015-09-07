@@ -67,6 +67,7 @@ call: dest:a clob:c len:17
 tailcall: len:120 clob:c
 br: len:5
 seq_point: len:17
+il_seq_point: len:0
 
 int_beq: len:6
 int_bge: len:6
@@ -149,7 +150,7 @@ call_membase: dest:a src1:b len:16 nacl:18 clob:c
 iconst: dest:i len:5
 r4const: dest:f len:15
 r8const: dest:f len:16
-store_membase_imm: dest:b len:10
+store_membase_imm: dest:b len:11
 store_membase_reg: dest:b src1:i len:7
 storei1_membase_imm: dest:b len:10
 storei1_membase_reg: dest:b src1:y len:7
@@ -301,15 +302,30 @@ bigmul: len:2 dest:l src1:a src2:i
 bigmul_un: len:2 dest:l src1:a src2:i
 sext_i1: dest:i src1:y len:3
 sext_i2: dest:i src1:y len:3
-tls_get: dest:i len:20
+tls_get: dest:i len:32
 tls_get_reg: dest:i src1:i len:20
 tls_set: src1:i len:20
 tls_set_reg: src1:i src2:i len:20
 atomic_add_i4: src1:b src2:i dest:i len:16
-atomic_add_new_i4: src1:b src2:i dest:i len:16
 atomic_exchange_i4: src1:b src2:i dest:a len:24
 atomic_cas_i4: src1:b src2:i src3:a dest:a len:24
 memory_barrier: len:16
+atomic_load_i1: dest:y src1:b len:7
+atomic_load_u1: dest:y src1:b len:7
+atomic_load_i2: dest:i src1:b len:7
+atomic_load_u2: dest:i src1:b len:7
+atomic_load_i4: dest:i src1:b len:7
+atomic_load_u4: dest:i src1:b len:7
+atomic_load_r4: dest:f src1:b len:10
+atomic_load_r8: dest:f src1:b len:10
+atomic_store_i1: dest:b src1:y len:10
+atomic_store_u1: dest:b src1:y len:10
+atomic_store_i2: dest:b src1:i len:10
+atomic_store_u2: dest:b src1:i len:10
+atomic_store_i4: dest:b src1:i len:10
+atomic_store_u4: dest:b src1:i len:10
+atomic_store_r4: dest:b src1:f len:10
+atomic_store_r8: dest:b src1:f len:10
 
 card_table_wbarrier: src1:a src2:i clob:d len:34
 
@@ -320,6 +336,8 @@ hard_nop: len:1
 nop: len:0
 dummy_use: src1:i len:0
 dummy_store: len:0
+dummy_iconst: dest:i len:0
+dummy_r8const: dest:f len:0
 not_reached: len:0
 not_null: src1:i len:0
 
@@ -393,6 +411,8 @@ long_conv_to_r4_2: dest:f src1:i src2:i len:14
 long_conv_to_r_un_2: dest:f src1:i src2:i len:40
 
 fmove: dest:f src1:f
+move_f_to_i4: dest:i src1:f len:17
+move_i4_to_f: dest:f src1:i len:17
 float_conv_to_r4: dest:f src1:f  len:12
 
 load_mem: dest:i len:9
@@ -596,8 +616,6 @@ extract_i1: dest:i src1:x len:10
 extract_u1: dest:i src1:x len:10
 extract_r8: dest:f src1:x len:8 
 
-iconv_to_r8_raw: dest:f src1:i len:17 
-
 insert_i2: dest:x src1:x src2:i len:5 clob:1
 
 extractx_u2: dest:i src1:x len:5
@@ -632,3 +650,5 @@ gc_liveness_def: len:0
 gc_liveness_use: len:0
 gc_spill_slot_liveness_def: len:0
 gc_param_slot_liveness_def: len:0
+get_sp: dest:i len:6
+set_sp: src1:i len:6

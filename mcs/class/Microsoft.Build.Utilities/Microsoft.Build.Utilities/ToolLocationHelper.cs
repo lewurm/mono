@@ -27,6 +27,8 @@
 
 using System;
 using System.IO;
+using System.Xml;
+using System.Linq;
 
 namespace Microsoft.Build.Utilities
 {
@@ -55,10 +57,8 @@ namespace Microsoft.Build.Utilities
 
 			lib_mono_dir = t2.FullName;
 
-#if NET_4_0
 			var windowsPath = Environment.GetFolderPath (Environment.SpecialFolder.Windows);
 			runningOnDotNet = !string.IsNullOrEmpty (windowsPath) && lib_mono_dir.StartsWith (windowsPath);
-#endif
 
 			if (Environment.GetEnvironmentVariable ("TESTING_MONO") != null) {
 				mono_dir = new string [] {
@@ -121,11 +121,25 @@ namespace Microsoft.Build.Utilities
 			return mono_dir [(int)version];
 		}
 
-		[MonoTODO]
 		public static string GetPathToDotNetFrameworkFile (string fileName,
 								  TargetDotNetFrameworkVersion version)
 		{
-			throw new NotImplementedException ();
+			string dir = GetPathToDotNetFramework (version);
+			string file = Path.Combine (dir, fileName);
+			if (File.Exists (file))
+				return file;
+
+			//Mono doesn't ship multiple versions of tools that are backwards/forwards compatible
+			if (!runningOnDotNet) {
+				//most of the 3.5 tools are in the 2.0 directory
+				if (version == TargetDotNetFrameworkVersion.Version35)
+					return GetPathToDotNetFrameworkFile (fileName, TargetDotNetFrameworkVersion.Version20);
+				//unversioned tools are in the 4.5 directory
+				if (version == TargetDotNetFrameworkVersion.Version20)
+					return GetPathToDotNetFrameworkFile (fileName, (TargetDotNetFrameworkVersion)5);
+			}
+
+			return null;
 		}
 
 		public static string GetPathToDotNetFrameworkSdk (TargetDotNetFrameworkVersion version)
@@ -138,6 +152,57 @@ namespace Microsoft.Build.Utilities
 								      TargetDotNetFrameworkVersion version)
 		{
 			throw new NotImplementedException ();
+		}
+
+		public static string GetPathToStandardLibraries (string targetFrameworkIdentifier,
+								 string targetFrameworkVersion,
+								 string targetFrameworkProfile)
+		{
+			return GetPathToStandardLibraries (targetFrameworkIdentifier, targetFrameworkVersion, targetFrameworkProfile, null);
+		}
+
+		[MonoTODO]
+		#if XBUILD_12
+		public
+		#endif
+		static string GetPathToStandardLibraries (string targetFrameworkIdentifier,
+		                                          string targetFrameworkVersion,
+		                                          string targetFrameworkProfile,
+		                                          string platformTarget)
+		{
+			// FIXME: support platformTarget
+			if (platformTarget != null)
+				throw new NotImplementedException ("platformTarget support is not implemented");
+			
+			var ext = Environment.GetEnvironmentVariable ("XBUILD_FRAMEWORK_FOLDERS_PATH");
+			var ret = ext != null ? GetPathToStandardLibrariesWith (ext, targetFrameworkIdentifier, targetFrameworkVersion, targetFrameworkProfile) : null;
+			return ret ?? GetPathToStandardLibrariesWith (Path.GetFullPath (Path.Combine (lib_mono_dir, "xbuild-frameworks")), targetFrameworkIdentifier, targetFrameworkVersion, targetFrameworkProfile);
+		}
+			
+		static string GetPathToStandardLibrariesWith (string xbuildFxDir,
+							      string targetFrameworkIdentifier,
+		                                              string targetFrameworkVersion,
+		                                              string targetFrameworkProfile)
+		{
+			var path = Path.Combine (xbuildFxDir, targetFrameworkIdentifier);
+			if (!string.IsNullOrEmpty (targetFrameworkVersion)) {
+				path = Path.Combine (path, targetFrameworkVersion);
+				if (!string.IsNullOrEmpty (targetFrameworkProfile))
+					path = Path.Combine (path, "Profile", targetFrameworkProfile);
+			}
+			if (!Directory.Exists (path))
+				return null;
+			var flist = Path.Combine (path, "RedistList", "FrameworkList.xml");
+			if (!File.Exists (flist))
+				return null;
+			var xml = XmlReader.Create (flist);
+			xml.MoveToContent ();
+			var targetFxDir = xml.GetAttribute ("TargetFrameworkDirectory");
+			targetFxDir = targetFxDir != null ? Path.GetFullPath (Path.Combine (path, "dummy", targetFxDir.Replace ('\\', Path.DirectorySeparatorChar))) : null;
+			if (Directory.Exists (targetFxDir))
+				return targetFxDir;
+			// I'm not sure if this is completely valid assumption...
+			return path;
 		}
 
 		[MonoTODO]
@@ -162,11 +227,20 @@ namespace Microsoft.Build.Utilities
 
 		public static string GetPathToBuildTools (string toolsVersion)
 		{
-			if (toolsVersion != "12.0")
+			string path;
+			switch (toolsVersion) {
+			case "12.0":
+				path = "xbuild_12";
+				break;
+			case "14.0":
+				path = "xbuild_14";
+				break;
+			default:
 				return null;
+			}
 
 			if (Environment.GetEnvironmentVariable ("TESTING_MONO") != null)
-				return Path.Combine (lib_mono_dir, "xbuild_12");
+				return Path.Combine (lib_mono_dir, path);
 
 			if (runningOnDotNet) {
 				//see http://msdn.microsoft.com/en-us/library/vstudio/bb397428(v=vs.120).aspx

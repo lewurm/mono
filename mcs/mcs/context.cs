@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Diagnostics;
 
 namespace Mono.CSharp
 {
@@ -54,7 +55,7 @@ namespace Mono.CSharp
 
 		string GetSignatureForError ();
 
-		ExtensionMethodCandidates LookupExtensionMethod (TypeSpec extensionType, string name, int arity);
+		ExtensionMethodCandidates LookupExtensionMethod (string name, int arity);
 		FullNamedExpression LookupNamespaceOrType (string name, int arity, LookupMode mode, Location loc);
 		FullNamedExpression LookupNamespaceAlias (string name);
 	}
@@ -96,6 +97,9 @@ namespace Mono.CSharp
 
 			if (rc.HasSet (ResolveContext.Options.CheckedScope))
 				flags |= ResolveContext.Options.CheckedScope;
+
+			if (!rc.ConstantCheckState)
+				flags &= ~Options.ConstantCheckState;
 
 			if (rc.IsInProbingMode)
 				flags |= ResolveContext.Options.ProbingMode;
@@ -184,6 +188,8 @@ namespace Mono.CSharp
 			TryScope = 1 << 14,
 
 			TryWithCatchScope = 1 << 15,
+
+			ConditionalAccessReceiver = 1 << 16,
 
 			///
 			/// Indicates the current context is in probing mode, no errors are reported. 
@@ -418,9 +424,9 @@ namespace Mono.CSharp
 			return MemberContext.GetSignatureForError ();
 		}
 
-		public ExtensionMethodCandidates LookupExtensionMethod (TypeSpec extensionType, string name, int arity)
+		public ExtensionMethodCandidates LookupExtensionMethod (string name, int arity)
 		{
-			return MemberContext.LookupExtensionMethod (extensionType, name, arity);
+			return MemberContext.LookupExtensionMethod (name, arity);
 		}
 
 		public FullNamedExpression LookupNamespaceOrType (string name, int arity, LookupMode mode, Location loc)
@@ -439,6 +445,7 @@ namespace Mono.CSharp
 	public class FlowAnalysisContext
 	{
 		readonly CompilerContext ctx;
+		DefiniteAssignmentBitSet conditional_access;
 
 		public FlowAnalysisContext (CompilerContext ctx, ParametersBlock parametersBlock, int definiteAssignmentLength)
 		{
@@ -456,7 +463,7 @@ namespace Mono.CSharp
 
 		public DefiniteAssignmentBitSet DefiniteAssignmentOnFalse { get; set; }
 
-		public List<LabeledStatement> LabelStack { get; set; }
+		Dictionary<Statement, List<DefiniteAssignmentBitSet>> LabelStack { get; set; }
 
 		public ParametersBlock ParametersBlock { get; set; }
 
@@ -472,12 +479,61 @@ namespace Mono.CSharp
 
 		public bool UnreachableReported { get; set; }
 
+		public bool AddReachedLabel (Statement label)
+		{
+			List<DefiniteAssignmentBitSet> das;
+			if (LabelStack == null) {
+				LabelStack = new Dictionary<Statement, List<DefiniteAssignmentBitSet>> ();
+				das = null;
+			} else {
+				LabelStack.TryGetValue (label, out das);
+			}
+
+			if (das == null) {
+				das = new List<DefiniteAssignmentBitSet> ();
+				das.Add (new DefiniteAssignmentBitSet (DefiniteAssignment));
+				LabelStack.Add (label, das);
+				return false;
+			}
+
+			foreach (var existing in das) {
+				if (DefiniteAssignmentBitSet.AreEqual (existing, DefiniteAssignment))
+					return true;
+			}
+
+			if (DefiniteAssignment == DefiniteAssignmentBitSet.Empty)
+				das.Add (DefiniteAssignment);
+			else
+				das.Add (new DefiniteAssignmentBitSet (DefiniteAssignment));
+
+			return false;
+		}
+
 		public DefiniteAssignmentBitSet BranchDefiniteAssignment ()
 		{
-			var dat = DefiniteAssignment;
-			if (dat != DefiniteAssignmentBitSet.Empty)
-				DefiniteAssignment = new DefiniteAssignmentBitSet (dat);
-			return dat;
+			return BranchDefiniteAssignment (DefiniteAssignment);
+		}
+
+		public DefiniteAssignmentBitSet BranchDefiniteAssignment (DefiniteAssignmentBitSet da)
+		{
+			if (da != DefiniteAssignmentBitSet.Empty) {
+				DefiniteAssignment = new DefiniteAssignmentBitSet (da);
+			}
+
+			return da;
+		}
+
+		public void BranchConditionalAccessDefiniteAssignment ()
+		{
+			if (conditional_access == null)
+				conditional_access = BranchDefiniteAssignment ();
+		}
+
+		public void ConditionalAccessEnd ()
+		{
+			Debug.Assert (conditional_access != null);
+			DefiniteAssignment = conditional_access;
+			conditional_access = null;
 		}
 
 		public bool IsDefinitelyAssigned (VariableInfo variable)
@@ -661,7 +717,7 @@ namespace Mono.CSharp
 
 			ConstructorScope = 1 << 3,
 
-			AsyncBody = 1 << 4
+			AsyncBody = 1 << 4,
 		}
 
 		// utility helper for CheckExpr, UnCheckExpr, Checked and Unchecked statements

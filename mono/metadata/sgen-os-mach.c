@@ -70,13 +70,12 @@ sgen_suspend_thread (SgenThreadInfo *info)
 	mono_mach_arch_thread_state_to_mcontext (state, mctx);
 	ctx.uc_mcontext = mctx;
 
-	info->stopped_domain = mono_mach_arch_get_tls_value_from_thread (
-		mono_thread_info_get_tid (info), mono_domain_get_tls_key ());
+	info->stopped_domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
 	info->stopped_ip = (gpointer) mono_mach_arch_get_ip (state);
 	info->stack_start = NULL;
 	stack_start = (char*) mono_mach_arch_get_sp (state) - REDZONE_SIZE;
 	/* If stack_start is not within the limits, then don't set it in info and we will be restarted. */
-	if (stack_start >= info->stack_start_limit && info->stack_start <= info->stack_end) {
+	if (stack_start >= info->stack_start_limit && stack_start <= info->stack_end) {
 		info->stack_start = stack_start;
 
 #ifdef USE_MONO_CTX
@@ -141,6 +140,12 @@ sgen_os_init (void)
 
 int
 mono_gc_get_suspend_signal (void)
+{
+	return -1;
+}
+
+int
+mono_gc_get_restart_signal (void)
 {
 	return -1;
 }
