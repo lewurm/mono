@@ -1,3 +1,27 @@
+mono (4.0.4.1+dfsg-1) experimental; urgency=medium
+
+  [ Jo Shields ]
+  * [14dd9bb] Big Endian fix by Than Ngo <than@redhat.com>
+    from https://bugzilla.xamarin.com/show_bug.cgi?id=31779
+  * [fab431e] Imported Upstream version 4.0.4.1+dfsg
+  * [f0302ef] Add missing symbol
+  * [47e6f15] Refresh clideps versioning
+
+  [ Bill Seurer ]
+  * [7d7f61a] Fixes to get mono to build on big endian ppc.
+    (cherry picked from commit d36ce0d9911fc668ac25d7116772044a78790f0e)
+
+  [ Alex Rønne Petersen ]
+  * [c36ee1b] Instruction length of atomic_add_i4 is 28.
+    (cherry picked from commit f967c79926900343f399c75624deedaba460e544)
+  * [c81f65f] Fix atomic_add_i4 support for 32-bit PPC.
+    (cherry picked from commit 8f379f0c8f98493180b508b9e68b9aa76c0c5bdf)
+
+  [ Lennart Sorensen ]
+  * [7f1a751] Add move_f_to_i4 and move_i4_to_f to PowerPC
+
+ -- Jo Shields <directhex@apebox.org>  Mon, 07 Sep 2015 11:28:16 +0100
+
 mono (4.0.2.5+dfsg-2) experimental; urgency=medium
 
   * [7df1162] Add missing ppc64el .symbols files
