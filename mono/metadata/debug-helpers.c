@@ -82,9 +82,11 @@ append_class_name (GString *res, MonoClass *class, gboolean include_namespace)
 		append_class_name (res, class->nested_in, include_namespace);
 		g_string_append_c (res, '/');
 	}
-	if (include_namespace && *(class->name_space))
-		g_string_append_printf (res, "%s.", class->name_space);
-	g_string_append_printf (res, "%s", class->name);
+	if (include_namespace && *(class->name_space)) {
+		g_string_append (res, class->name_space);
+		g_string_append_c (res, '.');
+	}
+	g_string_append (res, class->name);
 }
 
 static MonoClass*
@@ -468,6 +470,8 @@ match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 gboolean
 mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 {
+	if (!desc->klass)
+		return FALSE;
 	if (!match_class (desc, strlen (desc->klass), method->klass))
 		return FALSE;
 
@@ -573,7 +577,7 @@ dis_one (GString *str, MonoDisHelper *dh, MonoMethod *method, const unsigned cha
 		size_t len2;
 		char *blob2 = NULL;
 
-		if (!method->klass->image->dynamic) {
+		if (!image_is_dynamic (method->klass->image) && !method_is_dynamic (method)) {
 			token = read32 (ip);
 			blob = mono_metadata_user_string (method->klass->image, mono_metadata_token_index (token));
 

@@ -158,7 +158,7 @@ namespace IKVM.Reflection.Writer
 
 		public WORD Machine;
 		public WORD NumberOfSections;
-		public DWORD TimeDateStamp = (uint)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+		public DWORD TimeDateStamp;
 		public DWORD PointerToSymbolTable = 0;
 		public DWORD NumberOfSymbols = 0;
 		public WORD SizeOfOptionalHeader = 0xE0;
@@ -241,33 +241,15 @@ namespace IKVM.Reflection.Writer
 			if (Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
 			{
 				bw.Write((DWORD)SizeOfStackReserve);
-			}
-			else
-			{
-				bw.Write(SizeOfStackReserve);
-			}
-			if (Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
-			{
 				bw.Write((DWORD)SizeOfStackCommit);
-			}
-			else
-			{
-				bw.Write(SizeOfStackCommit);
-			}
-			if (Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
-			{
 				bw.Write((DWORD)SizeOfHeapReserve);
-			}
-			else
-			{
-				bw.Write(SizeOfHeapReserve);
-			}
-			if (Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
-			{
 				bw.Write((DWORD)SizeOfHeapCommit);
 			}
 			else
 			{
+				bw.Write(SizeOfStackReserve);
+				bw.Write(SizeOfStackCommit);
+				bw.Write(SizeOfHeapReserve);
 				bw.Write(SizeOfHeapCommit);
 			}
 			bw.Write(LoaderFlags);

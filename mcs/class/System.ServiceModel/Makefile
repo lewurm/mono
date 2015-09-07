@@ -7,7 +7,6 @@ RESOURCE_FILES = \
 	resources/ws-addr.xsd
 
 LIBRARY = System.ServiceModel.dll
-LIBRARY_USE_INTERMEDIATE_FILE = yes
 
 LIB_MCS_FLAGS = \
 		/nowarn:414,169,67,3005,436,219,618 \
@@ -19,6 +18,10 @@ LIB_MCS_FLAGS = \
 	        /r:System.Runtime.Serialization.dll \
 		$(RESOURCE_FILES:%=/resource:%)
 
+ifdef XAMMAC_4_5
+LIB_REFS += System.ServiceModel.Internals
+endif
+
 ifneq (2.1, $(FRAMEWORK_VERSION))
 LIB_MCS_FLAGS += /d:NET_3_0 	\
 			/r:System.Configuration.dll \
@@ -28,33 +31,36 @@ LIB_MCS_FLAGS += /d:NET_3_0 	\
 			/r:System.IdentityModel.Selectors.dll \
 			/r:System.Transactions.dll \
 			/r:System.Messaging.dll \
-			/r:System.Web.dll \
 			/r:System.Web.Services.dll \
 			/r:Mono.Security.dll
+
+ifdef XAMAMC_4_5			
+LIB_MCS_FLAGS += /r:System.Net.dll
+endif
+
+ifndef NO_SYSTEM_WEB_DEPENDENCY
+LIB_MCS_FLAGS += /r:System.Web.dll
+endif
+
 endif
 
 ifeq (4, $(FRAMEWORK_VERSION_MAJOR))
-
-ACTIVATION_DEP := System.ServiceModel.Activation.dll
-ACTIVATION_DEP_FILE := $(wildcard ../lib/$(PROFILE)/$(ACTIVATION_DEP))
-CYCLIC_DEPS += $(ACTIVATION_DEP)
-CYCLIC_DEP_FILES += $(ACTIVATION_DEP_FILE)
-
-ifdef ACTIVATION_DEP_FILE
-LIB_MCS_FLAGS += -define:HAS_ACTIVATION -r:$(ACTIVATION_DEP)
+ifndef NO_SYSTEM_WEB_APPSERVICES_DEPENDENCY
+LIB_MCS_FLAGS += /r:System.Web.ApplicationServices.dll
 endif
 
-LIB_MCS_FLAGS += /r:System.Web.ApplicationServices.dll
+ifndef NO_SYSTEM_SERVICEMODEL_ACTIVATION_DEPENDENCY
+activation = $(the_libdir_base)System.ServiceModel.Activation.dll
+servicemodel_deps = $(activation)
+endif
 
-ifneq ($(CYCLIC_DEPS:%=../lib/$(PROFILE)/%), $(CYCLIC_DEP_FILES))
-NO_SIGN_ASSEMBLY = yes
-NO_INSTALL = yes
-all-local: echo-warning
-.PHONY: echo-warning
+ifneq (plainservice/,$(intermediate))
+ifndef NO_SYSTEM_SERVICEMODEL_ACTIVATION_DEPENDENCY
+LIB_MCS_FLAGS += -define:HAS_ACTIVATION -r:System.ServiceModel.Activation.dll
+endif
 
-ifeq   (, $(strip $(CYCLIC_DEP_FILES)))
-echo-warning:
-	@echo "** Warning: System.ServiceModel.dll built without parts that depend on: $(CYCLIC_DEPS)"
+ifndef NO_SYSTEM_WEB_APPSERVICES_DEPENDENCY 
+LIB_MCS_FLAGS += -r:System.Web.ApplicationServices.dll
 endif
 endif
 
@@ -87,6 +93,21 @@ endif
 
 include ../../build/library.make
 
-ifdef ACTIVATION_DEP_FILE
-$(build_lib): $(CYCLIC_DEP_FILES)
+$(the_libdir_base)System.ServiceModel.dll: $(servicemodel_deps)
+
+$(activation):
+	(cd ../System.ServiceModel.Activation; $(MAKE) $@)
+
+ifneq (plainservice/,$(intermediate))
+$(the_libdir_base)plainservice/System.ServiceModel.dll:
+	$(MAKE) intermediate=plainservice/ $(the_libdir_base)plainservice/System.ServiceModel.dll
+endif
+
+.NOTPARALLEL: $(servicemodel_deps)
+
+CLEAN_FILES = $(the_libdir_base)plainservice/System.ServiceModel.dll
+
+ifndef intermediate
+csproj-local:
+	$(MAKE) csproj-local intermediate=plainservice/
 endif

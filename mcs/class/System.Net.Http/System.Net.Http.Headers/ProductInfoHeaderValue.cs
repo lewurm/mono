@@ -106,7 +106,7 @@ namespace System.Net.Http.Headers
 			return true;
 		}
 
-		internal static bool TryParse (string input, out List<ProductInfoHeaderValue> result)
+		internal static bool TryParse (string input, int minimalCount, out List<ProductInfoHeaderValue> result)
 		{
 			var list = new List<ProductInfoHeaderValue> ();
 			var lexer = new Lexer (input);
@@ -118,11 +118,32 @@ namespace System.Net.Http.Headers
 					return false;
 
 				if (element == null) {
-					result = list;
-					return true;
+					if (list != null && minimalCount <= list.Count) {
+						result = list;
+						return true;
+					}
+
+					return false;
 				}
 
 				list.Add (element);
+
+				// Separator parsing
+				switch (lexer.PeekChar ()) {
+				case ' ':
+				case '\t':
+					lexer.EatChar ();
+					continue;
+				case -1:
+					if (minimalCount <= list.Count) {
+						result = list;
+						return true;
+					}
+
+					break;
+				}
+					
+				return false;
 			}
 		}
 
@@ -150,13 +171,17 @@ namespace System.Net.Http.Headers
 			var value = new ProductHeaderValue ();
 			value.Name = lexer.GetStringValue (t);
 
+			var pos = lexer.Position;
 			t = lexer.Scan ();
 			if (t == Token.Type.SeparatorSlash) {
+
 				t = lexer.Scan ();
 				if (t != Token.Type.Token)
 					return false;
 
 				value.Version = lexer.GetStringValue (t);
+			} else {
+				lexer.Position = pos;
 			}
 
 			parsedValue = new ProductInfoHeaderValue (value);

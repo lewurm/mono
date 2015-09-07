@@ -6,6 +6,10 @@
 #include <asm/sigcontext.h>
 #endif
 
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -16,9 +20,6 @@
 
 #if defined(TARGET_X86)
 
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__APPLE__) || defined(__DragonFly__)
-#include <ucontext.h>
-#endif
 #if defined(__APPLE__)
 #include <AvailabilityMacros.h>
 #endif
@@ -87,7 +88,7 @@
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EIP])
 #else
 
-#if defined(TARGET_ANDROID)
+#if defined(PLATFORM_ANDROID) && !defined(HAVE_UCONTEXT_H)
 /* No ucontext.h as of NDK v6b */
 typedef int greg_t;
 #define NGREG 19
@@ -153,10 +154,6 @@ typedef struct ucontext {
 #endif
 
 #elif defined(TARGET_AMD64)
-
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-#include <ucontext.h>
-#endif
 
 #if defined(__APPLE__)
 	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rax)
@@ -355,6 +352,30 @@ typedef struct ucontext {
 	#define UCONTEXT_REG_R12(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_ip)
 	#define UCONTEXT_REG_CPSR(ctx) (((arm_ucontext*)(ctx))->sig_ctx.arm_cpsr)
 #endif
+
+#elif defined(TARGET_ARM64)
+
+#if defined(MONO_CROSS_COMPILE)
+	#define UCONTEXT_REG_PC(ctx) NULL
+	#define UCONTEXT_REG_SP(ctx) NULL
+	#define UCONTEXT_REG_R0(ctx) NULL
+	#define UCONTEXT_GREGS(ctx) NULL
+#elif defined(__APPLE__)
+#include <machine/_mcontext.h>
+#include <sys/_types/_ucontext64.h>
+	/* mach/arm/_structs.h */
+	#define UCONTEXT_REG_PC(ctx) (((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__pc)
+	#define UCONTEXT_REG_SP(ctx) (((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__sp)
+	#define UCONTEXT_REG_R0(ctx) (((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__x [ARMREG_R0])
+	#define UCONTEXT_GREGS(ctx) (&(((ucontext64_t*)(ctx))->uc_mcontext64->__ss.__x))
+#else
+#include <ucontext.h>
+	#define UCONTEXT_REG_PC(ctx) (((ucontext_t*)(ctx))->uc_mcontext.pc)
+	#define UCONTEXT_REG_SP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.sp)
+	#define UCONTEXT_REG_R0(ctx) (((ucontext_t*)(ctx))->uc_mcontext.regs [ARMREG_R0])
+	#define UCONTEXT_GREGS(ctx) (&(((ucontext_t*)(ctx))->uc_mcontext.regs))
+#endif
+
 #elif defined(__mips__)
 
 # if HAVE_UCONTEXT_H

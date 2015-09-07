@@ -10,10 +10,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>System.Reactive</RootNamespace>
     <AssemblyName>System.Reactive.Interfaces</AssemblyName>
-    <DefineConstants>NO_TASK_DELAY;NO_WINDOWS_THREADING;NO_REMOTING;SIGNED;NUNIT;MONODROID</DefineConstants>
-    <SignAssembly>True</SignAssembly>
-    <DelaySign>True</DelaySign>
-    <AssemblyOriginatorKeyFile>..\..\..\reactive.pub</AssemblyOriginatorKeyFile>
+    <DefineConstants>NO_TASK_DELAY;NO_WINDOWS_THREADING;NO_REMOTING;HAS_AWAIT;NUNIT;MONODROID;$(SignAssemblySpec)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -24,6 +21,7 @@
     <WarningLevel>4</WarningLevel>
     <AndroidLinkMode>None</AndroidLinkMode>
     <ConsolePause>False</ConsolePause>
+    <DefineConstants>DEBUG;NO_TASK_DELAY;NO_WINDOWS_THREADING;NO_REMOTING;HAS_AWAIT;NUNIT;MONODROID;$(SignAssemblySpec)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
@@ -41,6 +39,8 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+
+
     <!--
     <ProjectReference Include="..\Andr.Unit\Android.NUnitLite\Android.NUnitLite.csproj">
       <Project>{6A005891-A3D6-4398-A729-F645397D573A}</Project>
@@ -49,11 +49,6 @@
     -->
   </ItemGroup>
   <ItemGroup>
-    <!--
-    <Compile Include="..\..\..\Microsoft.Reactive.Testing\ColdObservable.cs">
-      <Link>ColdObservable.cs</Link>
-    </Compile>
-    -->
     <Compile Include="..\..\..\..\System.Reactive.Interfaces\AssemblyFileVersionAttribute.cs">
       <Link>AssemblyFileVersionAttribute.cs</Link>
     </Compile>
@@ -126,6 +121,13 @@
     <Compile Include="..\..\..\..\System.Reactive.Interfaces\Reactive\Subjects\ISubject.Multi.cs">
       <Link>Reactive\Subjects\ISubject.Multi.cs</Link>
     </Compile>
+
+    <!--
+    <Compile Include="..\..\..\Microsoft.Reactive.Testing\ColdObservable.cs">
+      <Link>ColdObservable.cs</Link>
+    </Compile>
+    -->
+
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
 </Project>
