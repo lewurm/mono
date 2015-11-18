@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002-2013 Jeroen Frijters
+  Copyright (C) 2002-2015 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -57,7 +57,6 @@ namespace IKVM.Internal
 		private volatile TypeWrapper[] innerClasses;
 		private TypeWrapper outerClass;
 		private volatile TypeWrapper[] interfaces;
-		private volatile bool finished;
 
 		private static Modifiers GetModifiers(Type type)
 		{
@@ -313,28 +312,9 @@ namespace IKVM.Internal
 				get { return type.IsInterface ? null : CoreClasses.java.lang.Object.Wrapper; }
 			}
 
-			internal override TypeWrapper DeclaringTypeWrapper
-			{
-				get { return null; }
-			}
-
-			internal override TypeWrapper[] InnerClasses
-			{
-				get { return TypeWrapper.EmptyArray; }
-			}
-
-			internal override TypeWrapper[] Interfaces
-			{
-				get { return TypeWrapper.EmptyArray; }
-			}
-
 			internal override Type TypeAsTBD
 			{
 				get { return type; }
-			}
-
-			internal override void Finish()
-			{
 			}
 
 			internal override ClassLoaderWrapper GetClassLoader()
@@ -418,29 +398,9 @@ namespace IKVM.Internal
 				}
 			}
 
-			internal override void Finish()
-			{
-			}
-
 			internal override ClassLoaderWrapper GetClassLoader()
 			{
 				return DeclaringTypeWrapper.GetClassLoader();
-			}
-
-			internal override TypeWrapper[] InnerClasses
-			{
-				get
-				{
-					return TypeWrapper.EmptyArray;
-				}
-			}
-
-			internal override TypeWrapper[] Interfaces
-			{
-				get
-				{
-					return TypeWrapper.EmptyArray;
-				}
 			}
 
 			internal override Type TypeAsTBD
@@ -655,29 +615,9 @@ namespace IKVM.Internal
 				}
 			}
 
-			internal override void Finish()
-			{
-			}
-
 			internal override ClassLoaderWrapper GetClassLoader()
 			{
 				return DeclaringTypeWrapper.GetClassLoader();
-			}
-
-			internal override TypeWrapper[] InnerClasses
-			{
-				get
-				{
-					return TypeWrapper.EmptyArray;
-				}
-			}
-
-			internal override TypeWrapper[] Interfaces
-			{
-				get
-				{
-					return TypeWrapper.EmptyArray;
-				}
 			}
 
 			internal override Type TypeAsTBD
@@ -698,10 +638,6 @@ namespace IKVM.Internal
 		{
 			internal AttributeAnnotationTypeWrapperBase(string name)
 				: base(Modifiers.Public | Modifiers.Interface | Modifiers.Abstract | Modifiers.Annotation, name, null)
-			{
-			}
-
-			internal sealed override void Finish()
 			{
 			}
 
@@ -1089,14 +1025,6 @@ namespace IKVM.Internal
 					}
 				}
 
-				internal override TypeWrapper[] InnerClasses
-				{
-					get
-					{
-						return TypeWrapper.EmptyArray;
-					}
-				}
-
 				internal override Type TypeAsTBD
 				{
 					get
@@ -1230,14 +1158,6 @@ namespace IKVM.Internal
 					get
 					{
 						return declaringType;
-					}
-				}
-
-				internal override TypeWrapper[] InnerClasses
-				{
-					get
-					{
-						return TypeWrapper.EmptyArray;
 					}
 				}
 
@@ -1855,11 +1775,25 @@ namespace IKVM.Internal
 			internal override void EmitNewobj(CodeEmitter ilgen)
 			{
 				ilgen.Emit(OpCodes.Ldtoken, delegateConstructor.DeclaringType);
-				ilgen.Emit(OpCodes.Call, Types.Type.GetMethod("GetTypeFromHandle", new Type[] { Types.RuntimeTypeHandle }));
+				ilgen.Emit(OpCodes.Call, Compiler.getTypeFromHandleMethod);
 				ilgen.Emit(OpCodes.Ldstr, GetDelegateInvokeStubName(DeclaringType.TypeAsTBD));
 				ilgen.Emit(OpCodes.Ldstr, iface.GetMethods()[0].Signature);
 				ilgen.Emit(OpCodes.Call, ByteCodeHelperMethods.DynamicCreateDelegate);
 				ilgen.Emit(OpCodes.Castclass, delegateConstructor.DeclaringType);
+			}
+
+			internal override void EmitCall(CodeEmitter ilgen)
+			{
+				// This is a bit of a hack. We bind the existing delegate to a new delegate to be able to reuse the DynamicCreateDelegate error
+				// handling. This leaks out to the user because Delegate.Target will return the target delegate instead of the bound object.
+
+				// create the target delegate
+				EmitNewobj(ilgen);
+
+				// invoke the constructor, binding the delegate to the target delegate
+				ilgen.Emit(OpCodes.Dup);
+				ilgen.Emit(OpCodes.Ldvirtftn, MethodHandleUtil.GetDelegateInvokeMethod(delegateConstructor.DeclaringType));
+				ilgen.Emit(OpCodes.Call, delegateConstructor);
 			}
 #endif // EMITTERS
 		}
@@ -2005,6 +1939,11 @@ namespace IKVM.Internal
 				CodeEmitterLocal local = ilgen.DeclareLocal(DeclaringType.TypeAsTBD);
 				ilgen.Emit(OpCodes.Ldloc, local);
 				ilgen.Emit(OpCodes.Box, DeclaringType.TypeAsTBD);
+			}
+
+			internal override void EmitCall(CodeEmitter ilgen)
+			{
+				ilgen.Emit(OpCodes.Pop);
 			}
 #endif // EMITTERS
 
@@ -2762,32 +2701,6 @@ namespace IKVM.Internal
 			ilgen.EmitCastclass(type);
 		}
 #endif // EMITTERS
-
-		internal override void Finish()
-		{
-			// we don't need locking, because Finish and Link are idempotent
-			if (finished)
-			{
-				return;
-			}
-			if (BaseTypeWrapper != null)
-			{
-				BaseTypeWrapper.Finish();
-			}
-			foreach (TypeWrapper tw in this.Interfaces)
-			{
-				tw.Finish();
-			}
-			foreach (MethodWrapper mw in GetMethods())
-			{
-				mw.Link();
-			}
-			foreach (FieldWrapper fw in GetFields())
-			{
-				fw.Link();
-			}
-			finished = true;
-		}
 
 		internal override MethodParametersEntry[] GetMethodParameters(MethodWrapper mw)
 		{
