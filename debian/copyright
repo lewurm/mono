@@ -384,7 +384,7 @@ License: Apache-2.0 or BSD
 Files: external/Lucene.Net/src/core/Util/UnicodeUtil.cs
 Copyright: © 2001-2004 Unicode, Inc.
            © 2006-2012 The Apache Software Foundation
-License: Apache 2.0 or other
+License: Apache-2.0 or other3
  Disclaimer
  .
  This source code is provided as is by Unicode, Inc. No claims are
@@ -417,7 +417,7 @@ License: Apache-2.0
 
 Files: external/aspnetwebstack/test/System.Web.Helpers.Test/TestFiles/xhtml11-flat.dtd
 Copyright: © 1998-2000 World Wide Web Consortium
-License: other
+License: other2
  Permission to use, copy, modify and distribute the XHTML DTD and its
  accompanying documentation for any purpose and without fee is hereby
  granted in perpetuity, provided that the above copyright notice and
@@ -585,6 +585,24 @@ License: LGPL-2.1
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation;
  version 2.1 of the License.
+ .
+ This library is distributed in the hope that it will be useful, 
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public  
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ .
+ On Debian systems the full text of the GNU Lesser General Public License can be
+ found in the `/usr/share/common-licenses/LGPL-2.1' file.
+
+License: LGPL-2.1+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation;
+ version 2.1 of the License, or (at your option) any later version.
  .
  This library is distributed in the hope that it will be useful, 
  but WITHOUT ANY WARRANTY; without even the implied warranty of
