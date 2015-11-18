@@ -733,7 +733,7 @@ int _wapi_setsockopt(guint32 fd, int level, int optname,
 		socklen_t type_len = sizeof (type);
 
 		if (!getsockopt (fd, level, SO_TYPE, &type, &type_len)) {
-			if (type == SOCK_DGRAM)
+			if (type == SOCK_DGRAM || type == SOCK_STREAM)
 				setsockopt (fd, level, SO_REUSEPORT, tmp_val, optlen);
 		}
 	}
@@ -1201,7 +1201,7 @@ WSAIoctl (guint32 fd, gint32 command,
 }
 
 #ifndef PLATFORM_PORT_PROVIDES_IOCTLSOCKET
-int ioctlsocket(guint32 fd, gint32 command, gpointer arg)
+int ioctlsocket(guint32 fd, unsigned long command, gpointer arg)
 {
 	gpointer handle = GUINT_TO_POINTER (fd);
 	int ret;
