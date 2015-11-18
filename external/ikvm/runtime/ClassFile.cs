@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002-2014 Jeroen Frijters
+  Copyright (C) 2002-2015 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -51,6 +51,7 @@ namespace IKVM.Internal
 		LineNumberTable = 2,
 		RelaxedClassNameValidation = 4,
 		TrustedAnnotations = 8,
+		RemoveAssertions = 16,
 	}
 
 	sealed class ClassFile
@@ -68,6 +69,7 @@ namespace IKVM.Internal
 		private const ushort FLAG_LAMBDAFORM_COMPILED = 0x800;
 		private const ushort FLAG_LAMBDAFORM_HIDDEN = 0x1000;
 		private const ushort FLAG_FORCEINLINE = 0x2000;
+		private const ushort FLAG_HAS_ASSERTIONS = 0x4000;
 		private ConstantPoolItemClass[] interfaces;
 		private Field[] fields;
 		private Method[] methods;
@@ -145,7 +147,7 @@ namespace IKVM.Internal
 						br.Skip(2);
 						break;
 					case Constant.Utf8:
-						isstub |= (utf8_cp[i] = br.ReadString("<unknown>")) == "IKVM.NET.Assembly";
+						isstub |= (utf8_cp[i] = br.ReadString(null, majorVersion)) == "IKVM.NET.Assembly";
 						break;
 					default:
 						throw new ClassFormatError("Illegal constant pool type 0x{0:X}", tag);
@@ -239,7 +241,7 @@ namespace IKVM.Internal
 							constantpool[i] = new ConstantPoolItemString(br);
 							break;
 						case Constant.Utf8:
-							utf8_cp[i] = br.ReadString(inputClassName);
+							utf8_cp[i] = br.ReadString(inputClassName, majorVersion);
 							break;
 						default:
 							throw new ClassFormatError("{0} (Illegal constant pool type 0x{1:X})", inputClassName, tag);
@@ -345,6 +347,10 @@ namespace IKVM.Internal
 						if(!sig.EndsWith("V"))
 						{
 							throw new ClassFormatError("{0} (Method \"{1}\" has illegal signature \"{2}\")", Name, name, sig);
+						}
+						if((options & ClassFileParseOptions.RemoveAssertions) != 0 && methods[i].IsClassInitializer)
+						{
+							RemoveAssertionInit(methods[i]);
 						}
 					}
 				}
@@ -959,7 +965,7 @@ namespace IKVM.Internal
 			}
 		}
 
-		internal void Link(TypeWrapper thisType)
+		internal void Link(TypeWrapper thisType, LoadMode mode)
 		{
 			// this is not just an optimization, it's required for anonymous classes to be able to refer to themselves
 			((ConstantPoolItemClass)constantpool[this_class]).LinkSelf(thisType);
@@ -967,7 +973,7 @@ namespace IKVM.Internal
 			{
 				if(constantpool[i] != null)
 				{
-					constantpool[i].Link(thisType);
+					constantpool[i].Link(thisType, mode);
 				}
 			}
 		}
@@ -1037,25 +1043,7 @@ namespace IKVM.Internal
 			}
 		}
 
-		internal void RemoveUnusedFields()
-		{
-			List<Field> list = new List<Field>();
-			foreach(Field f in fields)
-			{
-				if(f.IsPrivate && f.IsStatic && f.Name != "serialVersionUID" && !IsReferenced(f))
-				{
-					// unused, so we skip it
-					Tracer.Info(Tracer.Compiler, "Unused field {0}::{1}", this.Name, f.Name);
-				}
-				else
-				{
-					list.Add(f);
-				}
-			}
-			fields = list.ToArray();
-		}
-
-		private bool IsReferenced(Field fld)
+		internal bool IsReferenced(Field fld)
 		{
 			foreach(ConstantPoolItem cpi in constantpool)
 			{
@@ -1329,6 +1317,14 @@ namespace IKVM.Internal
 			flags |= FLAG_MASK_INTERNAL;
 		}
 
+		internal bool HasAssertions
+		{
+			get
+			{
+				return (flags & FLAG_HAS_ASSERTIONS) != 0;
+			}
+		}
+
 		internal bool HasInitializedFields
 		{
 			get
@@ -1424,7 +1420,7 @@ namespace IKVM.Internal
 			{
 			}
 
-			internal virtual void Link(TypeWrapper thisType)
+			internal virtual void Link(TypeWrapper thisType, LoadMode mode)
 			{
 			}
 
@@ -1562,11 +1558,11 @@ namespace IKVM.Internal
 				this.typeWrapper = thisType;
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
 				if(typeWrapper == VerifierTypeWrapper.Null)
 				{
-					TypeWrapper tw = ClassLoaderWrapper.LoadClassNoThrow(thisType.GetClassLoader(), name, true);
+					TypeWrapper tw = thisType.GetClassLoader().LoadClass(name, mode | LoadMode.WarnClassNotFound);
 #if !STATIC_COMPILER && !FIRST_PASS
 					if(!tw.IsUnloadable)
 					{
@@ -1677,9 +1673,9 @@ namespace IKVM.Internal
 				clazz.MarkLinkRequired();
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
-				clazz.Link(thisType);
+				clazz.Link(thisType, mode);
 			}
 
 			internal string Name
@@ -1740,9 +1736,9 @@ namespace IKVM.Internal
 				return fieldTypeWrapper;
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
-				base.Link(thisType);
+				base.Link(thisType, mode);
 				lock(this)
 				{
 					if(fieldTypeWrapper != null)
@@ -1761,11 +1757,11 @@ namespace IKVM.Internal
 					fw = wrapper.GetFieldWrapper(Name, Signature);
 					if(fw != null)
 					{
-						fw.Link();
+						fw.Link(mode);
 					}
 				}
 				ClassLoaderWrapper classLoader = thisType.GetClassLoader();
-				TypeWrapper fld = classLoader.FieldTypeWrapperFromSigNoThrow(this.Signature);
+				TypeWrapper fld = classLoader.FieldTypeWrapperFromSig(this.Signature, mode);
 				lock(this)
 				{
 					if(fieldTypeWrapper == null)
@@ -1817,9 +1813,9 @@ namespace IKVM.Internal
 				}
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
-				base.Link(thisType);
+				base.Link(thisType, mode);
 				lock(this)
 				{
 					if(argTypeWrappers != null)
@@ -1828,8 +1824,8 @@ namespace IKVM.Internal
 					}
 				}
 				ClassLoaderWrapper classLoader = thisType.GetClassLoader();
-				TypeWrapper[] args = classLoader.ArgTypeWrapperListFromSigNoThrow(this.Signature);
-				TypeWrapper ret = classLoader.RetTypeWrapperFromSigNoThrow(this.Signature);
+				TypeWrapper[] args = classLoader.ArgTypeWrapperListFromSig(this.Signature, mode);
+				TypeWrapper ret = classLoader.RetTypeWrapperFromSig(this.Signature, mode);
 				lock(this)
 				{
 					if(argTypeWrappers == null)
@@ -1872,16 +1868,16 @@ namespace IKVM.Internal
 			{
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
-				base.Link(thisType);
+				base.Link(thisType, mode);
 				TypeWrapper wrapper = GetClassType();
 				if(wrapper != null && !wrapper.IsUnloadable)
 				{
 					method = wrapper.GetMethodWrapper(Name, Signature, !ReferenceEquals(Name, StringConstants.INIT));
 					if(method != null)
 					{
-						method.Link();
+						method.Link(mode);
 					}
 					if(Name != StringConstants.INIT
 						&& !thisType.IsInterface
@@ -1892,7 +1888,7 @@ namespace IKVM.Internal
 						invokespecialMethod = thisType.BaseTypeWrapper.GetMethodWrapper(Name, Signature, true);
 						if(invokespecialMethod != null)
 						{
-							invokespecialMethod.Link();
+							invokespecialMethod.Link(mode);
 						}
 					}
 				}
@@ -1905,36 +1901,16 @@ namespace IKVM.Internal
 			{
 			}
 
-			private static MethodWrapper GetInterfaceMethod(TypeWrapper wrapper, string name, string sig)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
-				if(wrapper.IsUnloadable)
-				{
-					return null;
-				}
-				MethodWrapper method = wrapper.GetMethodWrapper(name, sig, false);
-				if(method != null)
-				{
-					return method;
-				}
-				TypeWrapper[] interfaces = wrapper.Interfaces;
-				for(int i = 0; i < interfaces.Length; i++)
-				{
-					method = GetInterfaceMethod(interfaces[i], name, sig);
-					if(method != null)
-					{
-						return method;
-					}
-				}
-				return null;
-			}
-
-			internal override void Link(TypeWrapper thisType)
-			{
-				base.Link(thisType);
+				base.Link(thisType, mode);
 				TypeWrapper wrapper = GetClassType();
 				if(wrapper != null)
 				{
-					method = GetInterfaceMethod(wrapper, Name, Signature);
+					if(!wrapper.IsUnloadable)
+					{
+						method = wrapper.GetInterfaceMethod(Name, Signature);
+					}
 					if(method == null)
 					{
 						// NOTE vmspec 5.4.3.4 clearly states that an interfacemethod may also refer to a method in Object
@@ -1942,7 +1918,7 @@ namespace IKVM.Internal
 					}
 					if(method != null)
 					{
-						method.Link();
+						method.Link(mode);
 					}
 				}
 			}
@@ -2137,9 +2113,9 @@ namespace IKVM.Internal
 				return cpi.GetClassType();
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
-				cpi.Link(thisType);
+				cpi.Link(thisType, mode);
 			}
 
 			internal override ConstantType GetConstantType()
@@ -2170,7 +2146,7 @@ namespace IKVM.Internal
 				this.descriptor = String.Intern(descriptor.Replace('/', '.'));
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
 				lock (this)
 				{
@@ -2180,8 +2156,8 @@ namespace IKVM.Internal
 					}
 				}
 				ClassLoaderWrapper classLoader = thisType.GetClassLoader();
-				TypeWrapper[] args = classLoader.ArgTypeWrapperListFromSigNoThrow(descriptor);
-				TypeWrapper ret = classLoader.RetTypeWrapperFromSigNoThrow(descriptor);
+				TypeWrapper[] args = classLoader.ArgTypeWrapperListFromSig(descriptor, mode);
+				TypeWrapper ret = classLoader.RetTypeWrapperFromSig(descriptor, mode);
 				lock (this)
 				{
 					if (argTypeWrappers == null)
@@ -2240,7 +2216,7 @@ namespace IKVM.Internal
 				descriptor = String.Intern(classFile.GetConstantPoolUtf8String(utf8_cp, name_and_type.descriptor_index).Replace('/', '.'));
 			}
 
-			internal override void Link(TypeWrapper thisType)
+			internal override void Link(TypeWrapper thisType, LoadMode mode)
 			{
 				lock (this)
 				{
@@ -2250,8 +2226,8 @@ namespace IKVM.Internal
 					}
 				}
 				ClassLoaderWrapper classLoader = thisType.GetClassLoader();
-				TypeWrapper[] args = classLoader.ArgTypeWrapperListFromSigNoThrow(descriptor);
-				TypeWrapper ret = classLoader.RetTypeWrapperFromSigNoThrow(descriptor);
+				TypeWrapper[] args = classLoader.ArgTypeWrapperListFromSig(descriptor, mode);
+				TypeWrapper ret = classLoader.RetTypeWrapperFromSig(descriptor, mode);
 				lock (this)
 				{
 					if (argTypeWrappers == null)
@@ -2275,6 +2251,11 @@ namespace IKVM.Internal
 			internal string Name
 			{
 				get { return name; }
+			}
+
+			internal string Signature
+			{
+				get { return descriptor; }
 			}
 
 			internal ushort BootstrapMethod
@@ -2737,6 +2718,11 @@ namespace IKVM.Internal
 				{
 					return constantValue;
 				}
+			}
+
+			internal void PatchConstantValue(object value)
+			{
+				constantValue = value;
 			}
 
 			internal bool IsStaticFinalConstant
@@ -3898,13 +3884,122 @@ namespace IKVM.Internal
 			return null;
 		}
 
-		internal bool HasSerialVersionUID
+		private void RemoveAssertionInit(Method m)
 		{
-			get
+			/* We match the following code sequence:
+			 *   0  ldc <class X>
+			 *   2  invokevirtual <Method java/lang/Class desiredAssertionStatus()Z>
+			 *   5  ifne 12
+			 *   8  iconst_1
+			 *   9  goto 13
+			 *  12  iconst_0
+			 *  13  putstatic <Field <this class> boolean <static final field>>
+			 */
+			ConstantPoolItemFieldref fieldref;
+			Field field;
+			if (m.Instructions[0].NormalizedOpCode == NormalizedByteCode.__ldc && SafeIsConstantPoolClass(m.Instructions[0].Arg1)
+				&& m.Instructions[1].NormalizedOpCode == NormalizedByteCode.__invokevirtual && IsDesiredAssertionStatusMethodref(m.Instructions[1].Arg1)
+				&& m.Instructions[2].NormalizedOpCode == NormalizedByteCode.__ifne && m.Instructions[2].TargetIndex == 5
+				&& m.Instructions[3].NormalizedOpCode == NormalizedByteCode.__iconst && m.Instructions[3].Arg1 == 1
+				&& m.Instructions[4].NormalizedOpCode == NormalizedByteCode.__goto && m.Instructions[4].TargetIndex == 6
+				&& m.Instructions[5].NormalizedOpCode == NormalizedByteCode.__iconst && m.Instructions[5].Arg1 == 0
+				&& m.Instructions[6].NormalizedOpCode == NormalizedByteCode.__putstatic && (fieldref = SafeGetFieldref(m.Instructions[6].Arg1)) != null
+				&& fieldref.Class == Name && fieldref.Signature == "Z"
+				&& (field = GetField(fieldref.Name, fieldref.Signature)) != null
+				&& field.IsStatic && field.IsFinal
+				&& !HasBranchIntoRegion(m.Instructions, 7, m.Instructions.Length, 0, 7)
+				&& !HasStaticFieldWrite(m.Instructions, 7, m.Instructions.Length, field)
+				&& !HasExceptionHandlerInRegion(m.ExceptionTable, 0, 7))
 			{
-				Field field = GetField("serialVersionUID", "J");
-				return field != null && field.IsStatic && field.IsFinal;
+				field.PatchConstantValue(true);
+				m.Instructions[0].PatchOpCode(NormalizedByteCode.__goto, 7);
+				flags |= FLAG_HAS_ASSERTIONS;
 			}
+		}
+
+		private bool IsDesiredAssertionStatusMethodref(int cpi)
+		{
+			ConstantPoolItemMethodref method = SafeGetMethodref(cpi) as ConstantPoolItemMethodref;
+			return method != null
+				&& method.Class == "java.lang.Class"
+				&& method.Name == "desiredAssertionStatus"
+				&& method.Signature == "()Z";
+		}
+
+		private static bool HasBranchIntoRegion(Method.Instruction[] instructions, int checkStart, int checkEnd, int regionStart, int regionEnd)
+		{
+			for (int i = checkStart; i < checkEnd; i++)
+			{
+				switch (instructions[i].NormalizedOpCode)
+				{
+					case NormalizedByteCode.__ifeq:
+					case NormalizedByteCode.__ifne:
+					case NormalizedByteCode.__iflt:
+					case NormalizedByteCode.__ifge:
+					case NormalizedByteCode.__ifgt:
+					case NormalizedByteCode.__ifle:
+					case NormalizedByteCode.__if_icmpeq:
+					case NormalizedByteCode.__if_icmpne:
+					case NormalizedByteCode.__if_icmplt:
+					case NormalizedByteCode.__if_icmpge:
+					case NormalizedByteCode.__if_icmpgt:
+					case NormalizedByteCode.__if_icmple:
+					case NormalizedByteCode.__if_acmpeq:
+					case NormalizedByteCode.__if_acmpne:
+					case NormalizedByteCode.__ifnull:
+					case NormalizedByteCode.__ifnonnull:
+					case NormalizedByteCode.__goto:
+					case NormalizedByteCode.__jsr:
+						if (instructions[i].TargetIndex > regionStart && instructions[i].TargetIndex < regionEnd)
+						{
+							return true;
+						}
+						break;
+					case NormalizedByteCode.__tableswitch:
+					case NormalizedByteCode.__lookupswitch:
+						if (instructions[i].DefaultTarget > regionStart && instructions[i].DefaultTarget < regionEnd)
+						{
+							return true;
+						}
+						for (int j = 0; j < instructions[i].SwitchEntryCount; j++)
+						{
+							if (instructions[i].GetSwitchTargetIndex(j) > regionStart && instructions[i].GetSwitchTargetIndex(j) < regionEnd)
+							{
+								return true;
+							}
+						}
+						break;
+				}
+			}
+			return false;
+		}
+
+		private bool HasStaticFieldWrite(Method.Instruction[] instructions, int checkStart, int checkEnd, Field field)
+		{
+			for (int i = checkStart; i < checkEnd; i++)
+			{
+				if (instructions[i].NormalizedOpCode == NormalizedByteCode.__putstatic)
+				{
+					ConstantPoolItemFieldref fieldref = SafeGetFieldref(instructions[i].Arg1);
+					if (fieldref != null && fieldref.Class == Name && fieldref.Name == field.Name && fieldref.Signature == field.Signature)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		private static bool HasExceptionHandlerInRegion(Method.ExceptionTableEntry[] entries, int regionStart, int regionEnd)
+		{
+			for (int i = 0; i < entries.Length; i++)
+			{
+				if (entries[i].handlerIndex > regionStart && entries[i].handlerIndex < regionEnd)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

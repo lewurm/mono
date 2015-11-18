@@ -30,6 +30,11 @@ namespace IKVM.Reflection.Reader
 {
 	abstract class TypeParameterType : TypeInfo
 	{
+		protected TypeParameterType(byte sigElementType)
+			: base(sigElementType)
+		{
+		}
+
 		public sealed override string AssemblyQualifiedName
 		{
 			get { return null; }
@@ -81,11 +86,6 @@ namespace IKVM.Reflection.Reader
 		public sealed override string ToString()
 		{
 			return this.Name;
-		}
-
-		public sealed override bool IsGenericParameter
-		{
-			get { return true; }
 		}
 
 		protected sealed override bool ContainsMissingTypeImpl
@@ -183,6 +183,7 @@ namespace IKVM.Reflection.Reader
 		}
 
 		private UnboundGenericMethodParameter(int position)
+			: base(Signature.ELEMENT_TYPE_MVAR)
 		{
 			this.position = position;
 		}
@@ -238,6 +239,11 @@ namespace IKVM.Reflection.Reader
 			throw new InvalidOperationException();
 		}
 
+		public override CustomModifiers[] __GetGenericParameterConstraintCustomModifiers()
+		{
+			throw new InvalidOperationException();
+		}
+
 		public override GenericParameterAttributes GenericParameterAttributes
 		{
 			get { throw new InvalidOperationException(); }
@@ -259,7 +265,8 @@ namespace IKVM.Reflection.Reader
 		private readonly ModuleReader module;
 		private readonly int index;
 
-		internal GenericTypeParameter(ModuleReader module, int index)
+		internal GenericTypeParameter(ModuleReader module, int index, byte sigElementType)
+			: base(sigElementType)
 		{
 			this.module = module;
 			this.index = index;
@@ -325,6 +332,24 @@ namespace IKVM.Reflection.Reader
 			foreach (int i in module.GenericParamConstraint.Filter(this.MetadataToken))
 			{
 				list.Add(module.ResolveType(module.GenericParamConstraint.records[i].Constraint, context));
+			}
+			return list.ToArray();
+		}
+
+		public override CustomModifiers[] __GetGenericParameterConstraintCustomModifiers()
+		{
+			IGenericContext context = (this.DeclaringMethod as IGenericContext) ?? this.DeclaringType;
+			List<CustomModifiers> list = new List<CustomModifiers>();
+			foreach (int i in module.GenericParamConstraint.Filter(this.MetadataToken))
+			{
+				CustomModifiers mods = new CustomModifiers();
+				int metadataToken = module.GenericParamConstraint.records[i].Constraint;
+				if ((metadataToken >> 24) == TypeSpecTable.Index)
+				{
+					int index = (metadataToken & 0xFFFFFF) - 1;
+					mods = CustomModifiers.Read(module, module.GetBlob(module.TypeSpec.records[index]), context);
+				}
+				list.Add(mods);
 			}
 			return list.ToArray();
 		}
