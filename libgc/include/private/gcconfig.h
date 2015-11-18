@@ -2157,28 +2157,6 @@
 	extern char * GC_FreeBSDGetDataStart();
 #	define DATASTART GC_FreeBSDGetDataStart(0x1000, &etext)
 #   endif
-#   ifdef FREEBSD
-#	define OS_TYPE "FREEBSD"
-#	ifndef GC_FREEBSD_THREADS
-#	    define MPROTECT_VDB
-#	endif
-#	ifdef __GLIBC__
-#	    define SIG_SUSPEND		(32+6)
-#	    define SIG_THR_RESTART	(32+5)
-	    extern int _end[];
-#	    define DATAEND (_end)
-#	else
-#	    define SIG_SUSPEND SIGUSR1
-#	    define SIG_THR_RESTART SIGUSR2
-#	endif
-#	define FREEBSD_STACKBOTTOM
-#	ifdef __ELF__
-#	    define DYNAMIC_LOADING
-#	endif
-	extern char etext[];
-	extern char * GC_FreeBSDGetDataStart();
-#	define DATASTART GC_FreeBSDGetDataStart(0x1000, &etext)
-#   endif
 #   ifdef NETBSD
 #	define OS_TYPE "NETBSD"
 #	ifdef __ELF__
