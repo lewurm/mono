@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002-2014 Jeroen Frijters
+  Copyright (C) 2002-2015 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -392,8 +392,8 @@ namespace IKVM.Internal
 		{
 			foreach(IKVM.Internal.MapXml.Property prop in clazz.Properties)
 			{
-				TypeWrapper typeWrapper = GetClassLoader().RetTypeWrapperFromSigNoThrow(prop.Sig);
-				TypeWrapper[] propargs = GetClassLoader().ArgTypeWrapperListFromSigNoThrow(prop.Sig);
+				TypeWrapper typeWrapper = GetClassLoader().RetTypeWrapperFromSig(prop.Sig, LoadMode.Link);
+				TypeWrapper[] propargs = GetClassLoader().ArgTypeWrapperListFromSig(prop.Sig, LoadMode.Link);
 				Type[] indexer = new Type[propargs.Length];
 				for(int i = 0; i < propargs.Length; i++)
 				{
@@ -507,7 +507,7 @@ namespace IKVM.Internal
 			}
 		}
 
-		private static void MapModifiers(MapXml.MapModifiers mapmods, bool isConstructor, out bool setmodifiers, ref MethodAttributes attribs)
+		private static void MapModifiers(MapXml.MapModifiers mapmods, bool isConstructor, out bool setmodifiers, ref MethodAttributes attribs, bool isNewSlot)
 		{
 			setmodifiers = false;
 			Modifiers modifiers = (Modifiers)mapmods;
@@ -543,6 +543,10 @@ namespace IKVM.Internal
 					// remove NewSlot, because it doesn't make sense on a non-virtual method
 					attribs &= ~MethodAttributes.NewSlot;
 				}
+				else if(((modifiers & (Modifiers.Public | Modifiers.Final)) == Modifiers.Final && isNewSlot && (attribs & MethodAttributes.Virtual) == 0))
+				{
+					// final method that doesn't need to be virtual
+				}
 				else
 				{
 					if((modifiers & Modifiers.Private) == 0)
@@ -567,8 +571,8 @@ namespace IKVM.Internal
 
 		private void MapSignature(string sig, out Type returnType, out Type[] parameterTypes)
 		{
-			returnType = GetClassLoader().RetTypeWrapperFromSigNoThrow(sig).TypeAsSignatureType;
-			TypeWrapper[] parameterTypeWrappers = GetClassLoader().ArgTypeWrapperListFromSigNoThrow(sig);
+			returnType = GetClassLoader().RetTypeWrapperFromSig(sig, LoadMode.Link).TypeAsSignatureType;
+			TypeWrapper[] parameterTypeWrappers = GetClassLoader().ArgTypeWrapperListFromSig(sig, LoadMode.Link);
 			parameterTypes = new Type[parameterTypeWrappers.Length];
 			for(int i = 0; i < parameterTypeWrappers.Length; i++)
 			{
@@ -630,7 +634,7 @@ namespace IKVM.Internal
 								}
 								bool setmodifiers = false;
 								MethodAttributes attribs = 0;
-								MapModifiers(constructor.Modifiers, true, out setmodifiers, ref attribs);
+								MapModifiers(constructor.Modifiers, true, out setmodifiers, ref attribs, false);
 								Type returnType;
 								Type[] parameterTypes;
 								MapSignature(constructor.Sig, out returnType, out parameterTypes);
@@ -683,7 +687,7 @@ namespace IKVM.Internal
 							{
 								bool setmodifiers = false;
 								MethodAttributes attribs = method.MethodAttributes;
-								MapModifiers(method.Modifiers, false, out setmodifiers, ref attribs);
+								MapModifiers(method.Modifiers, false, out setmodifiers, ref attribs, BaseTypeWrapper == null || BaseTypeWrapper.GetMethodWrapper(method.Name, method.Sig, true) == null);
 								if(method.body == null && (attribs & MethodAttributes.Abstract) == 0)
 								{
 									Console.Error.WriteLine("Error: Method {0}.{1}{2} in xml remap file doesn't have a body.", clazz.Name, method.Name, method.Sig);
