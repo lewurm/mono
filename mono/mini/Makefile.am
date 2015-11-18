@@ -181,7 +181,7 @@ buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime.la
 else
 buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-static.la
 endif
-	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
+	@echo "const char *build_date;" > buildver-boehm.h
 mono_boehm-main.$(OBJEXT): buildver-boehm.h
 endif
 
@@ -190,7 +190,7 @@ buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.l
 else
 buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la $(monodir)/mono/sgen/libmonosgen-static.la
 endif
-	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
+	@echo "const char *build_date;" > buildver-sgen.h
 mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
 main-sgen.$(OBJEXT): buildver-sgen.h
 
@@ -749,7 +749,7 @@ EXTRA_DIST = TestDriver.cs \
 	Makefile.am.in
 
 version.h: Makefile
-	echo "#define FULL_VERSION \"Stable 4.2.1.102/6dd2d0d\"" > version.h
+	echo "#define FULL_VERSION \"Debian $$(dpkg-parsechangelog -l$(top_srcdir)/debian/changelog | grep ^Vers | cut -d\  -f2)\"" > version.h
 
 # Utility target for patching libtool to speed up linking
 patch-libtool:

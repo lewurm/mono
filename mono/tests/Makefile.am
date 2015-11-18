@@ -356,7 +356,6 @@ BASE_TEST_CS_SRC=		\
 	modules.cs	\
 	bug-81673.cs	\
 	bug-81691.cs	\
-	bug-80307.cs	\
 	bug-415577.cs	\
 	filter-stack.cs	\
 	vararg2.cs	\
@@ -387,8 +386,6 @@ BASE_TEST_CS_SRC=		\
 	bug-575941.cs	\
 	bug-599469.cs	\
 	bug-389886-3.cs \
-	monitor.cs	\
-	monitor-resurrection.cs	\
 	dynamic-method-resurrection.cs	\
 	bug-666008.cs	\
 	bug-685908.cs	\
@@ -404,7 +401,6 @@ BASE_TEST_CS_SRC=		\
 	appdomain-unload-doesnot-raise-pending-events.cs	\
 	bug-6148.cs	\
 	assembly_append_ordering.cs	\
-	bug-10127.cs	\
 	bug-18026.cs	\
 	allow-synchronous-major.cs	\
 	unload-appdomain-on-shutdown.cs	\
