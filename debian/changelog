@@ -1,3 +1,20 @@
+mono (4.2.1.102+dfsg2-1) experimental; urgency=medium
+
+  * [d72f12c] Imported Upstream version 4.2.1.102+dfsg
+  * [1fcbc08] Add new ServiceModel packages
+  * [c963f9a] Add missing PPC64 symbols (Closes: #801423)
+  * [b786709] Correct webbrowser4.0-cil description (Closes: #792682)
+  * [6cb3b0c] Refresh symbols files
+  * [3cd94e3] bump standards version
+  * [7bbf509] Ignore false license-problem-non-free-RFC Lintian warning
+  * [a90d8ee] Fix up copyright file to meet spec better
+  * [11f70be] Delete .chm files from orig source
+  * [91baf4d] Imported Upstream version 4.2.1.102+dfsg2
+  * [18ab848] More copyright file fixes
+  * [e56a81f] Rename symbolicate to mono-symbolicate
+
+ -- Jo Shields <jo.shields@xamarin.com>  Wed, 18 Nov 2015 17:16:19 +0000
+
 mono (4.0.2.5+dfsg-2) experimental; urgency=medium
 
   * [7df1162] Add missing ppc64el .symbols files
