@@ -564,8 +564,9 @@ Description: Mono Web Browser library (for CLI 4.0)
  runtime, which can produce and execute CIL (Common Intermediate Language)
  bytecode (aka assemblies), and a class library.
  .
- This package contains the implementation of the WebControl class based on the
- Mozilla engine using libgluezilla for CLI 4.0.
+ This package contains an empty implementation of the WebControl class - it will
+ not render anything, but also should not crash applications which try to create
+ a WebControl.
 
 Package: libmono-management4.0-cil
 Architecture: all
