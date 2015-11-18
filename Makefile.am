@@ -10,7 +10,7 @@ SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scr
 ## 'tools' is not normally built
 DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs
 else
-SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc $(docs_dir)
+SUBDIRS = po $(libgc_dir) eglib mono $(ikvm_native_dir) support data runtime scripts man samples msvc
 # Keep in sync with SUBDIRS
 ## 'tools' is not normally built
 DIST_SUBDIRS = m4 po $(libgc_dir) eglib mono ikvm-native support data runtime scripts man samples tools msvc docs
