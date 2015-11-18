@@ -226,7 +226,7 @@ namespace Mono.CSharp {
 						continue;
 
 					if (list is MemberSpec[]) {
-						list = new List<MemberSpec> () { list [0] };
+						list = new List<MemberSpec> { list [0] };
 						member_hash[entry.Key] = list;
 					}
 
@@ -335,7 +335,7 @@ namespace Mono.CSharp {
 					member_hash[name] = list;
 			} else {
 				if (list.Count == 1) {
-					list = new List<MemberSpec> () { list[0] };
+					list = new List<MemberSpec> { list[0] };
 					member_hash[name] = list;
 				}
 
@@ -354,7 +354,7 @@ namespace Mono.CSharp {
 		//
 		static bool AddInterfaceMember (MemberSpec member, ref IList<MemberSpec> existing)
 		{
-			var member_param = member is IParametersMember ? ((IParametersMember) member).Parameters : ParametersCompiled.EmptyReadOnlyParameters;
+			var member_param = member is IParametersMember ? ((IParametersMember) member).Parameters : null;
 
 			//
 			// interface IA : IB { int Prop { set; } }
@@ -368,10 +368,14 @@ namespace Mono.CSharp {
 				if (entry.Arity != member.Arity)
 					continue;
 
-				if (entry is IParametersMember) {
-					var entry_param = ((IParametersMember) entry).Parameters;
-					if (!TypeSpecComparer.Override.IsEqual (entry_param, member_param))
-						continue;
+				AParametersCollection entry_param = null;
+				if (member_param != null) {
+					var entry_pm = entry as IParametersMember;
+					if (entry_pm != null) {
+						entry_param = entry_pm.Parameters;
+						if (!TypeSpecComparer.Override.IsEqual (entry_param, member_param))
+							continue;
+					}
 				}
 
 				if (member.DeclaringType.ImplementsInterface (entry.DeclaringType, false)) {
@@ -384,13 +388,15 @@ namespace Mono.CSharp {
 					continue;
 				}
 
-				if ((entry.DeclaringType == member.DeclaringType && entry.IsAccessor == member.IsAccessor) ||
-					entry.DeclaringType.ImplementsInterface (member.DeclaringType, false))
+				if ((entry.DeclaringType == member.DeclaringType && entry.IsAccessor == member.IsAccessor))
+					return false;
+
+				if (entry.DeclaringType.ImplementsInterface (member.DeclaringType, false) && AParametersCollection.HasSameParameterDefaults (entry_param, member_param))
 					return false;
 			}
 
 			if (existing.Count == 1) {
-				existing = new List<MemberSpec> () { existing[0], member };
+				existing = new List<MemberSpec> { existing[0], member };
 				return true;
 			}
 
@@ -464,6 +470,7 @@ namespace Mono.CSharp {
 			IList<MemberSpec> applicable;
 			TypeSpec best_match = null;
 			do {
+#if !FULL_AOT_RUNTIME
 				// TODO: Don't know how to handle this yet
 				// When resolving base type of nested type, parent type must have
 				// base type resolved to scan full hierarchy correctly
@@ -472,6 +479,7 @@ namespace Mono.CSharp {
 				var tc = container.MemberDefinition as TypeContainer;
 				if (tc != null)
 					tc.DefineContainer ();
+#endif
 
 				if (container.MemberCacheTypes.member_hash.TryGetValue (name, out applicable)) {
 					for (int i = applicable.Count - 1; i >= 0; i--) {
@@ -564,11 +572,7 @@ namespace Mono.CSharp {
 					for (int i = 0; i < applicable.Count; ++i) {
 						var entry = applicable [i];
 
-						if ((entry.Modifiers & Modifiers.PRIVATE) != 0)
-							continue;
-
-						if ((entry.Modifiers & Modifiers.AccessibilityMask) == Modifiers.INTERNAL &&
-							!entry.DeclaringType.MemberDefinition.IsInternalAsPublic (member.Module.DeclaringAssembly))
+						if ((entry.Modifiers & Modifiers.PUBLIC) == 0 && !entry.IsAccessible (member))
 							continue;
 
 						//
@@ -688,9 +692,10 @@ namespace Mono.CSharp {
 			throw new NotImplementedException (member.GetType ().ToString ());
 		}
 
-		public static List<FieldSpec> GetAllFieldsForDefiniteAssignment (TypeSpec container)
+		public static List<FieldSpec> GetAllFieldsForDefiniteAssignment (TypeSpec container, IMemberContext context)
 		{
 			List<FieldSpec> fields = null;
+			bool imported = container.MemberDefinition.IsImported;
 			foreach (var entry in container.MemberCache.member_hash) {
 				foreach (var name_entry in entry.Value) {
 					if (name_entry.Kind != MemberKind.Field)
@@ -706,14 +711,11 @@ namespace Mono.CSharp {
 						continue;
 
 					var fs = (FieldSpec) name_entry;
-
-					//
-					// LAMESPEC: Very bizzare hack, definitive assignment is not done
-					// for imported non-public reference fields except array. No idea what the
-					// actual csc rule is
-					//
-					if (!fs.IsPublic && container.MemberDefinition.IsImported && (!fs.MemberType.IsArray && TypeSpec.IsReferenceType (fs.MemberType)))
+					if (imported && ShouldIgnoreFieldForDefiniteAssignment (fs, context))
 						continue;
+
+					//if ((fs.Modifiers & (Modifiers.BACKING_FIELD) != 0)
+					//	continue;
 
 					if (fields == null)
 						fields = new List<FieldSpec> ();
@@ -724,6 +726,29 @@ namespace Mono.CSharp {
 			}
 
 			return fields ?? new List<FieldSpec> (0);
+		}
+
+		static bool ShouldIgnoreFieldForDefiniteAssignment (FieldSpec fs, IMemberContext context)
+		{
+			//
+			// LAMESPEC: This mimics csc quirk where definitive assignment is not done
+			// for all kinds of imported non-public struct fields
+			//
+			var mod = fs.Modifiers;
+			if ((mod & Modifiers.PRIVATE) == 0 && ((mod & Modifiers.INTERNAL) != 0 && fs.DeclaringType.MemberDefinition.IsInternalAsPublic (context.Module.DeclaringAssembly)))
+				return false;
+
+			//
+			// Ignore reference type fields except when type is an array or type parameter
+			//
+			var type = fs.MemberType;
+			switch (type.Kind) {
+			case MemberKind.ArrayType:
+			case MemberKind.TypeParameter:
+				return false;
+			default:
+				return TypeSpec.IsReferenceType (type);
+			}
 		}
 
 		public static IList<MemberSpec> GetCompletitionMembers (IMemberContext ctx, TypeSpec container, string name)

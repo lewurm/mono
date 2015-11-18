@@ -25,24 +25,21 @@
 #  elif defined(__native_client__) && defined(USE_NEWLIB)
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a, b) sem_trywait(a)
-#  elif defined(__OpenBSD__)
-#    define TIMESPEC struct timespec
-#    define WAIT_BLOCK(a) sem_trywait(a)
 #  else
 #    define TIMESPEC struct timespec
 #    define WAIT_BLOCK(a,b) sem_timedwait (a, b)
 #  endif
 
+#ifndef NSEC_PER_SEC
 #define NSEC_PER_SEC 1000000000
+#endif
+
 int
 mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 {
 	TIMESPEC ts, copy;
 	struct timeval t;
 	int res = 0;
-#if defined(__OpenBSD__)
-	int timeout;
-#endif
 
 #ifndef USE_MACH_SEMA
 	if (timeout_ms == 0)
@@ -52,40 +49,33 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 		return mono_sem_wait (sem, alertable);
 
 #ifdef USE_MACH_SEMA
-	memset (&t, 0, sizeof (TIMESPEC));
+	memset (&t, 0, sizeof (t));
 #else
 	gettimeofday (&t, NULL);
 #endif
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000 + t.tv_usec * 1000;
-	while (ts.tv_nsec > NSEC_PER_SEC) {
+	while (ts.tv_nsec >= NSEC_PER_SEC) {
 		ts.tv_nsec -= NSEC_PER_SEC;
 		ts.tv_sec++;
 	}
-#if defined(__OpenBSD__)
-	timeout = ts.tv_sec;
-	while (timeout) {
-		if ((res = WAIT_BLOCK (sem)) == 0)
-			return res;
 
-		if (alertable)
-			return -1;
-
-		usleep (ts.tv_nsec / 1000);
-		timeout--;
-	}
-#else
 	copy = ts;
-	while ((res = WAIT_BLOCK (sem, &ts)) == -1 && errno == EINTR) {
+#ifdef USE_MACH_SEMA
+	gettimeofday (&t, NULL);
+	while ((res = WAIT_BLOCK (sem, &ts)) == KERN_ABORTED)
+#else
+	while ((res = WAIT_BLOCK (sem, &ts)) == -1 && errno == EINTR)
+#endif
+	{
+#ifdef USE_MACH_SEMA
 		struct timeval current;
+#endif
 		if (alertable)
 			return -1;
-#ifdef USE_MACH_SEMA
-		memset (&current, 0, sizeof (TIMESPEC));
-#else
-		gettimeofday (&current, NULL);
-#endif
 		ts = copy;
+#ifdef USE_MACH_SEMA
+		gettimeofday (&current, NULL);
 		ts.tv_sec -= (current.tv_sec - t.tv_sec);
 		ts.tv_nsec -= (current.tv_usec - t.tv_usec) * 1000;
 		if (ts.tv_nsec < 0) {
@@ -100,8 +90,9 @@ mono_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, gboolean alertable)
 			ts.tv_sec = 0;
 			ts.tv_nsec = 0;
 		}
-	}
 #endif
+	}
+
 	/* OSX might return > 0 for error */
 	if (res != 0)
 		res = -1;

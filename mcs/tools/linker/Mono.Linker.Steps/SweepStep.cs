@@ -37,12 +37,22 @@ namespace Mono.Linker.Steps {
 	public class SweepStep : BaseStep {
 
 		AssemblyDefinition [] assemblies;
+		HashSet<AssemblyDefinition> resolvedTypeReferences;
 
 		protected override void Process ()
 		{
 			assemblies = Context.GetAssemblies ();
-			foreach (var assembly in assemblies)
+			foreach (var assembly in assemblies) {
 				SweepAssembly (assembly);
+				if (Annotations.GetAction (assembly) == AssemblyAction.Copy) {
+					// Copy assemblies can still contain Type references with
+					// type forwarders from Delete assemblies
+					// thus try to resolve all the type references and see
+					// if some changed the scope. if yes change the action to Save
+					if (ResolveAllTypeReferences (assembly))
+						Annotations.SetAction (assembly, AssemblyAction.Save);
+				}
+			}
 		}
 
 		void SweepAssembly (AssemblyDefinition assembly)
@@ -93,22 +103,81 @@ namespace Mono.Linker.Steps {
 
 		void SweepReferences (AssemblyDefinition assembly, AssemblyDefinition target)
 		{
+			if (assembly == target)
+				return;
+
 			var references = assembly.MainModule.AssemblyReferences;
 			for (int i = 0; i < references.Count; i++) {
 				var reference = references [i];
-				if (!AreSameReference (reference, target.Name))
+				var r = Context.Resolver.Resolve (reference);
+				if (!AreSameReference (r.Name, target.Name))
 					continue;
 
 				references.RemoveAt (i);
 				// Removing the reference does not mean it will be saved back to disk!
 				// That depends on the AssemblyAction set for the `assembly`
-				if (Annotations.GetAction (assembly) == AssemblyAction.Copy) {
+				switch (Annotations.GetAction (assembly)) {
+				case AssemblyAction.Copy:
 					// Copy means even if "unlinked" we still want that assembly to be saved back 
 					// to disk (OutputStep) without the (removed) reference
 					Annotations.SetAction (assembly, AssemblyAction.Save);
+					ResolveAllTypeReferences (assembly);
+					break;
+
+				case AssemblyAction.Save:
+				case AssemblyAction.Link:
+					ResolveAllTypeReferences (assembly);
+					break;
 				}
 				return;
 			}
+		}
+
+		bool ResolveAllTypeReferences (AssemblyDefinition assembly)
+		{
+			if (resolvedTypeReferences == null)
+				resolvedTypeReferences = new HashSet<AssemblyDefinition> ();
+			if (resolvedTypeReferences.Contains (assembly))
+				return false;
+			resolvedTypeReferences.Add (assembly);
+
+			var hash = new Dictionary<TypeReference,IMetadataScope> ();
+			bool changes = false;
+
+			foreach (TypeReference tr in assembly.MainModule.GetTypeReferences ()) {
+				if (hash.ContainsKey (tr))
+					continue;
+				var td = tr.Resolve ();
+				IMetadataScope scope = tr.Scope;
+				// at this stage reference might include things that can't be resolved
+				// and if it is (resolved) it needs to be kept only if marked (#16213)
+				if ((td != null) && Annotations.IsMarked (td)) {
+					scope = assembly.MainModule.Import (td).Scope;
+					if (tr.Scope != scope)
+						changes = true;
+				}
+				hash.Add (tr, scope);
+			}
+			if (assembly.MainModule.HasExportedTypes) {
+				foreach (var et in assembly.MainModule.ExportedTypes) {
+					var td = et.Resolve ();
+					IMetadataScope scope = et.Scope;
+					if ((td != null) && Annotations.IsMarked (td)) {
+						scope = assembly.MainModule.Import (td).Scope;
+						hash.Add (td, scope);
+					}
+				}
+			}
+
+			// Resolve everything first before updating scopes.
+			// If we set the scope to null, then calling Resolve() on any of its
+			// nested types would crash.
+
+			foreach (var e in hash) {
+				e.Key.Scope = e.Value;
+			}
+
+			return changes;
 		}
 
 		void SweepType (TypeDefinition type)

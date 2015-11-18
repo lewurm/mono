@@ -13,6 +13,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 
 #if STATIC
 using MetaType = IKVM.Reflection.Type;
@@ -56,10 +57,10 @@ namespace Mono.CSharp
 			//
 			// Returns true when object at local position has dynamic attribute flag
 			//
-			public bool IsDynamicObject (MetadataImporter importer)
+			public bool IsDynamicObject ()
 			{
 				if (provider != null)
-					ReadAttribute (importer);
+					ReadAttribute ();
 
 				return flags != null && Position < flags.Length && flags[Position];
 			}
@@ -67,23 +68,32 @@ namespace Mono.CSharp
 			//
 			// Returns true when DynamicAttribute exists
 			//
-			public bool HasDynamicAttribute (MetadataImporter importer)
+			public bool HasDynamicAttribute ()
 			{
 				if (provider != null)
-					ReadAttribute (importer);
+					ReadAttribute ();
 
 				return flags != null;
 			}
 
-			void ReadAttribute (MetadataImporter importer)
+			IList<CustomAttributeData> GetCustomAttributes ()
 			{
-				IList<CustomAttributeData> cad;
-				if (provider is MemberInfo) {
-					cad = CustomAttributeData.GetCustomAttributes ((MemberInfo) provider);
-				} else if (provider is ParameterInfo) {
-					cad = CustomAttributeData.GetCustomAttributes ((ParameterInfo) provider);
-				} else {
-					provider = null;
+				var mi = provider as MemberInfo;
+				if (mi != null)
+					return CustomAttributeData.GetCustomAttributes (mi);
+
+				var pi = provider as ParameterInfo;
+				if (pi != null)
+					return CustomAttributeData.GetCustomAttributes (pi);
+
+				provider = null;
+				return null;
+			}
+
+			void ReadAttribute ()
+			{
+				var cad = GetCustomAttributes ();
+				if (cad == null) {
 					return;
 				}
 
@@ -181,6 +191,12 @@ namespace Mono.CSharp
 
 			try {
 				field_type = ImportType (fi.FieldType, new DynamicTypeReader (fi));
+
+				//
+				// Private field has private type which is not fixed buffer
+				//
+				if (field_type == null)
+					return null;
 			} catch (Exception e) {
 				// TODO: I should construct fake TypeSpec based on TypeRef signature
 				// but there is no way to do it with System.Reflection
@@ -193,15 +209,15 @@ namespace Mono.CSharp
 			if ((fa & FieldAttributes.Literal) != 0) {
 				Constant c = field_type.Kind == MemberKind.MissingType ?
 					new NullConstant (InternalType.ErrorType, Location.Null) :
-					Constant.CreateConstantFromValue (field_type, fi.GetRawConstantValue (), Location.Null);
-				return new ConstSpec (declaringType, definition, field_type, fi, mod, c);
+					CreateConstantFromValue (field_type, fi);
+				return new ConstSpec (declaringType, definition, field_type, fi, mod | Modifiers.STATIC, c);
 			}
 
 			if ((fa & FieldAttributes.InitOnly) != 0) {
 				if (field_type.BuiltinType == BuiltinTypeSpec.Type.Decimal) {
 					var dc = ReadDecimalConstant (CustomAttributeData.GetCustomAttributes (fi));
 					if (dc != null)
-						return new ConstSpec (declaringType, definition, field_type, fi, mod, dc);
+						return new ConstSpec (declaringType, definition, field_type, fi, mod | Modifiers.STATIC, dc);
 				}
 
 				mod |= Modifiers.READONLY;
@@ -225,6 +241,25 @@ namespace Mono.CSharp
 			}
 
 			return new FieldSpec (declaringType, definition, field_type, fi, mod);
+		}
+
+		Constant CreateConstantFromValue (TypeSpec fieldType, FieldInfo fi)
+		{
+			var value = fi.GetRawConstantValue ();
+			//
+			// Metadata value can be encoded using different constant value type
+			// than is actual field type
+			//
+			// e.g. unsigned int16 CONSTANT = int16 (0x0000ffff)
+			//
+			if (value != null && !fieldType.IsEnum) {
+				var c = ImportConstant (value);
+				if (c != null) {
+					return fieldType == c.Type ? c : c.ConvertExplicitly (false, fieldType);
+				}
+			}
+
+			return Constant.CreateConstantFromValue (fieldType, value, Location.Null);
 		}
 
 		public EventSpec CreateEvent (EventInfo ei, TypeSpec declaringType, MethodSpec add, MethodSpec remove)
@@ -331,6 +366,9 @@ namespace Mono.CSharp
 					}
 				}
 
+				if (spec == null)
+					return null;
+
 				++dtype.Position;
 				tspec[index] = spec;
 			}
@@ -367,7 +405,7 @@ namespace Mono.CSharp
 				kind = MemberKind.Method;
 				if (tparams == null && !mb.DeclaringType.IsInterface && name.Length > 6) {
 					if ((mod & (Modifiers.STATIC | Modifiers.PUBLIC)) == (Modifiers.STATIC | Modifiers.PUBLIC)) {
-						if (name[2] == '_' && name[1] == 'p' && name[0] == 'o') {
+						if (name[2] == '_' && name[1] == 'p' && name[0] == 'o' && (mb.Attributes & MethodAttributes.SpecialName) != 0) {
 							var op_type = Operator.GetType (name);
 							if (op_type.HasValue && parameters.Count > 0 && parameters.Count < 3) {
 								kind = MemberKind.Operator;
@@ -416,6 +454,8 @@ namespace Mono.CSharp
 						else
 							mod |= Modifiers.VIRTUAL;
 					}
+				} else if (parameters.HasExtensionMethodType) {
+					mod |= Modifiers.METHOD_EXTENSION;
 				}
 			}
 
@@ -493,7 +533,7 @@ namespace Mono.CSharp
 				} else if (i == 0 && method.IsStatic && (parent.Modifiers & Modifiers.METHOD_EXTENSION) != 0 &&
 					HasAttribute (CustomAttributeData.GetCustomAttributes (method), "ExtensionAttribute", CompilerServicesNamespace)) {
 					mod = Parameter.Modifier.This;
-					types[i] = ImportType (p.ParameterType);
+					types[i] = ImportType (p.ParameterType, new DynamicTypeReader (p));
 				} else {
 					types[i] = ImportType (p.ParameterType, new DynamicTypeReader (p));
 
@@ -511,7 +551,7 @@ namespace Mono.CSharp
 							if (value == null) {
 								default_value = Constant.CreateConstantFromValue (ptype, null, Location.Null);
 							} else {
-								default_value = ImportParameterConstant (value);
+								default_value = ImportConstant (value);
 
 								if (ptype.IsEnum) {
 									default_value = new EnumConstant ((Constant) default_value, ptype);
@@ -537,7 +577,7 @@ namespace Mono.CSharp
 						} else if (value == null) {
 							default_value = new DefaultValueExpression (new TypeExpression (ptype, Location.Null), Location.Null);
 						} else if (ptype.BuiltinType == BuiltinTypeSpec.Type.Decimal) {
-							default_value = ImportParameterConstant (value);
+							default_value = ImportConstant (value);
 						}
 					}
 				}
@@ -713,7 +753,7 @@ namespace Mono.CSharp
 			TypeSpec spec;
 			if (import_cache.TryGetValue (type, out spec)) {
 				if (spec.BuiltinType == BuiltinTypeSpec.Type.Object) {
-					if (dtype.IsDynamicObject (this))
+					if (dtype.IsDynamicObject ())
 						return module.Compiler.BuiltinTypes.Dynamic;
 
 					return spec;
@@ -722,7 +762,7 @@ namespace Mono.CSharp
 				if (!spec.IsGeneric || type.IsGenericTypeDefinition)
 					return spec;
 
-				if (!dtype.HasDynamicAttribute (this))
+				if (!dtype.HasDynamicAttribute ())
 					return spec;
 
 				// We've found same object in the cache but this one has a dynamic custom attribute
@@ -747,6 +787,8 @@ namespace Mono.CSharp
 					return spec;
 
 				var targs = CreateGenericArguments (0, type.GetGenericArguments (), dtype);
+				if (targs == null)
+					return null;
 				if (declaringType == null) {
 					// Simple case, no nesting
 					spec = CreateType (type_def, null, new DynamicTypeReader (), canImportBaseType);
@@ -1087,7 +1129,7 @@ namespace Mono.CSharp
 				spec.TypeArguments = tparams.ToArray ();
 		}
 
-		Constant ImportParameterConstant (object value)
+		Constant ImportConstant (object value)
 		{
 			//
 			// Get type of underlying value as int constant can be used for object
@@ -1148,6 +1190,14 @@ namespace Mono.CSharp
 					return PointerContainer.MakeType (module, spec);
 
 				throw new NotImplementedException ("Unknown element type " + type.ToString ());
+			}
+
+			TypeSpec compiled_type;
+			if (compiled_types.TryGetValue (type, out compiled_type)) {
+				if (compiled_type.BuiltinType == BuiltinTypeSpec.Type.Object && dtype.IsDynamicObject ())
+					return module.Compiler.BuiltinTypes.Dynamic;
+
+				return compiled_type;
 			}
 
 			return CreateType (type, dtype, true);
@@ -1257,6 +1307,23 @@ namespace Mono.CSharp
 			public string DefaultIndexerName;
 			public bool? CLSAttributeValue;
 			public TypeSpec CoClass;
+
+			static bool HasMissingType (ConstructorInfo ctor)
+			{
+#if STATIC
+				//
+				// Mimic odd csc behaviour where missing type on predefined
+				// attributes means the attribute is silently ignored. This can
+				// happen with PCL facades
+				//
+				foreach (var p in ctor.GetParameters ()) {
+					if (p.ParameterType.__ContainsMissingType)
+						return true;
+				}
+#endif
+
+				return false;
+			}
 			
 			public static AttributesBag Read (MemberInfo mi, MetadataImporter importer)
 			{
@@ -1331,6 +1398,9 @@ namespace Mono.CSharp
 							if (dt.Namespace != "System")
 								continue;
 
+							if (HasMissingType (a.Constructor))
+								continue;
+
 							if (bag == null)
 								bag = new AttributesBag ();
 
@@ -1347,6 +1417,9 @@ namespace Mono.CSharp
 						// Interface only attribute
 						if (name == "CoClassAttribute") {
 							if (dt.Namespace != "System.Runtime.InteropServices")
+								continue;
+
+							if (HasMissingType (a.Constructor))
 								continue;
 
 							if (bag == null)
@@ -1372,7 +1445,7 @@ namespace Mono.CSharp
 		protected AttributesBag cattrs;
 		protected readonly MetadataImporter importer;
 
-		public ImportedDefinition (MemberInfo provider, MetadataImporter importer)
+		protected ImportedDefinition (MemberInfo provider, MetadataImporter importer)
 		{
 			this.provider = provider;
 			this.importer = importer;
@@ -1652,7 +1725,14 @@ namespace Mono.CSharp
 					if (s == null)
 						continue;
 
-					var an = new AssemblyName (s);
+					AssemblyName an;
+					try {
+						an = new AssemblyName (s);
+					} catch (FileLoadException) {
+						// Invalid assembly name reuses FileLoadException
+						continue;
+					}
+
 					if (internals_visible_to == null)
 						internals_visible_to = new List<AssemblyName> ();
 
@@ -1798,6 +1878,16 @@ namespace Mono.CSharp
 			}
 		}
 
+		bool ITypeDefinition.IsCyclicTypeForwarder {
+			get {
+#if STATIC
+				return ((MetaType) provider).__IsCyclicTypeForwarder;
+#else
+				return false;
+#endif
+			}
+		}
+
 		public override string Name {
 			get {
 				if (name == null) {
@@ -1897,7 +1987,7 @@ namespace Mono.CSharp
 		{
 			// 
 			// Report details about missing type and most likely cause of the problem.
-			// csc reports 1683, 1684 as warnings but we report them only when used
+			// csc used to reports 1683, 1684 (now 7069) as warnings but we report them only when used
 			// or referenced from the user core in which case compilation error has to
 			// be reported because compiler cannot continue anyway
 			//
@@ -1919,22 +2009,26 @@ namespace Mono.CSharp
 				if (caller.Kind != MemberKind.MissingType)
 					report.SymbolRelatedToPreviousError (caller);
 
-				if (t.MemberDefinition.DeclaringAssembly == ctx.Module.DeclaringAssembly) {
+				var definition = t.MemberDefinition;
+				if (definition.DeclaringAssembly == ctx.Module.DeclaringAssembly) {
 					report.Error (1683, loc,
 						"Reference to type `{0}' claims it is defined in this assembly, but it is not defined in source or any added modules",
 						name);
-				} else if (t.MemberDefinition.DeclaringAssembly.IsMissing) {
-					if (t.MemberDefinition.IsTypeForwarder) {
+				} else if (definition.DeclaringAssembly.IsMissing) {
+					if (definition.IsTypeForwarder) {
 						report.Error (1070, loc,
 							"The type `{0}' has been forwarded to an assembly that is not referenced. Consider adding a reference to assembly `{1}'",
-							name, t.MemberDefinition.DeclaringAssembly.FullName);
+							name, definition.DeclaringAssembly.FullName);
 					} else {
 						report.Error (12, loc,
 							"The type `{0}' is defined in an assembly that is not referenced. Consider adding a reference to assembly `{1}'",
-							name, t.MemberDefinition.DeclaringAssembly.FullName);
+							name, definition.DeclaringAssembly.FullName);
 					}
+				} else if (definition.IsTypeForwarder) {
+					report.Error (731, loc, "The type forwarder for type `{0}' in assembly `{1}' has circular dependency",
+						name, definition.DeclaringAssembly.FullName);
 				} else {
-					report.Error (1684, loc,
+					report.Error (7069, loc,
 						"Reference to type `{0}' claims it is defined assembly `{1}', but it could not be found",
 						name, t.MemberDefinition.DeclaringAssembly.FullName);
 				}
@@ -2226,6 +2320,12 @@ namespace Mono.CSharp
 		}
 
 		bool ITypeDefinition.IsTypeForwarder {
+			get {
+				return false;
+			}
+		}
+
+		bool ITypeDefinition.IsCyclicTypeForwarder {
 			get {
 				return false;
 			}

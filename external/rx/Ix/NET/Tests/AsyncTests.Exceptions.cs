@@ -1,11 +1,18 @@
 ﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
-#if DESKTOPCLR40
+#if !NO_TPL
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+#if NUNIT
+using NUnit.Framework;
+using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
+using TestMethodAttribute = NUnit.Framework.TestAttribute;
+using TestInitializeAttribute = NUnit.Framework.SetUpAttribute;
+#else
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+#endif
 using System.Threading;
 
 namespace Tests
@@ -364,7 +371,7 @@ namespace Tests
             Assert.IsTrue(b);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void Finally6()
         {
             var b = false;

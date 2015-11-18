@@ -24,7 +24,7 @@
 /* Use mmap for allocating memory */
 #define HAVE_MORECORE 0
 #define NO_MALLINFO 1
-#include <dlmalloc.h>
+#include <mono/utils/dlmalloc.h>
 
 /*
 * Quickstart
@@ -1164,7 +1164,7 @@ int mspace_mallopt(int, int);
 
 /*------------------------------ internal #includes ---------------------- */
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #pragma warning( disable : 4146 ) /* no "unsigned" warnings */
 #endif /* WIN32 */
 

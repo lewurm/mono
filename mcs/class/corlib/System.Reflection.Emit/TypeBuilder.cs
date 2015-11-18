@@ -44,19 +44,14 @@ using System.Security;
 using System.Security.Permissions;
 using System.Diagnostics.SymbolStore;
 
+
 namespace System.Reflection.Emit
 {
 	[ComVisible (true)]
 	[ComDefaultInterface (typeof (_TypeBuilder))]
 	[ClassInterface (ClassInterfaceType.None)]
 	[StructLayout (LayoutKind.Sequential)]
-	public sealed class TypeBuilder :
-#if NET_4_5
-		TypeInfo
-#else
-		Type
-#endif
-		, _TypeBuilder
+	public sealed class TypeBuilder : TypeInfo, _TypeBuilder
 	{
 #pragma warning disable 169		
 		#region Sync with reflection.h
@@ -82,7 +77,7 @@ namespace System.Reflection.Emit
 		private IntPtr generic_container;
 		private GenericTypeParameterBuilder[] generic_params;
 		private RefEmitPermissionSet[] permissions;
-		private Type created;
+		private TypeInfo created;
 		#endregion
 #pragma warning restore 169		
 		
@@ -358,7 +353,7 @@ namespace System.Reflection.Emit
 					}
 				}
 				if (binder == null)
-					binder = Binder.DefaultBinder;
+					binder = DefaultBinder;
 				return (ConstructorInfo) binder.SelectMethod (bindingAttr, match,
 															  types, modifiers);
 			}
@@ -685,12 +680,10 @@ namespace System.Reflection.Emit
 			return DefineProperty (name, attributes, 0, returnType, null, null, parameterTypes, null, null);
 		}
 		
-#if NET_4_0
 		public PropertyBuilder DefineProperty (string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
 		{
 			return DefineProperty (name, attributes, callingConvention, returnType , null, null, parameterTypes, null, null);
 		}	
-#endif
 
 		public PropertyBuilder DefineProperty (string name, PropertyAttributes attributes, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
 		{
@@ -727,7 +720,7 @@ namespace System.Reflection.Emit
 		}
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		private extern Type create_runtime_class (TypeBuilder tb);
+		private extern TypeInfo create_runtime_class (TypeBuilder tb);
 
 		private bool is_nested_in (Type t)
 		{
@@ -753,8 +746,14 @@ namespace System.Reflection.Emit
 
 			return false;
 	    }
+
+		public Type CreateType ()
+		{
+			return CreateTypeInfo ();
+		}
 		
-		public Type CreateType()
+		public
+		TypeInfo CreateTypeInfo ()
 		{
 			/* handle nesting_type */
 			if (createTypeCalled)
@@ -802,6 +801,12 @@ namespace System.Reflection.Emit
 
 			if (parent == pmodule.assemblyb.corlib_enum_type && methods != null)
 				throw new TypeLoadException ("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
+			if (interfaces != null) {
+				foreach (var iface in interfaces) {
+					if (iface.IsNestedPrivate && iface.Assembly != Assembly)
+						throw new TypeLoadException ("Could not load type '" + FullName + "' from assembly '" + Assembly + "' because it is implements the inaccessible interface '" + iface.FullName + "'.");
+				}
+			}
 
 			if (methods != null) {
 				bool is_concrete = !IsAbstract;
@@ -909,6 +914,7 @@ namespace System.Reflection.Emit
 		/* Needed to keep signature compatibility with MS.NET */
 		public override EventInfo[] GetEvents ()
 		{
+			const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
 			return GetEvents (DefaultBindingFlags);
 		}
 
@@ -1187,46 +1193,10 @@ namespace System.Reflection.Emit
 		{
 			check_created ();
 
-			bool ignoreCase = ((bindingAttr & BindingFlags.IgnoreCase) != 0);
-			MethodInfo[] methods = GetMethodsByName (name, bindingAttr, ignoreCase, this);
-			MethodInfo found = null;
-			MethodBase[] match;
-			int typesLen = (types != null) ? types.Length : 0;
-			int count = 0;
-			
-			foreach (MethodInfo m in methods) {
-				// Under MS.NET, Standard|HasThis matches Standard...
-				if (callConvention != CallingConventions.Any && ((m.CallingConvention & callConvention) != callConvention))
-					continue;
-				found = m;
-				count++;
-			}
+			if (types == null)
+				return created.GetMethod (name, bindingAttr);
 
-			if (count == 0)
-				return null;
-			
-			if (count == 1 && typesLen == 0) 
-				return found;
-
-			match = new MethodBase [count];
-			if (count == 1)
-				match [0] = found;
-			else {
-				count = 0;
-				foreach (MethodInfo m in methods) {
-					if (callConvention != CallingConventions.Any && ((m.CallingConvention & callConvention) != callConvention))
-						continue;
-					match [count++] = m;
-				}
-			}
-			
-			if (types == null) 
-				return (MethodInfo) Binder.FindMostDerivedMatch (match);
-
-			if (binder == null)
-				binder = Binder.DefaultBinder;
-			
-			return (MethodInfo)binder.SelectMethod (bindingAttr, match, types, modifiers);
+			return created.GetMethod (name, bindingAttr, binder, callConvention, types, modifiers);
 		}
 
 		public override Type GetNestedType (string name, BindingFlags bindingAttr)
@@ -1894,19 +1864,6 @@ namespace System.Reflection.Emit
 				return res;
 		}
 
-		internal TypeCode GetTypeCodeInternal () {
-			if (parent == pmodule.assemblyb.corlib_enum_type) {
-				for (int i = 0; i < num_fields; ++i) {
-					FieldBuilder f = fields [i];
-					if (!f.IsStatic)
-						return Type.GetTypeCode (f.FieldType);
-				}
-				throw new InvalidOperationException ("Enum basetype field not defined");
-			} else {
-				return Type.GetTypeCodeInternal (this);
-			}
-		}
-
 
 		void _TypeBuilder.GetIDsOfNames([In] ref Guid riid, IntPtr rgszNames, uint cNames, uint lcid, IntPtr rgDispId)
 		{
@@ -1934,7 +1891,6 @@ namespace System.Reflection.Emit
 			}
 		}
 
-#if NET_4_5
 		public override bool IsConstructedGenericType {
 			get { return false; }
 		}
@@ -1943,7 +1899,6 @@ namespace System.Reflection.Emit
 		{
 			return base.IsAssignableFrom (typeInfo);
 		}
-#endif
 	}
 }
 #endif

@@ -28,6 +28,7 @@
 
 using System.Net.Mail;
 using System.Globalization;
+using System.Collections.Generic;
 
 namespace System.Net.Http.Headers
 {
@@ -64,14 +65,7 @@ namespace System.Net.Http.Headers
 				if (s == null)
 					return false;
 
-				if (!Lexer.IsValidToken (s)) {
-					if (s.Length == 0)
-						return false;
-
-					return false;
-				}
-
-				return true;
+				return Lexer.IsValidToken (s);
 			}
 
 			public static void CheckQuotedString (string s)
@@ -131,6 +125,17 @@ namespace System.Net.Http.Headers
 			}
 		}
 
+		public static class Host
+		{
+			public static bool TryParse (string input, out string result)
+			{
+				result = input;
+
+				System.Uri dummy;
+				return System.Uri.TryCreate ("http://u@" + input + "/", UriKind.Absolute, out dummy);
+			}
+		}
+
 		public static class Int
 		{
 			public static bool TryParse (string input, out int result)
@@ -149,6 +154,8 @@ namespace System.Net.Http.Headers
 
 		public static class MD5
 		{
+			public new static readonly Func<object, string> ToString = l => Convert.ToBase64String ((byte[]) l);
+
 			public static bool TryParse (string input, out byte[] result)
 			{
 				try {

@@ -25,14 +25,15 @@
 
 #ifdef HAVE_SGEN_GC
 
-#include "sgen-gc.h"
+#include "sgen/sgen-gc.h"
 #include "sgen-toggleref.h"
+#include "sgen/sgen-client.h"
 
 
 /*only one of the two can be non null at a given time*/
 typedef struct {
-	void *strong_ref;
-	void *weak_ref;
+	GCObject *strong_ref;
+	GCObject *weak_ref;
 } MonoGCToggleRef;
 
 static MonoToggleRefStatus (*toggleref_callback) (MonoObject *obj);
@@ -90,26 +91,39 @@ sgen_process_togglerefs (void)
 		w);
 }
 
-void
-sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
+void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx)
 {
-	CopyOrMarkObjectFunc copy_func = ctx.copy_func;
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
 	SgenGrayQueue *queue = ctx.queue;
 	int i;
 
-	SGEN_LOG (4, "Scanning ToggleRefs %d", toggleref_array_size);
+	SGEN_LOG (4, "Marking ToggleRefs %d", toggleref_array_size);
 
 	for (i = 0; i < toggleref_array_size; ++i) {
 		if (toggleref_array [i].strong_ref) {
-			char *object = toggleref_array [i].strong_ref;
-			if (object >= start && object < end) {
+			GCObject *object = toggleref_array [i].strong_ref;
+			if ((char*)object >= start && (char*)object < end) {
 				SGEN_LOG (6, "\tcopying strong slot %d", i);
 				copy_func (&toggleref_array [i].strong_ref, queue);
 			}
-		} else if (toggleref_array [i].weak_ref) {
-			char *object = toggleref_array [i].weak_ref;
+		}
+	}
+	sgen_drain_gray_stack (-1, ctx);
+}
 
-			if (object >= start && object < end) {
+void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx)
+{
+	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
+	SgenGrayQueue *queue = ctx.queue;
+	int i;
+
+	SGEN_LOG (4, "Clearing ToggleRefs %d", toggleref_array_size);
+
+	for (i = 0; i < toggleref_array_size; ++i) {
+		if (toggleref_array [i].weak_ref) {
+			GCObject *object = toggleref_array [i].weak_ref;
+
+			if ((char*)object >= start && (char*)object < end) {
 				if (sgen_gc_is_object_ready_for_finalization (object)) {
 					SGEN_LOG (6, "\tcleaning weak slot %d", i);
 					toggleref_array [i].weak_ref = NULL; /* We defer compaction to only happen on the callback step. */
@@ -120,6 +134,7 @@ sgen_scan_togglerefs (char *start, char *end, ScanCopyContext ctx)
 			}
 		}
 	}
+	sgen_drain_gray_stack (-1, ctx);
 }
 
 static void
@@ -136,7 +151,7 @@ ensure_toggleref_capacity (int capacity)
 		MonoGCToggleRef *tmp;
 		int old_capacity = toggleref_array_capacity;
 		while (toggleref_array_capacity < toggleref_array_size + capacity)
-			toggleref_array_size *= 2;
+			toggleref_array_capacity *= 2;
 
 		tmp = sgen_alloc_internal_dynamic (
 			toggleref_array_capacity * sizeof (MonoGCToggleRef),
@@ -189,6 +204,28 @@ void
 mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))
 {
 	toggleref_callback = proccess_toggleref;
+}
+
+static MonoToggleRefStatus
+test_toggleref_callback (MonoObject *obj)
+{
+	static MonoClassField *mono_toggleref_test_field;
+	int status = MONO_TOGGLE_REF_DROP;
+
+	if (!mono_toggleref_test_field) {
+		mono_toggleref_test_field = mono_class_get_field_from_name (mono_object_get_class (obj), "__test");
+		g_assert (mono_toggleref_test_field);
+	}
+
+	mono_field_get_value (obj, mono_toggleref_test_field, &status);
+	printf ("toggleref-cb obj %d\n", status);
+	return status;
+}
+
+void
+sgen_register_test_toggleref_callback (void)
+{
+	toggleref_callback = test_toggleref_callback;
 }
 
 #endif

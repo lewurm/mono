@@ -19,22 +19,18 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_SYS_SYSCALL_H
-#include <sys/syscall.h>
-#endif
-
 G_BEGIN_DECLS
 
-gint ves_icall_System_IO_FSW_SupportsFSW (void) MONO_INTERNAL;
+gint ves_icall_System_IO_FSW_SupportsFSW (void);
 
 gboolean ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 							MonoString **filename,
 							gint *code,
-							gint *reqnum) MONO_INTERNAL;
+							gint *reqnum);
 
-int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance (void) MONO_INTERNAL;
-int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask) MONO_INTERNAL;
-int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor) MONO_INTERNAL;
+int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance (void);
+int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask);
+int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor);
 
 G_END_DECLS
 

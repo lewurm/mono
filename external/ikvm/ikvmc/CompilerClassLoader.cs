@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002-2013 Jeroen Frijters
+  Copyright (C) 2002-2014 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -44,7 +44,7 @@ namespace IKVM.Internal
 {
 	sealed class CompilerClassLoader : ClassLoaderWrapper
 	{
-		private Dictionary<string, JarItemReference> classes;
+		private Dictionary<string, Jar.Item> classes;
 		private Dictionary<string, RemapperTypeWrapper> remapped = new Dictionary<string, RemapperTypeWrapper>();
 		private string assemblyName;
 		private string assemblyFile;
@@ -55,7 +55,7 @@ namespace IKVM.Internal
 		private CompilerOptions options;
 		private AssemblyClassLoader[] referencedAssemblies;
 		private Dictionary<string, string> nameMappings = new Dictionary<string, string>();
-		private Dictionary<string, string> packages;
+		private Packages packages;
 		private Dictionary<string, List<TypeWrapper>> ghosts;
 		private TypeWrapper[] mappedExceptions;
 		private bool[] mappedExceptionsAllSubClasses;
@@ -63,9 +63,7 @@ namespace IKVM.Internal
 		private Dictionary<MethodKey, IKVM.Internal.MapXml.InstructionList> mapxml_MethodBodies;
 		private Dictionary<MethodKey, IKVM.Internal.MapXml.ReplaceMethodCall[]> mapxml_ReplacedMethods;
 		private Dictionary<MethodKey, IKVM.Internal.MapXml.InstructionList> mapxml_MethodPrologues;
-		private Dictionary<string, string> baseClasses;
 		private IKVM.Internal.MapXml.Root map;
-		private List<object> assemblyAnnotations;
 		private List<string> classesToCompile;
 		private List<CompilerClassLoader> peerReferences = new List<CompilerClassLoader>();
 		private Dictionary<string, string> peerLoading = new Dictionary<string, string>();
@@ -73,8 +71,9 @@ namespace IKVM.Internal
 		private List<TypeWrapper> dynamicallyImportedTypes = new List<TypeWrapper>();
 		private List<string> jarList = new List<string>();
 		private List<TypeWrapper> allwrappers;
+		private bool compilingCoreAssembly;
 
-		internal CompilerClassLoader(AssemblyClassLoader[] referencedAssemblies, CompilerOptions options, FileInfo assemblyPath, bool targetIsModule, string assemblyName, Dictionary<string, JarItemReference> classes)
+		internal CompilerClassLoader(AssemblyClassLoader[] referencedAssemblies, CompilerOptions options, FileInfo assemblyPath, bool targetIsModule, string assemblyName, Dictionary<string, Jar.Item> classes, bool compilingCoreAssembly)
 			: base(options.codegenoptions, null)
 		{
 			this.referencedAssemblies = referencedAssemblies;
@@ -84,6 +83,7 @@ namespace IKVM.Internal
 			this.assemblyFile = assemblyPath.Name;
 			this.assemblyDir = assemblyPath.DirectoryName;
 			this.targetIsModule = targetIsModule;
+			this.compilingCoreAssembly = compilingCoreAssembly;
 			Tracer.Info(Tracer.Compiler, "Instantiate CompilerClassLoader for {0}", assemblyName);
 		}
 
@@ -99,10 +99,7 @@ namespace IKVM.Internal
 
 		internal void AddReference(AssemblyClassLoader acl)
 		{
-			AssemblyClassLoader[] temp = new AssemblyClassLoader[referencedAssemblies.Length + 1];
-			Array.Copy(referencedAssemblies, 0, temp, 0, referencedAssemblies.Length);
-			temp[temp.Length - 1] = acl;
-			referencedAssemblies = temp;
+			referencedAssemblies = ArrayUtil.Concat(referencedAssemblies, acl);
 		}
 
 		internal void AddReference(CompilerClassLoader ccl)
@@ -172,7 +169,10 @@ namespace IKVM.Internal
 			string mainAssemblyName = options.sharedclassloader != null && options.sharedclassloader[0] != this
 				? options.sharedclassloader[0].assemblyName
 				: assemblyName;
-			AttributeHelper.SetInternalsVisibleToAttribute(assemblyBuilder, mainAssemblyName + DynamicClassLoader.DynamicAssemblySuffixAndPublicKey);
+			if(!DisableDynamicBinding)
+			{
+				AttributeHelper.SetInternalsVisibleToAttribute(assemblyBuilder, mainAssemblyName + DynamicClassLoader.DynamicAssemblySuffixAndPublicKey);
+			}
 			return moduleBuilder;
 		}
 
@@ -181,7 +181,7 @@ namespace IKVM.Internal
 			return "CompilerClassLoader:" + options.assembly;
 		}
 
-		protected override TypeWrapper LoadClassImpl(string name, bool throwClassNotFoundException)
+		protected override TypeWrapper LoadClassImpl(string name, LoadMode mode)
 		{
 			foreach(AssemblyClassLoader acl in referencedAssemblies)
 			{
@@ -230,7 +230,7 @@ namespace IKVM.Internal
 			{
 				return tw1;
 			}
-			return FindOrLoadGenericClass(name, false);
+			return FindOrLoadGenericClass(name, mode);
 		}
 
 		private TypeWrapper PeerLoad(string name)
@@ -272,20 +272,15 @@ namespace IKVM.Internal
 			}
 			else
 			{
-				JarItemReference itemRef;
+				Jar.Item itemRef;
 				if(classes.TryGetValue(name, out itemRef))
 				{
 					classes.Remove(name);
-					JarItem classdef = itemRef.Jar.Items[itemRef.Index];
 					ClassFile f;
 					try
 					{
-						ClassFileParseOptions cfp = ClassFileParseOptions.LocalVariableTable;
-						if(this.EmitStackTraceInfo)
-						{
-							cfp |= ClassFileParseOptions.LineNumberTable;
-						}
-						f = new ClassFile(classdef.data, 0, classdef.data.Length, name, cfp);
+						byte[] buf = itemRef.GetData();
+						f = new ClassFile(buf, 0, buf.Length, name, ClassFileParseOptions, null);
 					}
 					catch(ClassFormatError x)
 					{
@@ -298,10 +293,6 @@ namespace IKVM.Internal
 						StaticCompiler.SuppressWarning(options, Message.ClassNotFound, name);
 						StaticCompiler.IssueMessage(options, Message.WrongClassName, name, f.Name);
 						return null;
-					}
-					if(options.removeUnusedFields)
-					{
-						f.RemoveUnusedFields();
 					}
 					if(f.IsPublic && options.privatePackages != null)
 					{
@@ -330,22 +321,12 @@ namespace IKVM.Internal
 							f.SetInternal();
 						}
 					}
-					if(!f.IsInterface
-						&& !f.IsAbstract
-						&& !f.IsPublic
-						&& !f.IsInternal
-						&& !f.IsFinal
-						&& !baseClasses.ContainsKey(f.Name)
-						&& !options.targetIsModule
-						&& options.sharedclassloader == null)
-					{
-						f.SetEffectivelyFinal();
-					}
 					if(f.SourceFileAttribute != null)
 					{
-						if(classdef.path != null)
+						FileInfo path = itemRef.Path;
+						if(path != null)
 						{
-							string sourceFile = Path.GetFullPath(Path.Combine(classdef.path.DirectoryName, f.SourceFileAttribute));
+							string sourceFile = Path.GetFullPath(Path.Combine(path.DirectoryName, f.SourceFileAttribute));
 							if(File.Exists(sourceFile))
 							{
 								f.SourcePath = sourceFile;
@@ -370,9 +351,20 @@ namespace IKVM.Internal
 					{
 						TypeWrapper tw = DefineClass(f, null);
 						// we successfully created the type, so we don't need to include the class as a resource
-						itemRef.Jar.Items[itemRef.Index] = options.nojarstubs
-							? new JarItem()	// null entry
-							: new JarItem(itemRef.Jar.Items[itemRef.Index].zipEntry, null, null); // create a stub class pseudo resource
+						if (options.nojarstubs)
+						{
+							itemRef.Remove();
+						}
+						else
+						{
+							itemRef.MarkAsStub();
+						}
+						int pos = f.Name.LastIndexOf('.');
+						if (pos != -1)
+						{
+							string manifestJar = options.IsClassesJar(itemRef.Jar) ? null : itemRef.Jar.Name;
+							packages.DefinePackage(f.Name.Substring(0, pos), manifestJar);
+						}
 						return tw;
 					}
 					catch (ClassFormatError x)
@@ -566,9 +558,12 @@ namespace IKVM.Internal
 			// add a package list and export map
 			if(options.sharedclassloader == null || options.sharedclassloader[0] == this)
 			{
-				string[] list = new string[packages.Count];
-				packages.Keys.CopyTo(list, 0);
-				mb.SetCustomAttribute(new CustomAttributeBuilder(JVM.LoadType(typeof(PackageListAttribute)).GetConstructor(new Type[] { JVM.Import(typeof(string[])) }), new object[] { list }));
+				ConstructorInfo packageListAttributeCtor = JVM.LoadType(typeof(PackageListAttribute)).GetConstructor(new Type[] { Types.String, Types.String.MakeArrayType() });
+				foreach(object[] args in packages.ToArray())
+				{
+					args[1] = UnicodeUtil.EscapeInvalidSurrogates((string[])args[1]);
+					mb.SetCustomAttribute(new CustomAttributeBuilder(packageListAttributeCtor, args));
+				}
 				// We can't add the resource when we're a module, because a multi-module assembly has a single resource namespace
 				// and since you cannot combine -target:module with -sharedclassloader we don't need an export map
 				// (the wildcard exports have already been added above, by making sure that we statically reference the assemblies).
@@ -630,6 +625,7 @@ namespace IKVM.Internal
 					list[i++] = kv.Key;
 					list[i++] = kv.Value;
 				}
+				list = UnicodeUtil.EscapeInvalidSurrogates(list);
 				CustomAttributeBuilder cab = new CustomAttributeBuilder(typeofJavaModuleAttribute.GetConstructor(new Type[] { JVM.Import(typeof(string[])) }), new object[] { list }, propInfos, propValues);
 				mb.SetCustomAttribute(cab);
 			}
@@ -687,11 +683,11 @@ namespace IKVM.Internal
 						ccl.AddWildcardExports(exportedNamesPerAssembly);
 						foreach (Jar jar in ccl.options.jars)
 						{
-							foreach (JarItem item in jar.Items)
+							foreach (Jar.Item item in jar)
 							{
-								if (item.zipEntry != null && item.data != null)
+								if (!item.IsStub)
 								{
-									AddExportMapEntry(exportedNamesPerAssembly, ccl, item.zipEntry.Name);
+									AddExportMapEntry(exportedNamesPerAssembly, ccl, item.Name);
 								}
 							}
 						}
@@ -749,34 +745,25 @@ namespace IKVM.Internal
 					}
 					zip.SetLevel(9);
 					List<string> stubs = new List<string>();
-					foreach (JarItem item in options.jars[i].Items)
+					foreach (Jar.Item item in options.jars[i])
 					{
-						if (item.zipEntry == null)
-						{
-							continue;
-						}
-						if (item.data == null)
+						if (item.IsStub)
 						{
 							// we don't want stub class pseudo resources for classes loaded from the file system
 							if (i != options.classesJar)
 							{
-								stubs.Add(item.zipEntry.Name);
+								stubs.Add(item.Name);
 							}
 							continue;
 						}
-						ZipEntry zipEntry = new ZipEntry(item.zipEntry.Name);
-						zipEntry.Comment = item.zipEntry.Comment;
-						zipEntry.CompressionMethod = item.zipEntry.CompressionMethod;
-						zipEntry.DosTime = item.zipEntry.DosTime;
-						zipEntry.ExternalFileAttributes = item.zipEntry.ExternalFileAttributes;
-						zipEntry.ExtraData = item.zipEntry.ExtraData;
-						zipEntry.Flags = item.zipEntry.Flags;
+						ZipEntry zipEntry = item.ZipEntry;
 						if (options.compressedResources || zipEntry.CompressionMethod != CompressionMethod.Stored)
 						{
 							zipEntry.CompressionMethod = CompressionMethod.Deflated;
 						}
 						zip.PutNextEntry(zipEntry);
-						zip.Write(item.data, 0, item.data.Length);
+						byte[] data = item.GetData();
+						zip.Write(data, 0, data.Length);
 						zip.CloseEntry();
 						hasEntries = true;
 					}
@@ -1293,16 +1280,13 @@ namespace IKVM.Internal
 						if(specialCases != null)
 						{
 							CodeEmitter ilgen;
-							Type[] temp = typeWrapper.GetClassLoader().ArgTypeListFromSig(m.Sig);
-							Type[] argTypes = new Type[temp.Length + 1];
-							temp.CopyTo(argTypes, 1);
-							argTypes[0] = typeWrapper.shadowType;
+							Type[] argTypes = ArrayUtil.Concat(typeWrapper.shadowType, typeWrapper.GetClassLoader().ArgTypeListFromSig(m.Sig));
 							if(typeWrapper.helperTypeBuilder == null)
 							{
 								typeWrapper.helperTypeBuilder = typeWrapper.typeBuilder.DefineNestedType("__Helper", TypeAttributes.NestedPublic | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.Abstract);
 								AttributeHelper.HideFromJava(typeWrapper.helperTypeBuilder);
 							}
-							helper = typeWrapper.helperTypeBuilder.DefineMethod(m.Name, MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig).TypeAsSignatureType, argTypes);
+							helper = typeWrapper.helperTypeBuilder.DefineMethod(m.Name, MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig, LoadMode.LoadOrThrow).TypeAsSignatureType, argTypes);
 							if(m.Attributes != null)
 							{
 								foreach(IKVM.Internal.MapXml.Attribute custattr in m.Attributes)
@@ -1346,7 +1330,7 @@ namespace IKVM.Internal
 					{
 						MethodBuilder mbCore = null;
 						Type[] paramTypes = typeWrapper.GetClassLoader().ArgTypeListFromSig(m.Sig);
-						Type retType = typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig).TypeAsSignatureType;
+						Type retType = typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig, LoadMode.LoadOrThrow).TypeAsSignatureType;
 
 						if(typeWrapper.shadowType.IsSealed && (m.Modifiers & IKVM.Internal.MapXml.MapModifiers.Static) == 0)
 						{
@@ -1403,7 +1387,7 @@ namespace IKVM.Internal
 									}
 								}
 							}
-							mbCore = typeWrapper.typeBuilder.DefineMethod(m.Name, attr, CallingConventions.Standard, retType, paramTypes);
+							mbCore = GetDefineMethodHelper().DefineMethod(DeclaringType.GetClassLoader().GetTypeWrapperFactory(), typeWrapper.typeBuilder, m.Name, attr);
 							if(m.Attributes != null)
 							{
 								foreach(IKVM.Internal.MapXml.Attribute custattr in m.Attributes)
@@ -1434,10 +1418,7 @@ namespace IKVM.Internal
 								attr &= ~MethodAttributes.MemberAccessMask;
 								attr |= MethodAttributes.Assembly;
 							}
-							Type[] exParamTypes = new Type[paramTypes.Length + 1];
-							Array.Copy(paramTypes, 0, exParamTypes, 1, paramTypes.Length);
-							exParamTypes[0] = typeWrapper.shadowType;
-							mbHelper = typeWrapper.typeBuilder.DefineMethod("instancehelper_" + m.Name, attr, CallingConventions.Standard, retType, exParamTypes);
+							mbHelper = typeWrapper.typeBuilder.DefineMethod("instancehelper_" + m.Name, attr, CallingConventions.Standard, retType, ArrayUtil.Concat(typeWrapper.shadowType, paramTypes));
 							if(m.Attributes != null)
 							{
 								foreach(IKVM.Internal.MapXml.Attribute custattr in m.Attributes)
@@ -1689,10 +1670,8 @@ namespace IKVM.Internal
 					if(m.nonvirtualAlternateBody != null || (m.@override != null && overriders.Count > 0))
 					{
 						RemapperTypeWrapper typeWrapper = (RemapperTypeWrapper)DeclaringType;
-						Type[] argTypes = new Type[paramTypes.Length + 1];
-						argTypes[0] = typeWrapper.TypeAsSignatureType;
-						this.GetParametersForDefineMethod().CopyTo(argTypes, 1);
-						MethodBuilder mb = typeWrapper.typeBuilder.DefineMethod("nonvirtualhelper/" + this.Name, MethodAttributes.Private | MethodAttributes.Static, this.ReturnTypeForDefineMethod, argTypes);
+						MethodBuilder mb = typeWrapper.typeBuilder.DefineMethod("nonvirtualhelper/" + this.Name, MethodAttributes.Private | MethodAttributes.Static,
+							ReturnTypeForDefineMethod, ArrayUtil.Concat(typeWrapper.TypeAsSignatureType, GetParametersForDefineMethod()));
 						if(m.Attributes != null)
 						{
 							foreach(IKVM.Internal.MapXml.Attribute custattr in m.Attributes)
@@ -1823,7 +1802,7 @@ namespace IKVM.Internal
 							{
 								attr |= FieldAttributes.Static;
 							}
-							FieldBuilder fb = tb.DefineField(f.Name, GetClassLoader().FieldTypeWrapperFromSig(f.Sig).TypeAsSignatureType, attr);
+							FieldBuilder fb = tb.DefineField(f.Name, GetClassLoader().FieldTypeWrapperFromSig(f.Sig, LoadMode.LoadOrThrow).TypeAsSignatureType, attr);
 							if(f.Attributes != null)
 							{
 								foreach(IKVM.Internal.MapXml.Attribute custattr in f.Attributes)
@@ -1844,11 +1823,11 @@ namespace IKVM.Internal
 										throw new NotImplementedException("remapped constant field of type: " + f.Sig);
 								}
 								fb.SetConstant(constant);
-								fields.Add(new ConstantFieldWrapper(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig), f.Name, f.Sig, (Modifiers)f.Modifiers, fb, constant, MemberFlags.None));
+								fields.Add(new ConstantFieldWrapper(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig, LoadMode.LoadOrThrow), f.Name, f.Sig, (Modifiers)f.Modifiers, fb, constant, MemberFlags.None));
 							}
 							else
 							{
-								fields.Add(FieldWrapper.Create(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig), fb, f.Name, f.Sig, new ExModifiers((Modifiers)f.Modifiers, false)));
+								fields.Add(FieldWrapper.Create(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig, LoadMode.LoadOrThrow), fb, f.Name, f.Sig, new ExModifiers((Modifiers)f.Modifiers, false)));
 							}
 						}
 					}
@@ -1873,7 +1852,7 @@ namespace IKVM.Internal
 
 				if(classDef.Clinit != null)
 				{
-					MethodBuilder cb = ReflectUtil.DefineTypeInitializer(typeBuilder);
+					MethodBuilder cb = ReflectUtil.DefineTypeInitializer(typeBuilder, classLoader);
 					CodeEmitter ilgen = CodeEmitter.Create(cb);
 					// TODO emit code to make sure super class is initialized
 					classDef.Clinit.body.Emit(classLoader, ilgen);
@@ -2103,43 +2082,6 @@ namespace IKVM.Internal
 			internal override MethodBase LinkMethod(MethodWrapper mw)
 			{
 				return ((RemappedMethodBaseWrapper)mw).DoLink();
-			}
-
-			internal override TypeWrapper DeclaringTypeWrapper
-			{
-				get
-				{
-					// at the moment we don't support nested remapped types
-					return null;
-				}
-			}
-
-			internal override void Finish()
-			{
-				if(BaseTypeWrapper != null)
-				{
-					BaseTypeWrapper.Finish();
-				}
-				foreach(TypeWrapper iface in Interfaces)
-				{
-					iface.Finish();
-				}
-				foreach(MethodWrapper m in GetMethods())
-				{
-					m.Link();
-				}
-				foreach(FieldWrapper f in GetFields())
-				{
-					f.Link();
-				}
-			}
-
-			internal override TypeWrapper[] InnerClasses
-			{
-				get
-				{
-					return TypeWrapper.EmptyArray;
-				}
 			}
 
 			internal override TypeWrapper[] Interfaces
@@ -2585,7 +2527,7 @@ namespace IKVM.Internal
 				{
 					if (c.Shadows != null && c.Name == "java.lang.Object")
 					{
-						return true;
+						return compilingCoreAssembly = true;
 					}
 				}
 			}
@@ -2639,6 +2581,10 @@ namespace IKVM.Internal
 						compiler1.AddReference(compiler2);
 					}
 				}
+			}
+			foreach (CompilerClassLoader compiler in compilers)
+			{
+				compiler.CompilePass0();
 			}
 			Dictionary<CompilerClassLoader, Type> mainAssemblyTypes = new Dictionary<CompilerClassLoader, Type>();
 			foreach (CompilerClassLoader compiler in compilers)
@@ -2731,91 +2677,97 @@ namespace IKVM.Internal
 					}
 				}
 			}
-			List<object> assemblyAnnotations = new List<object>();
 			Tracer.Info(Tracer.Compiler, "Parsing class files");
 			// map the class names to jar entries
-			Dictionary<string, JarItemReference> h = new Dictionary<string, JarItemReference>();
+			Dictionary<string, Jar.Item> h = new Dictionary<string, Jar.Item>();
 			List<string> classNames = new List<string>();
 			foreach (Jar jar in options.jars)
 			{
-				for (int i = 0; i < jar.Items.Count; i++)
+				if (options.IsResourcesJar(jar))
 				{
-					string name = jar.Items[i].zipEntry.Name;
+					continue;
+				}
+				foreach (Jar.Item item in jar)
+				{
+					string name = item.Name;
 					if (name.EndsWith(".class", StringComparison.Ordinal)
 						&& name.Length > 6
 						&& name.IndexOf('.') == name.Length - 6)
 					{
 						string className = name.Substring(0, name.Length - 6).Replace('/', '.');
-						if (options.IsExcludedClass(className))
+						if (h.ContainsKey(className))
 						{
-							// we don't compile the class and we also don't include it as a resource
-							jar.Items[i] = new JarItem();
-						}
-						else
-						{
-							if (h.ContainsKey(className))
+							StaticCompiler.IssueMessage(Message.DuplicateClassName, className);
+							Jar.Item itemRef = h[className];
+							if ((options.classesJar != -1 && itemRef.Jar == options.jars[options.classesJar]) || jar != itemRef.Jar)
 							{
-								StaticCompiler.IssueMessage(Message.DuplicateClassName, className);
-								JarItemReference itemRef = h[className];
-								if ((options.classesJar != -1 && itemRef.Jar == options.jars[options.classesJar]) || jar != itemRef.Jar)
-								{
-									// the previous class stays, because it was either in an earlier jar or we're processing the classes.jar
-									// which contains the classes loaded from the file system (where the first encountered class wins)
-									continue;
-								}
-								else
-								{
-									// we have a jar that contains multiple entries with the same name, the last one wins
-									h.Remove(className);
-									classNames.Remove(className);
-								}
+								// the previous class stays, because it was either in an earlier jar or we're processing the classes.jar
+								// which contains the classes loaded from the file system (where the first encountered class wins)
+								continue;
 							}
-							h.Add(className, new JarItemReference(jar, i));
-							classNames.Add(className);
+							else
+							{
+								// we have a jar that contains multiple entries with the same name, the last one wins
+								h.Remove(className);
+								classNames.Remove(className);
+							}
 						}
+						h.Add(className, item);
+						classNames.Add(className);
 					}
 				}
 			}
-			// now process all the classes to record the classes that are used as base classes and
-			// to look for assembly attribute annotations and the main method
-			Dictionary<string, string> baseClasses = new Dictionary<string, string>();
-			foreach (string className in classNames)
+
+			if (options.assemblyAttributeAnnotations == null)
 			{
-				try
+				// look for "assembly" type that acts as a placeholder for assembly attributes
+				Jar.Item assemblyType;
+				if (h.TryGetValue("assembly", out assemblyType))
 				{
-					JarItemReference itemRef = h[className];
-					byte[] buf = itemRef.Jar.Items[itemRef.Index].data;
-					ClassFile f = new ClassFile(buf, 0, buf.Length, null, ClassFileParseOptions.None);
-					if (!f.IsInterface && f.SuperClass != null)
+					try
 					{
-						baseClasses[f.SuperClass] = f.SuperClass;
-					}
-					// NOTE the "assembly" type in the unnamed package is a magic type
-					// that acts as the placeholder for assembly attributes
-					if (className == f.Name && f.Name == "assembly" && f.Annotations != null)
-					{
-						assemblyAnnotations.AddRange(f.Annotations);
-						// HACK remove "assembly" type that exists only as a placeholder for assembly attributes
-						h.Remove(f.Name);
-						itemRef.Jar.Items[itemRef.Index] = new JarItem();
-						continue;
-					}
-					if (options.mainClass == null && (options.guessFileKind || options.target != PEFileKinds.Dll))
-					{
-						foreach (ClassFile.Method m in f.Methods)
+						byte[] buf = assemblyType.GetData();
+						ClassFile f = new ClassFile(buf, 0, buf.Length, null, ClassFileParseOptions.None, null);
+						// NOTE the "assembly" type in the unnamed package is a magic type
+						// that acts as the placeholder for assembly attributes
+						if (f.Name == "assembly" && f.Annotations != null)
 						{
-							if (m.IsPublic && m.IsStatic && m.Name == "main" && m.Signature == "([Ljava.lang.String;)V")
+							options.assemblyAttributeAnnotations = f.Annotations;
+							// HACK remove "assembly" type that exists only as a placeholder for assembly attributes
+							h.Remove(f.Name);
+							assemblyType.Remove();
+							StaticCompiler.IssueMessage(Message.LegacyAssemblyAttributesFound);
+						}
+					}
+					catch (ClassFormatError) { }
+				}
+			}
+
+			// now look for a main method
+			if (options.mainClass == null && (options.guessFileKind || options.target != PEFileKinds.Dll))
+			{
+				foreach (string className in classNames)
+				{
+					try
+					{
+						byte[] buf = h[className].GetData();
+						ClassFile f = new ClassFile(buf, 0, buf.Length, null, ClassFileParseOptions.None, null);
+						if (f.Name == className)
+						{
+							foreach (ClassFile.Method m in f.Methods)
 							{
-								StaticCompiler.IssueMessage(Message.MainMethodFound, f.Name);
-								options.mainClass = f.Name;
-								break;
+								if (m.IsPublic && m.IsStatic && m.Name == "main" && m.Signature == "([Ljava.lang.String;)V")
+								{
+									StaticCompiler.IssueMessage(Message.MainMethodFound, f.Name);
+									options.mainClass = f.Name;
+									goto break_outer;
+								}
 							}
 						}
 					}
+					catch (ClassFormatError) { }
 				}
-				catch (ClassFormatError)
-				{
-				}
+			break_outer: ;
 			}
 
 			if(options.guessFileKind && options.mainClass == null)
@@ -2879,9 +2831,7 @@ namespace IKVM.Internal
 				}
 				referencedAssemblies[i] = acl;
 			}
-			loader = new CompilerClassLoader(referencedAssemblies, options, options.path, options.targetIsModule, options.assembly, h);
-			loader.baseClasses = baseClasses;
-			loader.assemblyAnnotations = assemblyAnnotations;
+			loader = new CompilerClassLoader(referencedAssemblies, options, options.path, options.targetIsModule, options.assembly, h, compilingCoreAssembly);
 			loader.classesToCompile = new List<string>(h.Keys);
 			if(options.remapfile != null)
 			{
@@ -2984,6 +2934,18 @@ namespace IKVM.Internal
 			return asm;
 		}
 
+		private void CompilePass0()
+		{
+			if(options.sharedclassloader != null && options.sharedclassloader[0] != this)
+			{
+				packages = options.sharedclassloader[0].packages;
+			}
+			else
+			{
+				packages = new Packages();
+			}
+		}
+
 		private void CompilePass1()
 		{
 			Tracer.Info(Tracer.Compiler, "Compiling class files (1)");
@@ -2997,14 +2959,6 @@ namespace IKVM.Internal
 			if(map != null && CheckCompilingCoreAssembly())
 			{
 				FakeTypes.Create(GetTypeWrapperFactory().ModuleBuilder, this);
-			}
-			if(options.sharedclassloader != null && options.sharedclassloader[0] != this)
-			{
-				packages = options.sharedclassloader[0].packages;
-			}
-			else
-			{
-				packages = new Dictionary<string, string>();
 			}
 			allwrappers = new List<TypeWrapper>();
 			foreach(string s in classesToCompile)
@@ -3020,11 +2974,6 @@ namespace IKVM.Internal
 							StaticCompiler.IssueMessage(options, Message.SkippingReferencedClass, s, ((AssemblyClassLoader)loader).GetAssembly(wrapper).FullName);
 						}
 						continue;
-					}
-					int pos = wrapper.Name.LastIndexOf('.');
-					if(pos != -1)
-					{
-						packages[wrapper.Name.Substring(0, pos)] = "";
 					}
 					if(options.sharedclassloader != null && options.sharedclassloader[0] != this)
 					{
@@ -3128,12 +3077,15 @@ namespace IKVM.Internal
 				CustomAttributeBuilder filever = new CustomAttributeBuilder(JVM.Import(typeof(System.Reflection.AssemblyFileVersionAttribute)).GetConstructor(new Type[] { Types.String }), new object[] { options.fileversion });
 				assemblyBuilder.SetCustomAttribute(filever);
 			}
-			foreach(object[] def in assemblyAnnotations)
+			if(options.assemblyAttributeAnnotations != null)
 			{
-				Annotation annotation = Annotation.Load(this, def);
-				if(annotation != null)
+				foreach(object[] def in options.assemblyAttributeAnnotations)
 				{
-					annotation.Apply(this, assemblyBuilder, def);
+					Annotation annotation = Annotation.LoadAssemblyCustomAttribute(this, def);
+					if(annotation != null)
+					{
+						annotation.Apply(this, assemblyBuilder, def);
+					}
 				}
 			}
 			if(options.classLoader != null)
@@ -3327,13 +3279,31 @@ namespace IKVM.Internal
 				return false;
 			}
 		}
+
+		internal override bool WarningLevelHigh
+		{
+			get { return options.warningLevelHigh; }
+		}
+
+		internal override bool NoParameterReflection
+		{
+			get { return options.noParameterReflection; }
+		}
+
+		protected override void CheckProhibitedPackage(string className)
+		{
+			if (!compilingCoreAssembly)
+			{
+				base.CheckProhibitedPackage(className);
+			}
+		}
 	}
 
 	sealed class Jar
 	{
 		internal readonly string Name;
 		internal readonly string Comment;
-		internal readonly List<JarItem> Items = new List<JarItem>();
+		private readonly List<JarItem> Items = new List<JarItem>();
 
 		internal Jar(string name, string comment)
 		{
@@ -3356,34 +3326,115 @@ namespace IKVM.Internal
 		internal void Add(string name, byte[] data, FileInfo fileInfo)
 		{
 			ZipEntry zipEntry = new ZipEntry(name);
+			zipEntry.DateTime = fileInfo.LastWriteTimeUtc;
 			zipEntry.CompressionMethod = CompressionMethod.Stored;
 			Items.Add(new JarItem(zipEntry, data, fileInfo));
 		}
-	}
 
-	struct JarItem
-	{
-		internal readonly ZipEntry zipEntry;
-		internal readonly byte[] data;
-		internal readonly FileInfo path;			// path of the original file, if it was individual file (used to construct source file path)
-
-		internal JarItem(ZipEntry zipEntry, byte[] data, FileInfo path)
+		private struct JarItem
 		{
-			this.zipEntry = zipEntry;
-			this.data = data;
-			this.path = path;
+			internal readonly ZipEntry zipEntry;
+			internal readonly byte[] data;
+			internal readonly FileInfo path;			// path of the original file, if it was individual file (used to construct source file path)
+
+			internal JarItem(ZipEntry zipEntry, byte[] data, FileInfo path)
+			{
+				this.zipEntry = zipEntry;
+				this.data = data;
+				this.path = path;
+			}
 		}
-	}
 
-	struct JarItemReference
-	{
-		internal readonly Jar Jar;
-		internal readonly int Index;
-
-		internal JarItemReference(Jar jar, int index)
+		public struct Item
 		{
-			this.Jar = jar;
-			this.Index = index;
+			internal readonly Jar Jar;
+			private readonly int Index;
+
+			internal Item(Jar jar, int index)
+			{
+				this.Jar = jar;
+				this.Index = index;
+			}
+
+			internal string Name
+			{
+				get { return Jar.Items[Index].zipEntry.Name; }
+			}
+
+			internal byte[] GetData()
+			{
+				return Jar.Items[Index].data;
+			}
+
+			internal FileInfo Path
+			{
+				get { return Jar.Items[Index].path; }
+			}
+
+			internal ZipEntry ZipEntry
+			{
+				get
+				{
+					ZipEntry org = Jar.Items[Index].zipEntry;
+					ZipEntry zipEntry = new ZipEntry(org.Name);
+					zipEntry.Comment = org.Comment;
+					zipEntry.CompressionMethod = org.CompressionMethod;
+					zipEntry.DosTime = org.DosTime;
+					zipEntry.ExternalFileAttributes = org.ExternalFileAttributes;
+					zipEntry.ExtraData = org.ExtraData;
+					zipEntry.Flags = org.Flags;
+					return zipEntry;
+				}
+			}
+
+			internal void Remove()
+			{
+				Jar.Items[Index] = new JarItem();
+			}
+
+			internal void MarkAsStub()
+			{
+				Jar.Items[Index] = new JarItem(Jar.Items[Index].zipEntry, null, null);
+			}
+
+			internal bool IsStub
+			{
+				get { return Jar.Items[Index].data == null; }
+			}
+		}
+
+		internal struct JarEnumerator
+		{
+			private readonly Jar jar;
+			private int index;
+
+			internal JarEnumerator(Jar jar)
+			{
+				this.jar = jar;
+				this.index = -1;
+			}
+
+			public Item Current
+			{
+				get { return new Item(jar, index); }
+			}
+
+			public bool MoveNext()
+			{
+				while (index + 1 < jar.Items.Count)
+				{
+					if (jar.Items[++index].zipEntry != null)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public JarEnumerator GetEnumerator()
+		{
+			return new JarEnumerator(this);
 		}
 	}
 
@@ -3415,12 +3466,11 @@ namespace IKVM.Internal
 		internal Assembly[] references;
 		internal string[] peerReferences;
 		internal bool crossReferenceAllPeers = true;
-		internal string[] classesToExclude;
+		internal string[] classesToExclude;		// only used during command line parsing
 		internal FileInfo remapfile;
 		internal Dictionary<string, string> props;
 		internal bool noglobbing;
 		internal CodeGenOptions codegenoptions;
-		internal bool removeUnusedFields;
 		internal bool compressedResources;
 		internal string[] privatePackages;
 		internal string[] publicPackages;
@@ -3438,6 +3488,9 @@ namespace IKVM.Internal
 		internal bool warnaserror; // treat all warnings as errors
 		internal FileInfo writeSuppressWarningsFile;
 		internal List<string> proxies = new List<string>();
+		internal object[] assemblyAttributeAnnotations;
+		internal bool warningLevelHigh;
+		internal bool noParameterReflection;
 
 		internal CompilerOptions Copy()
 		{
@@ -3506,6 +3559,11 @@ namespace IKVM.Internal
 			return jars[classesJar];
 		}
 
+		internal bool IsClassesJar(Jar jar)
+		{
+			return classesJar != -1 && jars[classesJar] == jar;
+		}
+
 		internal Jar GetResourcesJar()
 		{
 			if (resourcesJar == -1)
@@ -3516,13 +3574,21 @@ namespace IKVM.Internal
 			return jars[resourcesJar];
 		}
 
+		internal bool IsResourcesJar(Jar jar)
+		{
+			return resourcesJar != -1 && jars[resourcesJar] == jar;
+		}
+
 		internal bool IsExcludedClass(string className)
 		{
-			for (int i = 0; i < classesToExclude.Length; i++)
+			if (classesToExclude != null)
 			{
-				if (Regex.IsMatch(className, classesToExclude[i]))
+				for (int i = 0; i < classesToExclude.Length; i++)
 				{
-					return true;
+					if (Regex.IsMatch(className, classesToExclude[i]))
+					{
+						return true;
+					}
 				}
 			}
 			return false;
@@ -3572,6 +3638,9 @@ namespace IKVM.Internal
 		UnableToResolveType = 133,
 		StubsAreDeprecated = 134,
 		WrongClassName = 135,
+		ReflectionCallerClassRequiresCallerID = 136,
+		LegacyAssemblyAttributesFound = 137,
+		UnableToCreateLambdaFactory = 138,
 		UnknownWarning = 999,
 		// This is where the errors start
 		StartErrors = 4000,
@@ -3590,6 +3659,7 @@ namespace IKVM.Internal
 		NonPrimaryAssemblyReference = 4013,
 		MissingType = 4014,
 		MissingReference = 4015,
+		CallerSensitiveOnUnsupportedMethod = 4016,
 		// Fatal errors
 		ResponseFileDepthExceeded = 5000,
 		ErrorReadingFile = 5001,
@@ -3647,19 +3717,37 @@ namespace IKVM.Internal
 		MissingBaseType = 5053,
 		MissingBaseTypeReference = 5054,
 		FileNotFound = 5055,
+		RuntimeMethodMissing = 5056,
+		MapFileFieldNotFound = 5057,
+		GhostInterfaceMethodMissing = 5058,
 	}
 
 	static class StaticCompiler
 	{
-		internal static readonly Universe Universe = new Universe(UniverseOptions.ResolveMissingMembers);
+		private static Universe universe;
 		internal static Assembly runtimeAssembly;
 		internal static Assembly runtimeJniAssembly;
 		internal static CompilerOptions toplevel;
 		internal static int errorCount;
 
-		static StaticCompiler()
+		internal static Universe Universe
 		{
-			Universe.ResolvedMissingMember += ResolvedMissingMember;
+			get
+			{
+				Debug.Assert(universe != null);
+				return universe;
+			}
+		}
+
+		internal static void Init(bool emitSymbols)
+		{
+			UniverseOptions options = UniverseOptions.ResolveMissingMembers | UniverseOptions.EnableFunctionPointers;
+			if (!emitSymbols)
+			{
+				options |= UniverseOptions.DeterministicOutput;
+			}
+			universe = new Universe(options);
+			universe.ResolvedMissingMember += ResolvedMissingMember;
 		}
 
 		private static void ResolvedMissingMember(Module requestingModule, MemberInfo member)
@@ -3722,6 +3810,17 @@ namespace IKVM.Internal
 			return tw;
 		}
 
+		internal static FieldWrapper GetFieldForMapXml(ClassLoaderWrapper loader, string clazz, string name, string sig)
+		{
+			FieldWrapper fw = GetClassForMapXml(loader, clazz).GetFieldWrapper(name, sig);
+			if (fw == null)
+			{
+				throw new FatalCompilerErrorException(Message.MapFileFieldNotFound, name, clazz);
+			}
+			fw.Link();
+			return fw;
+		}
+
 		internal static Type GetType(ClassLoaderWrapper loader, string name)
 		{
 			CompilerClassLoader ccl = (CompilerClassLoader)loader;
@@ -3735,7 +3834,7 @@ namespace IKVM.Internal
 
 		internal static void IssueMessage(CompilerOptions options, Message msgId, params string[] values)
 		{
-			if (errorCount != 0 && msgId < Message.StartErrors)
+			if (errorCount != 0 && msgId < Message.StartErrors && !options.warnaserror)
 			{
 				// don't display any warnings after we've emitted an error message
 				return;
@@ -3904,6 +4003,16 @@ namespace IKVM.Internal
 				case Message.WrongClassName:
 					msg = "Unable to compile \"{0}\" (wrong name: \"{1}\")";
 					break;
+				case Message.ReflectionCallerClassRequiresCallerID:
+					msg = "Reflection.getCallerClass() called from non-CallerID method" + Environment.NewLine +
+						"    (\"{0}.{1}{2}\")";
+					break;
+				case Message.LegacyAssemblyAttributesFound:
+					msg = "Legacy assembly attributes container found. Please use the -assemblyattributes:<file> option.";
+					break;
+				case Message.UnableToCreateLambdaFactory:
+					msg = "Unable to create static lambda factory.";
+					break;
 				case Message.UnableToCreateProxy:
 					msg = "Unable to create proxy \"{0}\"" + Environment.NewLine +
 						"    (\"{1}\")";
@@ -3943,6 +4052,10 @@ namespace IKVM.Internal
 					break;
 				case Message.UnknownWarning:
 					msg = "{0}";
+					break;
+				case Message.CallerSensitiveOnUnsupportedMethod:
+					msg = "CallerSensitive annotation on unsupported method" + Environment.NewLine +
+						"    (\"{0}.{1}{2}\")";
 					break;
 				default:
 					throw new InvalidProgramException();
@@ -4009,6 +4122,51 @@ namespace IKVM.Internal
 		internal static void SuppressWarning(CompilerOptions options, Message message, string name)
 		{
 			options.suppressWarnings[(int)message + ":" + name] = null;
+		}
+	}
+
+	sealed class Packages
+	{
+		private readonly List<string> packages = new List<string>();
+		private readonly Dictionary<string, string> packagesSet = new Dictionary<string, string>();
+
+		internal void DefinePackage(string packageName, string jar)
+		{
+			if (!packagesSet.ContainsKey(packageName))
+			{
+				packages.Add(packageName);
+				packagesSet.Add(packageName, jar);
+			}
+		}
+
+		// returns an array of PackageListAttribute constructor argument arrays
+		internal object[][] ToArray()
+		{
+			List<object[]> list = new List<object[]>();
+			// we use an empty string to indicate we don't yet have a jar,
+			// because null is used for packages that were defined from
+			// the file system (i.e. don't have a jar to load a manifest from)
+			string currentJar = "";
+			List<string> currentList = new List<string>();
+			foreach (string package in packages)
+			{
+				string jar = packagesSet[package];
+				if (jar != currentJar)
+				{
+					if (currentList.Count != 0)
+					{
+						list.Add(new object[] { currentJar, currentList.ToArray() });
+						currentList.Clear();
+					}
+					currentJar = jar;
+				}
+				currentList.Add(package);
+			}
+			if (currentList.Count != 0)
+			{
+				list.Add(new object[] { currentJar, currentList.ToArray() });
+			}
+			return list.ToArray();
 		}
 	}
 }

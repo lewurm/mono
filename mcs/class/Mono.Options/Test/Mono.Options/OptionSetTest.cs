@@ -46,7 +46,7 @@ using NUnit.Framework;
 #if NDESK_OPTIONS
 namespace Tests.NDesk.Options
 #else
-namespace Tests.Mono.Options
+namespace MonoTests.Mono.Options
 #endif
 {
 	class FooConverter : TypeConverter {
@@ -193,7 +193,7 @@ namespace Tests.Mono.Options
 			Assert.AreEqual (libs [1], null);
 
 			Utils.AssertException (typeof(OptionException), 
-					"Cannot bundle unregistered option '-V'.",
+					"Cannot use unregistered option 'V' in bundle '-EVALUENOTSUP'.",
 					p, v => { v.Parse (_("-EVALUENOTSUP")); });
 		}
 
@@ -354,10 +354,10 @@ namespace Tests.Mono.Options
 					p, v => { v.Parse (_("-a", "-b")); });
 			Assert.AreEqual (a, "-b");
 			Utils.AssertException (typeof(ArgumentNullException),
-					"Argument cannot be null.\nParameter name: option",
+					"Value cannot be null.\nParameter name: option",
 					p, v => { v.Add ((Option) null); });
 			Utils.AssertException (typeof(ArgumentNullException),
-					"Argument cannot be null.\nParameter name: header",
+					"Value cannot be null.\nParameter name: header",
 					p, v => { v.Add ((string) null); });
 
 			// bad type
@@ -370,11 +370,11 @@ namespace Tests.Mono.Options
 
 			// try to bundle with an option requiring a value
 			Utils.AssertException (typeof(OptionException), 
-					"Cannot bundle unregistered option '-z'.", 
+					"Cannot use unregistered option 'z' in bundle '-cz'.",
 					p, v => { v.Parse (_("-cz", "extra")); });
 
 			Utils.AssertException (typeof(ArgumentNullException), 
-					"Argument cannot be null.\nParameter name: action",
+					"Value cannot be null.\nParameter name: action",
 					p, v => { v.Add ("foo", (Action<string>) null); });
 			Utils.AssertException (typeof(ArgumentException), 
 					"Cannot provide maxValueCount of 2 for OptionValueType.None.\nParameter name: maxValueCount",
@@ -752,7 +752,7 @@ namespace Tests.Mono.Options
 			Utils.AssertException (typeof(ArgumentException), "prototypes must be null!",
 					p, v => { v.Add ("N|NUM=", (int n) => {}); });
 			Utils.AssertException (typeof(ArgumentNullException),
-					"Argument cannot be null.\nParameter name: option",
+					"Value cannot be null.\nParameter name: option",
 					p, v => { v.GetOptionForName (null); });
 		}
 
@@ -879,6 +879,22 @@ namespace Tests.Mono.Options
 			Assert.AreEqual (formats ["baz"].Count, 2);
 			Assert.AreEqual (formats ["baz"][0], "e");
 			Assert.AreEqual (formats ["baz"][1], "f");
+		}
+
+		[Test]
+		public void ReportInvalidDuplication ()
+		{
+			int verbosity = 0;
+			var p = new OptionSet () {
+				{ "v", v => verbosity = v != null ? verbosity + 1 : verbosity },
+			};
+			try {
+				p.Parse (new []{"-v-v-v"});
+				Assert.Fail ("Should not be reached.");
+			} catch (OptionException e) {
+				Assert.AreEqual (null, e.OptionName);
+				Assert.AreEqual ("Cannot use unregistered option '-' in bundle '-v-v-v'.", e.Message);
+			}
 		}
 	}
 }

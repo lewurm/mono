@@ -40,6 +40,7 @@ static class NetExp
 	private static bool includeSerialVersionUID;
 	private static bool includeNonPublicInterfaces;
 	private static bool includeNonPublicMembers;
+	private static bool includeParameterNames;
 	private static List<string> namespaces = new List<string>();
 
 	static int Main(string[] args)
@@ -106,6 +107,10 @@ static class NetExp
 				{
 					forwarders = true;
 				}
+				else if(s == "-parameters")
+				{
+					includeParameterNames = true;
+				}
 				else
 				{
 					// unrecognized option, or multiple assemblies, print usage message and exit
@@ -134,6 +139,7 @@ static class NetExp
 			Console.Error.WriteLine("    -lib:<dir>                 Additional directories to search for references");
 			Console.Error.WriteLine("    -namespace:<ns>            Only include types from specified namespace");
 			Console.Error.WriteLine("    -forwarders                Export forwarded types too");
+			Console.Error.WriteLine("    -parameters                Emit Java 8 classes with parameter names");
 			return 1;
 		}
 		if(File.Exists(assemblyNameOrPath) && nostdlib)
@@ -323,7 +329,7 @@ static class NetExp
 	{
 		zipCount++;
 		MemoryStream mem = new MemoryStream();
-		IKVM.StubGen.StubGenerator.WriteClass(mem, tw, includeNonPublicInterfaces, includeNonPublicMembers, includeSerialVersionUID);
+		IKVM.StubGen.StubGenerator.WriteClass(mem, tw, includeNonPublicInterfaces, includeNonPublicMembers, includeSerialVersionUID, includeParameterNames);
 		ZipEntry entry = new ZipEntry(tw.Name.Replace('.', '/') + ".class");
 		entry.Size = mem.Position;
 		zipFile.PutNextEntry(entry);
@@ -387,6 +393,7 @@ static class NetExp
 					try
 					{
 						ProcessClass(c);
+						WriteClass(c);
 					}
 					catch (Exception x)
 					{
@@ -400,7 +407,6 @@ static class NetExp
 							throw;
 						}
 					}
-					WriteClass(c);
 				}
 			}
 		} while(keepGoing);
@@ -497,7 +503,7 @@ static class Intrinsics
 
 static class StaticCompiler
 {
-	internal static readonly Universe Universe = new Universe();
+	internal static readonly Universe Universe = new Universe(UniverseOptions.EnableFunctionPointers);
 	internal static readonly AssemblyResolver Resolver = new AssemblyResolver();
 	internal static Assembly runtimeAssembly;
 
@@ -571,6 +577,7 @@ sealed class BootstrapBootstrapClassLoader : ClassLoaderWrapper
 		RegisterInitiatingLoader(new StubTypeWrapper(Modifiers.Public, "java.lang.Enum", javaLangObject, false));
 		RegisterInitiatingLoader(new StubTypeWrapper(Modifiers.Public | Modifiers.Abstract | Modifiers.Interface, "java.lang.annotation.Annotation", null, false));
 		RegisterInitiatingLoader(new StubTypeWrapper(Modifiers.Public | Modifiers.Final, "java.lang.Class", javaLangObject, false));
+		RegisterInitiatingLoader(new StubTypeWrapper(Modifiers.Public | Modifiers.Abstract, "java.lang.invoke.MethodHandle", javaLangObject, false));
 	}
 }
 
@@ -599,25 +606,6 @@ sealed class StubTypeWrapper : TypeWrapper
 	internal override Type TypeAsTBD
 	{
 		get { throw new NotSupportedException(); }
-	}
-
-	internal override TypeWrapper[] Interfaces
-	{
-		get { return TypeWrapper.EmptyArray; }
-	}
-
-	internal override TypeWrapper[] InnerClasses
-	{
-		get { return TypeWrapper.EmptyArray; }
-	}
-
-	internal override TypeWrapper DeclaringTypeWrapper
-	{
-		get { return null; }
-	}
-
-	internal override void Finish()
-	{
 	}
 
 	internal override bool IsRemapped

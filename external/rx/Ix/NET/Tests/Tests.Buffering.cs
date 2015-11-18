@@ -3,7 +3,14 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+#if NUNIT
+using NUnit.Framework;
+using TestClassAttribute = NUnit.Framework.TestFixtureAttribute;
+using TestMethodAttribute = NUnit.Framework.TestAttribute;
+using TestInitializeAttribute = NUnit.Framework.SetUpAttribute;
+#else
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+#endif
 using System.Collections;
 
 namespace Tests
@@ -63,7 +70,7 @@ namespace Tests
             NoNext(e1);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void Share4()
         {
             var rng = Enumerable.Range(0, 5).Share();

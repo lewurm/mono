@@ -38,6 +38,7 @@ namespace IKVM.Reflection.Writer
 		private readonly CliHeader cliHeader;
 		private readonly ModuleBuilder moduleBuilder;
 		private readonly uint strongNameSignatureLength;
+		private readonly uint manifestResourcesLength;
 		private readonly ExportTables exportTables;
 		private readonly List<RelocationBlock> relocations = new List<RelocationBlock>();
 
@@ -47,6 +48,7 @@ namespace IKVM.Reflection.Writer
 			this.cliHeader = cliHeader;
 			this.moduleBuilder = moduleBuilder;
 			this.strongNameSignatureLength = (uint)strongNameSignatureLength;
+			this.manifestResourcesLength = (uint)moduleBuilder.GetManifestResourcesLength();
 			if (moduleBuilder.unmanagedExports.Count != 0)
 			{
 				this.exportTables = new ExportTables(this);
@@ -110,7 +112,7 @@ namespace IKVM.Reflection.Writer
 
 		private uint ResourcesLength
 		{
-			get { return (uint)moduleBuilder.manifestResources.Length; }
+			get { return manifestResourcesLength; }
 		}
 
 		internal uint StrongNameSignatureRVA
@@ -273,7 +275,7 @@ namespace IKVM.Reflection.Writer
 			}
 		}
 
-		internal void Write(MetadataWriter mw, uint sdataRVA)
+		internal void Write(MetadataWriter mw, uint sdataRVA, out uint guidHeapOffset)
 		{
 			// Now that we're ready to start writing, we need to do some fix ups
 			moduleBuilder.TypeRef.Fixup(moduleBuilder);
@@ -341,7 +343,7 @@ namespace IKVM.Reflection.Writer
 			}
 
 			// Resources
-			mw.Write(moduleBuilder.manifestResources);
+			moduleBuilder.WriteResources(mw);
 
 			// The strong name signature live here (if it exists), but it will written later
 			// and the following alignment padding will take care of reserving the space.
@@ -354,7 +356,7 @@ namespace IKVM.Reflection.Writer
 
 			// Metadata
 			AssertRVA(mw, MetadataRVA);
-			moduleBuilder.WriteMetadata(mw);
+			moduleBuilder.WriteMetadata(mw, out guidHeapOffset);
 
 			// alignment padding
 			for (int i = (int)(VTableFixupsRVA - (MetadataRVA + MetadataLength)); i > 0; i--)
@@ -606,14 +608,12 @@ namespace IKVM.Reflection.Writer
 
 				// Now write the actual names
 				text.AssertRVA(mw, namesRVA);
-				mw.Write(Encoding.ASCII.GetBytes(text.moduleBuilder.fileName));
-				mw.Write((byte)0);
+				mw.WriteAsciiz(text.moduleBuilder.fileName);
 				foreach (UnmanagedExport exp in text.moduleBuilder.unmanagedExports)
 				{
 					if (exp.name != null)
 					{
-						mw.Write(Encoding.ASCII.GetBytes(exp.name));
-						mw.Write((byte)0);
+						mw.WriteAsciiz(exp.name);
 					}
 				}
 				text.AssertRVA(mw, namesRVA + namesLength);
@@ -677,7 +677,7 @@ namespace IKVM.Reflection.Writer
 				{
 					return -1;
 				}
-				return x.name.CompareTo(y.name);
+				return String.CompareOrdinal(x.name, y.name);
 			}
 
 			private static int CompareUnmanagedExportOrdinals(UnmanagedExport x, UnmanagedExport y)
@@ -814,16 +814,15 @@ namespace IKVM.Reflection.Writer
 			mw.Write((ushort)0);		// Hint
 			if ((peWriter.Headers.FileHeader.Characteristics & IMAGE_FILE_HEADER.IMAGE_FILE_DLL) != 0)
 			{
-				mw.Write(System.Text.Encoding.ASCII.GetBytes("_CorDllMain"));
+				mw.WriteAsciiz("_CorDllMain");
 			}
 			else
 			{
-				mw.Write(System.Text.Encoding.ASCII.GetBytes("_CorExeMain"));
+				mw.WriteAsciiz("_CorExeMain");
 			}
-			mw.Write((byte)0);
 			// Name
-			mw.Write(System.Text.Encoding.ASCII.GetBytes("mscoree.dll"));
-			mw.Write((ushort)0);
+			mw.WriteAsciiz("mscoree.dll");
+			mw.Write((byte)0);
 		}
 
 		internal int Length

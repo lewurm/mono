@@ -180,8 +180,10 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow)
+		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		}
 	}
 	mono_handle_exception (&ctx, exc);
 	restore_context (&ctx);
@@ -349,11 +351,6 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 	if (ji != NULL) {
 		frame->type = FRAME_TYPE_MANAGED;
-
-		if (*lmf && (MONO_CONTEXT_GET_BP (ctx) >= (gpointer)(*lmf)->ebp)) {
-			/* remove any unused lmf */
-			*lmf = (*lmf)->previous_lmf;
-		}
 
 		/* Restore ip and sp from the saved register window */
 		window = MONO_SPARC_WINDOW_ADDR (ctx->sp);

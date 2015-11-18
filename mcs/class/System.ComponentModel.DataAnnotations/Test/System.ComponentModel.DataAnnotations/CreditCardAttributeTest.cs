@@ -46,7 +46,7 @@ namespace MonoTests.System.ComponentModel.DataAnnotations
 			var sla = new CreditCardAttribute ();
 
 			Assert.IsTrue (sla.IsValid (null), "#A1-1");
-			Assert.IsFalse (sla.IsValid (String.Empty), "#A1-2");
+			Assert.IsTrue (sla.IsValid (String.Empty), "#A1-2");
 			Assert.IsFalse (sla.IsValid ("string"), "#A1-3");
 			Assert.IsTrue (sla.IsValid ("378282246310005"), "#A1-4");
 			Assert.IsTrue (sla.IsValid ("3782-8224-6310-005"), "#A1-5");

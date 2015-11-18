@@ -37,6 +37,11 @@ namespace Mono.Data.Tds {
 
 	public class TdsMetaParameter
 	{
+		#region Static 
+		public const int maxVarCharCharacters =  2147483647; // According to MS, max size is 2GB, 1 Byte Characters
+		public const int maxNVarCharCharacters = 1073741823; // According to MS, max size is 2GB, 2 Byte Characters
+		#endregion
+
 		#region Fields
 
 		TdsParameterDirection direction = TdsParameterDirection.Input;
@@ -175,6 +180,78 @@ namespace Mono.Data.Tds {
 			set { isVariableSizeType = value; }
 		}
 
+		public bool IsVarNVarCharMax
+		{
+			get { return (TypeName == "ntext" && size >= maxNVarCharCharacters); }
+		}
+
+		public bool IsVarCharMax
+		{
+			get { return (TypeName == "text" && size >= maxVarCharCharacters); }
+		}
+
+		public bool IsAnyVarCharMax
+		{
+			get { return IsVarNVarCharMax || IsVarCharMax; }
+		}
+
+		public bool IsNonUnicodeText
+		{
+			get {
+				TdsColumnType colType = GetMetaType();
+				return (colType == TdsColumnType.VarChar ||
+				        colType == TdsColumnType.BigVarChar ||
+				        colType == TdsColumnType.Text ||
+				        colType == TdsColumnType.Char ||
+				        colType == TdsColumnType.BigChar);
+			}
+		}
+
+		public bool IsMoneyType
+		{
+			get {
+				TdsColumnType colType = GetMetaType();
+				return (colType == TdsColumnType.Money ||
+				        colType == TdsColumnType.MoneyN ||
+				        colType == TdsColumnType.Money4 ||
+				        colType == TdsColumnType.SmallMoney);
+			}
+		}
+
+		public bool IsDateTimeType
+		{
+			get {
+				TdsColumnType colType = GetMetaType();
+				return (colType == TdsColumnType.DateTime ||
+				        colType == TdsColumnType.DateTime4 ||
+				        colType == TdsColumnType.DateTimeN);
+			}
+		}
+
+		public bool IsTextType
+		{
+			get {
+				TdsColumnType colType = GetMetaType();
+				return (colType == TdsColumnType.VarChar ||
+				        colType == TdsColumnType.BigVarChar ||
+				        colType == TdsColumnType.BigChar ||
+				        colType == TdsColumnType.Char ||
+				        colType == TdsColumnType.BigNVarChar || 
+				        colType == TdsColumnType.NChar ||
+				        colType == TdsColumnType.Text ||
+				        colType == TdsColumnType.NText);
+			}
+		}
+
+		public bool IsDecimalType
+		{
+			get {
+				TdsColumnType colType = GetMetaType();
+				return (colType == TdsColumnType.Decimal ||
+				        colType == TdsColumnType.Numeric);
+			}
+		}
+
 		#endregion // Properties
 
 		#region Methods
@@ -210,18 +287,31 @@ namespace Mono.Data.Tds {
 		internal string Prepare ()
 		{
 			string typeName = TypeName;
-			
-			if (typeName == "varbinary") {
-				int size = Size;
+			// Cf. GetDateTimeString
+			TdsColumnType actualType = TdsColumnType.Char;
+			int size;
+
+			switch (typeName) {
+			case "varbinary":
+				size = Size;
 				if (size <= 0) {
 					size = GetActualSize ();
 				}
-				
+
 				if (size > 8000) {
 					typeName = "varbinary(max)";
 				}
+				break;
+			case "datetime2":
+				actualType = TdsColumnType.DateTime2;
+				typeName = "char";
+				break;
+			case "datetimeoffset":
+				actualType = TdsColumnType.DateTimeOffset;
+				typeName = "char";
+				break;
 			}
-			
+
 			string includeAt = "@";
 			if (ParameterName [0] == '@')
 				includeAt = "";
@@ -236,7 +326,7 @@ namespace Mono.Data.Tds {
 			case "varchar":
 			case "varbinary":
 				//A size of 0 is not allowed in declarations.
-				int size = Size;
+				size = Size;
 				if (size <= 0) {
 					size = GetActualSize ();
 					if (size <= 0)
@@ -245,11 +335,18 @@ namespace Mono.Data.Tds {
 				result.Append (size > 8000 ? "(max)" : String.Format ("({0})", size));
 				break;
 			case "nvarchar":
-			case "xml":
 				int paramSize = Size < 0 ? GetActualSize () / 2 : Size;
 				result.Append (paramSize > 0 ? (paramSize > 4000 ? "(max)" : String.Format ("({0})", paramSize)) : "(4000)");
 				break;
 			case "char":
+				size = -1;
+				if (actualType != TdsColumnType.Char)
+					size = GetDateTimeStringLength (actualType);
+				else if (isSizeSet)
+					size = Size;
+				if (size > 0)
+					result.Append (String.Format ("({0})", size));
+				break;
 			case "nchar":
 			case "binary":
 				if (isSizeSet && Size > 0)
@@ -290,6 +387,10 @@ namespace Mono.Data.Tds {
 			case "float":
 			case "money":
 				return 8;
+			case "datetime2":
+				return GetDateTimeStringLength (TdsColumnType.DateTime2);
+			case "datetimeoffset":
+				return GetDateTimeStringLength (TdsColumnType.DateTimeOffset);
 			case "int":
 			case "real":
 			case "smalldatetime":
@@ -310,6 +411,53 @@ namespace Mono.Data.Tds {
 			return size;
 		}
 
+		private int GetDateTimePrecision ()
+		{
+			int precision = Precision;
+
+			// http://msdn.microsoft.com/en-us/library/bb677335.aspx
+			// says that default precision is 7.  How do
+			// we distinguish that from zero?
+			if (precision == 0 || precision > 7)
+				precision = 7;
+
+			return precision;
+		}
+
+		private int GetDateTimeStringLength (TdsColumnType type)
+		{
+			int precision = GetDateTimePrecision ();
+			int len = precision == 0 ? 19 : 20 + precision;
+
+			if (type == TdsColumnType.DateTimeOffset)
+				len += 6;
+
+			return len;
+		}
+
+		// HACK: Wire-level DateTime{2,Offset} require TDS
+		// 7.3, which this driver does not implement
+		// correctly--so we serialize to ASCII instead.
+		private string GetDateTimeString (TdsColumnType type)
+		{
+			int precision = GetDateTimePrecision ();
+			string fmt = "yyyy-MM-dd'T'HH':'mm':'ss";
+
+			if (precision > 0)
+				fmt += ".fffffff".Substring(0, precision + 1);
+
+			switch (type) {
+			case TdsColumnType.DateTime2:
+				DateTime dt = (DateTime)Value;
+				return dt.ToString(fmt);
+			case TdsColumnType.DateTimeOffset:
+				DateTimeOffset dto = (DateTimeOffset)Value;
+				return dto.ToString(fmt + "zzz");
+			}
+
+			throw new ApplicationException("Should be unreachable");
+		}
+
 		internal byte[] GetBytes ()
 		{
 			byte[] result = {};
@@ -327,6 +475,10 @@ namespace Mono.Data.Tds {
 				case "char" :
 				case "text" :
 					return Encoding.Default.GetBytes ((string)Value);
+				case "datetime2":
+					return Encoding.Default.GetBytes (GetDateTimeString (TdsColumnType.DateTime2));
+				case "datetimeoffset":
+					return Encoding.Default.GetBytes (GetDateTimeString (TdsColumnType.DateTimeOffset));
 				default :
 					return ((byte[]) Value);
 			}
@@ -346,7 +498,7 @@ namespace Mono.Data.Tds {
 					return TdsColumnType.IntN ;
 				return TdsColumnType.BigInt;
 			case "char":
-				return TdsColumnType.Char;
+				return TdsColumnType.BigChar;
 			case "money":
 				if (IsNullable)
 					return TdsColumnType.MoneyN;
@@ -354,7 +506,7 @@ namespace Mono.Data.Tds {
 			case "smallmoney":
 				if (IsNullable)
 					return TdsColumnType.MoneyN ;
-				return TdsColumnType.Money4;
+				return TdsColumnType.SmallMoney;
 			case "decimal":
 				return TdsColumnType.Decimal;
 			case "datetime":
@@ -365,6 +517,10 @@ namespace Mono.Data.Tds {
 				if (IsNullable)
 					return TdsColumnType.DateTimeN;
 				return TdsColumnType.DateTime4;
+			case "datetime2":
+				return TdsColumnType.DateTime2;
+			case "datetimeoffset":
+				return TdsColumnType.DateTimeOffset;
 			case "float":
 				if (IsNullable)
 					return TdsColumnType.FloatN ;
@@ -404,8 +560,38 @@ namespace Mono.Data.Tds {
 				return TdsColumnType.BigVarBinary;
 			case "varchar":
 				return TdsColumnType.BigVarChar;
+			case "sql_variant":
+				return TdsColumnType.Variant;
 			default:
 				throw new NotSupportedException ("Unknown Type : " + TypeName);
+			}
+		}
+
+		public void CalculateIsVariableType()
+		{
+			switch (GetMetaType ()) {
+				case TdsColumnType.UniqueIdentifier:
+				case TdsColumnType.BigVarChar:
+				case TdsColumnType.BigVarBinary:
+				case TdsColumnType.IntN:
+				case TdsColumnType.Text:
+				case TdsColumnType.FloatN:
+				case TdsColumnType.BigNVarChar:
+				case TdsColumnType.NText:
+				case TdsColumnType.Image:
+				case TdsColumnType.Decimal:
+				case TdsColumnType.BigBinary:
+				case TdsColumnType.DateTimeN:
+				case TdsColumnType.MoneyN:
+				case TdsColumnType.BitN:
+				case TdsColumnType.Char:
+				case TdsColumnType.BigChar:
+				case TdsColumnType.NChar:
+					IsVariableSizeType = true;
+					break;
+				default:
+					IsVariableSizeType = false;
+				break;
 			}
 		}
 

@@ -86,6 +86,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		return alloc_ireg_mp (cfg);
 	case STACK_OBJ:
 		return alloc_ireg_ref (cfg);
+	case STACK_R4:
 	case STACK_R8:
 		return alloc_freg (cfg);
 	case STACK_I8:
@@ -259,6 +260,8 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_LDSTRCONST(cfg,dest,image,token) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class)
 
+#define NEW_LDSTRLITCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_LDSTR_LIT, (val))
+
 #define NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class)
 
 #define NEW_LDTOKENCONST(cfg,dest,image,token,generic_context) NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDTOKEN, (image), (token), (generic_context), STACK_PTR, NULL)
@@ -302,8 +305,6 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 
 #define NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (name))
 
-#define GET_VARINFO_INST(cfg,num) ((cfg)->varinfo [(num)]->inst)
-
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
         MONO_INST_NEW ((cfg), (dest), OP_MOVE); \
 		(dest)->opcode = mono_type_to_regmove ((cfg), (vartype));  \
@@ -337,6 +338,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 		(dest)->type = STACK_MP;	\
 		(dest)->klass = (var)->klass;	\
         (dest)->dreg = alloc_dreg ((cfg), STACK_MP); \
+		(cfg)->has_indirection = TRUE;	\
 			  if (G_UNLIKELY (cfg->gsharedvt) && mini_is_gsharedvt_variable_type ((cfg), (var)->inst_vtype)) { handle_gsharedvt_ldaddr ((cfg)); } \
 		if (SIZEOF_REGISTER == 4 && DECOMPOSE_INTO_REGPAIR ((var)->type)) { MonoInst *var1 = get_vreg_to_inst (cfg, (var)->dreg + 1); MonoInst *var2 = get_vreg_to_inst (cfg, (var)->dreg + 2); g_assert (var1); g_assert (var2); var1->flags |= MONO_INST_INDIRECT; var2->flags |= MONO_INST_INDIRECT; } \
 	} while (0)
@@ -406,7 +408,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 	} while (0)
 
 #define NEW_SEQ_POINT(cfg,dest,il_offset,intr_loc) do {	 \
-	MONO_INST_NEW ((cfg), (dest), OP_SEQ_POINT); \
+	MONO_INST_NEW ((cfg), (dest), cfg->gen_sdb_seq_points ? OP_SEQ_POINT : OP_IL_SEQ_POINT); \
 	(dest)->inst_imm = (il_offset); \
 	(dest)->flags = intr_loc ? MONO_INST_SINGLE_STEP_LOC : 0; \
 	} while (0)
@@ -443,6 +445,8 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 #define EMIT_NEW_SFLDACONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_SFLDA, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_LDSTRCONST(cfg,dest,image,token) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_LDSTR, (image), (token), NULL, STACK_OBJ, mono_defaults.string_class); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+
+#define EMIT_NEW_LDSTRLITCONST(cfg,dest,val) do { NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_LDSTR_LIT, (val)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_TYPE_FROM_HANDLE_CONST(cfg,dest,image,token,generic_context) do { NEW_AOTCONST_TOKEN ((cfg), (dest), MONO_PATCH_INFO_TYPE_FROM_HANDLE, (image), (token), (generic_context), STACK_OBJ, mono_defaults.monotype_class); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
@@ -486,7 +490,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 			MonoInst *iargs [2]; \
 			iargs [0] = (inst); \
 			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
-			mono_emit_jit_icall (cfg, mono_fstore_r4, iargs); \
+			(dest) = mono_emit_jit_icall (cfg, mono_fstore_r4, iargs);	\
 		} else { \
 			EMIT_NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); \
 		} \
@@ -597,6 +601,13 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         inst->dreg = dr; \
         inst->inst_l = imm; \
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
+	} while (0)
+
+#define MONO_EMIT_NEW_DUMMY_INIT(cfg,dr,op) do {			  \
+		MonoInst *inst;										  \
+		MONO_INST_NEW ((cfg), (inst), (op));				  \
+		inst->dreg = dr;									  \
+		MONO_ADD_INS ((cfg)->cbb, inst);					  \
 	} while (0)
 
 #ifdef MONO_ARCH_NEED_GOT_VAR
@@ -743,8 +754,8 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 		(b)->real_offset = cfg->real_offset;	\
 	} while (0)
 
-/* Emit a one-way conditional branch */
-/* 
+/*
+ * Emit a one-way conditional branch and start a new bblock.
  * The inst_false_bb field of the cond branch will not be set, the JIT code should be
  * prepared to deal with this.
  */
@@ -834,8 +845,6 @@ static int ccount = 0;
 
 /* Loads/Stores which can fault are handled correctly by the LLVM mono branch */
 #define MONO_EMIT_NEW_IMPLICIT_EXCEPTION_LOAD_STORE(cfg) do { \
-	if (COMPILE_LLVM (cfg) && !IS_LLVM_MONO_BRANCH)			\
-		MONO_EMIT_NEW_IMPLICIT_EXCEPTION ((cfg));			\
     } while (0)
 
 /* Emit an explicit null check which doesn't depend on SIGSEGV signal handling */
@@ -863,8 +872,6 @@ static int ccount = 0;
 		int __ins_flags = ins_flags; \
 		if (__ins_flags & MONO_INST_FAULT) {								\
 			MONO_EMIT_NULL_CHECK ((cfg), (base));						\
-			if (cfg->explicit_null_checks)								\
-				__ins_flags &= ~MONO_INST_FAULT;							\
 		}																\
 		NEW_LOAD_MEMBASE ((cfg), (dest), (op), (dr), (base), (offset));	\
 		(dest)->flags = (__ins_flags);									\
@@ -875,8 +882,6 @@ static int ccount = 0;
 		int __ins_flags = ins_flags; \
 	    if (__ins_flags & MONO_INST_FAULT) {									\
 			MONO_EMIT_NULL_CHECK ((cfg), (base));						\
-			if (cfg->explicit_null_checks)								\
-				__ins_flags &= ~MONO_INST_FAULT;							\
 		}																\
 		NEW_LOAD_MEMBASE ((cfg), (inst), (op), (dr), (base), (offset)); \
 		inst->flags = (__ins_flags); \
@@ -897,6 +902,12 @@ static int ccount = 0;
 
 #define MONO_EMIT_NEW_LOAD_MEMBASE_FAULT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
 
+#define NEW_LOAD_MEMBASE_INVARIANT(cfg,dest,op,dr,base,offset) NEW_LOAD_MEMBASE_FLAGS ((cfg), (dest), (op), (dr), (base), (offset), MONO_INST_INVARIANT_LOAD)
+
+#define MONO_EMIT_NEW_LOAD_MEMBASE_OP_INVARIANT(cfg,op,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS ((cfg), (op), (dr), (base), (offset), MONO_INST_INVARIANT_LOAD)
+
+#define MONO_EMIT_NEW_LOAD_MEMBASE_INVARIANT(cfg,dr,base,offset) MONO_EMIT_NEW_LOAD_MEMBASE_OP_INVARIANT ((cfg), (OP_LOAD_MEMBASE), (dr), (base), (offset))
+
 /*Object Model related macros*/
 
 /* Default bounds check implementation for most architectures + llvm */
@@ -905,7 +916,7 @@ static int ccount = 0;
 			if (fault) \
 				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FAULT (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset); \
 			else \
-				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset, MONO_INST_CONSTANT_LOAD); \
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP_FLAGS (cfg, OP_LOADI4_MEMBASE, _length_reg, array_reg, offset, MONO_INST_INVARIANT_LOAD); \
 			MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, _length_reg, index_reg); \
 			MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "IndexOutOfRangeException"); \
 	} while (0)
@@ -925,15 +936,15 @@ static int ccount = 0;
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {							\
 			MONO_EMIT_NULL_CHECK (cfg, array_reg);						\
 			if (COMPILE_LLVM (cfg)) \
-				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg), TRUE); \
+				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), TRUE); \
 			else \
-				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), G_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
+				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg)); \
 		} else {														\
 			MonoInst *ins;												\
 			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);				\
 			ins->sreg1 = array_reg;										\
 			ins->sreg2 = index_reg;										\
-			ins->inst_imm = G_STRUCT_OFFSET (array_type, array_length_field); \
+			ins->inst_imm = MONO_STRUCT_OFFSET (array_type, array_length_field); \
 			ins->flags |= MONO_INST_FAULT; \
 			MONO_ADD_INS ((cfg)->cbb, ins);								\
 			(cfg)->flags |= MONO_CFG_HAS_ARRAY_ACCESS;					\

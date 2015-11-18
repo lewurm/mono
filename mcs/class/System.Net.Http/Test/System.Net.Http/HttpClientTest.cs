@@ -83,7 +83,74 @@ namespace MonoTests.System.Net.Http
 			}
 		}
 
-		const int WaitTimeout = 2500;
+		class CustomStream : Stream
+		{
+			public override void Flush ()
+			{
+				throw new NotImplementedException ();
+			}
+
+			int pos;
+
+			public override int Read (byte[] buffer, int offset, int count)
+			{
+				++pos;
+				if (pos > 4)
+					return 0;
+
+				return 11;
+			}
+
+			public override long Seek (long offset, SeekOrigin origin)
+			{
+				throw new NotImplementedException ();
+			}
+
+			public override void SetLength (long value)
+			{
+				throw new NotImplementedException ();
+			}
+
+			public override void Write (byte[] buffer, int offset, int count)
+			{
+				throw new NotImplementedException ();
+			}
+
+			public override bool CanRead {
+				get {
+					return true;
+				}
+			}
+
+			public override bool CanSeek {
+				get {
+					return false;
+				}
+			}
+
+			public override bool CanWrite {
+				get {
+					throw new NotImplementedException ();
+				}
+			}
+
+			public override long Length {
+				get {
+					throw new NotImplementedException ();
+				}
+			}
+
+			public override long Position {
+				get {
+					throw new NotImplementedException ();
+				}
+				set {
+					throw new NotImplementedException ();
+				}
+			}
+		}
+
+		const int WaitTimeout = 5000;
 
 		string port, TestHost, LocalServer;
 
@@ -170,6 +237,35 @@ namespace MonoTests.System.Net.Http
 			client.SendAsync (request).Wait (WaitTimeout);
 		}
 
+
+		[Test]
+		public void CancelRequestViaProxy ()
+		{
+			var handler = new HttpClientHandler {
+				Proxy = new WebProxy ("192.168.10.25:8888/"), // proxy that doesn't exist
+				UseProxy = true,
+				AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+			};
+
+			var httpClient = new HttpClient (handler) {
+				BaseAddress = new Uri ("https://google.com"),
+				Timeout = TimeSpan.FromMilliseconds (1)
+			};
+
+			try {
+				var restRequest = new HttpRequestMessage {
+					Method = HttpMethod.Post,
+					RequestUri = new Uri("foo", UriKind.Relative),
+					Content = new StringContent("", null, "application/json")
+				};
+
+				httpClient.PostAsync (restRequest.RequestUri, restRequest.Content).Wait (WaitTimeout);
+				Assert.Fail ("#1");
+			} catch (AggregateException e) {
+				Assert.IsTrue (e.InnerException is TaskCanceledException, "#2");
+			}
+		}
+
 		[Test]
 		public void Properties ()
 		{
@@ -217,6 +313,24 @@ namespace MonoTests.System.Net.Http
 			};
 
 			Assert.AreEqual (response, client.SendAsync (request).Result, "#1");
+		}
+
+		[Test]
+		public void Send_BaseAddress ()
+		{
+			var mh = new HttpMessageHandlerMock ();
+
+			var client = new HttpClient (mh);
+			client.BaseAddress = new Uri ("http://localhost/");
+			var response = new HttpResponseMessage ();
+
+			mh.OnSend = l => {
+				Assert.AreEqual ("http://localhost/relative", l.RequestUri.ToString (), "#2");
+				return Task.FromResult (response);
+			};
+
+			Assert.AreEqual (response, client.GetAsync ("relative").Result, "#1");
+			Assert.AreEqual (response, client.GetAsync ("/relative").Result, "#2");
 		}
 
 		[Test]
@@ -459,6 +573,130 @@ namespace MonoTests.System.Net.Http
 		}
 
 		[Test]
+		public void Send_Complete_CustomHeaders_SpecialSeparators ()
+		{
+			bool? failed = null;
+
+			var listener = CreateListener (l => {
+				var request = l.Request;
+
+				try {
+					Assert.AreEqual ("MLK Android Phone 1.1.9", request.UserAgent, "#1");
+					failed = false;
+				} catch {
+					failed = true;
+				}
+			});
+
+			try {
+				var client = new HttpClient ();
+
+				client.DefaultRequestHeaders.Add("User-Agent", "MLK Android Phone 1.1.9");
+
+				var request = new HttpRequestMessage (HttpMethod.Get, LocalServer);
+
+				var response = client.SendAsync (request, HttpCompletionOption.ResponseHeadersRead).Result;
+
+				Assert.AreEqual ("", response.Content.ReadAsStringAsync ().Result, "#100");
+				Assert.AreEqual (HttpStatusCode.OK, response.StatusCode, "#101");
+				Assert.AreEqual (false, failed, "#102");
+			} finally {
+				listener.Abort ();
+				listener.Close ();
+			}
+		}
+
+		[Test]
+		public void Send_Complete_CustomHeaders_Host ()
+		{
+			bool? failed = null;
+			var listener = CreateListener (l => {
+				var request = l.Request;
+
+				try {
+					Assert.AreEqual ("customhost", request.Headers["Host"], "#1");
+					failed = false;
+				} catch {
+					failed = true;
+				}
+			});
+
+			try {
+				var client = new HttpClient ();
+
+				client.DefaultRequestHeaders.Add("Host", "customhost");
+
+				var request = new HttpRequestMessage (HttpMethod.Get, LocalServer);
+
+				var response = client.SendAsync (request, HttpCompletionOption.ResponseHeadersRead).Result;
+
+				Assert.AreEqual ("", response.Content.ReadAsStringAsync ().Result, "#100");
+				Assert.AreEqual (HttpStatusCode.OK, response.StatusCode, "#101");
+				Assert.AreEqual (false, failed, "#102");
+			} finally {
+				listener.Abort ();
+				listener.Close ();
+			}
+		}
+
+		[Test]
+		public void Send_Transfer_Encoding_Chunked ()
+		{
+			bool? failed = null;
+
+			var listener = CreateListener (l => {
+				var request = l.Request;
+
+				try {
+					Assert.AreEqual (1, request.Headers.Count, "#1");
+					failed = false;
+				} catch {
+					failed = true;
+				}
+			});
+
+			try {
+				var client = new HttpClient ();
+				client.DefaultRequestHeaders.TransferEncodingChunked = true;
+
+				client.GetAsync (LocalServer).Wait ();
+
+				Assert.AreEqual (false, failed, "#102");
+			} finally {
+				listener.Abort ();
+				listener.Close ();
+			}
+		}
+
+		[Test]
+		public void Send_Transfer_Encoding_Custom ()
+		{
+			bool? failed = null;
+
+			var listener = CreateListener (l => {
+				failed = true;
+			});
+
+			try {
+				var client = new HttpClient ();
+				client.DefaultRequestHeaders.TransferEncoding.Add (new TransferCodingHeaderValue ("chunked2"));
+
+				var request = new HttpRequestMessage (HttpMethod.Get, LocalServer);
+
+				try {
+					client.SendAsync (request, HttpCompletionOption.ResponseHeadersRead).Wait ();
+					Assert.Fail ("#1");
+				} catch (AggregateException e) {
+					Assert.AreEqual (typeof (ProtocolViolationException), e.InnerException.GetType (), "#2");
+				}
+				Assert.IsNull (failed, "#102");
+			} finally {
+				listener.Abort ();
+				listener.Close ();
+			}
+		}
+
+		[Test]
 		public void Send_Complete_Content ()
 		{
 			var listener = CreateListener (l => {
@@ -534,6 +772,38 @@ namespace MonoTests.System.Net.Http
 		}
 
 		[Test]
+		public void Send_Complete_NoContent ()
+		{
+			foreach (var method in new HttpMethod[] { HttpMethod.Post, HttpMethod.Put, HttpMethod.Delete }) {
+				bool? failed = null;
+				var listener = CreateListener (l => {
+					try {
+						var request = l.Request;
+
+						Assert.AreEqual (2, request.Headers.Count, "#1");
+						Assert.AreEqual ("0", request.Headers ["Content-Length"], "#1b");
+						Assert.AreEqual (method.Method, request.HttpMethod, "#2");
+						failed = false;
+					} catch {
+						failed = true;
+					}
+				});
+
+				try {
+					var client = new HttpClient ();
+					var request = new HttpRequestMessage (method, LocalServer);
+					var response = client.SendAsync (request, HttpCompletionOption.ResponseHeadersRead).Result;
+
+					Assert.AreEqual ("", response.Content.ReadAsStringAsync ().Result, "#100");
+					Assert.AreEqual (HttpStatusCode.OK, response.StatusCode, "#101");
+					Assert.AreEqual (false, failed, "#102");
+				} finally {
+					listener.Close ();
+				}
+			}
+		}
+
+		[Test]
 		public void Send_Complete_Error ()
 		{
 			var listener = CreateListener (l => {
@@ -573,6 +843,30 @@ namespace MonoTests.System.Net.Http
 		}
 
 		[Test]
+		public void Send_Content_BomEncoding ()
+		{
+			var listener = CreateListener (l => {
+				var request = l.Request;
+
+				var str = l.Response.OutputStream;
+				str.WriteByte (0xEF);
+				str.WriteByte (0xBB);
+				str.WriteByte (0xBF);
+				str.WriteByte (71);
+			});
+
+			try {
+				var client = new HttpClient ();
+				var r = new HttpRequestMessage (HttpMethod.Get, LocalServer);
+				var response = client.SendAsync (r).Result;
+
+				Assert.AreEqual ("G", response.Content.ReadAsStringAsync ().Result);
+			} finally {
+				listener.Close ();
+			}
+		}
+
+		[Test]
 		public void Send_Content_Put ()
 		{
 			bool passed = false;
@@ -593,6 +887,31 @@ namespace MonoTests.System.Net.Http
 				Assert.IsTrue (passed, "#2");
 			} finally {
 				listener.Abort ();
+				listener.Close ();
+			}
+		}
+
+		[Test]
+		public void Send_Content_Put_CustomStream ()
+		{
+			bool passed = false;
+			var listener = CreateListener (l => {
+				var request = l.Request;
+				passed = 44 == request.ContentLength64;
+				passed &= request.ContentType == null;
+			});
+
+			try {
+				var client = new HttpClient ();
+				var r = new HttpRequestMessage (HttpMethod.Put, LocalServer);
+				r.Content = new StreamContent (new CustomStream ());
+				var response = client.SendAsync (r).Result;
+
+				Assert.AreEqual (HttpStatusCode.OK, response.StatusCode, "#1");
+				Assert.IsTrue (passed, "#2");
+			} finally {
+				listener.Abort ();
+
 				listener.Close ();
 			}
 		}
@@ -674,17 +993,6 @@ namespace MonoTests.System.Net.Http
 		}
 
 		[Test]
-		public void GetString_RelativeUri ()
-		{
-			var client = new HttpClient ();
-			client.BaseAddress = new Uri ("http://en.wikipedia.org/wiki/");
-			var uri = new Uri ("Computer", UriKind.Relative);
-
-			Assert.That (client.GetStringAsync (uri).Result != null);
-			Assert.That (client.GetStringAsync ("Computer").Result != null);
-		}
-
-		[Test]
 		[Category ("MobileNotWorking")] // Missing encoding
 		public void GetString_Many ()
 		{
@@ -738,6 +1046,32 @@ namespace MonoTests.System.Net.Http
 				} catch (AggregateException e) {
 					Assert.IsTrue (e.InnerException is HttpRequestException, "#2");
 				}
+			} finally {
+				listener.Abort ();
+				listener.Close ();
+			}
+		}
+
+		[Test]
+		public void RequestUriAfterRedirect ()
+		{
+			var listener = CreateListener (l => {
+				var request = l.Request;
+				var response = l.Response;
+
+				response.StatusCode = (int)HttpStatusCode.Moved;
+				response.RedirectLocation = "http://xamarin.com/";
+			});
+
+			try {
+				var chandler = new HttpClientHandler ();
+				chandler.AllowAutoRedirect = true;
+				var client = new HttpClient (chandler);
+
+				var r = client.GetAsync (LocalServer);
+				Assert.IsTrue (r.Wait (WaitTimeout), "#1");
+				var resp = r.Result;
+				Assert.AreEqual ("http://xamarin.com/", resp.RequestMessage.RequestUri.AbsoluteUri, "#2");
 			} finally {
 				listener.Abort ();
 				listener.Close ();

@@ -27,7 +27,9 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+#if !NO_SYMBOL_WRITER
 using System.Diagnostics.SymbolStore;
+#endif
 using IKVM.Reflection.Metadata;
 using IKVM.Reflection.Writer;
 
@@ -89,15 +91,19 @@ namespace IKVM.Reflection.Emit
 		{
 			if (ilgen != null)
 			{
+#if !NO_SYMBOL_WRITER
 				if (this.ModuleBuilder.symbolWriter != null)
 				{
 					this.ModuleBuilder.symbolWriter.OpenMethod(new SymbolToken(-pseudoToken | 0x06000000), this);
 				}
+#endif
 				rva = ilgen.WriteBody(initLocals);
+#if !NO_SYMBOL_WRITER
 				if (this.ModuleBuilder.symbolWriter != null)
 				{
 					this.ModuleBuilder.symbolWriter.CloseMethod();
 				}
+#endif
 				ilgen = null;
 			}
 		}
@@ -249,32 +255,27 @@ namespace IKVM.Reflection.Emit
 
 		public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
 		{
-			Universe u = this.ModuleBuilder.universe;
-			Type type = customBuilder.Constructor.DeclaringType;
-			if (type == u.System_Runtime_InteropServices_DllImportAttribute)
+			switch (customBuilder.KnownCA)
 			{
-				attributes |= MethodAttributes.PinvokeImpl;
-				SetDllImportPseudoCustomAttribute(customBuilder.DecodeBlob(this.Module.Assembly));
-			}
-			else if (type == u.System_Runtime_CompilerServices_MethodImplAttribute)
-			{
-				SetMethodImplAttribute(customBuilder.DecodeBlob(this.Module.Assembly));
-			}
-			else if (type == u.System_Runtime_InteropServices_PreserveSigAttribute)
-			{
-				implFlags |= MethodImplAttributes.PreserveSig;
-			}
-			else if (type == u.System_Runtime_CompilerServices_SpecialNameAttribute)
-			{
-				attributes |= MethodAttributes.SpecialName;
-			}
-			else
-			{
-				if (type == u.System_Security_SuppressUnmanagedCodeSecurityAttribute)
-				{
+				case KnownCA.DllImportAttribute:
+					SetDllImportPseudoCustomAttribute(customBuilder.DecodeBlob(this.Module.Assembly));
+					attributes |= MethodAttributes.PinvokeImpl;
+					break;
+				case KnownCA.MethodImplAttribute:
+					SetMethodImplAttribute(customBuilder.DecodeBlob(this.Module.Assembly));
+					break;
+				case KnownCA.PreserveSigAttribute:
+					implFlags |= MethodImplAttributes.PreserveSig;
+					break;
+				case KnownCA.SpecialNameAttribute:
+					attributes |= MethodAttributes.SpecialName;
+					break;
+				case KnownCA.SuppressUnmanagedCodeSecurityAttribute:
 					attributes |= MethodAttributes.HasSecurity;
-				}
-				this.ModuleBuilder.SetCustomAttribute(pseudoToken, customBuilder);
+					goto default;
+				default:
+					this.ModuleBuilder.SetCustomAttribute(pseudoToken, customBuilder);
+					break;
 			}
 		}
 
@@ -288,11 +289,13 @@ namespace IKVM.Reflection.Emit
 			declarativeSecurity.Add(customBuilder);
 		}
 
+#if !CORECLR
 		public void AddDeclarativeSecurity(System.Security.Permissions.SecurityAction securityAction, System.Security.PermissionSet permissionSet)
 		{
 			this.ModuleBuilder.AddDeclarativeSecurity(pseudoToken, securityAction, permissionSet);
 			this.attributes |= MethodAttributes.HasSecurity;
 		}
+#endif
 
 		public void SetImplementationFlags(MethodImplAttributes attributes)
 		{
@@ -374,7 +377,7 @@ namespace IKVM.Reflection.Emit
 			gtpb = new GenericTypeParameterBuilder[names.Length];
 			for (int i = 0; i < names.Length; i++)
 			{
-				gtpb[i] = new GenericTypeParameterBuilder(names[i], null, this, i);
+				gtpb[i] = new GenericTypeParameterBuilder(names[i], this, i);
 			}
 			return (GenericTypeParameterBuilder[])gtpb.Clone();
 		}
@@ -742,7 +745,8 @@ namespace IKVM.Reflection.Emit
 			{
 				if (methodSignature == null)
 				{
-					methodSignature = MethodSignature.MakeFromBuilder(returnType, parameterTypes, customModifiers, callingConvention, gtpb == null ? 0 : gtpb.Length);
+					methodSignature = MethodSignature.MakeFromBuilder(returnType ?? typeBuilder.Universe.System_Void, parameterTypes ?? Type.EmptyTypes,
+						customModifiers, callingConvention, gtpb == null ? 0 : gtpb.Length);
 				}
 				return methodSignature;
 			}
