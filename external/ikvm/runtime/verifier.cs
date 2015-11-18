@@ -2572,19 +2572,9 @@ sealed class MethodAnalyzer
 		// Optimization pass
 		if (classLoader.RemoveAsserts)
 		{
-			FieldWrapper assertionsDisabled = null;
-			foreach (FieldWrapper fw in wrapper.GetFields())
-			{
-				// HACK we assume that all compilers use the same name for this field (ecj and javac do)
-				if (fw.Name == "$assertionsDisabled" && fw.Signature == "Z"
-					&& (fw.Modifiers & (IKVM.Attributes.Modifiers.AccessMask | IKVM.Attributes.Modifiers.Final | IKVM.Attributes.Modifiers.Static | IKVM.Attributes.Modifiers.Synthetic))
-						== (IKVM.Attributes.Modifiers.Static | IKVM.Attributes.Modifiers.Final | IKVM.Attributes.Modifiers.Synthetic))
-				{
-					assertionsDisabled = fw;
-					break;
-				}
-			}
-			if (assertionsDisabled != null)
+			// While the optimization is general, in practice it never happens that a getstatic is used on a final field,
+			// so we only look for this if assert initialization has been optimized out.
+			if (classFile.HasAssertions)
 			{
 				// compute branch targets
 				InstructionFlags[] flags = MethodAnalyzer.ComputePartialReachability(codeInfo, method.Instructions, exceptions, 0, false);
@@ -2596,12 +2586,10 @@ sealed class MethodAnalyzer
 						&& instructions[i + 1].TargetIndex > i
 						&& (flags[i + 1] & InstructionFlags.BranchTarget) == 0)
 					{
-						ClassFile.ConstantPoolItemFieldref cpi = classFile.GetFieldref(instructions[i].Arg1);
-						if (cpi.GetField() == assertionsDisabled)
+						ConstantFieldWrapper field = classFile.GetFieldref(instructions[i].Arg1).GetField() as ConstantFieldWrapper;
+						if (field != null && field.FieldTypeWrapper == PrimitiveTypeWrapper.BOOLEAN && (bool)field.GetConstantValue())
 						{
-							// We've found an assertion. We patch the instruction to branch around it so that
-							// the assertion code will be unreachable (and hence optimized away).
-							// Note that the goto will be optimized away later by the code generator (which removes unnecessary branches).
+							// We know the branch will always be taken, so we replace the getstatic/ifne by a goto.
 							instructions[i].PatchOpCode(NormalizedByteCode.__goto, instructions[i + 1].TargetIndex);
 						}
 					}
@@ -3696,6 +3684,10 @@ sealed class MethodAnalyzer
 					{
 						SetHardError(wrapper.GetClassLoader(), ref instr, HardError.AbstractMethodError, "{0}.{1}{2}", cpi.Class, cpi.Name, cpi.Signature);
 					}
+					else if(invoke == NormalizedByteCode.__invokeinterface && targetMethod.IsPrivate)
+					{
+						SetHardError(wrapper.GetClassLoader(), ref instr, HardError.IncompatibleClassChangeError, "private interface method requires invokespecial, not invokeinterface: method {0}.{1}{2}", cpi.Class, cpi.Name, cpi.Signature);
+					}
 					else if(targetMethod.IsAccessibleFrom(cpi.GetClassType(), wrapper, thisType))
 					{
 						return;
@@ -3869,7 +3861,7 @@ sealed class MethodAnalyzer
 				SetHardError(wrapper.GetClassLoader(), ref instr, HardError.NoSuchFieldError, "{0}.{1}", cpi.Class, cpi.Name);
 				return;
 			}
-			if(cpi.GetFieldType() != field.FieldTypeWrapper && !field.FieldTypeWrapper.IsUnloadable)
+			if(cpi.GetFieldType() != field.FieldTypeWrapper && !cpi.GetFieldType().IsUnloadable & !field.FieldTypeWrapper.IsUnloadable)
 			{
 #if STATIC_COMPILER
 				StaticCompiler.LinkageError("Field \"{2}.{3}\" is of type \"{0}\" instead of type \"{1}\" as expected by \"{4}\"", field.FieldTypeWrapper, cpi.GetFieldType(), cpi.GetClassType().Name, cpi.Name, wrapper.Name);

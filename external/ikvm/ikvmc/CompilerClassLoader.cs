@@ -181,7 +181,7 @@ namespace IKVM.Internal
 			return "CompilerClassLoader:" + options.assembly;
 		}
 
-		protected override TypeWrapper LoadClassImpl(string name, bool throwClassNotFoundException)
+		protected override TypeWrapper LoadClassImpl(string name, LoadMode mode)
 		{
 			foreach(AssemblyClassLoader acl in referencedAssemblies)
 			{
@@ -230,7 +230,7 @@ namespace IKVM.Internal
 			{
 				return tw1;
 			}
-			return FindOrLoadGenericClass(name, false);
+			return FindOrLoadGenericClass(name, mode);
 		}
 
 		private TypeWrapper PeerLoad(string name)
@@ -293,10 +293,6 @@ namespace IKVM.Internal
 						StaticCompiler.SuppressWarning(options, Message.ClassNotFound, name);
 						StaticCompiler.IssueMessage(options, Message.WrongClassName, name, f.Name);
 						return null;
-					}
-					if(options.removeUnusedFields)
-					{
-						f.RemoveUnusedFields();
 					}
 					if(f.IsPublic && options.privatePackages != null)
 					{
@@ -1290,7 +1286,7 @@ namespace IKVM.Internal
 								typeWrapper.helperTypeBuilder = typeWrapper.typeBuilder.DefineNestedType("__Helper", TypeAttributes.NestedPublic | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.Abstract);
 								AttributeHelper.HideFromJava(typeWrapper.helperTypeBuilder);
 							}
-							helper = typeWrapper.helperTypeBuilder.DefineMethod(m.Name, MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig).TypeAsSignatureType, argTypes);
+							helper = typeWrapper.helperTypeBuilder.DefineMethod(m.Name, MethodAttributes.HideBySig | MethodAttributes.Public | MethodAttributes.Static, typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig, LoadMode.LoadOrThrow).TypeAsSignatureType, argTypes);
 							if(m.Attributes != null)
 							{
 								foreach(IKVM.Internal.MapXml.Attribute custattr in m.Attributes)
@@ -1334,7 +1330,7 @@ namespace IKVM.Internal
 					{
 						MethodBuilder mbCore = null;
 						Type[] paramTypes = typeWrapper.GetClassLoader().ArgTypeListFromSig(m.Sig);
-						Type retType = typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig).TypeAsSignatureType;
+						Type retType = typeWrapper.GetClassLoader().RetTypeWrapperFromSig(m.Sig, LoadMode.LoadOrThrow).TypeAsSignatureType;
 
 						if(typeWrapper.shadowType.IsSealed && (m.Modifiers & IKVM.Internal.MapXml.MapModifiers.Static) == 0)
 						{
@@ -1806,7 +1802,7 @@ namespace IKVM.Internal
 							{
 								attr |= FieldAttributes.Static;
 							}
-							FieldBuilder fb = tb.DefineField(f.Name, GetClassLoader().FieldTypeWrapperFromSig(f.Sig).TypeAsSignatureType, attr);
+							FieldBuilder fb = tb.DefineField(f.Name, GetClassLoader().FieldTypeWrapperFromSig(f.Sig, LoadMode.LoadOrThrow).TypeAsSignatureType, attr);
 							if(f.Attributes != null)
 							{
 								foreach(IKVM.Internal.MapXml.Attribute custattr in f.Attributes)
@@ -1827,11 +1823,11 @@ namespace IKVM.Internal
 										throw new NotImplementedException("remapped constant field of type: " + f.Sig);
 								}
 								fb.SetConstant(constant);
-								fields.Add(new ConstantFieldWrapper(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig), f.Name, f.Sig, (Modifiers)f.Modifiers, fb, constant, MemberFlags.None));
+								fields.Add(new ConstantFieldWrapper(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig, LoadMode.LoadOrThrow), f.Name, f.Sig, (Modifiers)f.Modifiers, fb, constant, MemberFlags.None));
 							}
 							else
 							{
-								fields.Add(FieldWrapper.Create(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig), fb, f.Name, f.Sig, new ExModifiers((Modifiers)f.Modifiers, false)));
+								fields.Add(FieldWrapper.Create(this, GetClassLoader().FieldTypeWrapperFromSig(f.Sig, LoadMode.LoadOrThrow), fb, f.Name, f.Sig, new ExModifiers((Modifiers)f.Modifiers, false)));
 							}
 						}
 					}
@@ -2086,43 +2082,6 @@ namespace IKVM.Internal
 			internal override MethodBase LinkMethod(MethodWrapper mw)
 			{
 				return ((RemappedMethodBaseWrapper)mw).DoLink();
-			}
-
-			internal override TypeWrapper DeclaringTypeWrapper
-			{
-				get
-				{
-					// at the moment we don't support nested remapped types
-					return null;
-				}
-			}
-
-			internal override void Finish()
-			{
-				if(BaseTypeWrapper != null)
-				{
-					BaseTypeWrapper.Finish();
-				}
-				foreach(TypeWrapper iface in Interfaces)
-				{
-					iface.Finish();
-				}
-				foreach(MethodWrapper m in GetMethods())
-				{
-					m.Link();
-				}
-				foreach(FieldWrapper f in GetFields())
-				{
-					f.Link();
-				}
-			}
-
-			internal override TypeWrapper[] InnerClasses
-			{
-				get
-				{
-					return TypeWrapper.EmptyArray;
-				}
 			}
 
 			internal override TypeWrapper[] Interfaces
@@ -3367,6 +3326,7 @@ namespace IKVM.Internal
 		internal void Add(string name, byte[] data, FileInfo fileInfo)
 		{
 			ZipEntry zipEntry = new ZipEntry(name);
+			zipEntry.DateTime = fileInfo.LastWriteTimeUtc;
 			zipEntry.CompressionMethod = CompressionMethod.Stored;
 			Items.Add(new JarItem(zipEntry, data, fileInfo));
 		}
@@ -3511,7 +3471,6 @@ namespace IKVM.Internal
 		internal Dictionary<string, string> props;
 		internal bool noglobbing;
 		internal CodeGenOptions codegenoptions;
-		internal bool removeUnusedFields;
 		internal bool compressedResources;
 		internal string[] privatePackages;
 		internal string[] publicPackages;
@@ -3765,15 +3724,30 @@ namespace IKVM.Internal
 
 	static class StaticCompiler
 	{
-		internal static readonly Universe Universe = new Universe(UniverseOptions.ResolveMissingMembers | UniverseOptions.EnableFunctionPointers);
+		private static Universe universe;
 		internal static Assembly runtimeAssembly;
 		internal static Assembly runtimeJniAssembly;
 		internal static CompilerOptions toplevel;
 		internal static int errorCount;
 
-		static StaticCompiler()
+		internal static Universe Universe
 		{
-			Universe.ResolvedMissingMember += ResolvedMissingMember;
+			get
+			{
+				Debug.Assert(universe != null);
+				return universe;
+			}
+		}
+
+		internal static void Init(bool emitSymbols)
+		{
+			UniverseOptions options = UniverseOptions.ResolveMissingMembers | UniverseOptions.EnableFunctionPointers;
+			if (!emitSymbols)
+			{
+				options |= UniverseOptions.DeterministicOutput;
+			}
+			universe = new Universe(options);
+			universe.ResolvedMissingMember += ResolvedMissingMember;
 		}
 
 		private static void ResolvedMissingMember(Module requestingModule, MemberInfo member)

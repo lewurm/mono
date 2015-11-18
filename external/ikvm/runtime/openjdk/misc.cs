@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2007-2013 Jeroen Frijters
+  Copyright (C) 2007-2015 Jeroen Frijters
   Copyright (C) 2009 Volker Berlin (i-net software)
 
   This software is provided 'as-is', without any express or implied
@@ -134,6 +134,13 @@ static class Java_java_util_zip_ClassStubZipEntry
 	}
 }
 
+static class Java_java_awt_Choice
+{
+	public static void initIDs()
+	{
+	}
+}
+
 static class Java_sun_awt_image_ByteComponentRaster
 {
 	public static void initIDs()
@@ -162,6 +169,19 @@ static class Java_sun_awt_image_ShortComponentRaster
 	}
 }
 
+static class Java_sun_awt_DefaultMouseInfoPeer
+{
+	public static int fillPointWithCoords(object _this, object point)
+	{
+		throw new NotImplementedException();
+	}
+
+	public static bool isWindowUnderMouse(object _this, object w)
+	{
+		throw new NotImplementedException();
+	}
+}
+
 static class Java_sun_awt_FontDescriptor
 {
 	public static void initIDs()
@@ -174,6 +194,34 @@ static class Java_sun_invoke_anon_AnonymousClassLoader
 	public static java.lang.Class loadClassInternal(java.lang.Class hostClass, byte[] classFile, object[] patchArray)
 	{
 		throw new NotImplementedException();
+	}
+}
+
+static class Java_sun_invoke_util_VerifyAccess
+{
+	// called from map.xml as a replacement for Class.getClassLoader() in sun.invoke.util.VerifyAccess.isTypeVisible()
+	public static java.lang.ClassLoader Class_getClassLoader(java.lang.Class clazz)
+	{
+		TypeWrapper tw = TypeWrapper.FromClass(clazz);
+		if (ClassLoaderWrapper.GetBootstrapClassLoader().LoadClassByDottedNameFast(tw.Name) == tw)
+		{
+			// if a class is visible from the bootstrap class loader, we have to return null to allow the visibility check to succeed
+			return null;
+		}
+		return tw.GetClassLoader().GetJavaClassLoader();
+	}
+}
+
+static class Java_sun_net_PortConfig
+{
+	public static int getLower0()
+	{
+		return 49152;
+	}
+
+	public static int getUpper0()
+	{
+		return 65535;
 	}
 }
 
@@ -198,10 +246,10 @@ static class Java_sun_nio_fs_NetPath
 #if FIRST_PASS
 		return null;
 #else
-		path = java.io.FileSystem.getFileSystem().canonicalize(path);
+		path = java.io.DefaultFileSystem.getFileSystem().canonicalize(path);
 		if (VirtualFileSystem.IsVirtualFS(path))
 		{
-			if (VirtualFileSystem.CheckAccess(path, Java_java_io_Win32FileSystem.ACCESS_READ))
+			if (VirtualFileSystem.CheckAccess(path, Java_java_io_WinNTFileSystem.ACCESS_READ))
 			{
 				return path;
 			}
@@ -244,14 +292,6 @@ static class Java_sun_nio_fs_NetPath
 	}
 }
 
-static class Java_sun_rmi_server_MarshalInputStream
-{
-	public static object latestUserDefinedLoader()
-	{
-		return Java_java_io_ObjectInputStream.latestUserDefinedLoader();
-	}
-}
-
 static class Java_sun_security_provider_NativeSeedGenerator
 {
 	public static bool nativeGenerateSeed(byte[] result)
@@ -260,6 +300,9 @@ static class Java_sun_security_provider_NativeSeedGenerator
 		{
 			RNGCryptoServiceProvider csp = new RNGCryptoServiceProvider();
 			csp.GetBytes(result);
+#if NET_4_0
+			csp.Dispose();
+#endif
 			return true;
 		}
 		catch (CryptographicException)
@@ -308,48 +351,27 @@ static class Java_com_sun_java_util_jar_pack_NativeUnpack
 
 static class Java_com_sun_security_auth_module_NTSystem
 {
-	public static void getCurrent(object thisObj, bool debug)
+	public static void getCurrent(object thisObj, bool debug, ref string userName, ref string domain, ref string domainSID, ref string userSID, ref string[] groupIDs, ref string primaryGroupID)
 	{
 		WindowsIdentity id = WindowsIdentity.GetCurrent();
 		string[] name = id.Name.Split('\\');
-		SetField(thisObj, "userName", name[1]);
-		SetField(thisObj, "domain", name[0]);
-		SetField(thisObj, "domainSID", id.User.AccountDomainSid.Value);
-		SetField(thisObj, "userSID", id.User.Value);
+		userName = name[1];
+		domain = name[0];
+		domainSID = id.User.AccountDomainSid.Value;
+		userSID = id.User.Value;
 		string[] groups = new string[id.Groups.Count];
 		for (int i = 0; i < groups.Length; i++)
 		{
 			groups[i] = id.Groups[i].Value;
 		}
-		SetField(thisObj, "groupIDs", groups);
+		groupIDs = groups;
 		// HACK it turns out that Groups[0] is the primary group, but AFAIK this is not documented anywhere
-		SetField(thisObj, "primaryGroupID", groups[0]);
-	}
-
-	private static void SetField(object thisObj, string field, object value)
-	{
-		thisObj.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(thisObj, value);
+		primaryGroupID = groups[0];
 	}
 
 	public static long getImpersonationToken0(object thisObj)
 	{
 		return WindowsIdentity.GetCurrent().Token.ToInt64();
-	}
-}
-
-static class Java_com_sun_security_auth_module_SolarisSystem
-{
-	public static void getSolarisInfo(object thisObj)
-	{
-		throw new NotImplementedException();
-	}
-}
-
-static class Java_com_sun_security_auth_module_UnixSystem
-{
-	public static void getUnixInfo(object thisObj)
-	{
-		throw new NotImplementedException();
 	}
 }
 
@@ -512,6 +534,7 @@ static class Java_java_awt_SplashScreen
 	public static String _getImageFileName(long splashPtr) { return null; }
 	public static String _getImageJarName(long splashPtr) { return null; }
 	public static bool _setImageData(long splashPtr, byte[] data) { return false; }
+	public static float _getScaleFactor(long SplashPtr) { return 1; }
 }
 
 static class Java_java_awt_TextArea
@@ -582,4 +605,31 @@ static class Java_java_awt_image_SinglePixelPackedSampleModel
 static class Java_java_awt_image_SampleModel
 {
 	public static void initIDs() { }
+}
+
+static class Java_sun_net_ExtendedOptionsImpl
+{
+	public static void init()
+	{
+	}
+
+	public static void setFlowOption(java.io.FileDescriptor fd, object f)
+	{
+#if !FIRST_PASS
+		throw new java.lang.UnsupportedOperationException();
+#endif
+	}
+
+	public static void getFlowOption(java.io.FileDescriptor fd, object f)
+	{
+#if !FIRST_PASS
+		throw new java.lang.UnsupportedOperationException();
+#endif
+	}
+
+	public static bool flowSupported()
+	{
+		// We don't support this. Solaris only functionality.
+		return false;
+	}
 }
