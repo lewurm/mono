@@ -2139,8 +2139,15 @@
 #	ifndef GC_FREEBSD_THREADS
 #	    define MPROTECT_VDB
 #	endif
-#      define SIG_SUSPEND SIGTSTP
-#      define SIG_THR_RESTART SIGCONT
+#	ifdef __GLIBC__
+#	    define SIG_SUSPEND		(32+6)
+#	    define SIG_THR_RESTART	(32+5)
+	    extern int _end[];
+#	    define DATAEND (_end)
+#	else
+#	    define SIG_SUSPEND SIGUSR1
+#	    define SIG_THR_RESTART SIGUSR2
+#	endif
 #	define NEED_FIND_LIMIT
 #	define FREEBSD_STACKBOTTOM
 #	ifdef __ELF__

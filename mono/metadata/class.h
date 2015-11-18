@@ -4,6 +4,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/loader.h>
+#include <mono/utils/mono-error.h>
 
 MONO_BEGIN_DECLS
 
@@ -36,6 +37,9 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 
 MONO_API MonoClass * 
 mono_class_from_typeref    (MonoImage *image, uint32_t type_token);
+
+MONO_API MonoClass *
+mono_class_from_typeref_checked (MonoImage *image, uint32_t type_token, MonoError *error);
 
 MONO_API MonoClass *
 mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *image, mono_bool is_mvar);
@@ -188,6 +192,12 @@ mono_class_get_interfaces    (MonoClass* klass, void **iter);
 
 MONO_API MonoClass*
 mono_class_get_nested_types  (MonoClass* klass, void **iter);
+
+MONO_API mono_bool
+mono_class_is_delegate       (MonoClass* klass);
+
+MONO_API mono_bool
+mono_class_implements_interface (MonoClass* klass, MonoClass* iface);
 
 /* MonoClassField accessors */
 MONO_API const char*

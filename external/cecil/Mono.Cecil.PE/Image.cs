@@ -41,6 +41,7 @@ namespace Mono.Cecil.PE {
 		public ModuleKind Kind;
 		public TargetRuntime Runtime;
 		public TargetArchitecture Architecture;
+		public ModuleCharacteristics Characteristics;
 		public string FileName;
 
 		public Section [] Sections;
@@ -148,6 +149,11 @@ namespace Mono.Cecil.PE {
 				AddressOfRawData = buffer.ReadInt32 (),
 				PointerToRawData = buffer.ReadInt32 (),
 			};
+
+			if (directory.SizeOfData == 0 || directory.PointerToRawData == 0) {
+				header = Empty<byte>.Array;
+				return directory;
+			}
 
 			buffer.position = (int) (directory.PointerToRawData - section.PointerToRawData);
 

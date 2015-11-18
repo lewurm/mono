@@ -12,17 +12,34 @@
 #include "mini-gc.h"
 #include <mono/metadata/gc-internal.h>
 
-//#if 0
-#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
+static gboolean
+get_provenance (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
+{
+	MonoJitInfo *ji = frame->ji;
+	MonoMethod *method;
+	if (!ji)
+		return FALSE;
+	method = jinfo_get_method (ji);
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+	*(gpointer *)data = method;
+	return TRUE;
+}
 
+static gpointer
+get_provenance_func (void)
+{
+	gpointer provenance = NULL;
+	mono_walk_stack (get_provenance, MONO_UNWIND_DEFAULT, (gpointer)&provenance);
+	return provenance;
+}
+
+#if 0
+//#if defined(MONO_ARCH_GC_MAPS_SUPPORTED)
+
+#include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/utils/mono-counters.h>
-
-#if SIZEOF_VOID_P == 4
-typedef guint32 mword;
-#else
-typedef guint64 mword;
-#endif
 
 #define SIZEOF_SLOT ((int)sizeof (mgreg_t))
 
@@ -436,8 +453,20 @@ static int callee_saved_regs [] = { AMD64_RBP, AMD64_RBX, AMD64_R12, AMD64_R13, 
 static int callee_saved_regs [] = { X86_EBX, X86_ESI, X86_EDI };
 #elif defined(TARGET_ARM)
 static int callee_saved_regs [] = { ARMREG_V1, ARMREG_V2, ARMREG_V3, ARMREG_V4, ARMREG_V5, ARMREG_V7, ARMREG_FP };
+#elif defined(TARGET_ARM64)
+// FIXME:
+static int callee_saved_regs [] = { };
 #elif defined(TARGET_S390X)
 static int callee_saved_regs [] = { s390_r6, s390_r7, s390_r8, s390_r9, s390_r10, s390_r11, s390_r12, s390_r13, s390_r14 };
+#elif defined(TARGET_POWERPC64) && _CALL_ELF == 2
+static int callee_saved_regs [] = {
+  ppc_r13, ppc_r14, ppc_r15, ppc_r16,
+  ppc_r17, ppc_r18, ppc_r19, ppc_r20,
+  ppc_r21, ppc_r22, ppc_r23, ppc_r24,
+  ppc_r25, ppc_r26, ppc_r27, ppc_r28,
+  ppc_r29, ppc_r30, ppc_r31 };
+#elif defined(TARGET_POWERPC)
+static int callee_saved_regs [] = { ppc_r6, ppc_r7, ppc_r8, ppc_r9, ppc_r10, ppc_r11, ppc_r12, ppc_r13, ppc_r14 };
 #endif
 
 static guint32
@@ -595,19 +624,21 @@ thread_suspend_func (gpointer user_data, void *sigctx, MonoContext *ctx)
 
 	if (tls->tid != GetCurrentThreadId ()) {
 		/* Happens on osx because threads are not suspended using signals */
+#ifndef TARGET_WIN32
 		gboolean res;
+#endif
 
 		g_assert (tls->info);
 #ifdef TARGET_WIN32
 		return;
 #else
-		res = mono_thread_state_init_from_handle (&tls->unwind_state, (MonoNativeThreadId)tls->tid, tls->info->native_handle);
+		res = mono_thread_state_init_from_handle (&tls->unwind_state, tls->info);
 #endif
 	} else {
 		tls->unwind_state.unwind_data [MONO_UNWIND_DATA_LMF] = mono_get_lmf ();
 		if (sigctx) {
 #ifdef MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX
-			mono_arch_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
+			mono_sigctx_to_monoctx (sigctx, &tls->unwind_state.ctx);
 			tls->unwind_state.valid = TRUE;
 #else
 			tls->unwind_state.valid = FALSE;
@@ -702,6 +733,7 @@ static void
 conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 {
 	MonoJitInfo *ji;
+	MonoMethod *method;
 	MonoContext ctx, new_ctx;
 	MonoLMF *lmf;
 	guint8 *stack_limit;
@@ -811,10 +843,15 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			continue;
 		}
 
+		if (ji)
+			method = jinfo_get_method (ji);
+		else
+			method = NULL;
+
 		/* The last frame can be in any state so mark conservatively */
 		if (last) {
 			if (ji) {
-				DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+				DEBUG (char *fname = mono_method_full_name (method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
 			}
 			DEBUG (fprintf (logfile, "\t <Last frame>\n"));
 			last = FALSE;
@@ -841,8 +878,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		pc_offset = (guint8*)MONO_CONTEXT_GET_IP (&ctx) - (guint8*)ji->code_start;
 
 		/* These frames are very problematic */
-		if (ji->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			DEBUG (char *fname = mono_method_full_name (method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
 			DEBUG (fprintf (logfile, "\tSkip.\n"));
 			continue;
 		}
@@ -873,7 +910,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		emap = ji->gc_info;
 
 		if (!emap) {
-			DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
+			DEBUG (char *fname = mono_method_full_name (jinfo_get_method (ji), TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx)); g_free (fname));
 			DEBUG (fprintf (logfile, "\tNo GC Map.\n"));
 			continue;
 		}
@@ -892,7 +929,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 				
 		if (precise_frame_limit != -1) {
 			if (precise_frame_count [FALSE] == precise_frame_limit)
-				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (ji->method, TRUE));
+				printf ("LAST PRECISE FRAME: %s\n", mono_method_full_name (method, TRUE));
 			if (precise_frame_count [FALSE] > precise_frame_limit)
 				continue;
 		}
@@ -913,7 +950,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		frame_start = fp + map->start_offset + map->map_offset;
 		frame_end = fp + map->end_offset;
 
-		DEBUG (char *fname = mono_method_full_name (ji->method, TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (jinfo_get_method (ji), TRUE); fprintf (logfile, "Mark(0): %s+0x%x (%p) limit=%p fp=%p frame=%p-%p (%d)\n", fname, pc_offset, (gpointer)MONO_CONTEXT_GET_IP (&ctx), stack_limit, fp, frame_start, frame_end, (int)(frame_end - frame_start)); g_free (fname));
 
 		/* Find the callsite index */
 		if (map->callsite_entry_size == 1) {
@@ -935,7 +972,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					break;
 		}
 		if (i == map->ncallsites) {
-			printf ("Unable to find ip offset 0x%x in callsite list of %s.\n", pc_offset + 1, mono_method_full_name (ji->method, TRUE));
+			printf ("Unable to find ip offset 0x%x in callsite list of %s.\n", pc_offset + 1, mono_method_full_name (method, TRUE));
 			g_assert_not_reached ();
 		}
 		cindex = i;
@@ -1097,7 +1134,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
  * pass.
  */
 static void
-precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
+precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end, void *gc_data)
 {
 	int findex, i;
 	FrameInfo *fi;
@@ -1114,7 +1151,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		fi = &tls->frames [findex];
 		frame_start = stack_start + fi->frame_start_offset;
 
-		DEBUG (char *fname = mono_method_full_name (fi->ji->method, TRUE); fprintf (logfile, "Mark(1): %s\n", fname); g_free (fname));
+		DEBUG (char *fname = mono_method_full_name (jinfo_get_method (fi->ji), TRUE); fprintf (logfile, "Mark(1): %s\n", fname); g_free (fname));
 
 		/* 
 		 * FIXME: Add a function to mark using a bitmap, to avoid doing a 
@@ -1135,7 +1172,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 					MonoObject *obj = *ptr;
 					if (obj) {
 						DEBUG (fprintf (logfile, "\tref %s0x%x(fp)=%p: %p ->", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, obj));
-						*ptr = mono_gc_scan_object (obj);
+						*ptr = mono_gc_scan_object (obj, gc_data);
 						DEBUG (fprintf (logfile, " %p.\n", *ptr));
 					} else {
 						DEBUG (fprintf (logfile, "\tref %s0x%x(fp)=%p: %p.\n", (guint8*)ptr >= (guint8*)fi->fp ? "" : "-", ABS ((int)((gssize)ptr - (gssize)fi->fp)), ptr, obj));
@@ -1176,7 +1213,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 
 			if (obj) {
 				DEBUG (fprintf (logfile, "\treg %s saved at %p: %p ->", mono_arch_regname (fi->regs [i]), ptr, obj));
-				*ptr = mono_gc_scan_object (obj);
+				*ptr = mono_gc_scan_object (obj, gc_data);
 				DEBUG (fprintf (logfile, " %p.\n", *ptr));
 			} else {
 				DEBUG (fprintf (logfile, "\treg %s saved at %p: %p\n", mono_arch_regname (fi->regs [i]), ptr, obj));
@@ -1204,7 +1241,7 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
  * structure filled up by thread_suspend_func. 
  */
 static void
-thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise)
+thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gboolean precise, void *gc_data)
 {
 	TlsData *tls = user_data;
 
@@ -1215,7 +1252,7 @@ thread_mark_func (gpointer user_data, guint8 *stack_start, guint8 *stack_end, gb
 	if (!precise)
 		conservative_pass (tls, stack_start, stack_end);
 	else
-		precise_pass (tls, stack_start, stack_end);
+		precise_pass (tls, stack_start, stack_end, gc_data);
 }
 
 #ifndef DISABLE_JIT
@@ -1860,7 +1897,11 @@ sp_offset_to_fp_offset (MonoCompile *cfg, int sp_offset)
 #elif defined(TARGET_X86)
 	/* The offset is computed from the sp at the start of the call sequence */
 	g_assert (cfg->frame_reg == X86_EBP);
+#ifdef MONO_X86_NO_PUSHES
+	return (- cfg->arch.sp_fp_offset + sp_offset);
+#else
 	return (- cfg->arch.sp_fp_offset - sp_offset);	
+#endif
 #else
 	NOT_IMPLEMENTED;
 	return -1;
@@ -2047,7 +2088,11 @@ compute_frame_size (MonoCompile *cfg)
 #ifdef TARGET_AMD64
 	min_offset = MIN (min_offset, -cfg->arch.sp_fp_offset);
 #elif defined(TARGET_X86)
+#ifdef MONO_X86_NO_PUSHES
+	min_offset = MIN (min_offset, -cfg->arch.sp_fp_offset);
+#else
 	min_offset = MIN (min_offset, - (cfg->arch.sp_fp_offset + cfg->arch.param_area_size));
+#endif
 #elif defined(TARGET_ARM)
 	// FIXME:
 #elif defined(TARGET_s390X)
@@ -2469,6 +2514,7 @@ mini_gc_init (void)
 	cb.thread_suspend_func = thread_suspend_func;
 	/* Comment this out to disable precise stack marking */
 	cb.thread_mark_func = thread_mark_func;
+	cb.get_provenance_func = get_provenance_func;
 	mono_gc_set_gc_callbacks (&cb);
 
 	logfile = mono_gc_get_logfile ();
@@ -2528,6 +2574,10 @@ mini_gc_enable_gc_maps_for_aot (void)
 void
 mini_gc_init (void)
 {
+	MonoGCCallbacks cb;
+	memset (&cb, 0, sizeof (cb));
+	cb.get_provenance_func = get_provenance_func;
+	mono_gc_set_gc_callbacks (&cb);
 }
 
 #ifndef DISABLE_JIT

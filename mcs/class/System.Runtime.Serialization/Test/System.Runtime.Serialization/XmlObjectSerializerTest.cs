@@ -137,9 +137,7 @@ namespace MonoTests.System.Runtime.Serialization
 			MemoryStream sw = new MemoryStream ();
 			ser.WriteObject (sw, 1);
 			string expected = "<int xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/\">1</int>";
-			byte[] buf = sw.ToArray ();
-			// Skip the utf8 bom
-			Assert.AreEqual (expected, Encoding.UTF8.GetString (buf, 3, buf.Length - 3));
+			Assert.AreEqual (expected, Encoding.UTF8.GetString (sw.ToArray ()));
 		}
 
 		[Test]
@@ -812,6 +810,34 @@ namespace MonoTests.System.Runtime.Serialization
 			XmlElement el = doc.SelectSingleNode ("/s:SerializeNonDCArrayType/s:IPAddresses/s:NonDCItem/s:Data", nsmgr) as XmlElement;
 			Assert.IsNotNull (el, "#3");
 			Assert.AreEqual (4, el.SelectNodes ("a:int", nsmgr).Count, "#4");
+		}
+
+		[Test]
+		public void SerializeArrayOfAnyTypeGuid ()
+		{
+			DataContractSerializer ser = new DataContractSerializer (typeof(object[]));
+			StringWriter sw = new StringWriter ();
+			using (XmlWriter w = XmlWriter.Create (sw, settings)) {
+				ser.WriteObject (w, new object[] { Guid.Empty });
+			}
+
+			XmlComparer.AssertAreEqual (
+				"<ArrayOfanyType xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><anyType xmlns:d2p1=\"http://schemas.microsoft.com/2003/10/Serialization/\" i:type=\"d2p1:guid\">00000000-0000-0000-0000-000000000000</anyType></ArrayOfanyType>",
+				sw.ToString ());
+		}
+
+		[Test]
+		public void SerializeArrayOfAnyTypeChar ()
+		{
+			DataContractSerializer ser = new DataContractSerializer (typeof(object[]));
+			StringWriter sw = new StringWriter ();
+			using (XmlWriter w = XmlWriter.Create (sw, settings)) {
+				ser.WriteObject (w, new object[] { new char () });
+			}
+
+			XmlComparer.AssertAreEqual (
+				"<ArrayOfanyType xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><anyType xmlns:d2p1=\"http://schemas.microsoft.com/2003/10/Serialization/\" i:type=\"d2p1:char\">0</anyType></ArrayOfanyType>",
+				sw.ToString ());
 		}
 
 		[Test]
@@ -1613,7 +1639,7 @@ namespace MonoTests.System.Runtime.Serialization
 					+ "<SecondId>ID-GOES-HERE</SecondId>"
 					+ "</MyData>";
 			var serializer = new DataContractSerializer (typeof (MyData));
-			using (var stream = new MemoryStream (Encoding.UTF8.GetBytes (whatItGets)))
+			using (var stream = new MemoryStream (Encoding.UTF8.GetBytes (whatItGets.Replace ("ID-GOES-HERE", Guid.NewGuid ().ToString ()))))
 			{
 				var data = serializer.ReadObject (stream);
 			}

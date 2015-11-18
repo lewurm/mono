@@ -122,6 +122,8 @@ namespace Mono.Security.Protocol.Tls
 			set { this.protocolNegotiated = value; }
 		}
 
+		public bool ChangeCipherSpecDone { get; set; }
+
 		public SecurityProtocolType SecurityProtocol
 		{
 			get 
@@ -405,7 +407,7 @@ namespace Mono.Security.Protocol.Tls
 			}
 		}
 
-		public SecurityProtocolType DecodeProtocolCode(short code)
+		public SecurityProtocolType DecodeProtocolCode (short code, bool allowFallback = false)
 		{
 			switch (code)
 			{
@@ -416,6 +418,10 @@ namespace Mono.Security.Protocol.Tls
 					return SecurityProtocolType.Ssl3;
 
 				default:
+					// if allowed we'll continue using TLS (1.0) even if the other side is capable of using a newer
+					// version of the TLS protocol
+					if (allowFallback && (code > (short) Context.TLS1_PROTOCOL_CODE))
+						return SecurityProtocolType.Tls;
 					throw new NotSupportedException("Unsupported security protocol type");
 			}
 		}
@@ -428,9 +434,7 @@ namespace Mono.Security.Protocol.Tls
 				(this.SecurityProtocolFlags & SecurityProtocolType.Default) == SecurityProtocolType.Default)
 			{
 				this.SecurityProtocol = protocolType;
-				this.SupportedCiphers.Clear();
-				this.SupportedCiphers = null;
-				this.SupportedCiphers = CipherSuiteFactory.GetSupportedCiphers(protocolType);
+				this.SupportedCiphers = CipherSuiteFactory.GetSupportedCiphers ((this is ServerContext), protocolType);
 			}
 			else
 			{

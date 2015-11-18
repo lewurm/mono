@@ -131,6 +131,14 @@ namespace MonoTests.System.Net.Http.Headers
 		}
 
 		[Test]
+		public void TryGetValuesTest ()
+		{
+			IEnumerable<string> headerValues;
+			Assert.IsFalse (headers.TryGetValues (null, out headerValues), "#1");
+			Assert.IsFalse (headers.TryGetValues ("some-name", out headerValues), "#2");
+		}
+
+		[Test]
 		public void ToStringTest ()
 		{
 			headers.Add ("aa", "v");
@@ -138,6 +146,14 @@ namespace MonoTests.System.Net.Http.Headers
 			headers.Add ("x", "v");
 
 			Assert.AreEqual ("aa: v, v\r\nx: v\r\n", headers.ToString ());
+		}
+
+		[Test]
+		public void ToString_DifferentSeparator ()
+		{
+			headers.Add ("User-Agent", "MyApp/1.0.0.0 (iOS; 7.1.2; fr_FR) (Apple; iPhone3,1)");
+
+			Assert.AreEqual ("User-Agent: MyApp/1.0.0.0 (iOS; 7.1.2; fr_FR) (Apple; iPhone3,1)\r\n", headers.ToString ());
 		}
 	}
 }

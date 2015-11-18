@@ -1,4 +1,3 @@
-
 //
 // Copyright (C) 2004 Novell, Inc (http://www.novell.com)
 //
@@ -289,7 +288,7 @@ namespace System.Reflection.Emit {
 		}
 
 		public TypeBuilder DefineType (string name, TypeAttributes attr, Type parent, int typesize) {
-			return DefineType (name, attr, parent, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
+			return DefineType (name, attr, parent, null, PackingSize.Unspecified, typesize);
 		}
 
 		public TypeBuilder DefineType (string name, TypeAttributes attr, Type parent, PackingSize packsize) {
@@ -534,7 +533,7 @@ namespace System.Reflection.Emit {
 			if (resourceFileName == String.Empty)
 				throw new ArgumentException ("resourceFileName");
 			if (!File.Exists (resourceFileName) || Directory.Exists (resourceFileName))
-				throw new FileNotFoundException ("File '" + resourceFileName + "' does not exists or is a directory.");
+				throw new FileNotFoundException ("File '" + resourceFileName + "' does not exist or is a directory.");
 
 			throw new NotImplementedException ();
 		}
@@ -584,8 +583,7 @@ namespace System.Reflection.Emit {
 		{
 			if (method == null)
 				throw new ArgumentNullException ("method");
-			if (method.DeclaringType.Module != this)
-				throw new InvalidOperationException ("The method is not in this module");
+
 			return new MethodToken (GetToken (method));
 		}
 
@@ -725,7 +723,7 @@ namespace System.Reflection.Emit {
 					if (resource_writers != null && (rwriter = resource_writers [resources [i].name] as IResourceWriter) != null) {
 						ResourceWriter writer = (ResourceWriter)rwriter;
 						writer.Generate ();
-						MemoryStream mstream = (MemoryStream)writer.Stream;
+						MemoryStream mstream = (MemoryStream)writer._output;
 						resources [i].data = new byte [mstream.Length];
 						mstream.Seek (0, SeekOrigin.Begin);
 						mstream.Read (resources [i].data, 0, (int)mstream.Length);
@@ -822,7 +820,6 @@ namespace System.Reflection.Emit {
 			throw new NotImplementedException ();
 		}
 
-#if NET_4_0
 		public override	Assembly Assembly {
 			get { return assemblyb; }
 		}
@@ -962,7 +959,6 @@ namespace System.Reflection.Emit {
 				return base.MetadataToken;
 			}
 		}
-#endif
 	}
 
 	internal class ModuleBuilderTokenGenerator : TokenGenerator {

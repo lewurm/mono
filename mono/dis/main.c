@@ -626,16 +626,14 @@ dis_locals (MonoImage *m, MonoMethodHeader *mh, const char *ptr)
 		unsigned char flags = *(const unsigned char *) ptr;
 		unsigned char format = flags & METHOD_HEADER_FORMAT_MASK;
 		guint16 fat_flags;
-		guint32 local_var_sig_tok, max_stack, code_size, init_locals;
-		int hsize;
+		guint32 local_var_sig_tok, init_locals;
 
 		g_assert (format == METHOD_HEADER_FAT_FORMAT);
 		fat_flags = read16 (ptr);
 		ptr += 2;
-		hsize = (fat_flags >> 12) & 0xf;
-		max_stack = read16 (ptr);
+		/* max_stack = read16 (ptr); */
 		ptr += 2;
-		code_size = read32 (ptr);
+		/* code_size = read32 (ptr); */
 		ptr += 4;
 		local_var_sig_tok = read32 (ptr);
 		ptr += 4;
@@ -836,6 +834,7 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 	}
 
 	for (i = start; i < end; i++){
+		MonoError error;
 		MonoMethodSignature *ms;
 		MonoGenericContainer *container;
 		char *flags, *impl_flags;
@@ -854,18 +853,22 @@ dis_method_list (const char *klass_name, MonoImage *m, guint32 start, guint32 en
 		mono_metadata_decode_blob_size (sig, &sig);
 
 		container = mono_metadata_load_generic_params (m, MONO_TOKEN_METHOD_DEF | (i + 1), type_container);
-		if (container)
-			mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_METHOD_DEF | (i + 1), container);
-		else 
+		if (container) {
+			MonoError error;
+			mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_METHOD_DEF | (i + 1), container, &error);
+			g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+		} else {
 			container = type_container;
+		}
 
-		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig);
+		ms = mono_metadata_parse_method_signature_full (m, container, i + 1, sig, &sig, &error);
 		if (ms != NULL){
 			sig_str = dis_stringify_method_signature (m, ms, i + 1, container, FALSE);
 			method_name = mono_metadata_string_heap (m, cols [MONO_METHOD_NAME]);
 		} else {
 			sig_str = NULL;
 			method_name = g_strdup ("<NULL METHOD SIGNATURE>");
+			mono_error_cleanup (&error);
 		}
 
 		fprintf (output, "    // method line %d\n", i + 1);
@@ -1181,8 +1184,11 @@ dis_type (MonoImage *m, int n, int is_nested, int forward)
 	}
 
 	container = mono_metadata_load_generic_params (m, MONO_TOKEN_TYPE_DEF | (n + 1), NULL);
-	if (container)
-		mono_metadata_load_generic_param_constraints (m, MONO_TOKEN_TYPE_DEF | (n + 1), container);
+	if (container) {
+		MonoError error;
+		mono_metadata_load_generic_param_constraints_checked (m, MONO_TOKEN_TYPE_DEF | (n + 1), container, &error);
+		g_assert (mono_error_ok (&error)); /*FIXME don't swallow the error message*/
+	}
 
 	esname = get_escaped_name (name);
 	if ((cols [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_CLASS_SEMANTIC_MASK) == TYPE_ATTRIBUTE_CLASS){
@@ -1594,15 +1600,14 @@ disassemble_file (const char *file)
 {
 	MonoImageOpenStatus status;
 	MonoImage *img;
-	MonoAssembly *assembly;
-
 
 	img = mono_image_open (file, &status);
 	if (!img) {
 		fprintf (stderr, "Error while trying to process %s\n", file);
 		return;
 	} else {
-		assembly = mono_assembly_load_from_full (img, file, &status, FALSE);
+		/* FIXME: is this call necessary? */
+		mono_assembly_load_from_full (img, file, &status, FALSE);
 	}
 
 	setup_filter (img);

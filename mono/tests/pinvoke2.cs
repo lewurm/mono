@@ -71,6 +71,11 @@ public class Tests {
 		public SimpleDelegate del3;
 	}
 
+	[StructLayout (LayoutKind.Sequential)]
+	public struct SingleDoubleStruct {
+		public double d;
+	}
+
 	/* sparcv9 has complex conventions when passing structs with doubles in them 
 	   by value, some simple tests for them */
 	[StructLayout (LayoutKind.Sequential)]
@@ -83,6 +88,15 @@ public class Tests {
 	public struct MixedPoint {
 		public int x;
 		public double y;
+	}
+	
+	[StructLayout (LayoutKind.Sequential)]
+	public struct TinyStruct {
+		public TinyStruct (int i)
+		{
+			this.i = i;
+		}
+		public int i;
 	}
 
 	[StructLayout (LayoutKind.Sequential)]
@@ -213,6 +227,9 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_array")]
 	public static extern int mono_test_marshal_out_array ([Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] int [] a1, int n);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_out_byref_array_out_size_param")]
+	public static extern int mono_test_marshal_out_byref_array_out_size_param ([Out] [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out int [] a1, out int n);
+
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_inout_nonblittable_array", CharSet = CharSet.Unicode)]
 	public static extern int mono_test_marshal_inout_nonblittable_array ([In, Out] char [] a1);
 	
@@ -279,11 +296,11 @@ public class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder")]
 	public static extern void mono_test_marshal_stringbuilder (StringBuilder sb, int len);
 
-	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder2")]
-	public static extern void mono_test_marshal_stringbuilder2 (StringBuilder sb, int len);
-
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_default")]
 	public static extern void mono_test_marshal_stringbuilder_default (StringBuilder sb, int len);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_append")]
+	public static extern void mono_test_marshal_stringbuilder_append (StringBuilder sb, int len);
 
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_unicode", CharSet=CharSet.Unicode)]
 	public static extern void mono_test_marshal_stringbuilder_unicode (StringBuilder sb, int len);
@@ -391,6 +408,19 @@ public class Tests {
 				return 2;
 			}
 
+		return 0;
+	}
+
+	public static int test_0_marshal_out_byref_array_out_size_param () {
+		int [] a1 = null;
+		int len;
+
+		int res = mono_test_marshal_out_byref_array_out_size_param (out a1, out len);
+		if (len != 4)
+			return 1;
+		for (int i = 0; i < len; i++)
+			if (a1 [i] != i)
+				return 2;
 		return 0;
 	}
 
@@ -778,11 +808,33 @@ public class Tests {
 		if (res != "This is my message.  Isn't it nice?")
 			return 1;  
 
-		// Test that cached_str is cleared
-		mono_test_marshal_stringbuilder2 (sb, sb.Capacity);
-		res = sb.ToString();
-		if (res != "EFGH")
-			return 2;
+		// Test StringBuilder with default capacity (16)
+		StringBuilder sb2 = new StringBuilder();
+		mono_test_marshal_stringbuilder_default (sb2, sb2.Capacity);
+		if (sb2.ToString () != "This is my messa")
+			return 3;
+
+		return 0;
+	}
+
+	public static int test_0_marshal_stringbuilder_append () {
+		const String in_sentinel = "MONO_";
+		const String out_sentinel = "CSHARP_";
+		const int iterations = 100;
+		StringBuilder sb = new StringBuilder(255);
+		StringBuilder check = new StringBuilder(255);
+
+		for (int i = 0; i < iterations; i++) {
+			sb.Append (in_sentinel[i % in_sentinel.Length]);
+			check.Append (out_sentinel[i % out_sentinel.Length]);
+
+			mono_test_marshal_stringbuilder_append (sb, sb.Length);
+
+			String res = sb.ToString();
+			String checkRev = check.ToString();
+			if (res != checkRev)
+				return 1;
+		}
 
 		// Test StringBuilder with default capacity (16)
 		StringBuilder sb2 = new StringBuilder();
@@ -1311,6 +1363,26 @@ public class Tests {
 		return string_marshal_test3 (null);
 	}
 
+#if FALSE
+	[DllImport ("libtest", EntryPoint="mono_test_stdcall_mismatch_1", CallingConvention=CallingConvention.StdCall)]
+	public static extern int mono_test_stdcall_mismatch_1 (int a, int b, int c);
+
+	/* Test mismatched called conventions, the native function is cdecl */
+	public static int test_0_stdcall_mismatch_1 () {
+		mono_test_stdcall_mismatch_1 (0, 1, 2);
+		return 0;
+	}
+
+	[DllImport ("libtest", EntryPoint="mono_test_stdcall_mismatch_2", CallingConvention=CallingConvention.Cdecl)]
+	public static extern int mono_test_stdcall_mismatch_2 (int a, int b, int c);
+
+	/* Test mismatched called conventions, the native function is stdcall */
+	public static int test_0_stdcall_mismatch_2 () {
+		mono_test_stdcall_mismatch_2 (0, 1, 2);
+		return 0;
+	}
+#endif
+
 	[DllImport ("libtest", EntryPoint="mono_test_stdcall_name_mangling", CallingConvention=CallingConvention.StdCall)]
 	public static extern int mono_test_stdcall_name_mangling (int a, int b, int c);
 
@@ -1725,5 +1797,62 @@ public class Tests {
 		return 1;
 	}
 
+	[DllImport ("libtest", EntryPoint="mono_test_has_thiscall")]
+	public static extern int mono_test_has_thiscall ();
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall1", CallingConvention=CallingConvention.ThisCall)]
+	public static extern int mono_test_native_thiscall (int a);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall2", CallingConvention=CallingConvention.ThisCall)]
+	public static extern int mono_test_native_thiscall (int a, int b);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall3", CallingConvention=CallingConvention.ThisCall)]
+	public static extern int mono_test_native_thiscall (int a, int b, int c);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall1", CallingConvention=CallingConvention.ThisCall)]
+	public static extern int mono_test_native_thiscall (TinyStruct a);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall2", CallingConvention=CallingConvention.ThisCall)]
+	public static extern int mono_test_native_thiscall (TinyStruct a, int b);
+
+	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall3", CallingConvention=CallingConvention.ThisCall)]
+	public static extern int mono_test_native_thiscall (TinyStruct a, int b, int c);
+
+	public static int test_0_native_thiscall ()
+	{
+		if (mono_test_has_thiscall () == 0)
+			return 0;
+
+		if (mono_test_native_thiscall (1968329802) != 1968329802)
+			return 1;
+
+		if (mono_test_native_thiscall (268894549, 1212675791) != 1481570339)
+			return 2;
+
+		if (mono_test_native_thiscall (1288082683, -421187449, -1733670329) != -866775098)
+			return 3;
+
+		if (mono_test_native_thiscall (new TinyStruct(1968329802)) != 1968329802)
+			return 4;
+
+		if (mono_test_native_thiscall (new TinyStruct(268894549), 1212675791) != 1481570339)
+			return 5;
+
+		if (mono_test_native_thiscall (new TinyStruct(1288082683), -421187449, -1733670329) != -866775098)
+			return 6;
+
+		return 0;
+	}
+
+	[DllImport ("libtest", EntryPoint = "mono_test_marshal_return_single_double_struct")]
+	public static extern SingleDoubleStruct mono_test_marshal_return_single_double_struct ();
+
+	public static int test_0_x86_single_double_struct_ret () {
+		double d = mono_test_marshal_return_single_double_struct ().d;
+		if (d != 3.0)
+			return 1;
+		else
+			return 0;
+	}
 }
 

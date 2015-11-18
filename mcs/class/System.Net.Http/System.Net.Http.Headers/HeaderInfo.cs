@@ -4,7 +4,7 @@
 // Authors:
 //	Marek Safar  <marek.safar@gmail.com>
 //
-// Copyright (C) 2011 Xamarin Inc (http://www.xamarin.com)
+// Copyright (C) 2011, 2014 Xamarin Inc (http://www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -32,6 +32,7 @@ using System.Collections.Generic;
 namespace System.Net.Http.Headers
 {
 	delegate bool TryParseDelegate<T> (string value, out T result);
+	delegate bool TryParseListDelegate<T> (string value, int minimalCount, out List<T> result);
 
 	abstract class HeaderInfo
 	{
@@ -89,6 +90,40 @@ namespace System.Net.Http.Headers
 			}
 		}
 
+		class CollectionHeaderTypeInfo<T, U> : HeaderTypeInfo<T, U> where U : class
+		{
+			readonly int minimalCount;
+			readonly string separator;
+			readonly TryParseListDelegate<T> parser;
+
+			public CollectionHeaderTypeInfo (string name, TryParseListDelegate<T> parser, HttpHeaderKind headerKind, int minimalCount, string separator)
+				: base (name, null, headerKind)
+			{
+				this.parser = parser;
+				this.minimalCount = minimalCount;
+				AllowsMany = true;
+				this.separator = separator;
+			}
+
+			public override string Separator {
+				get {
+					return separator;
+				}
+			}
+
+			public override bool TryParse (string value, out object result)
+			{
+				List<T> tresult;
+				if (!parser (value, minimalCount, out tresult)) {
+					result = null;
+					return false;
+				}
+
+				result = tresult;
+				return true;
+			}
+		}
+
 		public bool AllowsMany;
 		public readonly HttpHeaderKind HeaderKind;
 		public readonly string Name;
@@ -99,28 +134,35 @@ namespace System.Net.Http.Headers
 			this.HeaderKind = headerKind;
 		}
 
-		public static HeaderInfo CreateSingle<T> (string name, TryParseDelegate<T> parser, HttpHeaderKind headerKind)
+		public static HeaderInfo CreateSingle<T> (string name, TryParseDelegate<T> parser, HttpHeaderKind headerKind, Func<object, string> toString = null)
 		{
-			return new HeaderTypeInfo<T, object> (name, parser, headerKind);
-		}
-
-		public static HeaderInfo CreateMulti<T> (string name, TryParseDelegate<T> parser, HttpHeaderKind headerKind) where T : class
-		{
-			return new HeaderTypeInfo<T, T> (name, parser, headerKind) {
-				AllowsMany = true,
+			return new HeaderTypeInfo<T, object> (name, parser, headerKind) {
+				CustomToString = toString
 			};
 		}
 
-		public static HeaderInfo CreateMultiList<T> (string name, TryParseDelegate<List<T>> parser, HttpHeaderKind headerKind) where T : class
+		//
+		// Headers with #rule for defining lists of elements or *rule for defining occurences of elements
+		//
+		public static HeaderInfo CreateMulti<T> (string name, TryParseListDelegate<T> elementParser, HttpHeaderKind headerKind, int minimalCount = 1, string separator = ", ") where T : class
 		{
-			return new HeaderTypeInfo<List<T>, T> (name, parser, headerKind) {
-				AllowsMany = true,
-			};
+			return new CollectionHeaderTypeInfo<T, T> (name, elementParser, headerKind, minimalCount, separator);
 		}
 
 		public object CreateCollection (HttpHeaders headers)
 		{
 			return CreateCollection (headers, this);
+		}
+
+		public Func<object, string> CustomToString {
+			get; private set;
+		}
+
+		public virtual string Separator {
+			get {
+				// Needed for AllowsMany only
+				throw new NotSupportedException ();
+			}
 		}
 
 		public abstract void AddToCollection (object collection, object value);

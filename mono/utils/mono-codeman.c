@@ -15,7 +15,7 @@
 #include "mono-mmap.h"
 #include "mono-counters.h"
 #include "dlmalloc.h"
-#include <mono/metadata/class-internals.h>
+#include <mono/io-layer/io-layer.h>
 #include <mono/metadata/profiler-private.h>
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 #include <valgrind/memcheck.h>
@@ -26,8 +26,13 @@
 #include <nacl/nacl_dyncode.h>
 #include <mono/mini/mini.h>
 #endif
+#include <mono/utils/mono-mutex.h>
+
 
 static uintptr_t code_memory_used = 0;
+static size_t dynamic_code_alloc_count;
+static size_t dynamic_code_bytes_count;
+static size_t dynamic_code_frees_count;
 
 /*
  * AMD64 processors maintain icache coherency only for pages which are 
@@ -39,7 +44,7 @@ static uintptr_t code_memory_used = 0;
 
 #define MIN_PAGES 16
 
-#if defined(__ia64__) || defined(__x86_64__)
+#if defined(__ia64__) || defined(__x86_64__) || defined (_WIN64)
 /*
  * We require 16 byte alignment on amd64 so the fp literals embedded in the code are 
  * properly aligned for SSE2.
@@ -93,6 +98,7 @@ struct _MonoCodeManager {
 	int read_only;
 	CodeChunk *current;
 	CodeChunk *full;
+	CodeChunk *last;
 #if defined(__native_client_codegen__) && defined(__native_client__)
 	GHashTable *hash;
 #endif
@@ -227,34 +233,36 @@ nacl_inverse_modify_patch_target (unsigned char *target)
 
 #define VALLOC_FREELIST_SIZE 16
 
-static CRITICAL_SECTION valloc_mutex;
+static mono_mutex_t valloc_mutex;
 static GHashTable *valloc_freelists;
 
 static void*
-codechunk_valloc (guint32 size)
+codechunk_valloc (void *preferred, guint32 size)
 {
 	void *ptr;
 	GSList *freelist;
 
 	if (!valloc_freelists) {
-		InitializeCriticalSection (&valloc_mutex);
+		mono_mutex_init_recursive (&valloc_mutex);
 		valloc_freelists = g_hash_table_new (NULL, NULL);
 	}
 
 	/*
 	 * Keep a small freelist of memory blocks to decrease pressure on the kernel memory subsystem to avoid #3321.
 	 */
-	EnterCriticalSection (&valloc_mutex);
-	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
+	mono_mutex_lock (&valloc_mutex);
+	freelist = (GSList *) g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
 	if (freelist) {
 		ptr = freelist->data;
 		memset (ptr, 0, size);
-		freelist = g_slist_remove_link (freelist, freelist);
+		freelist = g_slist_delete_link (freelist, freelist);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
-		ptr = mono_valloc (NULL, size + MIN_ALIGN - 1, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		ptr = mono_valloc (preferred, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
+		if (!ptr && preferred)
+			ptr = mono_valloc (NULL, size, MONO_PROT_RWX | ARCH_MAP_FLAGS);
 	}
-	LeaveCriticalSection (&valloc_mutex);
+	mono_mutex_unlock (&valloc_mutex);
 	return ptr;
 }
 
@@ -263,15 +271,15 @@ codechunk_vfree (void *ptr, guint32 size)
 {
 	GSList *freelist;
 
-	EnterCriticalSection (&valloc_mutex);
-	freelist = g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
+	mono_mutex_lock (&valloc_mutex);
+	freelist = (GSList *) g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
 	if (!freelist || g_slist_length (freelist) < VALLOC_FREELIST_SIZE) {
 		freelist = g_slist_prepend (freelist, ptr);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
 		mono_vfree (ptr, size);
 	}
-	LeaveCriticalSection (&valloc_mutex);
+	mono_mutex_unlock (&valloc_mutex);
 }		
 
 static void
@@ -284,7 +292,7 @@ codechunk_cleanup (void)
 		return;
 	g_hash_table_iter_init (&iter, valloc_freelists);
 	while (g_hash_table_iter_next (&iter, &key, &value)) {
-		GSList *freelist = value;
+		GSList *freelist = (GSList *) value;
 		GSList *l;
 
 		for (l = freelist; l; l = l->next) {
@@ -298,6 +306,9 @@ codechunk_cleanup (void)
 void
 mono_code_manager_init (void)
 {
+	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_alloc_count);
+	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_bytes_count);
+	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_frees_count);
 }
 
 void
@@ -320,13 +331,9 @@ mono_code_manager_cleanup (void)
 MonoCodeManager* 
 mono_code_manager_new (void)
 {
-	MonoCodeManager *cman = malloc (sizeof (MonoCodeManager));
+	MonoCodeManager *cman = (MonoCodeManager *) g_malloc0 (sizeof (MonoCodeManager));
 	if (!cman)
 		return NULL;
-	cman->current = NULL;
-	cman->full = NULL;
-	cman->dynamic = 0;
-	cman->read_only = 0;
 #if defined(__native_client_codegen__) && defined(__native_client__)
 	if (next_dynamic_code_addr == NULL) {
 		const guint kPageMask = 0xFFFF; /* 64K pages */
@@ -481,12 +488,12 @@ mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void
 #if defined(__ppc__) || defined(__powerpc__)
 #define BIND_ROOM 4
 #endif
-#if defined(__arm__)
-#define BIND_ROOM 8
+#if defined(TARGET_ARM64)
+#define BIND_ROOM 4
 #endif
 
 static CodeChunk*
-new_codechunk (int dynamic, int size)
+new_codechunk (CodeChunk *last, int dynamic, int size)
 {
 	int minsize, flags = CODE_FLAG_MMAP;
 	int chunk_size, bsize = 0;
@@ -508,21 +515,32 @@ new_codechunk (int dynamic, int size)
 		if (size < minsize)
 			chunk_size = minsize;
 		else {
+			/* Allocate MIN_ALIGN-1 more than we need so we can still */
+			/* guarantee MIN_ALIGN alignment for individual allocs    */
+			/* from mono_code_manager_reserve_align.                  */
+			size += MIN_ALIGN - 1;
+			size &= ~(MIN_ALIGN - 1);
 			chunk_size = size;
 			chunk_size += pagesize - 1;
 			chunk_size &= ~ (pagesize - 1);
 		}
 	}
 #ifdef BIND_ROOM
-	bsize = chunk_size / BIND_ROOM;
+	if (dynamic)
+		/* Reserve more space since there are no other chunks we might use if this one gets full */
+		bsize = (chunk_size * 2) / BIND_ROOM;
+	else
+		bsize = chunk_size / BIND_ROOM;
 	if (bsize < MIN_BSIZE)
 		bsize = MIN_BSIZE;
 	bsize += MIN_ALIGN -1;
 	bsize &= ~ (MIN_ALIGN - 1);
 	if (chunk_size - size < bsize) {
 		chunk_size = size + bsize;
-		chunk_size += pagesize - 1;
-		chunk_size &= ~ (pagesize - 1);
+		if (!dynamic) {
+			chunk_size += pagesize - 1;
+			chunk_size &= ~ (pagesize - 1);
+		}
 	}
 #endif
 
@@ -531,10 +549,12 @@ new_codechunk (int dynamic, int size)
 		if (!ptr)
 			return NULL;
 	} else {
-		/* Allocate MIN_ALIGN-1 more than we need so we can still */
-		/* guarantee MIN_ALIGN alignment for individual allocs    */
-		/* from mono_code_manager_reserve_align.                  */
-		ptr = codechunk_valloc (chunk_size);
+		/* Try to allocate code chunks next to each other to help the VM */
+		ptr = NULL;
+		if (last)
+			ptr = codechunk_valloc ((guint8*)last->data + last->size, chunk_size);
+		if (!ptr)
+			ptr = codechunk_valloc (NULL, chunk_size);
 		if (!ptr)
 			return NULL;
 	}
@@ -546,7 +566,7 @@ new_codechunk (int dynamic, int size)
 #endif
 	}
 
-	chunk = malloc (sizeof (CodeChunk));
+	chunk = (CodeChunk *) malloc (sizeof (CodeChunk));
 	if (!chunk) {
 		if (flags == CODE_FLAG_MALLOC)
 			dlfree (ptr);
@@ -556,7 +576,7 @@ new_codechunk (int dynamic, int size)
 	}
 	chunk->next = NULL;
 	chunk->size = chunk_size;
-	chunk->data = ptr;
+	chunk->data = (char *) ptr;
 	chunk->flags = flags;
 	chunk->pos = bsize;
 	chunk->bsize = bsize;
@@ -594,14 +614,15 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 	g_assert (alignment <= MIN_ALIGN);
 
 	if (cman->dynamic) {
-		++mono_stats.dynamic_code_alloc_count;
-		mono_stats.dynamic_code_bytes_count += size;
+		++dynamic_code_alloc_count;
+		dynamic_code_bytes_count += size;
 	}
 
 	if (!cman->current) {
-		cman->current = new_codechunk (cman->dynamic, size);
+		cman->current = new_codechunk (cman->last, cman->dynamic, size);
 		if (!cman->current)
 			return NULL;
+		cman->last = cman->current;
 	}
 
 	for (chunk = cman->current; chunk; chunk = chunk->next) {
@@ -631,11 +652,12 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 		cman->full = chunk;
 		break;
 	}
-	chunk = new_codechunk (cman->dynamic, size);
+	chunk = new_codechunk (cman->last, cman->dynamic, size);
 	if (!chunk)
 		return NULL;
 	chunk->next = cman->current;
 	cman->current = chunk;
+	cman->last = cman->current;
 	chunk->pos = ALIGN_INT (chunk->pos, alignment);
 	/* Align the chunk->data we add to chunk->pos */
 	/* or we can't guarantee proper alignment     */

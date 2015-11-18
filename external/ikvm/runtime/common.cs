@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002-2007, 2010 Jeroen Frijters
+  Copyright (C) 2002-2015 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -23,8 +23,10 @@
 */
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using IKVM.Attributes;
 using IKVM.Runtime;
 using IKVM.Internal;
@@ -49,7 +51,7 @@ namespace IKVM.NativeCode.gnu.java.net.protocol.ikvmres
 			MemoryStream mem = new MemoryStream();
 #if !FIRST_PASS
 			bool includeNonPublicInterfaces = !"true".Equals(global::java.lang.Props.props.getProperty("ikvm.stubgen.skipNonPublicInterfaces"), StringComparison.OrdinalIgnoreCase);
-			IKVM.StubGen.StubGenerator.WriteClass(mem, TypeWrapper.FromClass(c), includeNonPublicInterfaces, false, false);
+			IKVM.StubGen.StubGenerator.WriteClass(mem, TypeWrapper.FromClass(c), includeNonPublicInterfaces, false, false, true);
 #endif
 			return mem.ToArray();
 		}
@@ -117,12 +119,73 @@ namespace IKVM.NativeCode.java.lang
 
 		public static string getBootClassPath()
 		{
-#if FIRST_PASS
-			return null;
-#else
 			return VirtualFileSystem.GetAssemblyClassesPath(JVM.CoreAssembly);
-#endif
 		}
+
+		public static string getStdoutEncoding()
+		{
+			return IsWindowsConsole(true) ? GetConsoleEncoding() : null;
+		}
+
+		public static string getStderrEncoding()
+		{
+			return IsWindowsConsole(false) ? GetConsoleEncoding() : null;
+		}
+
+		public static FileVersionInfo getKernel32FileVersionInfo()
+		{
+			try
+			{
+				foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
+				{
+					if (string.Compare(module.ModuleName, "kernel32.dll", StringComparison.OrdinalIgnoreCase) == 0)
+					{
+						return module.FileVersionInfo;
+					}
+				}
+			}
+			catch
+			{
+			}
+			return null;
+		}
+
+		private static bool IsWindowsConsole(bool stdout)
+		{
+			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+			{
+				return false;
+			}
+			// these properties are available starting with .NET 4.5
+			PropertyInfo pi = typeof(Console).GetProperty(stdout ? "IsOutputRedirected" : "IsErrorRedirected");
+			if (pi != null)
+			{
+				return !(bool)pi.GetValue(null, null);
+			}
+			const int STD_OUTPUT_HANDLE = -11;
+			const int STD_ERROR_HANDLE = -12;
+			IntPtr handle = GetStdHandle(stdout ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE);
+			if (handle == IntPtr.Zero)
+			{
+				return false;
+			}
+			const int FILE_TYPE_CHAR = 2;
+			return GetFileType(handle) == FILE_TYPE_CHAR;
+		}
+
+		private static string GetConsoleEncoding()
+		{
+			int codepage = Console.InputEncoding.CodePage;
+			return codepage >= 847 && codepage <= 950
+				? "ms" + codepage
+				: "cp" + codepage;
+		}
+
+		[DllImport("kernel32")]
+		private static extern int GetFileType(IntPtr hFile);
+
+		[DllImport("kernel32")]
+		private static extern IntPtr GetStdHandle(int nStdHandle);
 	}
 }
 
@@ -146,60 +209,29 @@ namespace IKVM.NativeCode.ikvm.@internal
 		}
 	}
 
-	namespace stubgen
+	static class AnnotationAttributeBase
 	{
-		static class StubGenerator
+		public static object[] unescapeInvalidSurrogates(object[] def)
 		{
-			public static int getRealModifiers(jlClass c)
-			{
-				return (int)TypeWrapper.FromClass(c).Modifiers;
-			}
+			return (object[])AnnotationDefaultAttribute.Unescape(def);
+		}
 
-			public static string getAssemblyName(jlClass c)
-			{
-				TypeWrapper wrapper = TypeWrapper.FromClass(c);
-				ClassLoaderWrapper loader = wrapper.GetClassLoader();
-				IKVM.Internal.AssemblyClassLoader acl = loader as IKVM.Internal.AssemblyClassLoader;
-				if(acl != null)
-				{
-					return acl.GetAssembly(wrapper).FullName;
-				}
-				else
-				{
-					return ((GenericClassLoaderWrapper)loader).GetName();
-				}
-			}
+		public static object newAnnotationInvocationHandler(jlClass type, object memberValues)
+		{
+#if FIRST_PASS
+			return null;
+#else
+			return new global::sun.reflect.annotation.AnnotationInvocationHandler(type, (global::java.util.Map)memberValues);
+#endif
+		}
 
-			public static object getFieldConstantValue(object field)
-			{
-				return FieldWrapper.FromField(field).GetConstant();
-			}
-
-			public static bool isFieldDeprecated(object field)
-			{
-				FieldWrapper fieldWrapper = FieldWrapper.FromField(field);
-				FieldInfo fi = fieldWrapper.GetField();
-				if(fi != null)
-				{
-					return fi.IsDefined(typeof(ObsoleteAttribute), false);
-				}
-				return false;
-			}
-
-			public static bool isMethodDeprecated(object method)
-			{
-				MethodWrapper mw = MethodWrapper.FromMethodOrConstructor(method);
-				MethodBase mb = mw.GetMethod();
-				return mb != null && mb.IsDefined(typeof(ObsoleteAttribute), false);
-			}
-
-			public static bool isClassDeprecated(jlClass clazz)
-			{
-				Type type = TypeWrapper.FromClass(clazz).TypeAsTBD;
-				// we need to check type for null, because ReflectionOnly
-				// generated delegate inner interfaces don't really exist
-				return type != null && type.IsDefined(typeof(ObsoleteAttribute), false);
-			}
+		public static object newAnnotationTypeMismatchExceptionProxy(string msg)
+		{
+#if FIRST_PASS
+			return null;
+#else
+			return new global::sun.reflect.annotation.AnnotationTypeMismatchExceptionProxy(msg);
+#endif
 		}
 	}
 }
@@ -228,7 +260,9 @@ namespace IKVM.NativeCode.ikvm.runtime
 				TypeWrapper tw = wrapper.LoadClass(name);
 				if (tw == null)
 				{
-					throw new ClassNotFoundException(name);
+					Tracer.Info(Tracer.ClassLoading, "Failed to load class \"{0}\" from {1}", name, _this);
+					global::java.lang.Throwable.suppressFillInStackTrace = true;
+					throw new global::java.lang.ClassNotFoundException(name);
 				}
 				Tracer.Info(Tracer.ClassLoading, "Loaded class \"{0}\" from {1}", name, _this);
 				return tw.ClassObject;
@@ -309,25 +343,6 @@ namespace IKVM.NativeCode.ikvm.runtime
 			return null;
 		}
 
-		private static global::java.util.jar.Manifest GetManifest(global::java.lang.ClassLoader _this)
-		{
-			try
-			{
-				global::java.net.URL url = findResource(_this, "META-INF/MANIFEST.MF");
-				if (url != null)
-				{
-					return new global::java.util.jar.Manifest(url.openStream());
-				}
-			}
-			catch (global::java.net.MalformedURLException)
-			{
-			}
-			catch (global::java.io.IOException)
-			{
-			}
-			return null;
-		}
-
 		private static string GetAttributeValue(global::java.util.jar.Attributes.Name name, global::java.util.jar.Attributes first, global::java.util.jar.Attributes second)
 		{
 			string result = null;
@@ -348,31 +363,37 @@ namespace IKVM.NativeCode.ikvm.runtime
 #if !FIRST_PASS
 			AssemblyClassLoader_ wrapper = (AssemblyClassLoader_)ClassLoaderWrapper.GetClassLoaderWrapper(_this);
 			global::java.net.URL sealBase = GetCodeBase(wrapper.MainAssembly);
-			global::java.util.jar.Manifest manifest = GetManifest(_this);
-			global::java.util.jar.Attributes attr = null;
-			if (manifest != null)
+			foreach (KeyValuePair<string, string[]> packages in wrapper.GetPackageInfo())
 			{
-				attr = manifest.getMainAttributes();
-			}
-			string[] packages = wrapper.GetPackages();
-			for (int i = 0; i < packages.Length; i++)
-			{
-				string name = packages[i];
-				if (_this.getPackage(name) == null)
+				global::java.util.jar.Manifest manifest = null;
+				global::java.util.jar.Attributes attr = null;
+				if (packages.Key != null)
 				{
-					global::java.util.jar.Attributes entryAttr = null;
-					if (manifest != null)
+					global::java.util.jar.JarFile jarFile = new global::java.util.jar.JarFile(VirtualFileSystem.GetAssemblyResourcesPath(wrapper.MainAssembly) + packages.Key);
+					manifest = jarFile.getManifest();
+				}
+				if (manifest != null)
+				{
+					attr = manifest.getMainAttributes();
+				}
+				foreach (string name in packages.Value)
+				{
+					if (_this.getPackage(name) == null)
 					{
-						entryAttr = manifest.getAttributes(name.Replace('.', '/') + '/');
+						global::java.util.jar.Attributes entryAttr = null;
+						if (manifest != null)
+						{
+							entryAttr = manifest.getAttributes(name.Replace('.', '/') + '/');
+						}
+						_this.definePackage(name,
+							GetAttributeValue(global::java.util.jar.Attributes.Name.SPECIFICATION_TITLE, entryAttr, attr),
+							GetAttributeValue(global::java.util.jar.Attributes.Name.SPECIFICATION_VERSION, entryAttr, attr),
+							GetAttributeValue(global::java.util.jar.Attributes.Name.SPECIFICATION_VENDOR, entryAttr, attr),
+							GetAttributeValue(global::java.util.jar.Attributes.Name.IMPLEMENTATION_TITLE, entryAttr, attr),
+							GetAttributeValue(global::java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION, entryAttr, attr),
+							GetAttributeValue(global::java.util.jar.Attributes.Name.IMPLEMENTATION_VENDOR, entryAttr, attr),
+							"true".Equals(GetAttributeValue(global::java.util.jar.Attributes.Name.SEALED, entryAttr, attr), StringComparison.OrdinalIgnoreCase) ? sealBase : null);
 					}
-					_this.definePackage(name,
-						GetAttributeValue(global::java.util.jar.Attributes.Name.SPECIFICATION_TITLE, entryAttr, attr),
-						GetAttributeValue(global::java.util.jar.Attributes.Name.SPECIFICATION_VERSION, entryAttr, attr),
-						GetAttributeValue(global::java.util.jar.Attributes.Name.SPECIFICATION_VENDOR, entryAttr, attr),
-						GetAttributeValue(global::java.util.jar.Attributes.Name.IMPLEMENTATION_TITLE, entryAttr, attr),
-						GetAttributeValue(global::java.util.jar.Attributes.Name.IMPLEMENTATION_VERSION, entryAttr, attr),
-						GetAttributeValue(global::java.util.jar.Attributes.Name.IMPLEMENTATION_VENDOR, entryAttr, attr),
-						"true".Equals(GetAttributeValue(global::java.util.jar.Attributes.Name.SEALED, entryAttr, attr), StringComparison.OrdinalIgnoreCase) ? sealBase : null);
 				}
 			}
 #endif

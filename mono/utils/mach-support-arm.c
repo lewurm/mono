@@ -19,6 +19,11 @@
 #include "utils/mono-compiler.h"
 #include "mach-support.h"
 
+/* _mcontext.h now defines __darwin_mcontext32, not __darwin_mcontext, starting with Xcode 5.1 */
+#ifdef _STRUCT_MCONTEXT32
+       #define __darwin_mcontext       __darwin_mcontext32
+#endif
+
 /* Known offsets used for TLS storage*/
 
 
@@ -40,66 +45,113 @@ static int tls_vector_offset;
 void *
 mono_mach_arch_get_ip (thread_state_t state)
 {
+	/* Can't use unified_thread_state on !ARM64 since this has to compile on armv6 too */
+#ifdef TARGET_ARM64
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+
+	return (void *) arch_state->ts_64.__pc;
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 
 	return (void *) arch_state->__pc;
+#endif
 }
 
 void *
 mono_mach_arch_get_sp (thread_state_t state)
 {
+#ifdef TARGET_ARM64
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+
+	return (void *) arch_state->ts_64.__sp;
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 
 	return (void *) arch_state->__sp;
+#endif
 }
 
 int
 mono_mach_arch_get_mcontext_size ()
 {
+#ifdef TARGET_ARM64
+	return sizeof (struct __darwin_mcontext64);
+#else
 	return sizeof (struct __darwin_mcontext);
+#endif
 }
 
 void
 mono_mach_arch_thread_state_to_mcontext (thread_state_t state, void *context)
 {
+#ifdef TARGET_ARM64
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
+
+	ctx->__ss = arch_state->ts_64;
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 	struct __darwin_mcontext *ctx = (struct __darwin_mcontext *) context;
 
 	ctx->__ss = *arch_state;
+#endif
 }
 
 void
 mono_mach_arch_mcontext_to_thread_state (void *context, thread_state_t state)
 {
+#ifdef TARGET_ARM64
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+	struct __darwin_mcontext64 *ctx = (struct __darwin_mcontext64 *) context;
+
+	arch_state->ts_64 = ctx->__ss;
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 	struct __darwin_mcontext *ctx = (struct __darwin_mcontext *) context;
 
 	*arch_state = ctx->__ss;
+#endif
 }
 
 int
 mono_mach_arch_get_thread_state_size ()
 {
+#ifdef TARGET_ARM64
+	return sizeof (arm_unified_thread_state_t);
+#else
 	return sizeof (arm_thread_state_t);
+#endif
 }
 
 kern_return_t
 mono_mach_arch_get_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t *count)
 {
+#ifdef TARGET_ARM64
+	arm_unified_thread_state_t *arch_state = (arm_unified_thread_state_t *) state;
+	kern_return_t ret;
+
+	*count = ARM_UNIFIED_THREAD_STATE_COUNT;
+
+	ret = thread_get_state (thread, ARM_UNIFIED_THREAD_STATE, (thread_state_t) arch_state, count);
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 	kern_return_t ret;
 
 	*count = ARM_THREAD_STATE_COUNT;
 
 	ret = thread_get_state (thread, ARM_THREAD_STATE, (thread_state_t) arch_state, count);
-
+#endif
 	return ret;
 }
 
 kern_return_t
 mono_mach_arch_set_thread_state (thread_port_t thread, thread_state_t state, mach_msg_type_number_t count)
 {
-	return thread_set_state (thread, ARM_THREAD_STATE_COUNT, state, count);
+#ifdef TARGET_ARM64
+	return thread_set_state (thread, ARM_UNIFIED_THREAD_STATE, state, count);
+#else
+	return thread_set_state (thread, ARM_THREAD_STATE, state, count);
+#endif
 }
 
 void *
@@ -111,6 +163,7 @@ mono_mach_get_tls_address_from_thread (pthread_t thread, pthread_key_t key)
 	 */
 	intptr_t *p = (intptr_t *) thread;
 	intptr_t **tsd = (intptr_t **) ((char*)p + tls_vector_offset);
+	g_assert (tls_vector_offset != -1);
 
 	return (void *) &tsd [key];
 }
@@ -149,7 +202,8 @@ mono_mach_init (pthread_key_t key)
 		}
 	}
 
-	g_error ("could not discover the mach TLS offset");
+	tls_vector_offset = -1;
+	g_warning ("could not discover the mach TLS offset");
 ok:
 	pthread_setspecific (key, old_value);
 }

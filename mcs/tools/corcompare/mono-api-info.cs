@@ -228,7 +228,7 @@ namespace CorCompare
 			var typesCollection = ass.MainModule.Types;
 			if (typesCollection == null || typesCollection.Count == 0)
 				return;
-			object [] typesArray = new object [typesCollection.Count];
+			var typesArray = new TypeDefinition [typesCollection.Count];
 			for (int i = 0; i < typesCollection.Count; i++) {
 				typesArray [i] = typesCollection [i];
 			}
@@ -416,7 +416,7 @@ namespace CorCompare
 
 			XmlNode ifaces = null;
 
-			foreach (TypeReference iface in  TypeHelper.GetInterfaces (type)) {
+			foreach (TypeReference iface in TypeHelper.GetInterfaces (type).OrderBy (s => s.FullName)) {
 				if (!TypeHelper.IsPublic (iface))
 					// we're only interested in public interfaces
 					continue;
@@ -454,7 +454,7 @@ namespace CorCompare
 
 				MethodDefinition [] ctors = GetConstructors (type);
 				if (ctors.Length > 0) {
-					Array.Sort (ctors, MemberReferenceComparer.Default);
+					Array.Sort (ctors, MethodDefinitionComparer.Default);
 					members.Add (new ConstructorData (document, nclass, ctors));
 				}
 
@@ -472,7 +472,7 @@ namespace CorCompare
 
 				MethodDefinition [] methods = GetMethods (type);
 				if (methods.Length > 0) {
-					Array.Sort (methods, MemberReferenceComparer.Default);
+					Array.Sort (methods, MethodDefinitionComparer.Default);
 					members.Add (new MethodData (document, nclass, methods));
 				}
 			}
@@ -495,11 +495,13 @@ namespace CorCompare
 				nested.RemoveAt (i);
 			}
 
-
 			if (nested.Count > 0) {
+				var nestedArray = nested.ToArray ();
+				Array.Sort (nestedArray, TypeReferenceComparer.Default);
+
 				XmlNode classes = document.CreateElement ("classes", null);
 				nclass.AppendChild (classes);
-				foreach (TypeDefinition t in nested) {
+				foreach (TypeDefinition t in nestedArray) {
 					TypeData td = new TypeData (document, classes, t);
 					td.DoOutput ();
 				}
@@ -544,6 +546,9 @@ namespace CorCompare
 
 			if (TypeHelper.IsDelegate(t))
 				return "delegate";
+
+			if (t.IsPointer)
+				return "pointer";
 
 			return "class";
 		}
@@ -907,6 +912,8 @@ namespace CorCompare
 				AddAttribute (p, "abstract", "true");
 			if (mbase.IsVirtual)
 				AddAttribute (p, "virtual", "true");
+			if (mbase.IsFinal && mbase.IsVirtual && mbase.IsReuseSlot)
+				AddAttribute (p, "sealed", "true");
 			if (mbase.IsStatic)
 				AddAttribute (p, "static", "true");
 
@@ -1231,6 +1238,9 @@ namespace CorCompare
 
 		static object GetFlaggedEnumValue (TypeDefinition type, object value)
 		{
+			if (value is ulong)
+				return GetFlaggedEnumValue (type, (ulong)value);
+
 			long flags = Convert.ToInt64 (value);
 			var signature = new StringBuilder ();
 
@@ -1241,6 +1251,33 @@ namespace CorCompare
 					continue;
 
 				long flag = Convert.ToInt64 (field.Constant);
+
+				if (flag == 0)
+					continue;
+
+				if ((flags & flag) == flag) {
+					if (signature.Length != 0)
+						signature.Append (", ");
+
+					signature.Append (field.Name);
+					flags -= flag;
+				}
+			}
+
+			return signature.ToString ();
+		}
+
+		static object GetFlaggedEnumValue (TypeDefinition type, ulong flags)
+		{
+			var signature = new StringBuilder ();
+
+			for (int i = type.Fields.Count - 1; i >= 0; i--) {
+				FieldDefinition field = type.Fields [i];
+
+				if (!field.HasConstant)
+					continue;
+
+				ulong flag = Convert.ToUInt64 (field.Constant);
 
 				if (flag == 0)
 					continue;

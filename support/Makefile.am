@@ -26,13 +26,11 @@ MPH_C_SOURCE =					\
 # Source code which helps implement POSIX and other related Unix standards,
 # and *may* be portable between Unix platforms.
 MPH_UNIX_SOURCE =				\
-	fakepoll.h				\
 	dirent.c				\
 	fcntl.c					\
 	fstab.c					\
 	grp.c					\
 	macros.c				\
-	mac-reachability.c			\
 	nl.c					\
 	nl.h					\
 	old-map.c				\
@@ -116,10 +114,6 @@ libMonoPosixHelper_la_LIBADD =			\
 libMonoPosixHelper_la_LDFLAGS = -no-undefined -avoid-version
 libMonoSupportW_la_LDFLAGS = -no-undefined -avoid-version
 
-if PLATFORM_DARWIN
-libMonoPosixHelper_la_LDFLAGS += -framework CoreFoundation -framework SystemConfiguration
-endif
-
 libMonoSupportW_la_SOURCES =			\
 		supportw.c			\
 		support-heap.c			\
@@ -164,7 +158,7 @@ refresh:
 	--rename-member=st_mtime=st_mtime_                    \
 	--rename-namespace=Mono.Unix.Native=Mono.Posix        \
 	--library=MonoPosixHelper                             \
-	$(mcs_topdir)/class/lib/net_2_0/Mono.Posix.dll map
+	$(mcs_topdir)/class/lib/net_4_5/Mono.Posix.dll map
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:

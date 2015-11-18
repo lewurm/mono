@@ -37,24 +37,23 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
-#if NET_2_0
 using System.Collections.Generic;
-#endif
 
 namespace A.B.C {
+	// Disable expected warning
+#pragma warning disable 169
 	public struct MethodInfoTestStruct {
 		int p;
 	}
+#pragma warning restore 169
 }
 namespace MonoTests.System.Reflection
 {
 	[TestFixture]
 	public class MethodInfoTest
 	{
-#if !TARGET_JVM
 		[DllImport ("libfoo", EntryPoint="foo", CharSet=CharSet.Unicode, ExactSpelling=false, PreserveSig=true, SetLastError=true, BestFitMapping=true, ThrowOnUnmappableChar=true)]
 		public static extern void dllImportMethod ();
-#endif
 		[MethodImplAttribute(MethodImplOptions.PreserveSig)]
 		public void preserveSigMethod ()
 		{
@@ -63,6 +62,11 @@ namespace MonoTests.System.Reflection
 		[MethodImplAttribute(MethodImplOptions.Synchronized)]
 		public void synchronizedMethod ()
 		{
+		}
+
+		public interface InterfaceTest
+		{
+			void Clone ();
 		}
 
 		[Test]
@@ -96,7 +100,6 @@ namespace MonoTests.System.Reflection
 			}
 		}
 
-#if NET_2_0
 		[Test]
 		public void PseudoCustomAttributes ()
 		{
@@ -128,14 +131,12 @@ namespace MonoTests.System.Reflection
 		}
 
 		[Test]
-		[Category ("TargetJvmNotWorking")]
 		public void ReturnTypePseudoCustomAttributes ()
 		{
 			MethodInfo mi = typeof (MethodInfoTest).GetMethod ("ReturnTypeMarshalAs");
 
 			Assert.IsTrue (mi.ReturnTypeCustomAttributes.GetCustomAttributes (typeof (MarshalAsAttribute), true).Length == 1);
 		}
-#endif
 
 		public static int foo (int i, int j)
 		{
@@ -173,9 +174,6 @@ namespace MonoTests.System.Reflection
 		}
 
 		[Test]
-#if ONLY_1_1
-		[Category ("NotDotNet")] // #A2 fails on MS.NET 1.x
-#endif
 		public void ByrefVtypeInvoke ()
 		{
 			MethodInfo mi = typeof (MethodInfoTest).GetMethod ("ByrefVtype");
@@ -193,7 +191,7 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual (5, args[0], "#B2");
 		}
 
-		public void HeyHey (out string out1, ref string ref1)
+		public void HeyHey (out string out1, ref DateTime ref1)
 		{
 			out1 = null;
 		}
@@ -215,18 +213,10 @@ namespace MonoTests.System.Reflection
 				method.Invoke (null, new object [0]);
 				Assert.Fail ("#1");
 			}
-#if NET_2_0
 			catch (ThreadAbortException ex) {
 				Thread.ResetAbort ();
 				Assert.IsNull (ex.InnerException, "#2");
 			}
-#else
-			catch (TargetInvocationException ex) {
-				Thread.ResetAbort ();
-				Assert.IsNotNull (ex.InnerException, "#2");
-				Assert.AreEqual (typeof (ThreadAbortException), ex.InnerException.GetType (), "#3");
-			}
-#endif
 		}
 
 		public static void AbortIt ()
@@ -237,7 +227,7 @@ namespace MonoTests.System.Reflection
 		[Test] // bug #76541
 		public void ToStringByRef ()
 		{
-			Assert.AreEqual ("Void HeyHey(System.String ByRef, System.String ByRef)",
+			Assert.AreEqual ("Void HeyHey(System.String ByRef, System.DateTime ByRef)",
 				this.GetType ().GetMethod ("HeyHey").ToString ());
 		}
 		
@@ -254,11 +244,9 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual ("Int32* PtrFunc(Int32*)", this.GetType ().GetMethod ("PtrFunc").ToString ());
 		}
 
-
-#if NET_2_0
 		public struct SimpleStruct
 		{
-			int a;
+			public int a;
 		}
 
 		public static unsafe SimpleStruct* PtrFunc2 (SimpleStruct* a, A.B.C.MethodInfoTestStruct *b)
@@ -278,7 +266,6 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual ("System.Collections.ObjectModel.ReadOnlyCollection`1[T] AsReadOnly[T](T[])",
 				typeof (Array).GetMethod ("AsReadOnly").ToString ());
 		}
-#endif
 
 		class GBD_A         { public virtual     void f () {} }
 		class GBD_B : GBD_A { public override    void f () {} }
@@ -319,12 +306,10 @@ namespace MonoTests.System.Reflection
 			Assert.AreSame (inheritedMethod, baseMethod);
 		}
 
-#if NET_2_0
-#if !TARGET_JVM // MethodBody is not supported for TARGET_JVM
 		[Test]
 		public void GetMethodBody_Abstract ()
 		{
-			MethodBody mb = typeof (ICloneable).GetMethod ("Clone").GetMethodBody ();
+			MethodBody mb = typeof (InterfaceTest).GetMethod ("Clone").GetMethodBody ();
 			Assert.IsNull (mb);
 		}
 
@@ -366,6 +351,9 @@ namespace MonoTests.System.Reflection
 		[Test]
 		public void GetMethodBody ()
 		{
+#if MONOTOUCH && !DEBUG
+			Assert.Ignore ("Release app (on devices) are stripped of (managed) IL so this test would fail");
+#endif
 			MethodBody mb = typeof (MethodInfoTest).GetMethod ("locals_method").GetMethodBody ();
 
 			Assert.IsTrue (mb.InitLocals, "#1");
@@ -373,16 +361,21 @@ namespace MonoTests.System.Reflection
 
 			IList<LocalVariableInfo> locals = mb.LocalVariables;
 
-			// This might break with different compilers etc.
-			Assert.AreEqual (2, locals.Count, "#3");
+			bool foundPinnedBytePointer = false;
+			unsafe {
+				foreach (LocalVariableInfo lvi in locals) {
+					if (lvi.LocalType == typeof (byte[]))
+						// This is optimized out by CSC in .NET 4.6
+						Assert.IsFalse (lvi.IsPinned, "#3-1");
 
-			Assert.IsTrue ((locals [0].LocalType == typeof (byte[])) || (locals [1].LocalType == typeof (byte[])), "#4");
-			if (locals [0].LocalType == typeof (byte[]))
-				Assert.AreEqual (false, locals [0].IsPinned, "#5");
-			else
-				Assert.AreEqual (false, locals [1].IsPinned, "#6");
+					if (/* mcs */ lvi.LocalType == typeof (byte*) || /* csc */ lvi.LocalType == typeof (byte).MakeByRefType ()) {
+						foundPinnedBytePointer = true;
+						Assert.IsTrue (lvi.IsPinned, "#3-2");
+					}
+				}
+			}
+			Assert.IsTrue (foundPinnedBytePointer, "#4");
 		}
-#endif // TARGET_JVM
 
 		public int return_parameter_test ()
 		{
@@ -413,7 +406,15 @@ namespace MonoTests.System.Reflection
 			//Assert.IsTrue (pi.IsRetval, "#3");
 		}
 
-#if !TARGET_JVM // ReflectionOnly is not supported yet on TARGET_JVM
+		[Test]
+		public void MethodInfoModule ()
+		{
+			Type type = typeof (MethodInfoTest);
+			MethodInfo me = type.GetMethod ("return_parameter_test");
+
+			Assert.AreEqual (type.Module, me.Module);
+		}
+
 		[Test]
 			public void InvokeOnRefOnlyAssembly ()
 		{
@@ -431,7 +432,6 @@ namespace MonoTests.System.Reflection
 				Assert.IsNotNull (ex.Message, "#4");
 			}
 		}
-#endif // TARGET_JVM
 
 		[Test]
 		[ExpectedException (typeof (TargetInvocationException))]
@@ -744,7 +744,6 @@ namespace MonoTests.System.Reflection
 			{
 			}
 		}
-#endif
 #if NET_4_0
 		interface IMethodInvoke<out T>
 		{
@@ -783,9 +782,76 @@ namespace MonoTests.System.Reflection
 			var m = GetType ().GetMethod ("Bug12856");
 			Assert.AreEqual ("System.Nullable`1[System.Int32] Bug12856()", m.ToString (), "#1");
 		}
+
+#if !MONOTOUCH
+		class GenericClass<T>
+		{
+			public void Method ()
+			{
+				T lv = default(T);
+				Console.WriteLine(lv);
+			}
+
+			public void Method2<K> (T a0, K a1)
+			{
+				T var0 = a0;
+				K var1 = a1;
+				Console.WriteLine (var0);
+				Console.WriteLine (var1);
+			}
+		}
+
+		[Test]
+		public void TestLocalVariableTypes ()
+		{
+			var typeofT = typeof (GenericClass<>).GetGenericArguments () [0];
+			var typeofK = typeof (GenericClass<>).GetMethod ("Method2").GetGenericArguments () [0];
+
+			var type = typeof (GenericClass<>).GetMethod("Method").GetMethodBody().LocalVariables[0].LocalType;
+			Assert.AreEqual (typeofT, type);
+			Assert.AreEqual (typeof (GenericClass<>), type.DeclaringType);
+		
+			bool foundTypeOfK = false;
+			bool foundExpectedType = false;
+	    
+			MethodBody mb = typeof (GenericClass<>).GetMethod("Method2").GetMethodBody();
+			foreach (LocalVariableInfo lvi in mb.LocalVariables) {
+				if (lvi.LocalType == typeofK) {
+					foundTypeOfK = true;
+					Assert.AreEqual (typeof (GenericClass<>), lvi.LocalType.DeclaringType, "#1-1");
+				} else if (lvi.LocalType == typeofT) {
+					foundExpectedType = true;
+					Assert.AreEqual (typeof (GenericClass<>), lvi.LocalType.DeclaringType, "#1-2");
+				}
+			}
+
+			Assert.IsTrue (foundTypeOfK, "#1-3");
+			if (mb.LocalVariables.Count < 2)
+				Assert.Ignore ("Code built in release mode - 'T var0' optmized out");
+			else
+				Assert.IsTrue (foundExpectedType, "#1-4");
+	    
+			foundTypeOfK = false;
+			foundExpectedType = false;
+			mb = typeof (GenericClass<int>).GetMethod("Method2").GetMethodBody();
+			foreach (LocalVariableInfo lvi in mb.LocalVariables) {
+				if (lvi.LocalType == typeofK) {
+					foundTypeOfK = true;
+					Assert.AreEqual (typeof (GenericClass<>), lvi.LocalType.DeclaringType, "#2-1");
+				} else if (lvi.LocalType == typeof (int)) {
+					foundExpectedType = true;
+				}
+			}
+	    
+			Assert.IsTrue (foundTypeOfK, "#2-3");
+			if (mb.LocalVariables.Count < 2)
+				Assert.Ignore ("Code built in release mode - 'int var0' optmized out");
+			else
+				Assert.IsTrue (foundExpectedType, "#2-4");
+		}
+#endif
 	}
 	
-#if NET_2_0
 	// Helper class
 	class RefOnlyMethodClass 
 	{
@@ -809,5 +875,4 @@ namespace MonoTests.System.Reflection
 			set { _myList = value; }
 		}
 	}
-#endif
 }
