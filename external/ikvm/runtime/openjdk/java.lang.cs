@@ -34,7 +34,7 @@ using IKVM.Internal;
 
 static class Java_java_lang_Class
 {
-	public static java.lang.Class forName0(string name, bool initialize, java.lang.ClassLoader loader)
+	public static java.lang.Class forName0(string name, bool initialize, java.lang.ClassLoader loader, java.lang.Class caller)
 	{
 #if FIRST_PASS
 		return null;
@@ -79,6 +79,11 @@ static class Java_java_lang_Class
 			{
 				throw x.ToJava();
 			}
+		}
+		java.security.ProtectionDomain pd;
+		if (loader != null && caller != null && (pd = getProtectionDomain0(caller)) != null)
+		{
+			loader.checkPackageAccess(tw.ClassObject, pd);
 		}
 		if (initialize && !tw.IsArray)
 		{
@@ -322,16 +327,21 @@ static class Java_java_lang_Class
 			{
 				return null;
 			}
+			decl = decl.EnsureLoadable(wrapper.GetClassLoader());
 			if (!decl.IsAccessibleFrom(wrapper))
 			{
 				throw new IllegalAccessError(string.Format("tried to access class {0} from class {1}", decl.Name, wrapper.Name));
 			}
 			decl.Finish();
-			if (Array.IndexOf(decl.InnerClasses, wrapper) == -1)
+			TypeWrapper[] declInner = decl.InnerClasses;
+			for (int i = 0; i < declInner.Length; i++)
 			{
-				throw new IncompatibleClassChangeError(string.Format("{0} and {1} disagree on InnerClasses attribute", decl.Name, wrapper.Name));
+				if (declInner[i].Name == wrapper.Name && declInner[i].EnsureLoadable(decl.GetClassLoader()) == wrapper)
+				{
+					return decl.ClassObject;
+				}
 			}
-			return decl.ClassObject;
+			throw new IncompatibleClassChangeError(string.Format("{0} and {1} disagree on InnerClasses attribute", decl.Name, wrapper.Name));
 		}
 		catch (RetargetableJavaException x)
 		{
@@ -533,13 +543,14 @@ static class Java_java_lang_Class
 				throw new ClassFormatError(wrapper.Name);
 			}
 			MethodWrapper[] methods = wrapper.GetMethods();
-			List<java.lang.reflect.Method> list = new List<java.lang.reflect.Method>();
+			List<java.lang.reflect.Method> list = new List<java.lang.reflect.Method>(methods.Length);
 			for (int i = 0; i < methods.Length; i++)
 			{
 				// we don't want to expose "hideFromReflection" methods (one reason is that it would
 				// mess up the serialVersionUID computation)
 				if (!methods[i].IsHideFromReflection
-					&& methods[i].Name != "<clinit>" && methods[i].Name != "<init>"
+					&& !methods[i].IsConstructor
+					&& !methods[i].IsClassInitializer
 					&& (!publicOnly || methods[i].IsPublic))
 				{
 					list.Add((java.lang.reflect.Method)methods[i].ToMethodOrConstructor(false));
@@ -585,7 +596,7 @@ static class Java_java_lang_Class
 				// we don't want to expose "hideFromReflection" methods (one reason is that it would
 				// mess up the serialVersionUID computation)
 				if (!methods[i].IsHideFromReflection
-					&& methods[i].Name == "<init>"
+					&& methods[i].IsConstructor
 					&& (!publicOnly || methods[i].IsPublic))
 				{
 					list.Add((java.lang.reflect.Constructor)methods[i].ToMethodOrConstructor(false));
@@ -618,16 +629,13 @@ static class Java_java_lang_Class
 			java.lang.Class[] innerclasses = new java.lang.Class[wrappers.Length];
 			for (int i = 0; i < innerclasses.Length; i++)
 			{
-				if (wrappers[i].IsUnloadable)
+				TypeWrapper tw = wrappers[i].EnsureLoadable(wrapper.GetClassLoader());
+				if (!tw.IsAccessibleFrom(wrapper))
 				{
-					throw new java.lang.NoClassDefFoundError(wrappers[i].Name);
+					throw new IllegalAccessError(string.Format("tried to access class {0} from class {1}", tw.Name, wrapper.Name));
 				}
-				if (!wrappers[i].IsAccessibleFrom(wrapper))
-				{
-					throw new IllegalAccessError(string.Format("tried to access class {0} from class {1}", wrappers[i].Name, wrapper.Name));
-				}
-				wrappers[i].Finish();
-				innerclasses[i] = wrappers[i].ClassObject;
+				tw.Finish();
+				innerclasses[i] = tw.ClassObject;
 			}
 			return innerclasses;
 		}
@@ -1166,6 +1174,65 @@ static class Java_java_lang_StrictMath
 
 static class Java_java_lang_System
 {
+	public static void registerNatives()
+	{
+	}
+
+	public static void setIn0(object @in)
+	{
+#if !FIRST_PASS
+		java.lang.StdIO.@in = (java.io.InputStream)@in;
+#endif
+	}
+
+	public static void setOut0(object @out)
+	{
+#if !FIRST_PASS
+		java.lang.StdIO.@out = (java.io.PrintStream)@out;
+#endif
+	}
+
+	public static void setErr0(object err)
+	{
+#if !FIRST_PASS
+		java.lang.StdIO.err = (java.io.PrintStream)err;
+#endif
+	}
+
+	public static object initProperties(object props)
+	{
+#if FIRST_PASS
+		return null;
+#else
+		java.lang.VMSystemProperties.initProperties((java.util.Properties)props);
+		return props;
+#endif
+	}
+
+	public static string mapLibraryName(string libname)
+	{
+#if FIRST_PASS
+		return null;
+#else
+		if (libname == null)
+		{
+			throw new java.lang.NullPointerException();
+		}
+		if (ikvm.@internal.Util.WINDOWS)
+		{
+			return libname + ".dll";
+		}
+		else if (ikvm.@internal.Util.MACOSX)
+		{
+			return "lib" + libname + ".jnilib";
+		}
+		else
+		{
+			return "lib" + libname + ".so";
+		}
+#endif
+	}
+
 	public static void arraycopy(object src, int srcPos, object dest, int destPos, int length)
 	{
 		IKVM.Runtime.ByteCodeHelper.arraycopy(src, srcPos, dest, destPos, length);
