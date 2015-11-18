@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
@@ -44,7 +45,7 @@ namespace System.Globalization
 	{
 		static volatile CultureInfo invariant_culture_info = new CultureInfo (InvariantCultureId, false, true);
 		static object shared_table_lock = new object ();
-		internal static int BootstrapCultureID;
+		static CultureInfo default_current_culture;
 
 #pragma warning disable 169, 649
 		bool m_isReadOnly;
@@ -59,10 +60,10 @@ namespace System.Globalization
 		int default_calendar_type;
 		bool m_useUserOverride;
 		[NonSerialized]
-		volatile NumberFormatInfo numInfo;
-		volatile DateTimeFormatInfo dateTimeInfo;
+		internal volatile NumberFormatInfo numInfo;
+		internal volatile DateTimeFormatInfo dateTimeInfo;
 		volatile TextInfo textInfo;
-		private string m_name;
+		internal string m_name;
 		
 		[NonSerialized]
 		private string englishname;
@@ -83,6 +84,16 @@ namespace System.Globalization
 		[NonSerialized]
 		private unsafe readonly void *textinfo_data;
 
+		[StructLayout (LayoutKind.Sequential)]
+		struct Data {
+			public int ansi;
+			public int ebcdic;
+			public int mac;
+			public int oem;
+			public bool right_to_left;
+			public byte list_sep;
+		}
+
 		int m_dataItem;		// MS.NET serializes this.
 #pragma warning restore 169, 649
 
@@ -98,8 +109,11 @@ namespace System.Globalization
 		[NonSerialized]
 		// Used by Thread.set_CurrentCulture
 		internal byte[] cached_serialized_form;
+
+		[NonSerialized]internal CultureData m_cultureData;
+ 		[NonSerialized]internal bool m_isInherited;
 		
-		const int InvariantCultureId = 0x7F;
+		internal const int InvariantCultureId = 0x7F;
 		const int CalendarTypeBits = 8;
 
 		const string MSG_READONLY = "This instance is read only";
@@ -124,10 +138,24 @@ namespace System.Globalization
 
 		internal static CultureInfo ConstructCurrentCulture ()
 		{
-			CultureInfo ci = new CultureInfo ();
-			if (!ConstructInternalLocaleFromCurrentLocale (ci))
+			if (default_current_culture != null)
+				return default_current_culture;
+
+			var locale_name = get_current_locale_name ();
+			CultureInfo ci = null;
+			try {
+				ci = CreateSpecificCulture (locale_name);
+			} catch {
+			}
+
+			if (ci == null) {
 				ci = InvariantCulture;
-			BootstrapCultureID = ci.cultureID;
+			} else {
+				ci.m_isReadOnly = true;
+				ci.m_useUserOverride = true;
+			}
+
+			default_current_culture = ci;
 			return ci;
 		}
 
@@ -283,9 +311,10 @@ namespace System.Globalization
 						//
 						// Parent lcid is same but culture info is not for legacy zh culture
 						//
-						if (parent_lcid == 0x7C04 && EnglishName.EndsWith (" Legacy", StringComparison.Ordinal))
+						if (parent_lcid == 0x7C04 && EnglishName [EnglishName.Length - 1] == 'y')
 							return parent_culture = new CultureInfo ("zh-Hant");
-
+						else if (parent_lcid == 0x0004 && EnglishName [EnglishName.Length -1] == 'y')
+							return parent_culture = new CultureInfo ("zh-Hans");
 						return null;
 					}
 					
@@ -293,7 +322,10 @@ namespace System.Globalization
 						parent_culture = InvariantCulture;
 					else if (cultureID == InvariantCultureId)
 						parent_culture = this;
-					else
+					else if (cultureID == 0x0404) {
+						// zh-tw has parent id 0x7C04 which is in this case zh-cht and not zh-hant
+						parent_culture = new CultureInfo ("zh-CHT");
+					} else
 						parent_culture = new CultureInfo (parent_lcid);
 				}
 				return parent_culture;
@@ -347,8 +379,20 @@ namespace System.Globalization
 
 		public void ClearCachedData()
 		{
-			Thread.CurrentThread.CurrentCulture = null;
-			Thread.CurrentThread.CurrentUICulture = null;
+			lock (shared_table_lock) {
+				shared_by_number = null;
+				shared_by_name = null;
+			}
+
+			//
+			// ClearCachedData method does not refresh the information in
+			// the Thread.CurrentCulture property for existing threads
+			//
+			default_current_culture = null;
+
+			RegionInfo.ClearCachedData ();
+			TimeZone.ClearCachedData ();
+			TimeZoneInfo.ClearCachedData ();
 		}
 
 		public virtual object Clone()
@@ -367,10 +411,7 @@ namespace System.Globalization
 		public override bool Equals (object value)
 		{
 			CultureInfo b = value as CultureInfo;
-			
-			if (b != null)
-				return b.cultureID == cultureID;
-			return false;
+			return b != null && b.cultureID == cultureID && b.m_name == m_name;
 		}
 
 		public static CultureInfo[] GetCultures(CultureTypes types)
@@ -383,11 +424,24 @@ namespace System.Globalization
 			// The runtime returns a NULL in the first position of the array when
 			// 'neutral' is true. We fill it in with a clone of InvariantCulture
 			// since it must not be read-only
+			int i = 0;
 			if (neutral && infos.Length > 0 && infos [0] == null) {
-				infos [0] = (CultureInfo) InvariantCulture.Clone ();
+				infos [i++] = (CultureInfo) InvariantCulture.Clone ();
+			}
+
+			for (; i < infos.Length; ++i) {
+				var ci = infos [i];
+				var ti = ci.GetTextInfoData ();
+				infos [i].m_cultureData = CultureData.GetCultureData (ci.m_name, false, ci.datetime_index, ci.CalendarType, ci.number_index, ci.iso2lang,
+					ti.ansi, ti.oem, ti.mac, ti.ebcdic, ti.right_to_left, ((char)ti.list_sep).ToString ());
 			}
 
 			return infos;
+		}
+
+		unsafe Data GetTextInfoData ()
+		{
+			return *(Data*) textinfo_data;
 		}
 
 		public override int GetHashCode ()
@@ -451,27 +505,14 @@ namespace System.Globalization
 
 		internal void CheckNeutral ()
 		{
-#if !NET_4_0
-			if (IsNeutralCulture) {
-				throw new NotSupportedException ("Culture \"" + m_name + "\" is " +
-						"a neutral culture. It can not be used in formatting " +
-						"and parsing and therefore cannot be set as the thread's " +
-						"current culture.");
-			}
-#endif
 		}
 
 		public virtual NumberFormatInfo NumberFormat {
 			get {
-				if (!constructed) Construct ();
-				CheckNeutral ();
-				if (numInfo == null){
-					lock (this){
-						if (numInfo == null) {
-							numInfo = new NumberFormatInfo (m_isReadOnly);
-							construct_number_format ();
-						}
-					}
+				if (numInfo == null) {
+					NumberFormatInfo temp = new NumberFormatInfo(this.m_cultureData);
+					temp.isReadOnly = m_isReadOnly;
+					numInfo = temp;
 				}
 
 				return numInfo;
@@ -496,17 +537,10 @@ namespace System.Globalization
 				if (!constructed) Construct ();
 				CheckNeutral ();
 
-				// TODO: Have to lock because construct_datetime_format is not atomic
-				lock (this) {
-					if (cultureID == InvariantCultureId && m_isReadOnly)
-						dateTimeInfo = DateTimeFormatInfo.InvariantInfo;
-					else if (dateTimeInfo == null) {
-						dateTimeInfo = new DateTimeFormatInfo (this, m_isReadOnly);
-						if (cultureID != InvariantCultureId)
-							construct_datetime_format ();
-					}
-				}
-
+				var temp = new DateTimeFormatInfo (m_cultureData, Calendar);
+				temp.m_isReadOnly = m_isReadOnly;
+				System.Threading.Thread.MemoryBarrier();
+				dateTimeInfo = temp;
 				return dateTimeInfo;
 			}
 
@@ -535,9 +569,10 @@ namespace System.Globalization
 			}
 		}
 
-		public static CultureInfo InstalledUICulture
-		{
-			get { return GetCultureInfo (BootstrapCultureID); }
+		public static CultureInfo InstalledUICulture {
+			get {
+				return ConstructCurrentCulture ();
+			}
 		}
 
 		public bool IsReadOnly {
@@ -568,33 +603,17 @@ namespace System.Globalization
 			constructed = true;
 		}
 
-		static bool ConstructInternalLocaleFromCurrentLocale (CultureInfo ci)
-		{
-			if (!construct_internal_locale_from_current_locale (ci))
-				return false;
-			return true;
-		}
-
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private extern bool construct_internal_locale_from_lcid (int lcid);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private extern bool construct_internal_locale_from_name (string name);
 
-//		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-//		private extern static bool construct_internal_locale_from_specific_name (CultureInfo ci, string name);
-
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern static bool construct_internal_locale_from_current_locale (CultureInfo ci);
+		private extern static string get_current_locale_name ();
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		private extern static CultureInfo [] internal_get_cultures (bool neutral, bool specific, bool installed);
-
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern void construct_datetime_format ();
-
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern void construct_number_format ();
 
 		private void ConstructInvariant (bool read_only)
 		{
@@ -615,12 +634,14 @@ namespace System.Globalization
 			iso3lang="IVL";
 			iso2lang="iv";
 			win3lang="IVL";
-			default_calendar_type = 1 << CalendarTypeBits;
+			default_calendar_type = 1 << CalendarTypeBits | (int) GregorianCalendarTypes.Localized;
 		}
 
 		private unsafe TextInfo CreateTextInfo (bool readOnly)
 		{
-			return new TextInfo (this, cultureID, this.textinfo_data, readOnly);
+			TextInfo tempTextInfo = new TextInfo (this.m_cultureData);
+			tempTextInfo.SetReadOnlyState (readOnly);
+			return tempTextInfo;
 		}
 
 		public CultureInfo (int culture) : this (culture, true) {}
@@ -640,21 +661,22 @@ namespace System.Globalization
 
 			if (culture == InvariantCultureId) {
 				/* Short circuit the invariant culture */
+				m_cultureData = CultureData.Invariant;
 				ConstructInvariant (read_only);
 				return;
 			}
 
 			if (!construct_internal_locale_from_lcid (culture)) {
-#if NET_4_0
-				throw new CultureNotFoundException ("culture", 
-					String.Format ("Culture ID {0} (0x{0:X4}) is not a " +
-							"supported culture.", culture));
-#else
-				throw new ArgumentException (
-					String.Format ("Culture ID {0} (0x{0:X4}) is not a " +
-							"supported culture.", culture), "culture");
-#endif
+				//
+				// Be careful not to cause recursive CultureInfo initialization
+				//
+				var msg = string.Format (InvariantCulture, "Culture ID {0} (0x{1}) is not a supported culture.", culture.ToString (InvariantCulture), culture.ToString ("X4", InvariantCulture));
+				throw new CultureNotFoundException ("culture", msg);
 			}
+
+			var ti = GetTextInfoData ();
+			m_cultureData = CultureData.GetCultureData (m_name, m_useUserOverride, datetime_index, CalendarType, number_index, iso2lang,
+				ti.ansi, ti.oem, ti.mac, ti.ebcdic, ti.right_to_left, ((char)ti.list_sep).ToString ());
 		}
 
 		public CultureInfo (string name) : this (name, true) {}
@@ -670,22 +692,22 @@ namespace System.Globalization
 			constructed = true;
 			m_isReadOnly = read_only;
 			m_useUserOverride = useUserOverride;
+			m_isInherited = GetType() != typeof(System.Globalization.CultureInfo);
 
 			if (name.Length == 0) {
 				/* Short circuit the invariant culture */
+				m_cultureData = CultureData.Invariant;
 				ConstructInvariant (read_only);
 				return;
 			}
 
 			if (!construct_internal_locale_from_name (name.ToLowerInvariant ())) {
-#if NET_4_0
-				throw new CultureNotFoundException ("name",
-						"Culture name " + name + " is not supported.");
-#else
-				throw new ArgumentException ("Culture name " + name +
-						" is not supported.", "name");
-#endif
+				throw CreateNotFoundException (name);
 			}
+
+			var ti = GetTextInfoData ();
+			m_cultureData = CultureData.GetCultureData (m_name, useUserOverride, datetime_index, CalendarType, number_index, iso2lang,
+				ti.ansi, ti.oem, ti.mac, ti.ebcdic, ti.right_to_left, ((char)ti.list_sep).ToString ());
 		}
 
 		// This is used when creating by specific name and creating by
@@ -789,28 +811,31 @@ namespace System.Globalization
 			if (name.Length == 0)
 				return InvariantCulture;
 
-			CultureInfo ci = null;
-			try {
-				ci = new CultureInfo (name);
-			} catch (Exception) {
-				// TODO: Use construct_internal_locale_from_name when it's not bound to constructor instead
-				// of try-catch
-				int idx = name.IndexOf ('-');
+			var src_name = name;
+			name = name.ToLowerInvariant ();
+			CultureInfo ci = new CultureInfo ();
+
+			if (!ci.construct_internal_locale_from_name (name)) {
+				int idx = name.Length - 1;
 				if (idx > 0) {
-					try {
-						ci = new CultureInfo (name.Substring (0, idx));
-					} catch {
+					while ((idx = name.LastIndexOf ('-', idx - 1)) > 0) {
+						if (ci.construct_internal_locale_from_name (name.Substring (0, idx)))
+							break;
 					}
 				}
-				
-				if (ci == null)
-					throw;
+
+				if (idx <= 0)
+					throw CreateNotFoundException (src_name);
 			}
 
-			if (!ci.IsNeutralCulture)
-				return ci;
+			if (ci.IsNeutralCulture)
+				ci = CreateSpecificCultureFromNeutral (ci.Name);
 
-			return CreateSpecificCultureFromNeutral (ci.Name);
+			var ti = ci.GetTextInfoData ();
+
+			ci.m_cultureData = CultureData.GetCultureData (ci.m_name, false, ci.datetime_index, ci.CalendarType, ci.number_index, ci.iso2lang,
+				ti.ansi, ti.oem, ti.mac, ti.ebcdic, ti.right_to_left, ((char)ti.list_sep).ToString ());
+			return ci;
 		}
 
 		//
@@ -837,8 +862,8 @@ namespace System.Globalization
 			case "arn": id = 1146; break;
 			case "as": id = 1101; break;
 			case "az": id = 1068; break;
-			case "az-Cyrl": id = 2092; break;
-			case "az-Latn": id = 1068; break;
+			case "az-cyrl": id = 2092; break;
+			case "az-latn": id = 1068; break;
 			case "ba": id = 1133; break;
 			case "be": id = 1059; break;
 			case "bg": id = 1026; break;
@@ -846,8 +871,8 @@ namespace System.Globalization
 			case "bo": id = 1105; break;
 			case "br": id = 1150; break;
 			case "bs": id = 5146; break;
-			case "bs-Cyrl": id = 8218; break;
-			case "bs-Latn": id = 5146; break;
+			case "bs-cyrl": id = 8218; break;
+			case "bs-latn": id = 5146; break;
 			case "ca": id = 1027; break;
 			case "co": id = 1155; break;
 			case "cs": id = 1029; break;
@@ -873,7 +898,7 @@ namespace System.Globalization
 			case "gsw": id = 1156; break;
 			case "gu": id = 1095; break;
 			case "ha": id = 1128; break;
-			case "ha-Latn": id = 1128; break;
+			case "ha-latn": id = 1128; break;
 			case "he": id = 1037; break;
 			case "hi": id = 1081; break;
 			case "hr": id = 1050; break;
@@ -886,8 +911,8 @@ namespace System.Globalization
 			case "is": id = 1039; break;
 			case "it": id = 1040; break;
 			case "iu": id = 2141; break;
-			case "iu-Cans": id = 1117; break;
-			case "iu-Latn": id = 2141; break;
+			case "iu-cans": id = 1117; break;
+			case "iu-latn": id = 2141; break;
 			case "ja": id = 1041; break;
 			case "ka": id = 1079; break;
 			case "kk": id = 1087; break;
@@ -905,8 +930,8 @@ namespace System.Globalization
 			case "mk": id = 1071; break;
 			case "ml": id = 1100; break;
 			case "mn": id = 1104; break;
-			case "mn-Cyrl": id = 1104; break;
-			case "mn-Mong": id = 2128; break;
+			case "mn-cyrl": id = 1104; break;
+			case "mn-mong": id = 2128; break;
 			case "moh": id = 1148; break;
 			case "mr": id = 1102; break;
 			case "ms": id = 1086; break;
@@ -942,36 +967,38 @@ namespace System.Globalization
 			case "sms": id = 8251; break;
 			case "sq": id = 1052; break;
 			case "sr": id = 9242; break;
-			case "sr-Cyrl": id = 10266; break;
-			case "sr-Latn": id = 9242; break;
+			case "sr-cyrl": id = 10266; break;
+			case "sr-latn": id = 9242; break;
 			case "sv": id = 1053; break;
 			case "sw": id = 1089; break;
 			case "syr": id = 1114; break;
 			case "ta": id = 1097; break;
 			case "te": id = 1098; break;
 			case "tg": id = 1064; break;
-			case "tg-Cyrl": id = 1064; break;
+			case "tg-cyrl": id = 1064; break;
 			case "th": id = 1054; break;
 			case "tk": id = 1090; break;
 			case "tn": id = 1074; break;
 			case "tr": id = 1055; break;
 			case "tt": id = 1092; break;
 			case "tzm": id = 2143; break;
-			case "tzm-Latn": id = 2143; break;
+			case "tzm-latn": id = 2143; break;
 			case "ug": id = 1152; break;
 			case "uk": id = 1058; break;
 			case "ur": id = 1056; break;
 			case "uz": id = 1091; break;
-			case "uz-Cyrl": id = 2115; break;
-			case "uz-Latn": id = 1091; break;
+			case "uz-cyrl": id = 2115; break;
+			case "uz-latn": id = 1091; break;
 			case "vi": id = 1066; break;
 			case "wo": id = 1160; break;
 			case "xh": id = 1076; break;
 			case "yo": id = 1130; break;
 			case "zh": id = 2052; break;
-			case "zh-CHS": case "zh-Hans":
+			case "zh-chs":
+			case "zh-hans":
 				id = 2052; break;
-			case "zh-CHT": case "zh-Hant":
+			case "zh-cht":
+			case "zh-hant":
 				id = 3076; break;
 			case "zu": id = 1077; break;
 			default:
@@ -979,6 +1006,23 @@ namespace System.Globalization
 			}
 
 			return new CultureInfo (id);
+		}
+
+		internal int CalendarType {
+			get {
+				switch (default_calendar_type >> CalendarTypeBits) {
+				case 1:
+					return Calendar.CAL_GREGORIAN;
+				case 2:
+					return Calendar.CAL_THAI;
+				case 3:
+					return Calendar.CAL_UMALQURA;
+				case 4:
+					return Calendar.CAL_HIJRI;
+				default:
+					throw new NotImplementedException ("CalendarType");
+				}
+			}
 		}
 
 		static Calendar CreateCalendar (int calendarType)
@@ -1004,30 +1048,91 @@ namespace System.Globalization
 
 			Type type = Type.GetType (name, false);
 			if (type == null)
-				return CreateCalendar (1 << CalendarTypeBits); // return invariant calandar if not found
+				return new GregorianCalendar (GregorianCalendarTypes.Localized); // return invariant calendar if not found
 			return (Calendar) Activator.CreateInstance (type);
 		}
+
+		static Exception CreateNotFoundException (string name)
+		{
+			return new CultureNotFoundException ("name", "Culture name " + name + " is not supported.");
+		}
 		
-#if NET_4_5
-		[MonoTODO]
 		public static CultureInfo DefaultThreadCurrentCulture {
 			get {
-				throw new NotImplementedException ();
+				return Thread.default_culture;
 			}
 			set {
-				throw new NotImplementedException ();
+				Thread.default_culture = value;
 			}
 		}
 		
-		[MonoTODO]
 		public static CultureInfo DefaultThreadCurrentUICulture {
 			get {
-				throw new NotImplementedException ();
+				return Thread.default_ui_culture;
 			}
 			set {
-				throw new NotImplementedException ();
+				Thread.default_ui_culture = value;
 			}
 		}
-#endif
+
+		internal string SortName {
+			get {
+				return m_name;
+			}
+		}
+
+#region reference sources
+		// TODO:
+		internal static readonly bool IsTaiwanSku;
+
+        //
+        // CheckDomainSafetyObject throw if the object is customized object which cannot be attached to 
+        // other object (like CultureInfo or DateTimeFormatInfo).
+        //
+
+        internal static void CheckDomainSafetyObject(Object obj, Object container)
+        {
+            if (obj.GetType().Assembly != typeof(System.Globalization.CultureInfo).Assembly) {
+                
+                throw new InvalidOperationException(
+                            String.Format(
+                                CultureInfo.CurrentCulture, 
+                                Environment.GetResourceString("InvalidOperation_SubclassedObject"), 
+                                obj.GetType(),
+                                container.GetType()));
+            }
+            Contract.EndContractBlock();
+        }
+
+        // For resource lookup, we consider a culture the invariant culture by name equality.
+        // We perform this check frequently during resource lookup, so adding a property for
+        // improved readability.
+        internal bool HasInvariantCultureName
+        {
+            get { return Name == CultureInfo.InvariantCulture.Name; }
+        }
+
+        internal static bool VerifyCultureName(String cultureName, bool throwException)
+        {
+            // This function is used by ResourceManager.GetResourceFileName(). 
+            // ResourceManager searches for resource using CultureInfo.Name,
+            // so we should check against CultureInfo.Name.
+
+            for (int i=0; i<cultureName.Length; i++) {
+                char c = cultureName[i];
+                // 
+
+                if (Char.IsLetterOrDigit(c) || c=='-' || c=='_') {
+                    continue;
+                }
+                if (throwException) {
+                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidResourceCultureName", cultureName));
+                }
+                return false;
+            }
+            return true;
+        }
+
+#endregion
 	}
 }

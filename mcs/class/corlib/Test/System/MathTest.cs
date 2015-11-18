@@ -17,11 +17,7 @@ namespace MonoTests.System
 	public class MathTest
 	{
 		private static double double_epsilon =
-#if TARGET_JVM
-			1E-15;
-#else
 			double.Epsilon;
-#endif
 
 		static double x = 0.1234;
 		static double y = 12.345;
@@ -377,7 +373,6 @@ namespace MonoTests.System
 			}
 		}
 
-#if NET_2_0
 		[Test]
 		public void TestDecimalCeiling()
 		{
@@ -388,7 +383,6 @@ namespace MonoTests.System
 			Assert.IsTrue (Decimal.MaxValue == Math.Ceiling(Decimal.MaxValue), "#2");
 			Assert.IsTrue (Decimal.MinValue == Math.Ceiling(Decimal.MinValue), "#3");
 		}
-#endif
 
 		[Test]
 		public void TestFloor ()
@@ -485,13 +479,24 @@ namespace MonoTests.System
 		[Test]
 		public void TestPow ()
 		{
+			double precision;
 			int iTest = 1;
-
+#if MONODROID
+			// It fails on Nexus 9 with
+			//
+			//   1.3636094460602122 != 1.3636094460602119
+			//
+			// when using double_epsilon. Precision differs between different ARM CPUs, so we
+			// will just use a more conservative value
+			precision = 0.000001;
+#else
+			precision = double_epsilon;
+#endif
 			try {
 				double a = Math.Pow (y, x);
 				double b = 1.363609446060212;
 
-				Assert.IsTrue ((Math.Abs (a - b) <= double_epsilon), a.ToString ("G99") + " != " + b.ToString ("G99"));
+				Assert.IsTrue ((Math.Abs (a - b) <= precision), a.ToString ("G99") + " != " + b.ToString ("G99"));
 				iTest++;
 				Assert.IsTrue (double.IsNaN (Math.Pow (y, double.NaN)));
 				iTest++;
@@ -521,11 +526,9 @@ namespace MonoTests.System
 				iTest++;
 				Assert.IsTrue (Double.IsNaN (Math.Pow (1, Double.NaN)),
 					"Math.Pow(1, NaN) should be NaN");
-#if !TARGET_JVM
 				iTest++;
 				Assert.IsTrue (Double.IsNaN (Math.Pow (Double.NaN, 0)),
 					"Math.Pow(NaN, 0) should be NaN");
-#endif
 				iTest++;
 				Assert.IsTrue (1.0 == Math.Pow (-1, Double.MaxValue),
 					"Math.Pow(-1, MaxValue) should be 1.0");
@@ -834,7 +837,6 @@ namespace MonoTests.System
 			Assert.IsTrue (Double.MinValue == Math.Round (Double.MinValue), "#4");
 		}
 
-#if NET_2_0
 		[Test]
 		public void TestDoubleTruncate ()
 		{
@@ -872,7 +874,6 @@ namespace MonoTests.System
 			Assert.IsTrue (Decimal.MaxValue == Math.Truncate (Decimal.MaxValue), "#6");
 			Assert.IsTrue (Decimal.MinValue == Math.Truncate (Decimal.MinValue), "#7");
 		}
-#endif
 
 		[Test]
 		public void TestDoubleRound2 ()
@@ -885,7 +886,6 @@ namespace MonoTests.System
 			Assert.AreEqual (-0.1, Math.Round (-0.123456789, 1), "#3");
 		}
 
-#if NET_2_0
 		[Test]
 		public void TestDoubleRound3 ()
 		{
@@ -981,7 +981,6 @@ namespace MonoTests.System
 
 			Assert.AreEqual (1, Math.Round (0.5, 0, MidpointRounding.AwayFromZero));
 		}
-#endif
 		
 		[Test]
 		public void TestDecimalSign ()

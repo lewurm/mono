@@ -48,6 +48,7 @@ namespace MonoTests.System.Reflection
 		{
 			Type type = typeof (TestClass);
 			PropertyInfo property = type.GetProperty ("ReadOnlyProperty");
+			Assert.IsNotNull (property.Module, "#0");
 
 			MethodInfo [] methods = property.GetAccessors (true);
 			Assert.AreEqual (1, methods.Length, "#A1");
@@ -98,7 +99,6 @@ namespace MonoTests.System.Reflection
 			methods = property.GetAccessors ();
 			Assert.AreEqual (0, methods.Length, "#H");
 
-#if NET_2_0
 			property = typeof (TestClass).GetProperty ("PrivateSetter");
 
 			methods = property.GetAccessors (true);
@@ -117,7 +117,6 @@ namespace MonoTests.System.Reflection
 			Assert.AreEqual (1, methods.Length, "#J1");
 			Assert.IsNotNull (methods [0], "#J2");
 			Assert.AreEqual ("get_PrivateSetter", methods [0].Name, "#J3");
-#endif
 		}
 
 		[Test]
@@ -443,7 +442,7 @@ namespace MonoTests.System.Reflection
 		public void ToStringTest ()
 		{
 			var pa = typeof (TestC).GetProperty ("Item");
-			Assert.AreEqual ("Int32 Item [System.Double[]]", pa.ToString ());
+			Assert.AreEqual ("Int32 Item [Double[]]", pa.ToString ());
 		}
 
 		static bool HasAttribute (object [] attrs, Type attributeType)
@@ -480,12 +479,10 @@ namespace MonoTests.System.Reflection
 				set { }
 			}
 
-#if NET_2_0
 			public string PrivateSetter {
 				get { return null; }
 				private set { }
 			}
-#endif
 		}
 
 		[Test] // bug #633671

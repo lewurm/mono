@@ -201,14 +201,12 @@ namespace MonoTests.System.Xml
 			document.LoadXml (xml);
 			xnr = new XmlNodeReader (document);
 			method (xnr);
-#if NET_2_0
 /*
 			// XPathNavigatorReader tests
 			System.Xml.XPath.XPathDocument doc = new System.Xml.XPath.XPathDocument (new StringReader (xml));
 			XmlReader xpr = doc.CreateNavigator ().ReadSubtree ();
 			method (xpr);
 */
-#endif
 		}
 
 
@@ -1348,6 +1346,7 @@ namespace MonoTests.System.Xml
 
 		[Test]
 		[Category ("NotDotNet")]
+		[Ignore ("Bug in Microsoft referencesource")]
 		public void IndexerAndAttributes ()
 		{
 			string xml = @"<?xml version='1.0' standalone='no'?><foo _1='1' _2='2' _3='3' />";
@@ -1513,7 +1512,6 @@ namespace MonoTests.System.Xml
 			reader.Read (); // silently returns false
 		}
 
-#if NET_2_0
 		[Test]
 		public void CreateSimple ()
 		{
@@ -1754,6 +1752,19 @@ namespace MonoTests.System.Xml
 			}
 			while (reader.ReadToNextSibling ("DictionaryEntry"));
 			Assert.AreEqual (3, count, "#3");
+		}
+
+		[Test, Category("NotWorking")]
+		public void ReadToNextSiblingInInitialReadState ()
+		{
+			var xml = "<Text name=\"hello\"><Something></Something></Text>";
+			var ms = new MemoryStream(Encoding.Default.GetBytes(xml));
+			var xtr = XmlReader.Create(ms);
+
+			Assert.AreEqual(xtr.ReadState, ReadState.Initial);
+			xtr.ReadToNextSibling("Text");
+
+			Assert.AreEqual("hello", xtr.GetAttribute("name"));
 		}
 
 		[Test]
@@ -2234,7 +2245,7 @@ namespace MonoTests.System.Xml
 			Assert.AreEqual (XmlNodeType.Text, reader.NodeType, "#2");
 			bytesRead = reader.ReadElementContentAsBase64 (fixedSizeBuffer, 0, fixedSizeBuffer.Length);
 			Assert.AreEqual (0, bytesRead, "#3");
-			Assert.AreEqual (XmlNodeType.EndElement, reader.NodeType, "#4");
+			Assert.AreEqual (XmlNodeType.None, reader.NodeType, "#4");
 		}
 
 		[Test]
@@ -2268,6 +2279,23 @@ namespace MonoTests.System.Xml
 			Assert.IsNotNull (ret, "#1");
 			Assert.AreEqual (arr [0], ret [0], "#2");
 			Assert.AreEqual (arr [1], ret [1], "#3");
+		}
+
+		[Test]
+		public void ReadContentAs ()
+		{
+			var xr = XmlReader.Create (new StringReader ("<doc a=' 1 '/>"));
+			xr.Read ();
+			xr.MoveToAttribute ("a");
+
+			Assert.AreEqual ((Byte) 1, xr.ReadContentAs (typeof (Byte), null), "#1");
+			Assert.AreEqual ((SByte) 1, xr.ReadContentAs (typeof (SByte), null), "#2");
+			Assert.AreEqual ((Int16) 1, xr.ReadContentAs (typeof (Int16), null), "#3");
+			Assert.AreEqual ((UInt16) 1, xr.ReadContentAs (typeof (UInt16), null), "#4");
+			Assert.AreEqual ((Int32) 1, xr.ReadContentAs (typeof (Int32), null), "#5");
+			Assert.AreEqual ((UInt32) 1, xr.ReadContentAs (typeof (UInt32), null), "#6");
+			Assert.AreEqual ((Int64) 1, xr.ReadContentAs (typeof (Int64), null), "#7");
+			Assert.AreEqual ((UInt64) 1, xr.ReadContentAs (typeof (UInt64), null), "#8");
 		}
 
 #if NET_4_5
@@ -2319,7 +2347,6 @@ namespace MonoTests.System.Xml
 			if (task.Result != null)
 				throw task.Result;
 		}
-#endif
 #endif
 	}
 }

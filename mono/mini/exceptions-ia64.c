@@ -243,8 +243,10 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 
 	if (mono_object_isinst (exc, mono_defaults.exception_class)) {
 		MonoException *mono_ex = (MonoException*)exc;
-		if (!rethrow)
+		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		}
 	}
 
 	res = unw_getcontext (&unw_ctx);
@@ -266,7 +268,7 @@ throw_exception (MonoObject *exc, guint64 rethrow)
 
 		ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)ip, NULL);
 
-		//printf ("UN: %s %lx %lx\n", ji ? ji->method->name : "", ip, sp);
+		//printf ("UN: %s %lx %lx\n", ji ? jinfo_get_method (ji)->name : "", ip, sp);
 
 		if (ji)
 			break;

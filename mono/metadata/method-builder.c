@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "loader.h"
+#include "mono/metadata/abi-details.h"
 #include "mono/metadata/method-builder.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/exception.h"
@@ -116,7 +117,6 @@ mono_mb_free (MonoMethodBuilder *mb)
  * Create a MonoMethod from this method builder.
  * Returns: the newly created method.
  *
- * LOCKING: Takes the loader lock.
  */
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
@@ -134,7 +134,6 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	image = mb->method->klass->image;
 
-	mono_loader_lock (); /*FIXME I think this lock can go.*/
 #ifndef DISABLE_JIT
 	if (mb->dynamic) {
 		method = mb->method;
@@ -203,7 +202,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		GList *tmp;
 		void **data;
 		l = g_list_reverse (mw->method_data);
-		if (method->dynamic)
+		if (method_is_dynamic (method))
 			data = g_malloc (sizeof (gpointer) * (i + 1));
 		else
 			data = mono_image_alloc (image, sizeof (gpointer) * (i + 1));
@@ -245,7 +244,6 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	}
 #endif
 
-	mono_loader_unlock ();
 	return method;
 }
 
@@ -329,6 +327,19 @@ mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data)
 
 	mono_mb_patch_addr (mb, mb->pos, data);
 	mb->pos += 4;
+}
+
+void
+mono_mb_emit_i8 (MonoMethodBuilder *mb, gint64 data)
+{
+	if ((mb->pos + 8) >= mb->code_size) {
+		mb->code_size += mb->code_size >> 1;
+		mb->code = g_realloc (mb->code, mb->code_size);
+	}
+
+	mono_mb_patch_addr (mb, mb->pos, data);
+	mono_mb_patch_addr (mb, mb->pos + 4, data >> 32);
+	mb->pos += 8;
 }
 
 void
@@ -442,6 +453,13 @@ mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value)
 	}
 }
 
+void
+mono_mb_emit_icon8 (MonoMethodBuilder *mb, gint64 value)
+{
+	mono_mb_emit_byte (mb, CEE_LDC_I8);
+	mono_mb_emit_i8 (mb, value);
+}
+
 int
 mono_mb_get_label (MonoMethodBuilder *mb)
 {
@@ -539,7 +557,7 @@ mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, cons
 	mono_mb_emit_op (mb, CEE_NEWOBJ, ctor);
 	if (msg != NULL) {
 		mono_mb_emit_byte (mb, CEE_DUP);
-		mono_mb_emit_ldflda (mb, G_STRUCT_OFFSET (MonoException, message));
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoException, message));
 		mono_mb_emit_ldstr (mb, (char*)msg);
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 	}

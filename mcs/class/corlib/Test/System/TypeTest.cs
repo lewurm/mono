@@ -141,6 +141,12 @@ namespace MonoTests.System
 			get { return 1; }
 			set { }
 		}
+
+		public event EventHandler E;
+		public void Dummy ()
+		{
+			E += delegate {};
+		}
 	}
 
 	class Derived1 : Base1
@@ -155,6 +161,12 @@ namespace MonoTests.System
 		public new int Foo {
 			get { return 1; }
 			set { }
+		}
+
+		public new event Action E;
+		public new void Dummy ()
+		{
+			E += delegate {};
 		}
 	}
 
@@ -271,6 +283,11 @@ namespace MonoTests.System
 		{
 		}
 
+		public class Nested
+		{
+
+		}
+
 		[Test]
 		public void TestIsAssignableFrom ()
 		{
@@ -293,16 +310,11 @@ namespace MonoTests.System
 			Assert.AreEqual (typeof (ICloneable[][]).IsAssignableFrom (typeof (Duper[][])), true, "#12");
 
 			// Tests for vectors<->one dimensional arrays */
-#if TARGET_JVM // Lower bounds arrays are not supported for TARGET_JVM.
-			Array arr1 = Array.CreateInstance (typeof (int), new int[] {1});
-			Assert.AreEqual (typeof (int[]).IsAssignableFrom (arr1.GetType ()), true, "#13");
-#else
 			Array arr1 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {0});
 			Array arr2 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {10});
 
 			Assert.AreEqual (typeof (int[]).IsAssignableFrom (arr1.GetType ()), true, "#13");
 			Assert.AreEqual (typeof (int[]).IsAssignableFrom (arr2.GetType ()), false, "#14");
-#endif // TARGET_JVM
 
 			// Test that arrays of enums can be cast to their base types
 			Assert.AreEqual (typeof (int[]).IsAssignableFrom (typeof (TypeCode[])), true, "#15");
@@ -360,9 +372,10 @@ namespace MonoTests.System
 
 			// Tests for byref types
 			Type paramType = typeof (TypeTest).GetMethod ("ByrefMethod", BindingFlags.Instance|BindingFlags.NonPublic).GetParameters () [0].ParameterType;
-			Assert.IsTrue (!paramType.IsSubclassOf (typeof (ValueType)), "#02");
-			//Assert.IsTrue (paramType.IsSubclassOf (typeof (Object)), "#03");
-			Assert.IsTrue (!paramType.IsSubclassOf (paramType), "#04");
+			Assert.IsFalse (paramType.IsSubclassOf (typeof(ValueType)), "#02");
+			Assert.IsNull (paramType.BaseType, "#02-b");
+			Assert.IsTrue (paramType.IsSubclassOf (typeof (Object)), "#03");
+			Assert.IsFalse (paramType.IsSubclassOf (paramType), "#04");
 		}
 
 		[Test]
@@ -386,7 +399,6 @@ namespace MonoTests.System
 		}
 
 		[Test]
-		[Category ("TargetJvmNotWorking")]
 		public void TestGetPropertyImpl ()
 		{
 			// Test getting property that is exact
@@ -397,6 +409,14 @@ namespace MonoTests.System
 
 			// Test overriding of properties when only the set accessor is overriden
 			Assert.AreEqual (1, typeof (Derived1).GetProperties ().Length, "#03");
+		}
+
+		[Test]
+		public void GetEvents ()
+		{
+			// Test hide-by-name
+			Assert.AreEqual (1, typeof (Derived2).GetEvents ().Length);
+			Assert.AreEqual (typeof (Derived2), typeof (Derived2).GetEvents ()[0].DeclaringType);
 		}
 
 		[Test]
@@ -1505,7 +1525,6 @@ namespace MonoTests.System
 							    typeof (long), new Type[0], null), "#2");
 		}
 
-#if !TARGET_JVM // StructLayout not supported for TARGET_JVM
 		[StructLayout(LayoutKind.Explicit, Pack = 4, Size = 64)]
 		public class Class1
 		{
@@ -1531,7 +1550,6 @@ namespace MonoTests.System
 			Assert.AreEqual (LayoutKind.Explicit, attr3.Value);
 			Assert.AreEqual (CharSet.Unicode, attr3.CharSet);
 		}
-#endif // TARGET_JVM
 
 		[Test]
 		public void Namespace ()
@@ -1681,18 +1699,10 @@ namespace MonoTests.System
 		}
 
 		[Test]
-		[Category("NotDotNet")]
-		// Depends on the GAC working, which it doesn't durring make distcheck.
-		[Category ("NotWorking")]
-		public void GetTypeWithWhitespace ()
+		public void IsVisible ()
 		{
-			Assert.IsNotNull (Type.GetType
-						   (@"System.Configuration.NameValueSectionHandler,
-			System,
-Version=1.0.5000.0,
-Culture=neutral
-,
-PublicKeyToken=b77a5c561934e089"));
+			Assert.IsTrue (typeof (int).IsVisible, "#1");
+			Assert.IsTrue (typeof (Nested).IsVisible, "#2");
 		}
 
 		[Test]
@@ -1702,10 +1712,7 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.AreEqual ("System.String[*]", t.ToString ());
 		}
 
-#if MONOTOUCH
-		// feature not available when compiled under FULL_AOT_RUNTIME
-		[ExpectedException (typeof (NotImplementedException))]
-#endif
+#if MONO_COM
 		[Test]
 		public void TypeFromCLSID ()
 		{
@@ -1740,7 +1747,7 @@ PublicKeyToken=b77a5c561934e089"));
 			else
 				throw new COMException ();
 		}
-		
+#endif
 		[Test]
 		public void ExerciseFilterName ()
 		{
@@ -1856,7 +1863,9 @@ PublicKeyToken=b77a5c561934e089"));
 
 		struct B
 		{
+			#pragma warning disable 169
 			int value;
+			#pragma warning restore 169
 		}
 
 		[Test]
@@ -1870,6 +1879,20 @@ PublicKeyToken=b77a5c561934e089"));
 		public void CreateValueTypeNoCtorArgs ()
 		{
 			typeof(B).InvokeMember ("", BindingFlags.CreateInstance, null, null, new object [] { 1 });
+		}
+
+		[Test]
+		[ExpectedException (typeof (MissingMethodException))]
+		public void InvokeGetPropertyMissing ()
+		{
+			typeof(B).InvokeMember ("", BindingFlags.GetProperty, null, null, new object [] { 1 });
+		}
+
+		[Test]
+		[ExpectedException (typeof (MissingMethodException))]
+		public void InvokeSetPropertyMissing ()
+		{
+			typeof(B).InvokeMember ("", BindingFlags.SetProperty, null, null, new object [] { 1 });
 		}
 
 		internal static string bug336841 (string param1, params string [] param2)
@@ -2149,7 +2172,7 @@ PublicKeyToken=b77a5c561934e089"));
 			a1 = new string [10];
 		}
 
-		class X
+		public class X
 		{
 			public static int Value;
 		}
@@ -2774,7 +2797,7 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.IsNull (i);
 		}
 
-#if !TARGET_JVM && !MOBILE // Reflection.Emit is not supported for TARGET_JVM
+#if !MOBILE
 		[Test]
 		public void EqualsUnderlyingType ()
 		{
@@ -2793,7 +2816,7 @@ PublicKeyToken=b77a5c561934e089"));
 
 			Assert.IsTrue (typeof (int).Equals (e));
 		}
-#endif // TARGET_JVM
+#endif
 
 		[Test]
 		public void Equals_Type_Null ()
@@ -3034,8 +3057,10 @@ PublicKeyToken=b77a5c561934e089"));
 			Assert.AreEqual (ut, arg, "#B3");
 		}
 
-		[Category ("NotWorking")]
-		//We dont support instantiating a user type 
+		[Test]
+#if MONOTOUCH
+		[ExpectedException (typeof (NotSupportedException))]
+#endif
 		public void MakeGenericType_NestedUserDefinedType ()
 		{
 			Type ut = new UserType (new UserType (typeof (int)));
@@ -3050,7 +3075,9 @@ PublicKeyToken=b77a5c561934e089"));
 		}
 		
 		[Test]
-		[Category ("NotWorking")]
+#if MONOTOUCH
+		[ExpectedException (typeof (NotSupportedException))]
+#endif
 		public void TestMakeGenericType_UserDefinedType_DotNet20SP1 () 
 		{
 			Type ut = new UserType(typeof(int));
@@ -3184,7 +3211,7 @@ PublicKeyToken=b77a5c561934e089"));
 				obj = GetType ().GetMember ("DummyMember", memtype,
 						BindingFlags.Public | BindingFlags.Instance);
 				Assert.AreEqual (testtype.GetHashCode (), obj.GetType ().GetHashCode (),
-						"Expected " + testtype.FullName);
+						"Expected #" + i + " " + testtype.FullName);
 			}
 
 		}
@@ -3196,6 +3223,14 @@ PublicKeyToken=b77a5c561934e089"));
 			Type t2 = Type.GetType (" System.Type, mscorlib");
 			Assert.AreEqual (t1, t2);
 		}
+
+#if !MONOTOUCH
+		[Test]
+		public void SpaceAfterComma () {
+			string strType = "System.Collections.Generic.Dictionary`2[[System.Int32,mscorlib], [System.String,mscorlib]],mscorlib";
+			Assert.IsTrue (Type.GetType (strType) != null);
+		}
+#endif
 
 #if !MONOTOUCH
 		[Test]
@@ -3504,10 +3539,10 @@ PublicKeyToken=b77a5c561934e089"));
 
 			a.Equals (a);
 			Assert.AreEqual (1, ta.eq, "#1");
-			Assert.AreEqual (0, ta.ust, "#2");
+			Assert.AreEqual (2, ta.ust, "#2");
 			a.Equals (b);
 			Assert.AreEqual (2, ta.eq, "#3");
-			Assert.AreEqual (1, ta.ust, "#4");
+			Assert.AreEqual (3, ta.ust, "#4");
 			Assert.AreEqual (0, tb.eq, "#5");
 			Assert.AreEqual (1, tb.ust, "#6");
 		}
@@ -3649,17 +3684,10 @@ PublicKeyToken=b77a5c561934e089"));
 
 			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName ((byte)0), "#11");
 			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName ((sbyte)0), "#12");
-			try {
-				typeof (MyRealEnum).GetEnumName (false);
-				Assert.Fail ("#13");
-			} catch (ArgumentException) { }
-
+			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName (false), "#13");
 			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName ((short)0), "#14");
 			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName ((ushort)0), "#15");
-			try {
-				typeof (MyRealEnum).GetEnumName ('c');
-				Assert.Fail ("#16");
-			} catch (ArgumentException) { }
+			Assert.IsNull (typeof (MyRealEnum).GetEnumName ('c'), "#16");
 
 			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName ((int)0), "#17");
 			Assert.AreEqual ("A", typeof (MyRealEnum).GetEnumName ((uint)0), "#18");
@@ -3679,18 +3707,12 @@ PublicKeyToken=b77a5c561934e089"));
 
 			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName ((byte)0), "#23");
 			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName ((sbyte)0), "#24");
-			try {
-				typeof (MyRealEnum2).GetEnumName (false);
-				Assert.Fail ("#22", "#25");
-			} catch (ArgumentException) { }
+			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName (false), "#25");
 
 			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName ((short)0), "#26");
 			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName ((ushort)0), "#27");
 
-			try {
-				typeof (MyRealEnum2).GetEnumName ('c');
-				Assert.Fail ("#28");
-			} catch (ArgumentException) { }
+			Assert.IsNull (typeof (MyRealEnum2).GetEnumName ('c'), "#28");
 
 			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName ((int)0), "#29");
 			Assert.AreEqual ("A", typeof (MyRealEnum2).GetEnumName ((uint)0), "#30");
@@ -3740,7 +3762,7 @@ PublicKeyToken=b77a5c561934e089"));
 			try {
 				typeof (MyRealEnum).IsEnumDefined (true);
 				Assert.Fail ("#6");
-			} catch (InvalidOperationException) { }
+			} catch (ArgumentException) { }
 
 			try {
 				typeof (MyRealEnum).IsEnumDefined (MyRealEnum2.A);
@@ -4023,6 +4045,25 @@ PublicKeyToken=b77a5c561934e089"));
             Console.WriteLine(typeof(IEnumerable<int?>).IsAssignableFrom(typeof(IEnumerable<int>)));
 		}
 #endif
+
+		[Test]
+		public void GetTypeParseGenericCorrectly () { //Bug #15124
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1"), typeof (Foo<>), "#1");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[System.Int32]"), typeof (Foo<int>), "#2");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[[System.Int32]]"), typeof (Foo<int>), "#3");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[System.Int32][]"), typeof (Foo<int>[]), "#4");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[][System.Int32]"), null, "#5");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[System.Int32][,]"), typeof (Foo<int>[,]), "#6");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[]"), typeof (Foo<>).MakeArrayType(), "#7");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[,]"), typeof (Foo<>).MakeArrayType (2), "#8");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[][]"), typeof (Foo<>).MakeArrayType ().MakeArrayType (), "#9");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1["), null, "#10");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[["), null, "#11");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[[]"), null, "#12");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[,"), null, "#13");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[*"), null, "#14");
+			Assert.AreEqual (Type.GetType ("MonoTests.System.Foo`1[System.Int32"), null, "#15");
+		}
 
 		public abstract class Stream : IDisposable
 		{

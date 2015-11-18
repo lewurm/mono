@@ -88,6 +88,13 @@ namespace MonoTests.System
 		class MyDerivedClassNoAttribute : MyClass
 		{
 		}
+
+		internal class AttributeWithTypeId : Attribute
+		{
+			public override object TypeId {
+				get { return this; }
+			}
+		}
 	}
 
 	[TestFixture]
@@ -821,6 +828,22 @@ namespace MonoTests.System
 			Assert.IsFalse (Attribute.IsDefined (typeof (AttributeTest), typeof(SerializableAttribute), true), "#2");
 		}
 
+		[YourCustomAttribute (0)]
+		[Serializable]
+		[MyCustomAttribute ("")]
+		class ClassForOrderIsImportant
+		{
+		}
+
+		[Test]
+		public void OrderIsImportant ()
+		{
+			var custom = typeof (ClassForOrderIsImportant).GetCustomAttributes (false);
+			Assert.IsTrue (custom [0].GetType () == typeof (YourCustomAttribute));
+			Assert.IsTrue (custom [1].GetType () == typeof (MyCustomAttribute));
+			Assert.IsTrue (custom [2].GetType () == typeof (SerializableAttribute));
+		}
+
 #if !MONOTOUCH
 		[Test]
 		public void GetCustomAttributeOnNewSreTypes ()
@@ -998,6 +1021,33 @@ namespace MonoTests.System
 			MyOwnCustomAttribute b1 = new MyOwnCustomAttribute (null);
 			Assert.AreNotEqual (a1.GetHashCode (), b1.GetHashCode (), "non-identical-types");
 		}
+
+		[Test]
+		public void GetHashCodeWithOverriddenTypeId ()
+		{
+			//check for not throwing stack overflow exception
+			AttributeWithTypeId a = new AttributeWithTypeId ();
+			a.GetHashCode ();
+		}
+
+		class ArrayAttribute : Attribute
+		{
+#pragma warning disable 414
+			int[] array;
+#pragma warning restore
+
+			public ArrayAttribute (int[] array)
+			{
+				this.array = array;
+			}
+		}
+
+		[Test]
+		public void ArrayFieldsEquality ()
+		{
+			Assert.IsTrue (new ArrayAttribute (new int[] { 1, 2 }).Equals (new ArrayAttribute (new int[] { 1, 2 })));
+			Assert.IsFalse (new ArrayAttribute (new int[] { 1, 2 }).Equals (new ArrayAttribute (new int[] { 1, 1 })));
+		}
 	}
 
 	namespace ParamNamespace {
@@ -1032,6 +1082,12 @@ namespace MonoTests.System
 		class Derived : Base {
 
 			public override void Bar ([Bar] string bar, [Data ("Derived.baz")] string baz)
+			{
+			}
+		}
+
+		class Multiple {
+			public void Bar ([Foo] [Bar] string multiple, [Bar] string bar)
 			{
 			}
 		}
@@ -1125,6 +1181,24 @@ namespace MonoTests.System
 			var attributes = (ParamNamespace.DataAttribute []) Attribute.GetCustomAttributes (parameter, typeof (ParamNamespace.DataAttribute), true);
 			Assert.AreEqual (1, attributes.Length);
 			Assert.AreEqual ("Derived.baz", attributes [0].Data);
+		}
+
+		[Test]
+		public void MultipleParameterAttributes ()
+		{
+			var parameter = GetParameter (typeof(ParamNamespace.Multiple), "Bar", "multiple");
+			var foo = parameter.GetCustomAttribute<ParamNamespace.FooAttribute> ();
+			Assert.AreEqual (typeof(ParamNamespace.FooAttribute), foo.GetType ());
+			var bar = parameter.GetCustomAttribute<ParamNamespace.BarAttribute> ();
+			Assert.AreEqual (typeof(ParamNamespace.BarAttribute), bar.GetType ());
+		}
+
+		[Test]
+		public void MultipleParameterAttributes2 ()
+		{
+			var parameter = GetParameter (typeof(ParamNamespace.Multiple), "Bar", "bar");
+			var foo = parameter.GetCustomAttribute<ParamNamespace.FooAttribute> ();
+			Assert.IsNull (foo);
 		}
 
 		[AttributeUsage(AttributeTargets.Event | AttributeTargets.Method | AttributeTargets.Class)]

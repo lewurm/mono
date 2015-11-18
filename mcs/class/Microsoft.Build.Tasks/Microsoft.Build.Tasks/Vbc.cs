@@ -26,7 +26,6 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#if NET_2_0
 
 using System;
 using System.IO;
@@ -74,6 +73,8 @@ namespace Microsoft.Build.Tasks {
 			commandLine.AppendSwitchIfNotNull ("/main:", MainEntryPoint);
 
 			// NoStandardLib
+			if (Bag ["NoStandardLib"] != null && NoStandardLib)
+				commandLine.AppendSwitch ("/nostdlib");
 			
 			if (NoWarnings)
 				commandLine.AppendSwitch ("/nowarn");
@@ -91,6 +92,12 @@ namespace Microsoft.Build.Tasks {
 					commandLine.AppendSwitch ("/optionstrict+");
 				else
 					commandLine.AppendSwitch ("/optionstrict-");
+
+			if (Bag ["OptionInfer"] != null)
+				if (OptionInfer)
+					commandLine.AppendSwitch ("/optioninfer+");
+				else
+					commandLine.AppendSwitch ("/optioninfer-");
 
 			// OptionStrictType
 			
@@ -115,6 +122,9 @@ namespace Microsoft.Build.Tasks {
 			commandLine.AppendSwitchIfNotNull ("/sdkpath:", SdkPath);
 
 			// TargetCompactFramework
+
+			if (String.Compare (VBRuntime, "Embed", StringComparison.OrdinalIgnoreCase) == 0) 
+				commandLine.AppendSwitch ("/vbruntime*");
 			
 			// Verbosity
 
@@ -141,7 +151,9 @@ namespace Microsoft.Build.Tasks {
 		[MonoTODO]
 		protected override string GenerateFullPathToTool ()
 		{
-			return Path.Combine (ToolPath, ToolExe);
+			if (!string.IsNullOrEmpty (ToolPath))
+				return Path.Combine (ToolPath, ToolExe);
+			return ToolLocationHelper.GetPathToDotNetFrameworkFile (ToolExe, TargetDotNetFrameworkVersion.VersionLatest);
 		}
 		
 		[MonoTODO]
@@ -156,7 +168,7 @@ namespace Microsoft.Build.Tasks {
 			return true;
 		}
 
-		protected override void LogEventsFromTextOutput (string singleLine, MessageImportance importance)
+		protected override void LogEventsFromTextOutput (string singleLine, MessageImportance messageImportance)
 		{
 			singleLine = singleLine.Trim ();
 			if (singleLine.Length == 0)
@@ -171,7 +183,7 @@ namespace Microsoft.Build.Tasks {
 
 			Match match = ErrorRegex.Match (singleLine);
 			if (!match.Success) {
-				Log.LogMessage (importance, singleLine);
+				Log.LogMessage (messageImportance, singleLine);
 				return;
 			}
 
@@ -196,7 +208,7 @@ namespace Microsoft.Build.Tasks {
 				Log.LogError (null, code, null, filename, lineNumber, columnNumber, -1,
 					-1, text, null);
 			} else {
-				Log.LogMessage (importance, singleLine);
+				Log.LogMessage (messageImportance, singleLine);
 			}
 		}
 
@@ -271,6 +283,12 @@ namespace Microsoft.Build.Tasks {
 			get { return (string) Bag ["OptionStrictType"]; }
 			set { Bag ["OptionStrictType"] = value; }
 		}
+
+		[MonoTODO]
+		public bool OptionInfer {
+			get { return GetBoolParameterWithDefault ("OptionInfer", false); }
+			set { Bag ["OptionInfer"] = value; }
+		}
 		
 		[MonoTODO]
 		public string Platform {
@@ -305,11 +323,7 @@ namespace Microsoft.Build.Tasks {
 		[MonoTODO]
 		protected override string ToolName {
 			get {
-#if NET_4_0
 				return MSBuildUtils.RunningOnWindows ? "vbnc.bat" : "vbnc";
-#else
-				return MSBuildUtils.RunningOnWindows ? "vbnc2.bat" : "vbnc2";
-#endif
 			}
 		}
 
@@ -317,6 +331,12 @@ namespace Microsoft.Build.Tasks {
 		public bool UseHostCompilerIfAvailable {
 			get { return (bool) Bag ["UseHostCompilerIfAvailable"]; }
 			set { Bag ["UseHostCompilerIfAvailable"] = value; }
+		}
+
+		[MonoTODO]
+		public string VBRuntime {
+			get { return (string) Bag ["VBRuntime"]; }
+			set { Bag ["VBRuntime"] = value; }
 		}
 
 		[MonoTODO]
@@ -353,4 +373,3 @@ namespace Microsoft.Build.Tasks {
 	}
 }
 
-#endif

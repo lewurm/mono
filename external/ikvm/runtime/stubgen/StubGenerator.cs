@@ -37,7 +37,7 @@ namespace IKVM.StubGen
 {
 	static class StubGenerator
 	{
-		internal static void WriteClass(Stream stream, TypeWrapper tw, bool includeNonPublicInterfaces, bool includeNonPublicMembers, bool includeSerialVersionUID)
+		internal static void WriteClass(Stream stream, TypeWrapper tw, bool includeNonPublicInterfaces, bool includeNonPublicMembers, bool includeSerialVersionUID, bool includeParameterNames)
 		{
 			string name = tw.Name.Replace('.', '/');
 			string super = null;
@@ -49,7 +49,7 @@ namespace IKVM.StubGen
 			{
 				super = tw.BaseTypeWrapper.Name.Replace('.', '/');
 			}
-			ClassFileWriter writer = new ClassFileWriter(tw.Modifiers, name, super, 0, 49);
+			ClassFileWriter writer = new ClassFileWriter(tw.Modifiers, name, super, 0, includeParameterNames ? (ushort)52 : (ushort)49);
 			foreach (TypeWrapper iface in tw.Interfaces)
 			{
 				if (iface.IsPublic || includeNonPublicInterfaces)
@@ -93,6 +93,7 @@ namespace IKVM.StubGen
 				writer.AddStringAttribute("Signature", genericTypeSignature);
 			}
 			AddAnnotations(writer, writer, tw.TypeAsBaseType);
+			AddTypeAnnotations(writer, writer, tw, tw.GetRawTypeAnnotations());
 			writer.AddStringAttribute("IKVM.NET.Assembly", GetAssemblyName(tw));
 			if (tw.TypeAsBaseType.IsDefined(JVM.Import(typeof(ObsoleteAttribute)), false))
 			{
@@ -103,7 +104,11 @@ namespace IKVM.StubGen
 				if (!mw.IsHideFromReflection && (mw.IsPublic || mw.IsProtected || includeNonPublicMembers))
 				{
 					FieldOrMethod m;
-					if (mw.Name == "<init>")
+					// HACK javac has a bug in com.sun.tools.javac.code.Types.isSignaturePolymorphic() where it assumes that
+					// MethodHandle doesn't have any native methods with an empty argument list
+					// (or at least it throws a NPE when it examines the signature of a method without any parameters when it
+					// accesses argtypes.tail.tail)
+					if (mw.Name == "<init>" || (tw == CoreClasses.java.lang.invoke.MethodHandle.Wrapper && (mw.Modifiers & Modifiers.Native) == 0))
 					{
 						m = writer.AddMethod(mw.Modifiers, mw.Name, mw.Signature.Replace('.', '/'));
 						CodeAttribute code = new CodeAttribute(writer);
@@ -185,6 +190,28 @@ namespace IKVM.StubGen
 						{
 							m.AddAttribute(new AnnotationDefaultClassFileAttribute(writer, GetAnnotationDefault(writer, attr.ConstructorArguments[0])));
 						}
+						if (includeParameterNames)
+						{
+							MethodParametersEntry[] mp = tw.GetMethodParameters(mw);
+							if (mp == MethodParametersEntry.Malformed)
+							{
+								m.AddAttribute(new MethodParametersAttribute(writer, null, null));
+							}
+							else if (mp != null)
+							{
+								ushort[] names = new ushort[mp.Length];
+								ushort[] flags = new ushort[mp.Length];
+								for (int i = 0; i < names.Length; i++)
+								{
+									if (mp[i].name != null)
+									{
+										names[i] = writer.AddUtf8(mp[i].name);
+									}
+									flags[i] = mp[i].flags;
+								}
+								m.AddAttribute(new MethodParametersAttribute(writer, names, flags));
+							}
+						}
 					}
 					string sig = tw.GetGenericMethodSignature(mw);
 					if (sig != null)
@@ -193,6 +220,7 @@ namespace IKVM.StubGen
 					}
 					AddAnnotations(writer, m, mw.GetMethod());
 					AddParameterAnnotations(writer, m, mw.GetMethod());
+					AddTypeAnnotations(writer, m, tw, tw.GetMethodRawTypeAnnotations(mw));
 				}
 			}
 			bool hasSerialVersionUID = false;
@@ -200,7 +228,7 @@ namespace IKVM.StubGen
 			{
 				if (!fw.IsHideFromReflection)
 				{
-					bool isSerialVersionUID = includeSerialVersionUID && fw.Name == "serialVersionUID" && fw.FieldTypeWrapper == PrimitiveTypeWrapper.LONG;
+					bool isSerialVersionUID = includeSerialVersionUID && fw.IsSerialVersionUID;
 					hasSerialVersionUID |= isSerialVersionUID;
 					if (fw.IsPublic || fw.IsProtected || isSerialVersionUID || includeNonPublicMembers)
 					{
@@ -224,6 +252,7 @@ namespace IKVM.StubGen
 							f.AddAttribute(new DeprecatedAttribute(writer));
 						}
 						AddAnnotations(writer, f, fw.GetField());
+						AddTypeAnnotations(writer, f, tw, tw.GetFieldRawTypeAnnotations(fw));
 					}
 				}
 			}
@@ -252,7 +281,7 @@ namespace IKVM.StubGen
 						{
 							attr = new RuntimeVisibleAnnotationsAttribute(writer);
 						}
-						attr.Add(UnpackArray((IList<CustomAttributeTypedArgument>)cad.ConstructorArguments[0].Value));
+						attr.Add(ann);
 					}
 				}
 				if (attr != null)
@@ -290,7 +319,7 @@ namespace IKVM.StubGen
 								}
 								param = new RuntimeVisibleAnnotationsAttribute(writer);
 							}
-							param.Add(UnpackArray((IList<CustomAttributeTypedArgument>)cad.ConstructorArguments[0].Value));
+							param.Add(ann);
 						}
 					}
 					if (attr != null)
@@ -306,16 +335,224 @@ namespace IKVM.StubGen
 #endif
 		}
 
+		private static void AddTypeAnnotations(ClassFileWriter writer, IAttributeOwner target, TypeWrapper tw, byte[] typeAnnotations)
+		{
+#if !FIRST_PASS && !STUB_GENERATOR
+			if (typeAnnotations != null)
+			{
+				typeAnnotations = (byte[])typeAnnotations.Clone();
+				object[] constantPool = tw.GetConstantPool();
+				try
+				{
+					int pos = 0;
+					ushort num_annotations = ReadUInt16BE(typeAnnotations, ref pos);
+					for (int i = 0; i < num_annotations; i++)
+					{
+						FixupTypeAnnotationConstantPoolIndexes(writer, typeAnnotations, constantPool, ref pos);
+					}
+				}
+				catch (IndexOutOfRangeException)
+				{
+					// if the attribute is malformed, we add it anyway and hope the Java parser will agree and throw the right error
+				}
+				target.AddAttribute(new RuntimeVisibleTypeAnnotationsAttribute(writer, typeAnnotations));
+			}
+#endif
+		}
+
+		private static void FixupTypeAnnotationConstantPoolIndexes(ClassFileWriter writer, byte[] typeAnnotations, object[] constantPool, ref int pos)
+		{
+			switch (typeAnnotations[pos++])		// target_type
+			{
+				case 0x00:
+				case 0x01:
+				case 0x16:
+					pos++;
+					break;
+				case 0x10:
+				case 0x11:
+				case 0x12:
+				case 0x17:
+					pos += 2;
+					break;
+				case 0x13:
+				case 0x14:
+				case 0x15:
+					break;
+				default:
+					throw new IndexOutOfRangeException();
+			}
+			byte path_length = typeAnnotations[pos++];
+			pos += path_length * 2;
+			FixupAnnotationConstantPoolIndexes(writer, typeAnnotations, constantPool, ref pos);
+		}
+
+		private static void FixupAnnotationConstantPoolIndexes(ClassFileWriter writer, byte[] typeAnnotations, object[] constantPool, ref int pos)
+		{
+			FixupConstantPoolIndex(writer, typeAnnotations, constantPool, ref pos);
+			ushort num_components = ReadUInt16BE(typeAnnotations, ref pos);
+			for (int i = 0; i < num_components; i++)
+			{
+				FixupConstantPoolIndex(writer, typeAnnotations, constantPool, ref pos);
+				FixupAnnotationComponentValueConstantPoolIndexes(writer, typeAnnotations, constantPool, ref pos);
+			}
+		}
+
+		private static void FixupConstantPoolIndex(ClassFileWriter writer, byte[] typeAnnotations, object[] constantPool, ref int pos)
+		{
+			ushort index = ReadUInt16BE(typeAnnotations, ref pos);
+			object item = constantPool[index];
+			if (item is int)
+			{
+				index = writer.AddInt((int)item);
+			}
+			else if (item is long)
+			{
+				index = writer.AddLong((long)item);
+			}
+			else if (item is float)
+			{
+				index = writer.AddFloat((float)item);
+			}
+			else if (item is double)
+			{
+				index = writer.AddDouble((double)item);
+			}
+			else if (item is string)
+			{
+				index = writer.AddUtf8((string)item);
+			}
+			else
+			{
+				throw new IndexOutOfRangeException();
+			}
+			typeAnnotations[pos - 2] = (byte)(index >> 8);
+			typeAnnotations[pos - 1] = (byte)(index >> 0);
+		}
+
+		private static void FixupAnnotationComponentValueConstantPoolIndexes(ClassFileWriter writer, byte[] typeAnnotations, object[] constantPool, ref int pos)
+		{
+			switch ((char)typeAnnotations[pos++])	// tag
+			{
+				case 'B':
+				case 'C':
+				case 'D':
+				case 'F':
+				case 'I':
+				case 'J':
+				case 'S':
+				case 'Z':
+				case 's':
+				case 'c':
+					FixupConstantPoolIndex(writer, typeAnnotations, constantPool, ref pos);
+					break;
+				case 'e':
+					FixupConstantPoolIndex(writer, typeAnnotations, constantPool, ref pos);
+					FixupConstantPoolIndex(writer, typeAnnotations, constantPool, ref pos);
+					break;
+				case '@':
+					FixupAnnotationConstantPoolIndexes(writer, typeAnnotations, constantPool, ref pos);
+					break;
+				case '[':
+					ushort num_values = ReadUInt16BE(typeAnnotations, ref pos);
+					for (int i = 0; i < num_values; i++)
+					{
+						FixupAnnotationComponentValueConstantPoolIndexes(writer, typeAnnotations, constantPool, ref pos);
+					}
+					break;
+				default:
+					throw new IndexOutOfRangeException();
+			}
+		}
+
+		private static ushort ReadUInt16BE(byte[] buf, ref int pos)
+		{
+			ushort s = (ushort)((buf[pos] << 8) + buf[pos + 1]);
+			pos += 2;
+			return s;
+		}
+
 #if !FIRST_PASS && !STUB_GENERATOR
 		private static object[] GetAnnotation(CustomAttributeData cad)
 		{
 			if (cad.ConstructorArguments.Count == 1 && cad.ConstructorArguments[0].ArgumentType == typeof(object[]) &&
-				(cad.Constructor.DeclaringType.IsSubclassOf(JVM.Import(typeof(ikvm.@internal.AnnotationAttributeBase)))
-				|| cad.Constructor.DeclaringType == JVM.Import(typeof(DynamicAnnotationAttribute))))
+				(cad.Constructor.DeclaringType.BaseType == typeof(ikvm.@internal.AnnotationAttributeBase)
+				|| cad.Constructor.DeclaringType == typeof(DynamicAnnotationAttribute)))
 			{
 				return UnpackArray((IList<CustomAttributeTypedArgument>)cad.ConstructorArguments[0].Value);
 			}
+			else if (cad.Constructor.DeclaringType.BaseType == typeof(ikvm.@internal.AnnotationAttributeBase))
+			{
+				string annotationType = GetAnnotationInterface(cad);
+				if (annotationType != null)
+				{
+					// this is a custom attribute annotation applied in a non-Java module
+					List<object> list = new List<object>();
+					list.Add(AnnotationDefaultAttribute.TAG_ANNOTATION);
+					list.Add("L" + annotationType.Replace('.', '/') + ";");
+					ParameterInfo[] parameters = cad.Constructor.GetParameters();
+					for (int i = 0; i < parameters.Length; i++)
+					{
+						list.Add(parameters[i].Name);
+						list.Add(EncodeAnnotationValue(cad.ConstructorArguments[i]));
+					}
+					foreach (CustomAttributeNamedArgument arg in cad.NamedArguments)
+					{
+						list.Add(arg.MemberInfo.Name);
+						list.Add(EncodeAnnotationValue(arg.TypedValue));
+					}
+					return list.ToArray();
+				}
+			}
 			return null;
+		}
+
+		private static string GetAnnotationInterface(CustomAttributeData cad)
+		{
+			object[] attr = cad.Constructor.DeclaringType.GetCustomAttributes(typeof(IKVM.Attributes.ImplementsAttribute), false);
+			if (attr.Length == 1)
+			{
+				string[] interfaces = ((IKVM.Attributes.ImplementsAttribute)attr[0]).Interfaces;
+				if (interfaces.Length == 1)
+				{
+					return interfaces[0];
+				}
+			}
+			return null;
+		}
+
+		private static object EncodeAnnotationValue(CustomAttributeTypedArgument arg)
+		{
+			if (arg.ArgumentType.IsEnum)
+			{
+				// if GetWrapperFromType returns null, we've got an ikvmc synthesized .NET enum nested inside a Java enum
+				TypeWrapper tw = ClassLoaderWrapper.GetWrapperFromType(arg.ArgumentType) ?? ClassLoaderWrapper.GetWrapperFromType(arg.ArgumentType.DeclaringType);
+				return new object[] { AnnotationDefaultAttribute.TAG_ENUM, EncodeTypeName(tw), Enum.GetName(arg.ArgumentType, arg.Value) };
+			}
+			else if (arg.Value is Type)
+			{
+				return new object[] { AnnotationDefaultAttribute.TAG_CLASS, EncodeTypeName(ClassLoaderWrapper.GetWrapperFromType((Type)arg.Value)) };
+			}
+			else if (arg.ArgumentType.IsArray)
+			{
+				IList<CustomAttributeTypedArgument> array = (IList<CustomAttributeTypedArgument>)arg.Value;
+				object[] arr = new object[array.Count + 1];
+				arr[0] = AnnotationDefaultAttribute.TAG_ARRAY;
+				for (int i = 0; i < array.Count; i++)
+				{
+					arr[i + 1] = EncodeAnnotationValue(array[i]);
+				}
+				return arr;
+			}
+			else
+			{
+				return arg.Value;
+			}
+		}
+
+		private static string EncodeTypeName(TypeWrapper tw)
+		{
+			return tw.SigName.Replace('.', '/');
 		}
 #endif
 
@@ -438,8 +675,29 @@ namespace IKVM.StubGen
 					"value",
 					targets.ToArray()
 				});
+				if (IsRepeatableAnnotation(tw))
+				{
+					annot.Add(new object[] {
+						AnnotationDefaultAttribute.TAG_ANNOTATION,
+						"Ljava/lang/annotation/Repeatable;",
+						"value",
+						new object[] { AnnotationDefaultAttribute.TAG_CLASS, "L" + (tw.Name + DotNetTypeWrapper.AttributeAnnotationMultipleSuffix).Replace('.', '/') + ";" }
+					});
+				}
 				writer.AddAttribute(annot);
 			}
+		}
+
+		private static bool IsRepeatableAnnotation(TypeWrapper tw)
+		{
+			foreach (TypeWrapper nested in tw.InnerClasses)
+			{
+				if (nested.Name == tw.Name + DotNetTypeWrapper.AttributeAnnotationMultipleSuffix)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		private static byte[] GetAnnotationDefault(ClassFileWriter classFile, TypeWrapper type)

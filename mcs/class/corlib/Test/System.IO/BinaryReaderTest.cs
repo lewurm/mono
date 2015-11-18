@@ -1062,7 +1062,7 @@ namespace MonoTests.System.IO
 	}
 	
 	[Test]
-	[ExpectedException(typeof(EndOfStreamException))]
+	[ExpectedException(typeof(IOException))]
 	public void ReadDecimalException ()
 	{
 		MemoryStream stream = new MemoryStream (new byte [] {0, 0, 0, 0, 0, 0, 65, 0, 0, 0, 0, 0, 0, 0, 0 ,87, 98, 0, 0, 0, 0, 0});
@@ -1459,6 +1459,88 @@ namespace MonoTests.System.IO
 		}
 	}
 
+	class ReadStringMockStream : Stream
+	{
+		int noc;
+
+		#region implemented abstract members of Stream
+
+		public override void Flush ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override int Read (byte[] buffer, int offset, int count)
+		{
+			switch (noc++) {
+			case 0:
+				buffer [0] = 42; // Length
+				return 2; 
+			default:
+				buffer [0] = 0x65;
+				return 1;
+			}
+		}
+
+		public override long Seek (long offset, SeekOrigin origin)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override void SetLength (long value)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override void Write (byte[] buffer, int offset, int count)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public override bool CanRead {
+			get {
+				return true;
+			}
+		}
+
+		public override bool CanSeek {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public override bool CanWrite {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public override long Length {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public override long Position {
+			get {
+				throw new NotImplementedException ();
+			}
+			set {
+				throw new NotImplementedException ();
+			}
+		}
+
+		#endregion
+	}
+
+	[Test]
+	public void ReadSting_CustomStream ()
+	{
+		var sr = new BinaryReader (new ReadStringMockStream ());
+		var s = sr.ReadString ();
+		Assert.AreEqual ("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", s);
+	}
+
 	[Test]
 	public void ReadOverrides ()
 	{
@@ -1477,6 +1559,23 @@ namespace MonoTests.System.IO
 				reader.Read (readChars, 0, 4);
 				Assert.AreEqual (1, reader.ReadCharsCounter);
 				Assert.AreEqual (1, reader.ReadCounter);
+			}
+		}
+	}
+
+	// Bug Xamarin #30171
+	[Test]
+	public void BinaryReaderRegressionMono40 ()
+	{
+		char testChar1 = 'H';
+		using (var stream = new MemoryStream()){
+			using (var writer = new BinaryWriter(stream, Encoding.Unicode, true)){
+				using (var reader = new BinaryReader(stream, Encoding.Unicode)) {
+					writer.Write(testChar1);
+					stream.Position = 0;
+					char testchar2 = reader.ReadChar();
+					Assert.AreEqual (testChar1, testchar2);
+				}
 			}
 		}
 	}

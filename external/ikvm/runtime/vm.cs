@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007 Jeroen Frijters
+  Copyright (C) 2002-2013 Jeroen Frijters
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -97,6 +97,7 @@ namespace IKVM.Internal
 #if !STUB_GENERATOR
 		internal static bool relaxedVerification = true;
 		internal static bool AllowNonVirtualCalls;
+		internal static readonly bool DisableEagerClassLoading = SafeGetEnvironmentVariable("IKVM_DISABLE_EAGER_CLASS_LOADING") != null;
 #endif
 
 #if !STATIC_COMPILER && !STUB_GENERATOR && !FIRST_PASS
@@ -434,11 +435,19 @@ namespace IKVM.Internal
 #if !STATIC_COMPILER && !STUB_GENERATOR
 		internal static object NewAnnotation(java.lang.ClassLoader classLoader, object definition)
 		{
-#if FIRST_PASS
-			return null;
-#else
-			return ikvm.@internal.AnnotationAttributeBase.newAnnotation(classLoader, definition);
+#if !FIRST_PASS
+			java.lang.annotation.Annotation ann = null;
+			try
+			{
+				ann = (java.lang.annotation.Annotation)ikvm.@internal.AnnotationAttributeBase.newAnnotation(classLoader, definition);
+			}
+			catch (java.lang.TypeNotPresentException) { }
+			if (ann != null && sun.reflect.annotation.AnnotationType.getInstance(ann.annotationType()).retention() == java.lang.annotation.RetentionPolicy.RUNTIME)
+			{
+				return ann;
+			}
 #endif
+			return null;
 		}
 #endif
 
@@ -481,5 +490,10 @@ namespace IKVM.Internal
 			return type;
 #endif
 		}
+	}
+
+	static class Experimental
+	{
+		internal static readonly bool JDK_9 = JVM.SafeGetEnvironmentVariable("IKVM_EXPERIMENTAL_JDK_9") != null;
 	}
 }

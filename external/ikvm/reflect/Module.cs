@@ -55,6 +55,16 @@ namespace IKVM.Reflection
 			get { return module.ModuleVersionId; }
 		}
 
+		public string ImageRuntimeVersion
+		{
+			get { return module.__ImageRuntimeVersion; }
+		}
+
+		public int MDStreamVersion
+		{
+			get { return module.MDStreamVersion; }
+		}
+
 		private void CheckManifestModule()
 		{
 			if (!IsManifestModule)
@@ -556,6 +566,21 @@ namespace IKVM.Reflection
 		public List<CustomAttributeData> __GetCustomAttributesFor(int token)
 		{
 			return CustomAttributeData.GetCustomAttributesImpl(new List<CustomAttributeData>(), this, token, null);
+		}
+
+		public bool __TryGetImplMap(int token, out ImplMapFlags mappingFlags, out string importName, out string importScope)
+		{
+			foreach (int i in ImplMap.Filter(token))
+			{
+				mappingFlags = (ImplMapFlags)(ushort)ImplMap.records[i].MappingFlags;
+				importName = GetString(ImplMap.records[i].ImportName);
+				importScope = GetString(ModuleRef.records[(ImplMap.records[i].ImportScope & 0xFFFFFF) - 1]);
+				return true;
+			}
+			mappingFlags = 0;
+			importName = null;
+			importScope = null;
+			return false;
 		}
 
 #if !NO_AUTHENTICODE

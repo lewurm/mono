@@ -75,7 +75,8 @@ namespace System.Reflection {
 		ProcessorArchitecture processor_architecture = ProcessorArchitecture.None;
 		#endregion
 #pragma warning restore 169		
-		
+
+		AssemblyContentType contentType;
 		public AssemblyName ()
 		{
 			// defaults
@@ -386,6 +387,7 @@ namespace System.Reflection {
 			an.publicKey = publicKey;
 			an.keyToken = keyToken;
 			an.versioncompat = versioncompat;
+			an.processor_architecture = processor_architecture;
 			return an;
 		}
 
@@ -427,26 +429,20 @@ namespace System.Reflection {
 		}
 #endif
 
-#if NET_4_5
 		public string CultureName {
 			get {
-				if (cultureinfo == null)
-					return string.Empty;
-				else if (cultureinfo.LCID == CultureInfo.InvariantCulture.LCID)
-					return "neutral";
-				else
-					return cultureinfo.Name;
+				return (cultureinfo == null)? null : cultureinfo.Name;
 			}
 		}
 
 		[ComVisibleAttribute(false)]
 		public AssemblyContentType ContentType {
-			get { return AssemblyContentType.Default; }
+			get {
+				return contentType;
+			}
 			set {
-				if (value != AssemblyContentType.Default)
-					throw new InvalidOperationException ();
+				contentType = value;
 			}
 		}
-#endif
 	}
 }

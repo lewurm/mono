@@ -1,1 +1,1 @@
-#define FULL_VERSION "(no/8d3b4b7"
+#define FULL_VERSION "Stable 4.2.1.102/6dd2d0d"

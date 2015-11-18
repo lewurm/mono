@@ -11,7 +11,9 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internal.h>
 #include <mono/metadata/runtime.h>
+#include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/mono-counters.h>
 
 #ifdef HAVE_NULL_GC
 
@@ -19,12 +21,24 @@ void
 mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
+	int dummy;
+
+	mono_counters_init ();
 
 	memset (&cb, 0, sizeof (cb));
-	cb.mono_method_is_critical = mono_runtime_is_critical_method;
-	cb.mono_gc_pthread_create = (gpointer)mono_gc_pthread_create;
+	/* TODO: This casts away an incompatible pointer type warning in the same
+	         manner that boehm-gc does it. This is probably worth investigating
+	         more carefully. */
+	cb.mono_method_is_critical = (gpointer)mono_runtime_is_critical_method;
 
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
+
+	mono_thread_info_attach (&dummy);
+}
+
+void
+mono_gc_base_cleanup (void)
+{
 }
 
 void
@@ -94,6 +108,11 @@ mono_object_is_alive (MonoObject* o)
 
 void
 mono_gc_enable_events (void)
+{
+}
+
+void
+mono_gc_enable_alloc_events (void)
 {
 }
 
@@ -168,6 +187,53 @@ mono_gc_free_fixed (void* addr)
 	g_free (addr);
 }
 
+void *
+mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
+{
+	MonoObject *obj = calloc (1, size);
+
+	obj->vtable = vtable;
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
+{
+	MonoArray *obj = calloc (1, size);
+
+	obj->obj.vtable = vtable;
+	obj->max_length = max_length;
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uintptr_t bounds_size)
+{
+	MonoArray *obj = calloc (1, size);
+
+	obj->obj.vtable = vtable;
+	obj->max_length = max_length;
+
+	if (bounds_size)
+		obj->bounds = (MonoArrayBounds *) ((char *) obj + size - bounds_size);
+
+	return obj;
+}
+
+void *
+mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
+{
+	MonoString *obj = calloc (1, size);
+
+	obj->object.vtable = vtable;
+	obj->length = len;
+	obj->chars [len] = 0;
+
+	return obj;
+}
+
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
@@ -183,13 +249,19 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
-	mono_gc_memmove (dest_ptr, src_ptr, count * sizeof (gpointer));
+	mono_gc_memmove_aligned (dest_ptr, src_ptr, count * sizeof (gpointer));
 }
 
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, MonoObject* value)
 {
 	*(void**)ptr = value;
+}
+
+void
+mono_gc_wbarrier_generic_store_atomic (gpointer ptr, MonoObject *value)
+{
+	InterlockedWritePointer (ptr, value);
 }
 
 void
@@ -200,14 +272,14 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 void
 mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
-	mono_gc_memmove (dest, src, count * mono_class_value_size (klass, NULL));
+	mono_gc_memmove_atomic (dest, src, count * mono_class_value_size (klass, NULL));
 }
 
 void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	/* do not copy the sync state */
-	mono_gc_memmove ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
+	mono_gc_memmove_aligned ((char*)obj + sizeof (MonoObject), (char*)src + sizeof (MonoObject),
 			mono_object_class (obj)->instance_size - sizeof (MonoObject));
 }
 
@@ -217,8 +289,14 @@ mono_gc_is_critical_method (MonoMethod *method)
 	return FALSE;
 }
 
+int
+mono_gc_get_aligned_size_for_allocator (int size)
+{
+	return size;
+}
+
 MonoMethod*
-mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box)
+mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size)
 {
 	return NULL;
 }
@@ -230,7 +308,7 @@ mono_gc_get_managed_array_allocator (MonoClass *klass)
 }
 
 MonoMethod*
-mono_gc_get_managed_allocator_by_type (int atype)
+mono_gc_get_managed_allocator_by_type (int atype, gboolean slowpath)
 {
 	return NULL;
 }
@@ -277,6 +355,19 @@ int
 mono_gc_get_suspend_signal (void)
 {
 	return -1;
+}
+
+int
+mono_gc_get_restart_signal (void)
+{
+	return -1;
+}
+
+MonoMethod*
+mono_gc_get_specific_write_barrier (gboolean is_concurrent)
+{
+	g_assert_not_reached ();
+	return NULL;
 }
 
 MonoMethod*
@@ -365,7 +456,7 @@ mono_gc_conservatively_scan_area (void *start, void *end)
 }
 
 void *
-mono_gc_scan_object (void *obj)
+mono_gc_scan_object (void *obj, void *gc_data)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -408,35 +499,16 @@ mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 }
 
 #ifndef HOST_WIN32
-
 int
 mono_gc_pthread_create (pthread_t *new_thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {
 	return pthread_create (new_thread, attr, start_routine, arg);
 }
-
-int
-mono_gc_pthread_join (pthread_t thread, void **retval)
-{
-	return pthread_join (thread, retval);
-}
-
-int
-mono_gc_pthread_detach (pthread_t thread)
-{
-	return pthread_detach (thread);
-}
-
-void
-mono_gc_pthread_exit (void *retval)
-{
-	pthread_exit (retval);
-}
+#endif
 
 void mono_gc_set_skip_thread (gboolean value)
 {
 }
-#endif
 
 #ifdef HOST_WIN32
 BOOL APIENTRY mono_gc_dllmain (HMODULE module_handle, DWORD reason, LPVOID reserved)
@@ -458,6 +530,12 @@ mono_gc_register_altstack (gpointer stack, gint32 stack_size, gpointer altstack,
 
 gboolean
 mono_gc_set_allow_synchronous_major (gboolean flag)
+{
+	return TRUE;
+}
+
+gboolean
+mono_gc_is_null (void)
 {
 	return TRUE;
 }
