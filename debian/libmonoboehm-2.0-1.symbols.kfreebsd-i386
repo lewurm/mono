@@ -1,1 +1,4 @@
 #include "libmonoboehm-2.0-1.symbols.i386"
+ GC_FreeBSDGetDataStart@Base 4.2.1.102+dfsg2
+ GC_freebsd_stack_base@Base 4.2.1.102+dfsg2
+ etext@Base 4.2.1.102+dfsg2

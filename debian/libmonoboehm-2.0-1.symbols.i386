@@ -2,17 +2,27 @@
  GC_acquire_mark_lock@Base 4.1.0.1738
  GC_active_count@Base 4.1.0.1738
  GC_allocate_ml@Base 4.1.0.1738
+ GC_apply_to_maps@Base 4.1.0.1738
  GC_block_count@Base 4.1.0.1738
+ GC_data_start@Base 4.1.0.1738
  GC_destroy_thread_local@Base 4.1.0.1738
  GC_do_local_mark@Base 4.1.0.1738
  GC_do_parallel_mark@Base 4.1.0.1738
+ GC_err_write@Base 4.1.0.1738
+ GC_fault_handler@Base 4.1.0.1738
+ GC_find_limit@Base 4.1.0.1738
  GC_first_nonempty@Base 4.1.0.1738
  GC_fl_builder_count@Base 4.1.0.1738
  GC_generic_lock@Base 4.1.0.1738
+ GC_get_nprocs@Base 4.1.0.1738
  GC_help_marker@Base 4.1.0.1738
  GC_help_wanted@Base 4.1.0.1738
  GC_helper_count@Base 4.1.0.1738
+ GC_init_linux_data_start@Base 4.1.0.1738
  GC_init_thread_local@Base 4.1.0.1738
+ GC_jmp_buf@Base 4.1.0.1738
+ GC_key_create@Base 4.1.0.1738
+ GC_linux_stack_base@Base 4.1.0.1738
  GC_local_gcj_fast_malloc@Base 4.1.0.1738
  GC_local_gcj_malloc@Base 4.1.0.1738
  GC_local_malloc@Base 4.1.0.1738
@@ -23,16 +33,31 @@
  GC_mark_thread_local_free_lists@Base 4.1.0.1738
  GC_mark_threads@Base 4.1.0.1738
  GC_markers@Base 4.1.0.1738
+ GC_merge_unmapped@Base 4.1.0.1738
  GC_notify_all_builder@Base 4.1.0.1738
  GC_notify_all_marker@Base 4.1.0.1738
+ GC_print_address_map@Base 4.1.0.1738
  GC_release_mark_lock@Base 4.1.0.1738
+ GC_remap@Base 4.1.0.1738
+ GC_remove_specific@Base 4.1.0.1738
+ GC_repeat_read@Base 4.1.0.1738
+ GC_reset_fault_handler@Base 4.1.0.1738
  GC_return_mark_stack@Base 4.1.0.1738
+ GC_set_stackbottom@Base 4.1.0.1738
+ GC_setspecific@Base 4.1.0.1738
+ GC_setup_temporary_fault_handler@Base 4.1.0.1738
+ GC_slow_getspecific@Base 4.1.0.1738
  GC_spin_count@Base 4.1.0.1738
  GC_steal_mark_stack@Base 4.1.0.1738
  GC_thread_deregister_foreign@Base 4.1.0.1738
  GC_thread_tls@Base 4.1.0.1738
  GC_true_func@Base 4.1.0.1738
  GC_unlocked_count@Base 4.1.0.1738
+ GC_unmap@Base 4.1.0.1738
+ GC_unmap_end@Base 4.1.0.1738
+ GC_unmap_gap@Base 4.1.0.1738
+ GC_unmap_old@Base 4.1.0.1738
+ GC_unmap_start@Base 4.1.0.1738
  GC_wait_builder@Base 4.1.0.1738
  GC_wait_for_reclaim@Base 4.1.0.1738
  GC_wait_marker@Base 4.1.0.1738
