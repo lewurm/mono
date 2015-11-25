@@ -41,10 +41,6 @@ endif
 ifeq ($(DEB_BUILD_ARCH), armel)
 	CONF_FLAGS += --with-fpu=NONE
 endif
-ifeq ($(DEB_BUILD_ARCH), powerpc)
-	# libgc with parallel mark FTBFS on ppc
-	CONF_FLAGS += --disable-parallel-mark
-endif
 
 ifneq (,$(findstring $(DEB_BUILD_ARCH),$(DEB_MONO_SGEN_ARCHS)))
 	CONF_FLAGS += --with-sgen=yes
