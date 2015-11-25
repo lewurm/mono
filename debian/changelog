@@ -1,3 +1,12 @@
+mono (4.2.1.102+dfsg2-2) experimental; urgency=medium
+
+  * [924cd9b] Bump clideps
+  * [b49e1b9] Move arch-specific symbols to the right places, and refresh
+  * [7ca9a4a] Remove PowerPC port. Sorry guys, you had your chance
+  * [36c1be2] Force pthread for --with-tls on MIPS.
+
+ -- Jo Shields <jo.shields@xamarin.com>  Wed, 25 Nov 2015 18:51:02 +0000
+
 mono (4.2.1.102+dfsg2-1) experimental; urgency=medium
 
   * [d72f12c] Imported Upstream version 4.2.1.102+dfsg
