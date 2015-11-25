@@ -2732,6 +2732,7 @@ case "$host" in
 	mips*)
 		TARGET=MIPS;
 		arch_target=mips;
+		with_tls=pthread
 		sgen_supported=true
 		ACCESS_UNALIGNED="no"
 
