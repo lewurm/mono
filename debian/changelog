@@ -1,3 +1,9 @@
+mono (4.2.1.102+dfsg2-3) experimental; urgency=medium
+
+  * [17c35c4] Fix more .symbols errors
+
+ -- Jo Shields <jo.shields@xamarin.com>  Thu, 26 Nov 2015 08:58:08 +0000
+
 mono (4.2.1.102+dfsg2-2) experimental; urgency=medium
 
   * [924cd9b] Bump clideps
