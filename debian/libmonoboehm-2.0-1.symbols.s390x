@@ -23,9 +23,11 @@
  GC_mark_thread_local_free_lists@Base 4.2.1.102+dfsg2
  GC_mark_threads@Base 4.2.1.102+dfsg2
  GC_markers@Base 4.2.1.102+dfsg2
+ GC_merge_unmapped@Base 4.2.1.102+dfsg2
  GC_notify_all_builder@Base 4.2.1.102+dfsg2
  GC_notify_all_marker@Base 4.2.1.102+dfsg2
  GC_release_mark_lock@Base 4.2.1.102+dfsg2
+ GC_remap@Base 4.2.1.102+dfsg2
  GC_return_mark_stack@Base 4.2.1.102+dfsg2
  GC_spin_count@Base 4.2.1.102+dfsg2
  GC_steal_mark_stack@Base 4.2.1.102+dfsg2
@@ -33,6 +35,11 @@
  GC_thread_tls@Base 4.2.1.102+dfsg2
  GC_true_func@Base 4.2.1.102+dfsg2
  GC_unlocked_count@Base 4.2.1.102+dfsg2
+ GC_unmap@Base 4.2.1.102+dfsg2
+ GC_unmap_end@Base 4.2.1.102+dfsg2
+ GC_unmap_gap@Base 4.2.1.102+dfsg2
+ GC_unmap_old@Base 4.2.1.102+dfsg2
+ GC_unmap_start@Base 4.2.1.102+dfsg2
  GC_wait_builder@Base 4.2.1.102+dfsg2
  GC_wait_for_reclaim@Base 4.2.1.102+dfsg2
  GC_wait_marker@Base 4.2.1.102+dfsg2
