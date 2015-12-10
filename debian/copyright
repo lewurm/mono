@@ -1,6 +1,6 @@
-Format-Specification: http://dep.debian.net/deps/dep5/
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: Mono
-Upstream-Source: http://ftp.novell.com/pub/mono/sources/mono
+Upstream-Source: http://download.mono-project.com/sources/mono/
 
 Files: *
 Copyright: © 2001 Andreas Jonsson
@@ -207,7 +207,7 @@ Copyright: © 1988-1989 Hans-J. Boehm, Alan J. Demers
 License: other
  THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
  OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
- 
+ . 
  Permission is hereby granted to use or copy this program
  for any purpose,  provided the above notices are retained on all copies.
  Permission to modify the code and to distribute modified code is granted,
@@ -245,7 +245,7 @@ Files: mcs/tools/csharp/repl.cs,
 Copyright: © 2001-2003 Ximian, Inc (http://www.ximian.com)
            © 2003-2009 Novell, Inc
            © 2008 John Resig (jquery.com)
-License: MIT | GPL-2
+License: MIT or GPL-2
 
 Files: mcs/class/ByteFX.Data/*, 
        mcs/class/Npgsql/*
@@ -262,7 +262,7 @@ License: LGPL-2.1+
 
 Files: mcs/tools/csharp/getline.cs
 Copyright: © 2008 Novell, Inc.
-License: MIT | Apache-2.0
+License: MIT or Apache-2.0
 
 Files: mcs/tools/lc/*
 Copyright: © 2009 RemObjects Software
@@ -283,23 +283,23 @@ License: other
  This software is provided 'as-is', without any express or implied warranty. 
  In no event will the authors be held liable for any damages arising from the 
  use of this software.
- 
+ .
  Permission is granted to anyone to use this software for any purpose, including
  commercial applications, and to alter it and redistribute it freely, subject to
  the following restrictions:
- 
+ .
   1. The origin of this software must not be misrepresented; you must not claim
   that you wrote the original software. If you use this software in a product,
   an acknowledgment (see the following) in the product documentation is
   required.
- 
+ .
     Portions Copyright © 2002-2007 Charlie Poole or Copyright © 2002-2004 James
     W. Newkirk, Michael C. Two, Alexei A. Vorontsov or Copyright © 2000-2002
     Philip A. Craig
- 
+ .
   2. Altered source versions must be plainly marked as such, and must not be
   misrepresented as being the original software.
- 
+ .
   3. This notice may not be removed or altered from any source distribution.
 
 Files: mono/utils/strtod.c,
@@ -379,14 +379,14 @@ Files: external/Lucene.Net/src/contrib/Snowball/SF/Snowball/Ext/HungarianStemmer
 Copyright: © 2001 Dr Martin Porter
            © 2002 Richard Boulton
            © 2006-2012 The Apache Software Foundation
-License: Apache-2.0 | BSD
+License: Apache-2.0 or BSD
 
 Files: external/Lucene.Net/src/core/Util/UnicodeUtil.cs
 Copyright: © 2001-2004 Unicode, Inc.
            © 2006-2012 The Apache Software Foundation
-License: Apache 2.0 | other
+License: Apache-2.0 or other3
  Disclaimer
-
+ .
  This source code is provided as is by Unicode, Inc. No claims are
  made as to fitness for any particular purpose. No warranties of any
  kind are expressed or implied. The recipient agrees to determine
@@ -394,9 +394,9 @@ License: Apache 2.0 | other
  purchased on magnetic or optical media from Unicode, Inc., the
  sole remedy for any claim will be exchange of defective media
  within 90 days of receipt.
-
+ .
  Limitations on Rights to Redistribute This Code
-
+ .
  Unicode, Inc. hereby grants the right to freely use the information
  supplied in this file in the creation of products supporting the
  Unicode Standard, and to make copies of this file in any form
@@ -417,13 +417,13 @@ License: Apache-2.0
 
 Files: external/aspnetwebstack/test/System.Web.Helpers.Test/TestFiles/xhtml11-flat.dtd
 Copyright: © 1998-2000 World Wide Web Consortium
-License: other
+License: other2
  Permission to use, copy, modify and distribute the XHTML DTD and its
  accompanying documentation for any purpose and without fee is hereby
  granted in perpetuity, provided that the above copyright notice and
  this paragraph appear in all copies.  The copyright holders make no
  representation about the suitability of the DTD for any purpose.
-
+ .
  It is provided "as is" without expressed or implied warranty.
 
 Files: external/cecil/*
@@ -567,16 +567,16 @@ License: LGPL-2
  modify it under the terms of the GNU Library General Public
  License as published by the Free Software Foundation;
  version 2 of the License.
-
+ .
  This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Library General Public License for more details.
-
+ .
  You should have received a copy of the GNU Library General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA  02110-1301 USA
-
+ .
  On Debian systems the full text of the GNU Library General Public License can be
  found in the `/usr/share/common-licenses/LGPL-2' file.
 
@@ -585,16 +585,34 @@ License: LGPL-2.1
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation;
  version 2.1 of the License.
-
+ .
  This library is distributed in the hope that it will be useful, 
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
-
+ .
  You should have received a copy of the GNU Lesser General Public  
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ .
+ On Debian systems the full text of the GNU Lesser General Public License can be
+ found in the `/usr/share/common-licenses/LGPL-2.1' file.
 
+License: LGPL-2.1+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation;
+ version 2.1 of the License, or (at your option) any later version.
+ .
+ This library is distributed in the hope that it will be useful, 
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public  
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ .
  On Debian systems the full text of the GNU Lesser General Public License can be
  found in the `/usr/share/common-licenses/LGPL-2.1' file.
 
@@ -603,15 +621,15 @@ License: GPL
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or   
  (at your option) any later version.
-
+ .
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the    
  GNU General Public License for more details.
-
+ .
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ .
  On Debian systems the full text of the GNU General Public License can be found
  in the `/usr/share/common-licenses/GPL' file.
 
@@ -619,16 +637,16 @@ License: GPL-2
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; version 2 of the License.
-
+ .
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
-
+ .
  You should have received a copy of the GNU General Public License along
  with this program; if not, write to the Free Software Foundation, Inc.,
  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+ .
  On Debian systems the full text of the GNU General Public License can be found
  in the `/usr/share/common-licenses/GPL-2' file.
 
@@ -637,16 +655,16 @@ License: GPL-2+
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 2 of the License, or
  (at your option) any later version.
-
+ .
  Th is program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
-
+ .
  You should have received a copy of the GNU General Public License along
  with this program; if not, write to the Free Software Foundation, Inc.,
  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+ .
  On Debian systems the full text of the GNU General Public License can be found
  in the `/usr/share/common-licenses/GPL-2' file.
 
@@ -658,10 +676,10 @@ License: MIT
  distribute, sublicense, and/or sell copies of the Software, and to
  permit persons to whom the Software is furnished to do so, subject to
  the following conditions:
- 
+ .
  The above copyright notice and this permission notice shall be
  included in all copies or substantial portions of the Software.
- 
+ .
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -674,11 +692,11 @@ License: zlib/libpng
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
   arising from the use of this software.
-
+ .
   Permission is granted to anyone to use this software for any purpose,
   including commercial applications, and to alter it and redistribute it
   freely, subject to the following restrictions:
-
+ .
   1. The origin of this software must not be misrepresented; you must not
      claim that you wrote the original software. If you use this software
      in a product, an acknowledgment in the product documentation would be
@@ -691,7 +709,7 @@ License: BSD
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are
  met:
-
+ .
  1. Redistributions of source code must retain the above copyright notice,
  this list of conditions and the following disclaimer.
  2. Redistributions in binary form must reproduce the above copyright
@@ -700,7 +718,7 @@ License: BSD
  3. Neither the name of the <ORGANIZATION> nor the names of its contributors
  may be used to endorse or promote products derived from this software
  without specific prior written permission.
-
+ .
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -717,7 +735,7 @@ License: Ms-PL
  This license governs use of the accompanying software. If you use the 
  software, you accept this license. If you do not accept the license, do not 
  use the software.
-
+ .
  1. Definitions
  The terms "reproduce," "reproduction," "derivative works," and "distribution" 
  have the same meaning here as under U.S. copyright law.
@@ -727,7 +745,7 @@ License: Ms-PL
  license.
  "Licensed patents" are a contributor's patent claims that read directly on its 
  contribution.
-
+ .
  2. Grant of Rights
  (A) Copyright Grant- Subject to the terms of this license, including the 
  license conditions and limitations in section 3, each contributor grants you 
@@ -740,7 +758,7 @@ License: Ms-PL
  make, have made, use, sell, offer for sale, import, and/or otherwise dispose 
  of its contribution in the software or derivative works of the 
  contribution in the software.
-
+ .
  3. Conditions and Limitations
  (A) No Trademark License- This license does not grant you rights to use any 
  contributors' name, logo, or trademarks.

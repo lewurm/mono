@@ -1,26 +1,34 @@
-mono (4.0.4.1+dfsg-1) experimental; urgency=medium
+mono (4.2.1.102+dfsg2-3) experimental; urgency=medium
 
-  [ Jo Shields ]
-  * [14dd9bb] Big Endian fix by Than Ngo <than@redhat.com>
-    from https://bugzilla.xamarin.com/show_bug.cgi?id=31779
-  * [fab431e] Imported Upstream version 4.0.4.1+dfsg
-  * [f0302ef] Add missing symbol
-  * [47e6f15] Refresh clideps versioning
+  * [17c35c4] Fix more .symbols errors
 
-  [ Bill Seurer ]
-  * [7d7f61a] Fixes to get mono to build on big endian ppc.
-    (cherry picked from commit d36ce0d9911fc668ac25d7116772044a78790f0e)
+ -- Jo Shields <jo.shields@xamarin.com>  Thu, 26 Nov 2015 08:58:08 +0000
 
-  [ Alex Rønne Petersen ]
-  * [c36ee1b] Instruction length of atomic_add_i4 is 28.
-    (cherry picked from commit f967c79926900343f399c75624deedaba460e544)
-  * [c81f65f] Fix atomic_add_i4 support for 32-bit PPC.
-    (cherry picked from commit 8f379f0c8f98493180b508b9e68b9aa76c0c5bdf)
+mono (4.2.1.102+dfsg2-2) experimental; urgency=medium
 
-  [ Lennart Sorensen ]
-  * [7f1a751] Add move_f_to_i4 and move_i4_to_f to PowerPC
+  * [924cd9b] Bump clideps
+  * [b49e1b9] Move arch-specific symbols to the right places, and refresh
+  * [7ca9a4a] Remove PowerPC port. Sorry guys, you had your chance
+  * [36c1be2] Force pthread for --with-tls on MIPS.
 
- -- Jo Shields <directhex@apebox.org>  Mon, 07 Sep 2015 11:28:16 +0100
+ -- Jo Shields <jo.shields@xamarin.com>  Wed, 25 Nov 2015 18:51:02 +0000
+
+mono (4.2.1.102+dfsg2-1) experimental; urgency=medium
+
+  * [d72f12c] Imported Upstream version 4.2.1.102+dfsg
+  * [1fcbc08] Add new ServiceModel packages
+  * [c963f9a] Add missing PPC64 symbols (Closes: #801423)
+  * [b786709] Correct webbrowser4.0-cil description (Closes: #792682)
+  * [6cb3b0c] Refresh symbols files
+  * [3cd94e3] bump standards version
+  * [7bbf509] Ignore false license-problem-non-free-RFC Lintian warning
+  * [a90d8ee] Fix up copyright file to meet spec better
+  * [11f70be] Delete .chm files from orig source
+  * [91baf4d] Imported Upstream version 4.2.1.102+dfsg2
+  * [18ab848] More copyright file fixes
+  * [e56a81f] Rename symbolicate to mono-symbolicate
+
+ -- Jo Shields <jo.shields@xamarin.com>  Wed, 18 Nov 2015 17:16:19 +0000
 
 mono (4.0.2.5+dfsg-2) experimental; urgency=medium
 
