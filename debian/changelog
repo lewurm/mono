@@ -1,3 +1,11 @@
+mono (4.2.1.102+dfsg2-4) unstable; urgency=medium
+
+  * [4ff4a7a] Final fix for symbols
+  * [546ee96] I... have no idea how these deltas ended up existing, vs. 
+    the tarball. Thanks, git, you weird little monkey.
+
+ -- Jo Shields <directhex@apebox.org>  Thu, 10 Dec 2015 12:39:05 +0000
+
 mono (4.2.1.102+dfsg2-3) experimental; urgency=medium
 
   * [17c35c4] Fix more .symbols errors
