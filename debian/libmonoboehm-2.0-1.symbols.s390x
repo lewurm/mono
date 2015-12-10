@@ -2,17 +2,22 @@
  GC_acquire_mark_lock@Base 4.2.1.102+dfsg2
  GC_active_count@Base 4.2.1.102+dfsg2
  GC_allocate_ml@Base 4.2.1.102+dfsg2
+ GC_apply_to_maps@Base 4.2.1.102+dfsg2
  GC_block_count@Base 4.2.1.102+dfsg2
  GC_destroy_thread_local@Base 4.2.1.102+dfsg2
  GC_do_local_mark@Base 4.2.1.102+dfsg2
  GC_do_parallel_mark@Base 4.2.1.102+dfsg2
+ GC_err_write@Base 4.2.1.102+dfsg2
  GC_first_nonempty@Base 4.2.1.102+dfsg2
  GC_fl_builder_count@Base 4.2.1.102+dfsg2
  GC_generic_lock@Base 4.2.1.102+dfsg2
+ GC_get_nprocs@Base 4.2.1.102+dfsg2
  GC_help_marker@Base 4.2.1.102+dfsg2
  GC_help_wanted@Base 4.2.1.102+dfsg2
  GC_helper_count@Base 4.2.1.102+dfsg2
  GC_init_thread_local@Base 4.2.1.102+dfsg2
+ GC_key_create@Base 4.2.1.102+dfsg2
+ GC_linux_stack_base@Base 4.2.1.102+dfsg2
  GC_local_gcj_fast_malloc@Base 4.2.1.102+dfsg2
  GC_local_gcj_malloc@Base 4.2.1.102+dfsg2
  GC_local_malloc@Base 4.2.1.102+dfsg2
@@ -26,9 +31,15 @@
  GC_merge_unmapped@Base 4.2.1.102+dfsg2
  GC_notify_all_builder@Base 4.2.1.102+dfsg2
  GC_notify_all_marker@Base 4.2.1.102+dfsg2
+ GC_print_address_map@Base 4.2.1.102+dfsg2
  GC_release_mark_lock@Base 4.2.1.102+dfsg2
  GC_remap@Base 4.2.1.102+dfsg2
+ GC_remove_specific@Base 4.2.1.102+dfsg2
+ GC_repeat_read@Base 4.2.1.102+dfsg2
  GC_return_mark_stack@Base 4.2.1.102+dfsg2
+ GC_set_stackbottom@Base 4.2.1.102+dfsg2
+ GC_setspecific@Base 4.2.1.102+dfsg2
+ GC_slow_getspecific@Base 4.2.1.102+dfsg2
  GC_spin_count@Base 4.2.1.102+dfsg2
  GC_steal_mark_stack@Base 4.2.1.102+dfsg2
  GC_thread_deregister_foreign@Base 4.2.1.102+dfsg2

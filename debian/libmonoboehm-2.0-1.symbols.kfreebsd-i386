@@ -33,7 +33,6 @@
  GC_notify_all_marker@Base 4.1.0.1738
  GC_release_mark_lock@Base 4.1.0.1738
  GC_remap@Base 4.1.0.1738
- GC_remove_specific@Base 4.1.0.1738
  GC_reset_fault_handler@Base 4.1.0.1738
  GC_return_mark_stack@Base 4.1.0.1738
  GC_setup_temporary_fault_handler@Base 4.1.0.1738
