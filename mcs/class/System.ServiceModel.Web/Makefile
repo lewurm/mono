@@ -21,7 +21,6 @@ ifeq (4, $(FRAMEWORK_VERSION_MAJOR))
 LIB_REFS += System.ServiceModel.Activation
 endif
 endif
-endif
 
 TEST_MCS_FLAGS = $(LIB_MCS_FLAGS)
 

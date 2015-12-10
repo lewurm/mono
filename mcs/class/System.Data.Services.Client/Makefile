@@ -18,7 +18,6 @@ ifneq (2.1, $(FRAMEWORK_VERSION))
 LIB_REFS += WindowsBase
 endif
 endif
-endif
 
 include ../../build/library.make
 
