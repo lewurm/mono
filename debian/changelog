@@ -1,3 +1,9 @@
+mono (4.2.1.102+dfsg2-5) unstable; urgency=medium
+
+  * [db6d214] Make XBuild assume TargetFrameworkVersion 4.5, if none specified
+
+ -- Jo Shields <jo.shields@xamarin.com>  Tue, 15 Dec 2015 10:47:33 +0000
+
 mono (4.2.1.102+dfsg2-4) unstable; urgency=medium
 
   * [4ff4a7a] Final fix for symbols
