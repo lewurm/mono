@@ -1,3 +1,10 @@
+mono (4.2.1.102+dfsg2-6) unstable; urgency=medium
+
+  * [d2d5aeb] Don't remap all versions of Npgsql to 4.0.0.0.
+  * [dc3f62a] Don't use unowned /usr/share/.mono for certs (Closes: #808308)
+
+ -- Jo Shields <jo.shields@xamarin.com>  Mon, 15 Feb 2016 15:09:36 +0000
+
 mono (4.2.1.102+dfsg2-5) unstable; urgency=medium
 
   * [db6d214] Make XBuild assume TargetFrameworkVersion 4.5, if none specified
