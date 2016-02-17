@@ -2817,6 +2817,9 @@ Depends: ${misc:Depends},
          libmono-2.0-dev (>= ${source:Version}),
          libmono-2.0-dev (<< ${source:Version}.1~),
          pkg-config
+Suggests: mono-reference-assemblies-2.0,
+          mono-reference-assemblies-3.5,
+          mono-reference-assemblies-4.0
 Description: Mono development tools
  Mono is a platform for running and developing applications based on the
  ECMA/ISO Standards. Mono is an open source effort led by Xamarin.
