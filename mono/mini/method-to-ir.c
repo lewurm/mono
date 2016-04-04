@@ -10977,52 +10977,72 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
- 
-			context_used = mini_class_check_context_used (cfg, klass);
 
-			if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
-				MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
-				MonoInst *args [3];
-				int idx;
+#if 0
+			if (!strcmp (cfg->method->name, "ASDFMain") && !strcmp (cfg->method->klass->name, "Cast")) {
+#else
+			if (1 == 1) {
+#endif
+				int tmpreg = alloc_preg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, OP_MOVE, tmpreg, (*sp)->dreg);
 
-				/* obj */
-				args [0] = *sp;
+				MONO_INST_NEW (cfg, ins, OP_ISINST);
+				ins->dreg = alloc_preg (cfg);
+				ins->sreg1 = tmpreg;
+				ins->klass = klass;
+				ins->type = STACK_OBJ;
+				MONO_ADD_INS (cfg->cbb, ins);
 
-				/* klass */
-				EMIT_NEW_CLASSCONST (cfg, args [1], klass);
-
-				/* inline cache*/
-				idx = get_castclass_cache_idx (cfg);
-				args [2] = emit_runtime_constant (cfg, MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
-
-				*sp++ = mono_emit_method_call (cfg, mono_isinst, args, NULL);
-				ip += 5;
-				inline_costs += 2;
-			} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
-				MonoMethod *mono_isinst;
-				MonoInst *iargs [1];
-				int costs;
-
-				mono_isinst = mono_marshal_get_isinst (klass); 
-				iargs [0] = sp [0];
-
-				costs = inline_method (cfg, mono_isinst, mono_method_signature (mono_isinst), 
-									   iargs, ip, cfg->real_offset, TRUE);
 				CHECK_CFG_EXCEPTION;
-				g_assert (costs > 0);
-				
+				*sp++ = ins;
 				ip += 5;
-				cfg->real_offset += 5;
+			} else {
+				context_used = mini_class_check_context_used (cfg, klass);
 
-				*sp++= iargs [0];
+				if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
+					MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
+					MonoInst *args [3];
+					int idx;
 
-				inline_costs += costs;
-			}
-			else {
-				ins = handle_isinst (cfg, klass, *sp, context_used);
-				CHECK_CFG_EXCEPTION;
-				*sp ++ = ins;
-				ip += 5;
+					/* obj */
+					args [0] = *sp;
+
+					/* klass */
+					EMIT_NEW_CLASSCONST (cfg, args [1], klass);
+
+					/* inline cache*/
+					idx = get_castclass_cache_idx (cfg);
+					args [2] = emit_runtime_constant (cfg, MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
+
+					*sp++ = mono_emit_method_call (cfg, mono_isinst, args, NULL);
+					ip += 5;
+					inline_costs += 2;
+				} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+					MonoMethod *mono_isinst;
+					MonoInst *iargs [1];
+					int costs;
+
+					mono_isinst = mono_marshal_get_isinst (klass); 
+					iargs [0] = sp [0];
+
+					costs = inline_method (cfg, mono_isinst, mono_method_signature (mono_isinst), 
+										   iargs, ip, cfg->real_offset, TRUE);
+					CHECK_CFG_EXCEPTION;
+					g_assert (costs > 0);
+					
+					ip += 5;
+					cfg->real_offset += 5;
+
+					*sp++= iargs [0];
+
+					inline_costs += costs;
+				}
+				else {
+					ins = handle_isinst (cfg, klass, *sp, context_used);
+					CHECK_CFG_EXCEPTION;
+					*sp ++ = ins;
+					ip += 5;
+				}
 			}
 			break;
 		}
@@ -15019,6 +15039,77 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	g_free (live_range_start_bb);
 	g_free (live_range_end_bb);
 }
+
+static void mono_decompose_isinst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *isinst)
+{
+	MonoInst *ret, *move;
+	MonoClass *klass = isinst->klass;
+	int context_used = mini_class_check_context_used (cfg, klass);
+
+	// fprintf (stderr, "going to decompose stuff here (%s::%s) for class=%s\n", cfg->method->klass->name, cfg->method->name, klass->name);
+	MonoBasicBlock *first_bb;
+	NEW_BBLOCK (cfg, first_bb);
+	cfg->cbb = first_bb;
+
+	if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
+		MonoMethod *mono_isinst = mono_marshal_get_isinst_with_cache ();
+		MonoInst *args [3];
+		int idx;
+
+		// fprintf (stderr, "case 1\n");
+
+		/* obj */
+		args [0] = isinst->prev;
+
+		/* klass */
+		EMIT_NEW_CLASSCONST (cfg, args [1], klass);
+
+		/* inline cache*/
+		idx = get_castclass_cache_idx (cfg);
+		args [2] = emit_runtime_constant (cfg, MONO_PATCH_INFO_CASTCLASS_CACHE, GINT_TO_POINTER (idx));
+
+		ret = mono_emit_method_call (cfg, mono_isinst, args, NULL);
+	} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		MonoMethod *mono_isinst = mono_marshal_get_isinst (klass); 
+		MonoInst *iargs [1];
+		int costs;
+
+		// fprintf (stderr, "case 2\n");
+		iargs [0] = isinst->prev;
+
+		costs = inline_method (cfg, mono_isinst, mono_method_signature (mono_isinst), iargs, 0, /* cfg->real_offset */ 0, TRUE);
+		g_assert (costs > 0);
+		ret = iargs[0];
+	} else {
+		// fprintf (stderr, "case 3\n");
+		ret = handle_isinst (cfg, klass, isinst->prev, context_used);
+#if 0
+		mono_print_ins (ret);
+		fflush (stdout);
+		fprintf (stderr, "cfg->cbb->code: %p\n", cfg->cbb->code);
+		fprintf (stderr, "first_bb->code: %p\n", first_bb->code);
+#endif
+	}
+	EMIT_NEW_UNALU (cfg, move, OP_MOVE, isinst->dreg, ret->dreg);
+
+	g_assert (cfg->cbb->code || first_bb->code);
+	MonoInst *prev = isinst->prev;
+	mono_replace_ins (cfg, bb, isinst, &prev, first_bb, cfg->cbb);
+}
+
+void mono_decompose_typechecks (MonoCompile *cfg)
+{
+	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		MonoInst *c;
+		MONO_BB_FOR_EACH_INS (bb, c) {
+			if (c->opcode == OP_ISINST) {
+				mono_decompose_isinst (cfg, bb, c);
+				NULLIFY_INS (c);
+			}
+		}
+	}
+}
+
 
 /**
  * FIXME:
