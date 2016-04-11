@@ -320,7 +320,14 @@ binary-arch: build-stamp install-stamp test-stamp
 	install -D -m 644 -o root -g root debian/cli.binfmt \
 	  debian/mono-runtime/usr/share/binfmts/cli
 
+ifdef SKIP_LIBGC
+	ln -s libmonosgen-2.0.a debian/tmp/usr/lib/libmono-2.0.a
+	ln -s libmonosgen-2.0.so debian/tmp/usr/lib/libmono-2.0.so
+endif
 	dh_install -s
+ifndef SKIP_LIBGC
+	install -m 644 debian/tmp/usr/bin/pedump debian/mono-utils/usr/bin/
+endif
 	dh_link -s
 	dh_installchangelogs -s -X ChangeLog
 	dh_installchangelogs -pmono-runtime
@@ -336,10 +343,14 @@ binary-arch: build-stamp install-stamp test-stamp
 	dh_compress -s -Xskeleton.cs
 
 	dh_fixperms -s
+ifndef SKIP_LIBGC
 	dpkg-gensymbols -plibmonoboehm-2.0-1 -edebian/tmp/usr/lib/libmonoboehm-2.0.so.1 -c4
+endif
 	dpkg-gensymbols -plibmonosgen-2.0-1 -edebian/tmp/usr/lib/libmonosgen-2.0.so.1 -c4
 	dh_makeshlibs -s -V
+ifndef SKIP_LIBGC
 	dh_makeshlibs -plibmonoboehm-2.0-1 -V 'libmonoboehm-2.0-1 (>= $(UPVERSION))'
+endif
 	dh_makeshlibs -plibmonosgen-2.0-1 -V 'libmonosgen-2.0-1 (>= $(UPVERSION))'
 	dh_installdeb -s
 	dh_shlibdeps -s -Xlibmono-profiler-cov -ldebian/libmonoboehm-2.0-1/usr/lib -ldebian/libmonosgen-2.0-1/usr/lib

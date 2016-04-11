@@ -117,7 +117,7 @@ Section: debug
 Architecture: amd64 armel arm64 armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 ppc64 ppc64el s390x
 Replaces: mono-jit-dbg (<< 2.4)
 Conflicts: mono-jit-dbg (<< 2.4)
-Depends: ${misc:Depends}, mono-runtime-sgen (= ${binary:Version}), mono-runtime-boehm (= ${binary:Version})
+Depends: ${misc:Depends}, mono-runtime-sgen (= ${binary:Version}), mono-runtime-boehm (= ${binary:Version}) [amd64 armel arm64 armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 ppc64 ppc64el s390x]
 Recommends: gdb
 Description: Mono runtime, debugging symbols
  Mono is a platform for running and developing applications based on the
@@ -132,7 +132,7 @@ Package: mono-utils
 Provides: cil-disassembler
 Architecture: amd64 armel arm64 armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 ppc64 ppc64el s390x
 Replaces: mono-mcs (<= 1.1.6-4)
-Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version}),
+Depends: ${shlibs:Depends}, ${misc:Depends}, libmonoboehm-2.0-1 (= ${binary:Version}) [amd64 armel armhf i386 mipsel kfreebsd-amd64 kfreebsd-i386 ppc64 ppc64el s390x],
  libmono-corlib4.5-cil (= ${source:Version})
 Description: Mono utilities
  Mono is a platform for running and developing applications based on the
