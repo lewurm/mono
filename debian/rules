@@ -59,6 +59,13 @@ else
 	MONO_SGEN_TEST = cd mono/tests && MONO_ENV_OPTIONS=--gc=sgen $(TIMEOUT) make check; $(KILL_MONO)
 endif
 
+ifeq ($(DEB_BUILD_ARCH), arm64)
+	MONO_BOEHM_TEST = true
+	CONF_FLAGS += --disable-boehm
+	SKIP_LIBGC = true
+endif
+
+
 DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/buildflags.mk
 
@@ -92,7 +99,9 @@ build: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
 	cd eglib && $(MAKE) $(EGLIB_MAKE_FLAGS)
+ifndef SKIP_LIBGC
 	cd libgc && $(MAKE) $(LIBGC_MAKE_FLAGS)
+endif
 	cd mono && $(MAKE) $(MONO_MAKE_FLAGS)
 	LC_ALL=C $(MAKE) $(MAKE_FLAGS) EXTERNAL_MCS=false EXTERNAL_MONO=false
 
