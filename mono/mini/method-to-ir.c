@@ -4555,6 +4555,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, guint8 *ip,
 		return src;
 	}
 
+
 	if (context_used) {
 		MonoInst *args [3];
 
@@ -4619,7 +4620,6 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, guint8 *ip,
 	reset_cast_details (cfg);
 
 	return src;
-
 exception_exit:
 	return NULL;
 }
@@ -10962,7 +10962,23 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (sp [0]->type != STACK_OBJ)
 				UNVERIFIED;
 
-			ins = handle_castclass (cfg, klass, *sp, ip, &inline_costs);
+#if 0
+			if (!strcmp (cfg->method->name, "Main") && !strcmp (cfg->method->klass->name, "Cast")) {
+#else
+			if (1 == 1) {
+#endif
+				int tmpreg = alloc_preg (cfg);
+				EMIT_NEW_UNALU (cfg, ins, OP_MOVE, tmpreg, (*sp)->dreg);
+
+				MONO_INST_NEW (cfg, ins, OP_CASTCLASS);
+				ins->dreg = alloc_preg (cfg);
+				ins->sreg1 = tmpreg;
+				ins->klass = klass;
+				ins->type = STACK_OBJ;
+				MONO_ADD_INS (cfg->cbb, ins);
+			} else {
+				ins = handle_castclass (cfg, klass, *sp, ip, &inline_costs);
+			}
 			CHECK_CFG_EXCEPTION;
 
 			*sp ++ = ins;
@@ -15040,6 +15056,42 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	g_free (live_range_end_bb);
 }
 
+static void mono_decompose_castclass (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *castclass)
+{
+	MonoInst *ret, *move;
+	MonoClass *klass = castclass->klass;
+	int context_used = mini_class_check_context_used (cfg, klass);
+
+	MonoBasicBlock *first_bb;
+	NEW_BBLOCK (cfg, first_bb);
+	cfg->cbb = first_bb;
+
+	if (!context_used && mini_class_has_reference_variant_generic_argument (cfg, klass, context_used)) {
+		ret = emit_castclass_with_cache_nonshared (cfg, castclass->prev, klass);
+	} else if (!context_used && (mono_class_is_marshalbyref (klass) || klass->flags & TYPE_ATTRIBUTE_INTERFACE)) {
+		MonoMethod *mono_castclass = mono_marshal_get_castclass (klass); 
+		MonoInst *iargs [1];
+		int costs;
+
+		iargs [0] = castclass->prev;
+		save_cast_details (cfg, klass, castclass->prev->dreg, TRUE);
+		costs = inline_method (cfg, mono_castclass, mono_method_signature (mono_castclass), iargs, 0, 0, TRUE);
+		reset_cast_details (cfg);
+		// TODO: !?
+		// CHECK_CFG_EXCEPTION;
+		g_assert (costs > 0);
+		ret = iargs [0];
+	} else {
+		int lol;
+		ret = handle_castclass (cfg, klass, castclass->prev, NULL, &lol);
+	}
+	EMIT_NEW_UNALU (cfg, move, OP_MOVE, castclass->dreg, ret->dreg);
+
+	g_assert (cfg->cbb->code || first_bb->code);
+	MonoInst *prev = castclass->prev;
+	mono_replace_ins (cfg, bb, castclass, &prev, first_bb, cfg->cbb);
+}
+
 static void mono_decompose_isinst (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *isinst)
 {
 	MonoInst *ret, *move;
@@ -15079,7 +15131,7 @@ static void mono_decompose_isinst (MonoCompile *cfg, MonoBasicBlock *bb, MonoIns
 
 		costs = inline_method (cfg, mono_isinst, mono_method_signature (mono_isinst), iargs, 0, /* cfg->real_offset */ 0, TRUE);
 		g_assert (costs > 0);
-		ret = iargs[0];
+		ret = iargs [0];
 	} else {
 		// fprintf (stderr, "case 3\n");
 		ret = handle_isinst (cfg, klass, isinst->prev, context_used);
@@ -15102,9 +15154,14 @@ void mono_decompose_typechecks (MonoCompile *cfg)
 	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		MonoInst *c;
 		MONO_BB_FOR_EACH_INS (bb, c) {
-			if (c->opcode == OP_ISINST) {
+			switch (c->opcode) {
+			case OP_ISINST:
 				mono_decompose_isinst (cfg, bb, c);
 				NULLIFY_INS (c);
+				break;
+			case OP_CASTCLASS:
+				mono_decompose_castclass (cfg, bb, c);
+				break;
 			}
 		}
 	}
