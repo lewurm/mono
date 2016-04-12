@@ -722,6 +722,9 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_SEQ_POINT:
 		g_string_append_printf (sbuf, " il: 0x%x%s", (int)ins->inst_imm, ins->flags & MONO_INST_NONEMPTY_STACK ? ", nonempty-stack" : "");
 		break;
+	case OP_COND_EXC_EQ ... OP_COND_EXC_INC:
+		g_string_append_printf (sbuf, " %s", ins->inst_p1);
+		break;
 	default:
 		break;
 	}
