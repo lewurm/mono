@@ -323,6 +323,8 @@ binary-arch: build-stamp install-stamp test-stamp
 ifdef SKIP_LIBGC
 	ln -s libmonosgen-2.0.a debian/tmp/usr/lib/libmono-2.0.a
 	ln -s libmonosgen-2.0.so debian/tmp/usr/lib/libmono-2.0.so
+	ln -s libmonosgen-2.0.so.1 debian/tmp/usr/lib/libmono-2.0.so.1
+	ln -s libmonosgen-2.0.so.1.0.0 debian/tmp/usr/lib/libmono-2.0.so.1.0.0
 endif
 	dh_install -s
 ifndef SKIP_LIBGC
