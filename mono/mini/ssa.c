@@ -749,6 +749,24 @@ mono_ssa_copyprop (MonoCompile *cfg)
 		if (!MONO_VARINFO (cfg, var2->inst_c0)->def || MONO_IS_PHI (MONO_VARINFO (cfg, var2->inst_c0)->def))
 			continue;
 
+		if (cfg->verbose_level > 2) {
+			GString *dvar = mono_print_ins_index_strbuf (-1, var);
+			GString *dvar2 = mono_print_ins_index_strbuf (-1, var2);
+			fprintf (stderr, "var: '%s', var->dreg: %d.   var2: '%s', var2->dreg: %d\n\t->uses ", dvar->str, var->dreg, dvar2->str, var2->dreg);
+			g_string_free (dvar, TRUE);
+			g_string_free (dvar2, TRUE);
+
+			GList *l = info->uses;
+			while (l) {
+				MonoVarUsageInfo *u = (MonoVarUsageInfo*) l->data;
+				GString *du = mono_print_ins_index_strbuf (-1, u->inst);
+				fprintf (stderr, ", %s", du->str);
+				g_string_free (du, TRUE);
+
+				l = l->next;
+			}
+			fprintf (stderr, "\n");
+		}
 		/* Rewrite all uses of var to be uses of var2 */
 		int dreg = var->dreg;
 		int sreg1 = var2->dreg;
