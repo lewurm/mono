@@ -740,54 +740,55 @@ mono_ssa_copyprop (MonoCompile *cfg)
 	for (index = 0; index < cfg->num_varinfo; ++index) {
 		MonoInst *var = cfg->varinfo [index];
 		MonoMethodVar *info = MONO_VARINFO (cfg, index);
+		if (!info->def || !MONO_IS_MOVE (info->def))
+			continue;
 
-		if (info->def && (MONO_IS_MOVE (info->def))) {
-			MonoInst *var2 = get_vreg_to_inst (cfg, info->def->sreg1);
+		MonoInst *var2 = get_vreg_to_inst (cfg, info->def->sreg1);
+		if (!var2 || (var2->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
+			continue;
+		if (!MONO_VARINFO (cfg, var2->inst_c0)->def || MONO_IS_PHI (MONO_VARINFO (cfg, var2->inst_c0)->def))
+			continue;
 
-			if (var2 && !(var2->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)) && MONO_VARINFO (cfg, var2->inst_c0)->def && (!MONO_IS_PHI (MONO_VARINFO (cfg, var2->inst_c0)->def))) {
-				/* Rewrite all uses of var to be uses of var2 */
-				int dreg = var->dreg;
-				int sreg1 = var2->dreg;
+		/* Rewrite all uses of var to be uses of var2 */
+		int dreg = var->dreg;
+		int sreg1 = var2->dreg;
 
-				l = info->uses;
-				while (l) {
-					MonoVarUsageInfo *u = (MonoVarUsageInfo*)l->data;
-					MonoInst *ins = u->inst;
-					GList *next = l->next;
-					int num_sregs;
-					int sregs [MONO_MAX_SRC_REGS];
+		l = info->uses;
+		while (l) {
+			MonoVarUsageInfo *u = (MonoVarUsageInfo*)l->data;
+			MonoInst *ins = u->inst;
+			GList *next = l->next;
+			int num_sregs;
+			int sregs [MONO_MAX_SRC_REGS];
 
-					num_sregs = mono_inst_get_src_registers (ins, sregs);
-					for (i = 0; i < num_sregs; ++i) {
-						if (sregs [i] == dreg)
-							break;
-					}
-					if (i < num_sregs) {
-						g_assert (sregs [i] == dreg);
-						sregs [i] = sreg1;
-						mono_inst_set_src_registers (ins, sregs);
-					} else if (MONO_IS_STORE_MEMBASE (ins) && ins->dreg == dreg) {
-						ins->dreg = sreg1;
-					} else if (MONO_IS_PHI (ins)) {
-						for (i = ins->inst_phi_args [0]; i > 0; i--) {
-							int sreg = ins->inst_phi_args [i];
-							if (sreg == var->dreg)
-								break;
-						}
-						g_assert (i > 0);
-						ins->inst_phi_args [i] = sreg1;
-					}
-					else
-						g_assert_not_reached ();
-
-					record_use (cfg, var2, u->bb, ins);
-
-					l = next;
-				}
-
-				info->uses = NULL;
+			num_sregs = mono_inst_get_src_registers (ins, sregs);
+			for (i = 0; i < num_sregs; ++i) {
+				if (sregs [i] == dreg)
+					break;
 			}
+			if (i < num_sregs) {
+				g_assert (sregs [i] == dreg);
+				sregs [i] = sreg1;
+				mono_inst_set_src_registers (ins, sregs);
+			} else if (MONO_IS_STORE_MEMBASE (ins) && ins->dreg == dreg) {
+				ins->dreg = sreg1;
+			} else if (MONO_IS_PHI (ins)) {
+				for (i = ins->inst_phi_args [0]; i > 0; i--) {
+					int sreg = ins->inst_phi_args [i];
+					if (sreg == var->dreg)
+						break;
+				}
+				g_assert (i > 0);
+				ins->inst_phi_args [i] = sreg1;
+			}
+			else
+				g_assert_not_reached ();
+
+			record_use (cfg, var2, u->bb, ins);
+
+			l = next;
 		}
+		info->uses = NULL;
 	}
 
 	if (cfg->verbose_level >= 4) {
