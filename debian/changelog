@@ -1,3 +1,10 @@
+mono (4.2.1.102+dfsg2-8) unstable; urgency=medium
+
+  * [cf4937c] Fixes for ARM64 packages. Thanks to Matthias Klose
+  * [ec6abc9] Further packaging fixes for ARM64 (Closes: 825497)
+
+ -- Jo Shields <joshield@microsoft.com>  Fri, 27 May 2016 10:46:30 +0100
+
 mono (4.2.1.102+dfsg2-7) unstable; urgency=medium
 
   [ Jo Shields ]
