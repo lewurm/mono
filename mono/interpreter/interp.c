@@ -187,6 +187,7 @@ db_match_method (gpointer data, gpointer user_data)
 
 static void
 interp_ex_handler (MonoException *ex) {
+	MonoError error;
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	char *stack_trace;
 	if (context == NULL)
@@ -195,11 +196,13 @@ interp_ex_handler (MonoException *ex) {
 	ex->stack_trace = mono_string_new (mono_domain_get(), stack_trace);
 	g_free (stack_trace);
 	if (context->current_env == NULL || strcmp(ex->object.vtable->klass->name, "ExecutionEngineException") == 0) {
-		char *strace = mono_string_to_utf8 (ex->stack_trace);
+		char *strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		fprintf(stderr, "Nothing can catch this exception: ");
 		fprintf(stderr, "%s", ex->object.vtable->klass->name);
 		if (ex->message != NULL) {
-			char *m = mono_string_to_utf8 (ex->message);
+			char *m = mono_string_to_utf8_checked (ex->message, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			fprintf(stderr, ": %s", m);
 			g_free(m);
 		}
@@ -210,17 +213,19 @@ interp_ex_handler (MonoException *ex) {
 			ex = (MonoException *)ex->inner_ex;
 			fprintf(stderr, "Inner exception: %s", ex->object.vtable->klass->name);
 			if (ex->message != NULL) {
-				char *m = mono_string_to_utf8 (ex->message);
+				char *m = mono_string_to_utf8_checked (ex->message, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				fprintf(stderr, ": %s", m);
 				g_free(m);
 			}
-			strace = mono_string_to_utf8 (ex->stack_trace);
+			strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			fprintf(stderr, "\n");
 			fprintf(stderr, "%s\n", strace);
 			g_free (strace);
 		}
 		/* wait for other threads to also collapse */
-		Sleep(1000);
+		// Sleep(1000); // TODO: proper sleep
 		exit(1);
 	}
 	context->env_frame->ex = ex;
@@ -232,13 +237,16 @@ static void
 ves_real_abort (int line, MonoMethod *mh,
 		const unsigned short *ip, stackval *stack, stackval *sp)
 {
+	MonoError error;
 	fprintf (stderr, "Execution aborted in method: %s::%s\n", mh->klass->name, mh->name);
-	fprintf (stderr, "Line=%d IP=0x%04x, Aborted execution\n", line,
-		 ip-(const unsigned short *)mono_method_get_header (mh)->code);
+	fprintf (stderr, "Line=%d IP=0x%04lx, Aborted execution\n", line,
+		 ip-(const unsigned short *)mono_method_get_header_checked (mh, &error)->code);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	g_print ("0x%04x %02x\n",
-		 ip-(const unsigned short *)mono_method_get_header (mh)->code, *ip);
+		 ip-(const unsigned short *)mono_method_get_header_checked (mh, &error)->code, *ip);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	if (sp > stack)
-		printf ("\t[%d] 0x%08x %0.5f\n", sp-stack, sp[-1].data.i, sp[-1].data.f);
+		printf ("\t[%ld] 0x%08x %0.5f\n", sp-stack, sp[-1].data.i, sp[-1].data.f);
 }
 
 #define ves_abort() \
@@ -261,9 +269,9 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	MonoDomain *domain = mono_domain_get ();
 	RuntimeMethod *rtm;
 
-	mono_mutex_lock (&runtime_method_lookup_section);
+	mono_os_mutex_lock (&runtime_method_lookup_section);
 	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
-		mono_mutex_unlock (&runtime_method_lookup_section);
+		mono_os_mutex_unlock (&runtime_method_lookup_section);
 		return rtm;
 	}
 	rtm = mono_mempool_alloc (domain->mp, sizeof (RuntimeMethod));
@@ -273,7 +281,7 @@ mono_interp_get_runtime_method (MonoMethod *method)
 	rtm->hasthis = mono_method_signature (method)->hasthis;
 	rtm->valuetype = method->klass->valuetype;
 	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
-	mono_mutex_unlock (&runtime_method_lookup_section);
+	mono_os_mutex_unlock (&runtime_method_lookup_section);
 
 	return rtm;
 }
@@ -673,6 +681,7 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 	MonoInvocation *frame;
 	int il_offset;
 	MonoMethodHeader *hd;
+	MonoError error;
 
 	if (!context) return;
 		
@@ -685,7 +694,8 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 				(method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
 			il_offset = -1;
 		else {
-			hd = mono_method_get_header (method);
+			hd = mono_method_get_header (method, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			il_offset = frame->ip - (const unsigned short *)hd->code;
 			if (!method->wrapper_type)
 				managed = TRUE;
