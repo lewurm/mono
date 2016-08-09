@@ -2,11 +2,15 @@ if SUPPORT_SGEN
 sgen_dirs = sgen
 endif
 
+if ENABLE_INTERPRETER
+interpreter_dirs = interpreter
+endif
+
 if CROSS_COMPILING
-SUBDIRS = arch utils io-layer cil metadata $(sgen_dirs) mini dis profiler
+SUBDIRS = arch utils io-layer cil metadata $(interpreter_dirs) $(sgen_dirs) mini dis profiler
 else
 if INSTALL_MONOTOUCH
-SUBDIRS = arch utils io-layer metadata $(sgen_dirs) mini profiler
+SUBDIRS = arch utils io-layer metadata $(interpreter_dirs) $(sgen_dirs) mini profiler
 
 monotouch-do-build:
 	@list='$(SUBDIRS)'; for subdir in $$list; do \
@@ -30,7 +34,7 @@ monotouch-do-clean:
 	  (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$target); \
     done;
 else
-SUBDIRS = arch utils io-layer cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler
+SUBDIRS = arch utils io-layer cil metadata $(interpreter_dirs) $(sgen_dirs) mini dis tests unit-tests benchmark profiler
 endif
 endif
-DIST_SUBDIRS = arch utils io-layer cil metadata $(sgen_dirs) mini dis tests unit-tests benchmark profiler
+DIST_SUBDIRS = arch utils io-layer cil metadata $(interpreter_dirs) $(sgen_dirs) mini dis tests unit-tests benchmark profiler
