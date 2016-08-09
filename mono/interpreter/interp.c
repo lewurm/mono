@@ -43,7 +43,7 @@
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/threads.h>
-#include <mono/metadata/threadpool.h>
+#include <mono/metadata/threadpool-ms.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
@@ -55,7 +55,6 @@
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/os/util.h>
 
 #include "interp.h"
 #include "mintops.h"
@@ -188,7 +187,7 @@ db_match_method (gpointer data, gpointer user_data)
 
 static void
 interp_ex_handler (MonoException *ex) {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	char *stack_trace;
 	if (context == NULL)
 		return;
@@ -670,7 +669,7 @@ ves_array_element_address (MonoInvocation *frame)
 static void
 interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoInvocation *frame;
 	int il_offset;
 	MonoMethodHeader *hd;
@@ -698,7 +697,7 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 }
 
 static void 
-ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFunc addr, gboolean string_ctor, ThreadContext *context)
+ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
 	jmp_buf env;
 	MonoPIFunc func;
@@ -1069,7 +1068,7 @@ static MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
 {
 	MonoInvocation frame;
-	ThreadContext * volatile context = TlsGetValue (thread_context_id);
+	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
@@ -1103,7 +1102,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		TlsSetValue (thread_context_id, context);
+		mono_native_tls_set_value (thread_context_id, context);
 	}
 	else
 		old_frame = context->current_frame;
@@ -1195,7 +1194,7 @@ handle_enum:
 	ves_exec_method_with_context (&frame, context);
 	context->managed_code = 0;
 	if (context == &context_struct)
-		TlsSetValue (thread_context_id, NULL);
+		mono_native_tls_set_value (thread_context_id, NULL);
 	else
 		context->current_frame = old_frame;
 	if (frame.ex != NULL) {
@@ -1673,7 +1672,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				child_frame.obj = NULL;
 			}
-			ves_pinvoke_method (&child_frame, csignature, (MonoFunc) code, FALSE, context);
+			ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context);
 
 			context->current_frame = frame;
 
@@ -4040,7 +4039,7 @@ exit_frame:
 void
 ves_exec_method (MonoInvocation *frame)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	ThreadContext context_struct;
 	jmp_buf env;
 
@@ -4059,7 +4058,7 @@ ves_exec_method (MonoInvocation *frame)
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		TlsSetValue (thread_context_id, context);
+		mono_native_tls_set_value (thread_context_id, context);
 	}
 	frame->ip = NULL;
 	frame->parent = context->current_frame;
@@ -4076,7 +4075,7 @@ ves_exec_method (MonoInvocation *frame)
 			mono_unhandled_exception ((MonoObject*)frame->ex);
 	}
 	if (context->base_frame == frame)
-		TlsSetValue (thread_context_id, NULL);
+		mono_native_tls_set_value (thread_context_id, NULL);
 	else
 		context->current_frame = frame->parent;
 }
@@ -4164,7 +4163,7 @@ add_signal_handler (int signo, void (*handler)(int))
 static void
 segv_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *segv_exception;
 
 	if (context == NULL)
@@ -4178,7 +4177,7 @@ segv_handler (int signum)
 static void
 quit_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *quit_exception;
 
 	if (context == NULL)
@@ -4190,7 +4189,7 @@ quit_handler (int signum)
 static void
 abrt_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *abrt_exception;
 
 	if (context == NULL)
@@ -4202,7 +4201,7 @@ abrt_handler (int signum)
 static void
 thread_abort_handler (int signum)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoException *exc;
 
 	if (context == NULL)
@@ -4218,7 +4217,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 			  gint32 *iloffset, gint32 *native_offset,
 			  MonoString **file, gint32 *line, gint32 *column)
 {
-	ThreadContext *context = TlsGetValue (thread_context_id);
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoInvocation *inv = context->current_frame;
 	int i;
 
@@ -4392,8 +4391,8 @@ mono_interp_init(const char *file)
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 
-	thread_context_id = TlsAlloc ();
-	TlsSetValue (thread_context_id, NULL);
+	thread_context_id = mono_native_tls_alloc ();
+    mono_native_tls_set_value (thread_context_id, NULL);
 	mono_mutex_init_recursive (&runtime_method_lookup_section);
 	mono_mutex_init_recursive (&create_method_pointer_mutex);
 
