@@ -10,7 +10,7 @@ export HOST_CC
 AM_CFLAGS = -O
 endif
 
-if INTERP_SUPPORTED
+if ENABLE_INTERPRETER
 bin_PROGRAMS = mint
 
 lib_LTLIBRARIES = libmint.la
@@ -38,19 +38,11 @@ libmintincludedir = $(includedir)/mono-$(API_VER)/mono/interpreter
 libmintinclude_HEADERS = 	\
 	embed.h
 
-# This is needed for automake dependency generation
-if INCLUDED_LIBGC
-libgc_libs=../../libgc/libmonogc.la
-else
-libgc_libs=$(LIBGC_LIBS)
-endif
-
 libmint_la_LIBADD =				\
 	../arch/libmonoarch.la		\
 	../metadata/libmonoruntime.la	\
 	../io-layer/libwapi.la		\
 	../utils/libmonoutils.la	\
-	$(libgc_libs)			\
 	$(GLIB_LIBS)			\
 	$(LIBICONV)			\
 	$(ICU_LIBS)			\
