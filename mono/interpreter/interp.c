@@ -778,8 +778,10 @@ mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 	MonoDelegate *d;
 	MonoJitInfo *ji;
 	MonoDomain *domain = mono_domain_get ();
+	MonoError error;
 
-	d = (MonoDelegate*)mono_object_new (domain, klass);
+	d = (MonoDelegate*)mono_object_new_checked (domain, klass, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	ji = mono_jit_info_table_find (domain, ftn);
 	if (ji == NULL)
@@ -1087,6 +1089,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	stackval result;
 	stackval *args = alloca (sizeof (stackval) * sig->param_count);
 	ThreadContext context_struct;
+	MonoError error;
 	MonoInvocation *old_frame = NULL;
 	jmp_buf env;
 
@@ -1130,13 +1133,15 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		isobject = 1;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		retval = mono_object_new (context->domain, klass);
+		retval = mono_object_new_checked (context->domain, klass, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
 		break;
 	default:
-		retval = mono_object_new (context->domain, klass);
+		retval = mono_object_new_checked (context->domain, klass);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		break;
 	}
@@ -2615,7 +2620,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
 					context->managed_code = 0;
-					o = mono_object_new (context->domain, newobj_class);
+					o = mono_object_new_checked (context->domain, newobj_class, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					context->managed_code = 1;
 					if (*abort_requested)
 						mono_thread_interruption_checkpoint ();
@@ -3525,7 +3531,8 @@ array_constructed:
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			sp->data.p = mono_object_new (context->domain, rtm->data_items [*(guint16 *)(ip + 1)]);
+			sp->data.p = mono_object_new_checked (context->domain, rtm->data_items [*(guint16 *)(ip + 1)], &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			ip += 2;
 			sp++;
 			MINT_IN_BREAK;
@@ -4259,6 +4266,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	MonoDomain *domain = mono_domain_get ();
 	MonoArray *res;
 	MonoArray *ta = exc->trace_ips;
+	MonoError error;
 	int i, len;
 
 	if (ta == NULL) {
@@ -4271,7 +4279,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
 
 	for (i = skip; i < len / 2; i++) {
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new (domain, mono_defaults.stack_frame_class);
+		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		gushort *ip = mono_array_get (ta, gpointer, 2 * i + 1);
 		RuntimeMethod *rtm = mono_array_get (ta, gpointer, 2 * i);
 
@@ -4307,10 +4316,12 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 {
 	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
 	MonoObject *delegate;
+	MonoError error;
 
 	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
-	delegate = mono_object_new (mono_object_domain (type), delegate_class);
+	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	interp_delegate_ctor (mono_object_domain (type), delegate, target, mono_interp_get_runtime_method (info->method));
 
