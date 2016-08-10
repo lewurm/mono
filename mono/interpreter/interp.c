@@ -797,7 +797,7 @@ mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		mono_raise_exception (mono_get_exception_argument ("", "Function pointer was not created by a Delegate."));
 
 	/* FIXME: discard the wrapper and call the original method */
-	interp_delegate_ctor (domain, (MonoObject*)d, NULL, mono_interp_get_runtime_method (ji->method));
+	interp_delegate_ctor (domain, (MonoObject*)d, NULL, mono_interp_get_runtime_method (ji->d.method));
 
 	return d;
 }
@@ -813,17 +813,23 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 	MonoMethod *method = frame->runtime_method->method;
 	const char *name = method->name;
 	MonoObject *obj = (MonoObject*)frame->obj;
+	MonoObject *isinst_obj;
+	MonoError error;
 
 	mono_class_init (method->klass);
-	
-	if (obj && mono_object_isinst (obj, mono_defaults.multicastdelegate_class)) {
+
+	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.multicastdelegate_class, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	if (obj && isinst_obj) {
 		if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 			interp_delegate_ctor (context->domain, obj, frame->stack_args[0].data.p, frame->stack_args[1].data.p);
 			return;
 		}
 	}
 
-	if (obj && mono_object_isinst (obj, mono_defaults.array_class)) {
+	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.array_class, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	if (obj && isinst_obj) {
 		if (*name == 'S' && (strcmp (name, "Set") == 0)) {
 			ves_array_set (frame);
 			return;
@@ -938,6 +944,8 @@ dump_frame (MonoInvocation *inv)
 	GString *str = g_string_new ("");
 	int i;
 	char *args;
+	MonoError error;
+
 	for (i = 0; inv; inv = inv->parent) {
 		if (inv->runtime_method != NULL) {
 			MonoMethod *method = inv->runtime_method->method;
@@ -952,7 +960,8 @@ dump_frame (MonoInvocation *inv)
 
 			if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
 				(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
-				MonoMethodHeader *hd = mono_method_get_header (method);
+				MonoMethodHeader *hd = mono_method_get_header_checked (method, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 				if (hd != NULL) {
 					if (inv->ip) {
@@ -3965,7 +3974,8 @@ die_on_ex:
 		MonoExceptionClause *clause;
 		GSList *old_list = finally_ips;
 		MonoMethod *method = frame->runtime_method->method;
-		MonoMethodHeader *header = mono_method_get_header (method);
+		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
 #if DEBUG_INTERP
 		if (tracing)
@@ -4019,7 +4029,8 @@ die_on_ex:
 		int i;
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
-		MonoMethodHeader *header = mono_method_get_header (frame->runtime_method->method);
+		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
 #if DEBUG_INTERP
 		if (tracing)
