@@ -2695,7 +2695,6 @@ array_constructed:
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
 				if (c->marshalbyref) {
-					MonoError error;
 					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					if (!isinst_obj)
@@ -2704,12 +2703,14 @@ array_constructed:
 					MonoVTable *vt = o->vtable;
 					MonoClass *oklass = vt->klass;
 					if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
-						if (c->interface_id > vt->max_interface_id ||
-						    vt->interface_offsets [c->interface_id] == 0) {
+						g_error ("FIXME: interface method lookup");
+						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
 							THROW_EX (mono_get_exception_invalid_cast (), ip);
 						}
 					} else if (c->rank) {
-						if (!mono_object_isinst (o, c))
+						MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+						if (!isinst_obj)
 							THROW_EX (mono_get_exception_invalid_cast (), ip);
 					} else if (!mono_class_has_parent (oklass, c)) {
 						THROW_EX (mono_get_exception_invalid_cast (), ip);
@@ -2722,18 +2723,22 @@ array_constructed:
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
 				if (c->marshalbyref) {
-					if (!mono_object_isinst_mbyref (o, c))
+					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+					if (!isinst_obj)
 						sp [-1].data.p = NULL;
 				} else {
 					MonoVTable *vt = o->vtable;
 					MonoClass *oklass = vt->klass;
 					if (c->flags & TYPE_ATTRIBUTE_INTERFACE) {
-						if (c->interface_id > vt->max_interface_id ||
-						    vt->interface_offsets [c->interface_id] == 0) {
+						g_error ("FIXME: interface method lookup");
+						if (c->interface_id > vt->max_interface_id /* || vt->interface_offsets [c->interface_id] == 0 */) {
 							sp [-1].data.p = NULL;
 						}
 					} else if (c->rank) {
-						if (!mono_object_isinst (o, c))
+						MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+						if (!isinst_obj)
 							sp [-1].data.p = NULL;
 					} else if (!mono_class_has_parent (oklass, c)) {
 						sp [-1].data.p = NULL;
@@ -2757,7 +2762,9 @@ array_constructed:
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference(), ip);
 
-			if (!(mono_object_isinst (o, c) || 
+			MonoObject *isinst_obj = mono_object_isinst_checked (o, c, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			if (!(isinst_obj ||
 				  ((o->vtable->klass->rank == 0) && 
 				   (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
@@ -2828,7 +2835,8 @@ array_constructed:
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
 
-				addr = mono_load_remote_field (o, klass, field, &tmp);
+				addr = mono_load_remote_field_checked (o, klass, field, &tmp, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else {
 				addr = (char*)o + field->offset;
 			}				
@@ -2850,7 +2858,8 @@ array_constructed:
 			ip += 4;
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				addr = mono_load_remote_field (o, klass, field, &tmp);
+				addr = mono_load_remote_field_checked (o, klass, field, &tmp, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else {
 				addr = (char*)o + field->offset;
 			}				
@@ -2904,7 +2913,8 @@ array_constructed:
 
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field (o, klass, field, &sp [-1].data);
+				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else
 				stackval_to_data (field->type, &sp [-1], (char*)o + field->offset, FALSE);
 
@@ -2923,7 +2933,8 @@ array_constructed:
 
 			if (o->vtable->klass == mono_defaults.transparent_proxy_class) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field (o, klass, field, &sp [-1].data);
+				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else
 				memcpy((char*)o + field->offset, sp [-1].data.p, i32);
 
@@ -2938,14 +2949,15 @@ array_constructed:
 
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 2;
 
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				sp->data.p = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				sp->data.p = (char*)(vt->data) + field->offset;
+				sp->data.p = (char*)(vt->vtable) + field->offset;
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -2958,13 +2970,14 @@ array_constructed:
 			vt = rtm->data_items [*(guint16 *)(ip + 2)];
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 
 			stackval_from_data (field->type, sp, addr, FALSE);
 			++sp;
@@ -2975,10 +2988,11 @@ array_constructed:
 			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
-			sp->data.i = * (gint32 *)((char*)(vt->data) + field->offset);
+			sp->data.i = * (gint32 *)((char*)(vt->vtable) + field->offset);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -2987,10 +3001,11 @@ array_constructed:
 			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
 			if (!vt->initialized) {
 				frame->ip = ip;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
-			sp->data.p = * (gpointer *)((char*)(vt->data) + field->offset);
+			sp->data.p = * (gpointer *)((char*)(vt->vtable) + field->offset);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -3009,13 +3024,14 @@ array_constructed:
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 
 			sp->data.p = vt_sp;
 			vt_sp += (size + 7) & ~7;
@@ -3037,13 +3053,14 @@ array_constructed:
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 
 			stackval_to_data (field->type, sp, addr, FALSE);
 			MINT_IN_BREAK;
@@ -3063,13 +3080,14 @@ array_constructed:
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
-				mono_runtime_class_init (vt);
+				mono_runtime_class_init_full (vt, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			
 			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
 				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
 			else
-				addr = (char*)(vt->data) + field->offset;
+				addr = (char*)(vt->vtable) + field->offset;
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
 			vt_sp -= (size + 7) & ~7;
@@ -3130,18 +3148,21 @@ array_constructed:
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
-				sp [-1].data.p = mono_value_box (context->domain, c, sp [-1].data.p);
+				sp [-1].data.p = mono_value_box_checked (context->domain, c, sp [-1].data.p, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				size = (size + 7) & ~7;
 				vt_sp -= size;
 			}				
 			else {
 				stackval_to_data (&c->byval_arg, &sp [-1], (char*)&sp [-1], FALSE);
-				sp [-1].data.p = mono_value_box (context->domain, c, &sp [-1]);
+				sp [-1].data.p = mono_value_box_checked (context->domain, c, &sp [-1], &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEWARR)
-			sp [-1].data.p = (MonoObject*) mono_array_new (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i);
+			sp [-1].data.p = (MonoObject*) mono_array_new_checked (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			ip += 2;
 			/*if (profiling_classes) {
 				guint count = GPOINTER_TO_UINT (g_hash_table_lookup (profiling_classes, o->vtable->klass));
@@ -3313,11 +3334,13 @@ array_constructed:
 			case MINT_STELEM_R8:
 				mono_array_set ((MonoArray *)o, double, aindex, sp [2].data.f);
 				break;
-			case MINT_STELEM_REF:
-				if (sp [2].data.p && !mono_object_isinst (sp [2].data.p, mono_object_class (o)->element_class))
+			case MINT_STELEM_REF: {
+				MonoObject *isinst_obj = mono_object_isinst_checked (sp [2].data.p, mono_object_class (o)->element_class, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				if (sp [2].data.p && !isinst_obj)
 					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
 				mono_array_set ((MonoArray *)o, gpointer, aindex, sp [2].data.p);
-				break;
+			} break;
 			default:
 				ves_abort();
 			}
@@ -3435,7 +3458,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_REFANYVAL) ves_abort(); MINT_IN_BREAK;
 #endif
 		MINT_IN_CASE(MINT_CKFINITE)
-			if (!finite(sp [-1].data.f))
+			if (!isfinite(sp [-1].data.f))
 				THROW_EX (mono_get_exception_arithmetic (), ip);
 			++ip;
 			MINT_IN_BREAK;
@@ -3944,7 +3967,9 @@ array_constructed:
 				clause = &inv->runtime_method->clauses [i];
 				if (clause->flags <= 1 && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 					if (!clause->flags) {
-						if (mono_object_isinst ((MonoObject*)frame->ex, clause->data.catch_class)) {
+						MonoObject *isinst_obj = mono_object_isinst_checked ((MonoObject*)frame->ex, clause->data.catch_class, &error);
+						mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+						if (isinst_obj) {
 							/* 
 							 * OK, we found an handler, now we need to execute the finally
 							 * and fault blocks before branching to the handler code.
@@ -4037,6 +4062,7 @@ die_on_ex:
 		int i;
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
+		MonoMethod *method = frame->runtime_method->method;
 		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		
@@ -4070,7 +4096,7 @@ die_on_ex:
 #endif
 			ip = rtm->code + frame->ex_handler->handler_offset;
 			sp = frame->stack;
-			vt_sp = (char *)sp + rtm->stack_size;
+			vt_sp = (unsigned char *) sp + rtm->stack_size;
 			sp->data.p = frame->ex;
 			++sp;
 			goto main_loop;
