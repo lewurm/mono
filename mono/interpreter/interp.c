@@ -384,7 +384,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			stackval_from_data (&type->data.klass->element_class->byval_arg, result, data, pinvoke);
+			stackval_from_data (mono_class_enum_basetype (type->data.klass), result, data, pinvoke);
 			return;
 		} else {
 			int size;
@@ -479,7 +479,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			stackval_to_data (&type->data.klass->element_class->byval_arg, val, data, pinvoke);
+			stackval_to_data (mono_class_enum_basetype (type->data.klass), val, data, pinvoke);
 			return;
 		} else {
 			int size;
@@ -970,7 +970,8 @@ dump_frame (MonoInvocation *inv)
 					} else 
 						opname = "";
 	
-					source = mono_debug_source_location_from_il_offset (method, codep, NULL);
+					g_error ("FIXME: proper source location");
+					// source = mono_debug_source_location_from_il_offset (method, codep, NULL);
 				}
 			}
 			args = dump_args (inv);
@@ -996,12 +997,14 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 	int i;
 	MonoArray *res;
 	MonoInvocation *inv;
+	MonoError error;
 
 	for (i = 0, inv = top; inv; inv = inv->parent)
 		if (inv->runtime_method != NULL)
 			++i;
 
-	res = mono_array_new (domain, mono_defaults.int_class, 2 * i);
+	res = mono_array_new_checked (domain, mono_defaults.int_class, 2 * i, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	for (i = 0, inv = top; inv; inv = inv->parent)
 		if (inv->runtime_method != NULL) {
@@ -1119,7 +1122,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 			context->current_frame = old_frame;
 			context->managed_code = 0;
 		} else 
-			TlsSetValue (thread_context_id, NULL);
+			mono_native_tls_set_value (thread_context_id, NULL);
 		if (exc != NULL)
 			*exc = (MonoObject *)frame.ex;
 		return retval;
@@ -1158,7 +1161,7 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 			result.data.vt = ret;
 		break;
 	default:
-		retval = mono_object_new_checked (context->domain, klass);
+		retval = mono_object_new_checked (context->domain, klass, &error);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		break;
@@ -1200,7 +1203,7 @@ handle_enum:
 			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
-				type = sig->params [i]->data.klass->enum_basetype->type;
+				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
 				goto handle_enum;
 			} else {
 				args [i].data.p = params [i];
