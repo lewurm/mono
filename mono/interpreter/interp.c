@@ -4384,7 +4384,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	MonoObject *delegate;
 	MonoError error;
 
-	mono_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
+	g_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
 
 	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -4411,7 +4411,6 @@ static void main_thread_handler (gpointer user_data)
 
 	if (main_args->enable_debugging) {
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-		mono_debug_init_1 (main_args->domain);
 	}
 
 	assembly = mono_domain_assembly_open (main_args->domain,
@@ -4421,9 +4420,6 @@ static void main_thread_handler (gpointer user_data)
 		fprintf (stderr, "Can not open image %s\n", main_args->file);
 		exit (1);
 	}
-
-	if (main_args->enable_debugging)
-		mono_debug_init_2 (assembly);
 
 #ifdef RUN_TEST
 	test_load_class (assembly->image);
