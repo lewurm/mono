@@ -155,7 +155,7 @@ db_match_method (gpointer data, gpointer user_data)
 		debug_indent_level++;	\
 		output_indent ();	\
 		mn = mono_method_full_name (method, FALSE); \
-		g_print ("(%u) Entering %s (", GetCurrentThreadId(), mn);	\
+		g_print ("(%u) Entering %s (", mono_thread_internal_current (), mn);	\
 		g_free (mn); \
 		g_print ("%s)\n", args);	\
 		g_free (args);	\
@@ -169,7 +169,7 @@ db_match_method (gpointer data, gpointer user_data)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_print ("(%u) Leaving %s", GetCurrentThreadId(),  mn);	\
+		g_print ("(%u) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
 		g_print (" => %s\n", args);	\
 		g_free (args);	\
@@ -1222,7 +1222,7 @@ handle_enum:
 	}
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
-		method = mono_marshal_get_native_wrapper (method);
+		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
 	INIT_FRAME(&frame,context->current_frame,obj,args,&result,method);
 	if (exc)
 		frame.invoke_trap = 1;
@@ -1338,7 +1338,7 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 
 static mono_mutex_t create_method_pointer_mutex;
 
-static MonoGHashTable *method_pointer_hash = NULL;
+static GHashTable *method_pointer_hash = NULL;
 
 static void *
 mono_create_method_pointer (MonoMethod *method)
@@ -1346,14 +1346,15 @@ mono_create_method_pointer (MonoMethod *method)
 	gpointer addr;
 	MonoJitInfo *ji;
 
-	mono_mutex_lock (&create_method_pointer_mutex);
+	mono_os_mutex_lock (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
-		MONO_GC_REGISTER_ROOT (method_pointer_hash);
-		method_pointer_hash = mono_g_hash_table_new (NULL, NULL);
+		// FIXME: is registering method table as GC root really necessary?
+		// MONO_GC_REGISTER_ROOT_FIXED (method_pointer_hash);
+		method_pointer_hash = g_hash_table_new (NULL, NULL);
 	}
-	addr = mono_g_hash_table_lookup (method_pointer_hash, method);
+	addr = g_hash_table_lookup (method_pointer_hash, method);
 	if (addr) {
-		mono_mutex_unlock (&create_method_pointer_mutex);
+		mono_os_mutex_unlock (&create_method_pointer_mutex);
 		return addr;
 	}
 
@@ -1363,7 +1364,7 @@ mono_create_method_pointer (MonoMethod *method)
 	 */
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL && ((MonoMethodPInvoke*) method)->addr) {
 		ji = g_new0 (MonoJitInfo, 1);
-		ji->method = method;
+		ji->d.method = method;
 		ji->code_size = 1;
 		ji->code_start = addr = ((MonoMethodPInvoke*) method)->addr;
 
@@ -1372,8 +1373,8 @@ mono_create_method_pointer (MonoMethod *method)
 	else
 		addr = mono_arch_create_method_pointer (method);
 
-	mono_g_hash_table_insert (method_pointer_hash, method, addr);
-	mono_mutex_unlock (&create_method_pointer_mutex);
+	g_hash_table_insert (method_pointer_hash, method, addr);
+	mono_os_mutex_unlock (&create_method_pointer_mutex);
 
 	return addr;
 }
