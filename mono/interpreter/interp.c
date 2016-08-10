@@ -1398,7 +1398,7 @@ static int opcode_counts[512];
 		} \
 		sp->data.l = 0; \
 		output_indent (); \
-		g_print ("(%u) ", GetCurrentThreadId()); \
+		g_print ("(%u) ", mono_thread_internal_current ()); \
 		mono_interp_dis_mintop(rtm->code, ip); \
 		g_print ("\t%d:%s\n", vt_sp - vtalloc, ins); \
 		g_free (ins); \
@@ -1451,7 +1451,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 #endif
 	int i32;
 	unsigned char *vt_sp;
-	char *locals;
+	unsigned char *locals;
+	MonoError error;
 	MonoObject *o = NULL;
 	MonoClass *c;
 #if USE_COMPUTED_GOTO
@@ -1487,11 +1488,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	if (tracing > 1)
 		memset(sp, 0, rtm->stack_size);
 #endif
-	vt_sp = (char *)sp + rtm->stack_size;
+	vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
 #endif
-	locals = vt_sp + rtm->vt_stack_size;
+	locals = (unsigned char *) vt_sp + rtm->vt_stack_size;
 
 	child_frame.parent = frame;
 
@@ -1526,7 +1527,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_VTRESULT) {
 			int ret_size = * (guint16 *)(ip + 1);
-			char *ret_vt_sp = vt_sp;
+			unsigned char *ret_vt_sp = vt_sp;
 			vt_sp -= READ32(ip + 2);
 			if (ret_size > 0) {
 				memmove (vt_sp, ret_vt_sp, ret_size);
@@ -1626,7 +1627,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			if (new_method->alloca_size > rtm->alloca_size)
 				g_error ("MINT_JMP to method which needs more stack space (%d > %d)", new_method->alloca_size, rtm->alloca_size); 
 			rtm = frame->runtime_method = new_method;
-			vt_sp = (char *)sp + rtm->stack_size;
+			vt_sp = (unsigned char *) sp + rtm->stack_size;
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
@@ -1663,7 +1664,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 								mono_marshal_get_remoting_invoke (child_frame.runtime_method->method));
 			} else if (child_frame.runtime_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
 				child_frame.runtime_method = mono_interp_get_runtime_method (
-								mono_marshal_get_native_wrapper (child_frame.runtime_method->method));
+								mono_marshal_get_native_wrapper (child_frame.runtime_method->method, FALSE, FALSE));
 
 			ves_exec_method_with_context (&child_frame, context);
 
@@ -2694,7 +2695,10 @@ array_constructed:
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
 				if (c->marshalbyref) {
-					if (!mono_object_isinst_mbyref (o, c))
+					MonoError error;
+					MonoObject *isinst_obj = mono_object_isinst_mbyref_checked (o, c, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+					if (!isinst_obj)
 						THROW_EX (mono_get_exception_invalid_cast (), ip);
 				} else {
 					MonoVTable *vt = o->vtable;
