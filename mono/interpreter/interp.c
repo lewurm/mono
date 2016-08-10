@@ -4291,6 +4291,7 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 {
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	MonoInvocation *inv = context->current_frame;
+	MonoError error;
 	int i;
 
 	for (i = 0; inv && i < skip; inv = inv->parent)
@@ -4301,8 +4302,14 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 		*iloffset = 0;
 	if (native_offset)
 		*native_offset = 0;
-	if (method)
-		*method = inv == NULL ? NULL : mono_method_get_object (context->domain, inv->runtime_method->method, NULL);
+	if (method) {
+		if (inv == NULL) {
+			*method = NULL;
+		} else {
+			*method = mono_method_get_object_checked (context->domain, inv->runtime_method->method, NULL, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		}
+	}
 	if (line)
 		*line = 0;
 	if (need_file_info) {
@@ -4326,12 +4333,15 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 
 	if (ta == NULL) {
 		/* Exception is not thrown yet */
-		return mono_array_new (domain, mono_defaults.stack_frame_class, 0);
+		MonoArray *array = mono_array_new_checked (domain, mono_defaults.stack_frame_class, 0, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		return array;
 	}
 	
 	len = mono_array_length (ta);
 
-	res = mono_array_new (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0);
+	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	for (i = skip; i < len / 2; i++) {
 		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
@@ -4340,7 +4350,8 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		RuntimeMethod *rtm = mono_array_get (ta, gpointer, 2 * i);
 
 		if (rtm != NULL) {
-			sf->method = mono_method_get_object (domain, rtm->method, NULL);
+			sf->method = mono_method_get_object_checked (domain, rtm->method, NULL, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			sf->native_offset = ip - rtm->code;
 		}
 
