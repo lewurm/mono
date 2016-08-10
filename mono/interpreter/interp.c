@@ -47,6 +47,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/opcodes.h>
@@ -520,13 +521,13 @@ fill_in_trace (MonoException *exception, MonoInvocation *frame)
 static MonoObject*
 ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
 {
-	guint32 *lengths;
-	guint32 *lower_bounds;
+	uintptr_t *lengths;
+	intptr_t *lower_bounds;
 	MonoObject *obj;
 	MonoError error;
 	int i;
 
-	lengths = alloca (sizeof (guint32) * klass->rank * 2);
+	lengths = alloca (sizeof (uintptr_t) * klass->rank * 2);
 	for (i = 0; i < sig->param_count; ++i) {
 		lengths [i] = values->data.i;
 		values ++;
@@ -536,10 +537,10 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 		lower_bounds = NULL;
 	} else {
 		/* lower bounds are first. */
-		lower_bounds = lengths;
+		lower_bounds = (intptr_t *) lengths;
 		lengths += klass->rank;
 	}
-	obj = (MonoObject*)mono_array_new_full_checked (domain, klass, lengths, lower_bounds, &error);
+	obj = (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	return obj;
 }
@@ -766,8 +767,10 @@ static void
 interp_delegate_ctor (MonoDomain *domain, MonoObject *this, MonoObject *target, RuntimeMethod *runtime_method)
 {
 	MonoDelegate *delegate = (MonoDelegate *)this;
+	MonoError error;
 
-	delegate->method_info = mono_method_get_object (domain, runtime_method->method, NULL);
+	delegate->method_info = mono_method_get_object_checked (domain, runtime_method->method, NULL, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	delegate->target = target;
 
 	if (target && target->vtable->klass == mono_defaults.transparent_proxy_class) {
