@@ -114,7 +114,7 @@ static void ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *
 typedef void (*ICallMethod) (MonoInvocation *frame);
 
 static guint32 die_on_exception = 0;
-static guint32 thread_context_id = 0;
+static MonoNativeTlsKey thread_context_id;
 
 #define DEBUG_INTERP 1
 #define COUNT_OPS 0
@@ -4270,6 +4270,7 @@ abrt_handler (int signum)
 	mono_raise_exception (abrt_exception);
 }
 
+#if 0
 static void
 thread_abort_handler (int signum)
 {
@@ -4282,6 +4283,7 @@ thread_abort_handler (int signum)
 	exc = mono_thread_request_interruption (context->managed_code); 
 	if (exc) mono_raise_exception (exc);
 }
+#endif
 
 static MonoBoolean
 ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
@@ -4435,7 +4437,9 @@ mono_runtime_install_handlers (void)
 	add_signal_handler (SIGSEGV, segv_handler);
 	add_signal_handler (SIGINT, quit_handler);
 	add_signal_handler (SIGABRT, abrt_handler);
+#if 0
 	add_signal_handler (mono_thread_get_abort_signal (), thread_abort_handler);
+#endif
 }
 
 static void
@@ -4471,13 +4475,10 @@ mono_interp_init(const char *file)
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
-	if (!g_thread_supported ())
-		g_thread_init (NULL);
-
-	thread_context_id = mono_native_tls_alloc ();
+	mono_native_tls_alloc (&thread_context_id, NULL);
     mono_native_tls_set_value (thread_context_id, NULL);
-	mono_mutex_init_recursive (&runtime_method_lookup_section);
-	mono_mutex_init_recursive (&create_method_pointer_mutex);
+	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
+	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
 	mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
