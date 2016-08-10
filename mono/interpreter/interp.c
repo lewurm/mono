@@ -309,7 +309,9 @@ get_virtual_method (RuntimeMethod *runtime_method, MonoObject *obj)
 	}
 
 	if (m->klass->flags & TYPE_ATTRIBUTE_INTERFACE) {
-		return ((RuntimeMethod **)obj->vtable->interface_offsets [m->klass->interface_id]) [m->slot];
+		// return ((RuntimeMethod **)obj->vtable->interface_offsets [m->klass->interface_id]) [m->slot];
+		g_error ("FIXME: interface method lookup");
+		return NULL;
 	} else {
 		return ((RuntimeMethod **)obj->vtable->vtable) [m->slot];
 	}
@@ -381,7 +383,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			stackval_from_data (type->data.klass->enum_basetype, result, data, pinvoke);
+			stackval_from_data (&type->data.klass->element_class->byval_arg, result, data, pinvoke);
 			return;
 		} else {
 			int size;
@@ -476,7 +478,7 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			stackval_to_data (type->data.klass->enum_basetype, val, data, pinvoke);
+			stackval_to_data (&type->data.klass->element_class->byval_arg, val, data, pinvoke);
 			return;
 		} else {
 			int size;
@@ -520,6 +522,8 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 {
 	guint32 *lengths;
 	guint32 *lower_bounds;
+	MonoObject *obj;
+	MonoError error;
 	int i;
 
 	lengths = alloca (sizeof (guint32) * klass->rank * 2);
@@ -535,7 +539,9 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 		lower_bounds = lengths;
 		lengths += klass->rank;
 	}
-	return (MonoObject*)mono_array_new_full (domain, klass, lengths, lower_bounds);
+	obj = (MonoObject*)mono_array_new_full_checked (domain, klass, lengths, lower_bounds, &error);
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	return obj;
 }
 
 static void 
@@ -694,7 +700,7 @@ interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data
 				(method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
 			il_offset = -1;
 		else {
-			hd = mono_method_get_header (method, &error);
+			hd = mono_method_get_header_checked (method, &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			il_offset = frame->ip - (const unsigned short *)hd->code;
 			if (!method->wrapper_type)
