@@ -131,7 +131,7 @@ MonoPIFunc
 mono_arch_create_trampoline (MonoMethodSignature *sig, gboolean string_ctor);
 
 RuntimeMethod *
-mono_interp_get_runtime_method (MonoMethod *method);
+mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error);
 
 void *mono_arch_create_method_pointer (MonoMethod *method);
 
