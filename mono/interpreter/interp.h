@@ -120,8 +120,8 @@ mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 void
 mono_interp_transform_init (void);
 
-void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
-void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
+static void inline stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke);
+static void inline stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke);
 void ves_exec_method (MonoInvocation *frame);
 
 /*

@@ -322,7 +322,7 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 	}
 }
 
-void inline
+static void inline
 stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
@@ -406,7 +406,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 	}
 }
 
-void inline
+static void inline
 stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 {
 	if (type->byref) {
@@ -759,8 +759,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 		mono_thread_interruption_checkpoint ();
 	
 	if (string_ctor) {
-		stackval_from_data (&mono_defaults.string_class->byval_arg, 
-				    frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
+		stackval_from_data (&mono_defaults.string_class->byval_arg, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
  	} else if (!MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
 
