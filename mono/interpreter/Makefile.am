@@ -23,9 +23,6 @@ endif
 mint_SOURCES =		\
 	main.c
 
-mint_LDADD =		\
-	libmint.la
-
 libmint_la_SOURCES =	\
 	hacks.h		\
 	interp.h	\
@@ -40,13 +37,20 @@ libmintincludedir = $(includedir)/mono-$(API_VER)/mono/interpreter
 libmintinclude_HEADERS = 	\
 	embed.h
 
-libmint_la_LIBADD =	 \
-	$(monodir)/mono/metadata/libmonoruntimesgen.la \
-	$(monodir)/mono/io-layer/libwapi.la		\
-	$(monodir)/mono/utils/libmonoutils.la	\
-	$(GLIB_LIBS)			\
-	$(LIBICONV)			\
-	$(ICU_LIBS)			\
+#  $(monodir)/mono/mini/libmonosgen-2.0.la
+
+# TODO: CoreFoundation wtf, there must be a better way.
+
+mint_LDADD = \
+	libmint.la \
+	-Wl,-framework -Wl,CoreFoundation \
+	$(monodir)/mono/metadata/libmonoruntimesgen-static.la \
+	$(monodir)/mono/sgen/libmonosgen-static.la \
+	$(monodir)/mono/io-layer/libwapi.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS) \
+	$(LIBICONV) \
+	$(ICU_LIBS) \
 	-lm
 
 EXTRA_DIST = $(man_MANS)
