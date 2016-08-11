@@ -740,7 +740,10 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	if (frame->runtime_method) {
 		func = frame->runtime_method->func;
 	} else {
+		g_error ("FIXME: not available?");
+#if 0
 		func = mono_arch_create_trampoline (sig, string_ctor);
+#endif
 	}
 
 	context->current_frame = frame;
@@ -1347,7 +1350,7 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
-static gpointer
+gpointer
 mono_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
@@ -1378,8 +1381,12 @@ mono_create_method_pointer (MonoMethod *method, MonoError *error)
 
 		mono_jit_info_table_add (mono_get_root_domain (), ji);
 	}		
-	else
+	else {
+		g_error ("FIXME: not available? figure out new API");
+#if 0
 		addr = mono_arch_create_method_pointer (method);
+#endif
+	}
 
 	g_hash_table_insert (method_pointer_hash, method, addr);
 	mono_os_mutex_unlock (&create_method_pointer_mutex);

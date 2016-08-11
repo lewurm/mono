@@ -41,7 +41,8 @@ libmintinclude_HEADERS = 	\
 
 # TODO: CoreFoundation wtf, there must be a better way.
 
-mint_LDFLAGS = -Wl,-framework -Wl,CoreFoundation
+mint_LDFLAGS = -Wl,-framework -Wl,CoreFoundation \
+	-Wl,-framework -Wl,Foundation
 
 mint_LDADD = \
 	libmint.la \

@@ -2868,7 +2868,10 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->code[0] = MINT_CALLINT;
 			if (((MonoMethodPInvoke*) method)->addr == NULL)
 				((MonoMethodPInvoke*) method)->addr = mono_lookup_internal_call (method);
+			g_error ("FIXME: not available?");
+#if 0
 			runtime_method->func = mono_arch_create_trampoline (mono_method_signature (method), method->string_ctor);
+#endif
 		} else {
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
