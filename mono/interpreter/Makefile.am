@@ -10,6 +10,8 @@ export HOST_CC
 AM_CFLAGS = -O
 endif
 
+monodir=$(top_builddir)
+
 if ENABLE_INTERPRETER
 bin_PROGRAMS = mint
 
@@ -38,11 +40,10 @@ libmintincludedir = $(includedir)/mono-$(API_VER)/mono/interpreter
 libmintinclude_HEADERS = 	\
 	embed.h
 
-libmint_la_LIBADD =				\
-	../arch/libmonoarch.la		\
-	../metadata/libmonoruntime.la	\
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
+libmint_la_LIBADD =	 \
+	$(monodir)/mono/metadata/libmonoruntimesgen.la \
+	$(monodir)/mono/io-layer/libwapi.la		\
+	$(monodir)/mono/utils/libmonoutils.la	\
 	$(GLIB_LIBS)			\
 	$(LIBICONV)			\
 	$(ICU_LIBS)			\
