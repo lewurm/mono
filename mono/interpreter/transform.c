@@ -2849,14 +2849,15 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	mono_profiler_method_jit (method); /* sort of... */
 
 	if (mono_method_signature (method)->is_inflated)
-		generic_context = ((MonoMethodInflated *) method)->context;
+		generic_context = &((MonoMethodInflated *) method)->context;
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethod *nm = NULL;
-		mono_mutex_lock(&calc_section);
+		mono_os_mutex_lock(&calc_section);
 		if (runtime_method->transformed) {
-			mono_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+			mono_os_mutex_unlock(&calc_section);
+			g_error ("FIXME: no jit info?");
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 			return NULL;
 		}
 
@@ -2872,7 +2873,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
 				if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-					nm = mono_marshal_get_delegate_invoke (method);
+					g_error ("FIXME: no del?");
+					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
@@ -2888,13 +2890,14 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->stack_size = sizeof (stackval); /* for tracing */
 			runtime_method->alloca_size = runtime_method->stack_size;
 			runtime_method->transformed = TRUE;
-			mono_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+			mono_os_mutex_unlock(&calc_section);
+			g_error ("FIXME: no jinfo?");
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 			return NULL;
 		}
 		method = nm;
 		header = mono_method_get_header (nm);
-		mono_mutex_unlock(&calc_section);
+		mono_os_mutex_unlock(&calc_section);
 	}
 	g_assert ((signature->param_count + signature->hasthis) < 1000);
 	g_assert (header->max_stack < 10000);
@@ -2929,8 +2932,11 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				class = mono_class_get_full (image, read32 (ip + 1), generic_context);
 				mono_class_init (class);
 				/* quick fix to not do this for the fake ptr classes - probably should not be getting the vtable at all here */
+				g_error ("FIXME: interface method lookup");
+#if 0
 				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE) && class->interface_offsets != NULL)
 					mono_class_vtable (domain, class);
+#endif
 			}
 			ip += 5;
 			break;
@@ -2939,7 +2945,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				m = mono_get_method_full (image, read32 (ip + 1), NULL, generic_context);
 				if (m == NULL) {
 					g_free (is_bb_start);
-					return mono_get_exception_missing_method ();
+					g_error ("FIXME: where to get method and class string?"); 
+					return NULL;
+					// return mono_get_exception_missing_method ();
 				}
 				mono_class_init (m->klass);
 				if (!(m->klass->flags & TYPE_ATTRIBUTE_INTERFACE))
@@ -3004,11 +3012,12 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	}
 
 	/* the rest needs to be locked so it is only done once */
-	mono_mutex_lock(&calc_section);
+	mono_os_mutex_lock(&calc_section);
 	if (runtime_method->transformed) {
-		mono_mutex_unlock(&calc_section);
+		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+		g_error ("FIXME: missing jinfo");
+		mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 		return NULL;
 	}
 
@@ -3048,9 +3057,10 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	g_free (is_bb_start);
 
-	mono_profiler_method_end_jit (method, MONO_PROFILE_OK);
+	g_error ("FIXME: missing jinfo");
+	mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 	runtime_method->transformed = TRUE;
-	mono_mutex_unlock(&calc_section);
+	mono_os_mutex_unlock(&calc_section);
 
 	return NULL;
 }
