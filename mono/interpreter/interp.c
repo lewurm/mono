@@ -257,9 +257,10 @@ ves_real_abort (int line, MonoMethod *mh,
 	} while (0);
 
 static gpointer
-interp_create_remoting_trampoline (MonoMethod *method, MonoRemotingTarget target)
+interp_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
 {
-	return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
+	g_error ("FIXME: use domain and error");
+	// return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
 }
 
 static mono_mutex_t runtime_method_lookup_section;
@@ -1098,7 +1099,7 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 #endif
 
 static MonoObject*
-interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc)
+interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoInvocation frame;
 	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
@@ -1110,9 +1111,10 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	stackval result;
 	stackval *args = alloca (sizeof (stackval) * sig->param_count);
 	ThreadContext context_struct;
-	MonoError error;
 	MonoInvocation *old_frame = NULL;
 	jmp_buf env;
+
+	mono_error_init (error);
 
 	frame.ex = NULL;
 
@@ -1154,15 +1156,15 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		isobject = 1;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		retval = mono_object_new_checked (context->domain, klass, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		retval = mono_object_new_checked (context->domain, klass, error);
+		mono_error_cleanup (error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
 		break;
 	default:
-		retval = mono_object_new_checked (context->domain, klass, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		retval = mono_object_new_checked (context->domain, klass, error);
+		mono_error_cleanup (error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		break;
 	}
@@ -1340,11 +1342,12 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
-static void *
-mono_create_method_pointer (MonoMethod *method)
+static gpointer
+mono_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
 	MonoJitInfo *ji;
+	mono_error_init (error);
 
 	mono_os_mutex_lock (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
@@ -4468,6 +4471,7 @@ MonoDomain *
 mono_interp_init(const char *file)
 {
 	MonoDomain *domain;
+	MonoRuntimeCallbacks callbacks;
 
 	g_set_prgname (file);
 	mono_set_rootdir ();
@@ -4480,11 +4484,17 @@ mono_interp_init(const char *file)
 	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
 	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
+	// TODO: use callbacks?
 	mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
-	mono_install_compile_method (mono_create_method_pointer);
-	mono_install_runtime_invoke (interp_mono_runtime_invoke);
+
+	memset (&callbacks, 0, sizeof (callbacks));
+	// TODO: replace with `mono_install_callbacks`
+	callbacks.compile_method = mono_create_method_pointer;
+	callbacks.runtime_invoke = interp_mono_runtime_invoke;
+#ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
+#endif
 	mono_install_trampoline (interp_create_trampoline);
 
 	mono_install_handler (interp_ex_handler);

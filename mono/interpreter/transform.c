@@ -2796,7 +2796,7 @@ static mono_mutex_t calc_section;
 void 
 mono_interp_transform_init (void)
 {
-	mono_mutex_init_recursive(&calc_section);
+	mono_os_mutex_init_recursive(&calc_section);
 }
 
 MonoException *
