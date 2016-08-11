@@ -41,9 +41,10 @@ libmintinclude_HEADERS = 	\
 
 # TODO: CoreFoundation wtf, there must be a better way.
 
+mint_LDFLAGS = -Wl,-framework -Wl,CoreFoundation
+
 mint_LDADD = \
 	libmint.la \
-	-Wl,-framework -Wl,CoreFoundation \
 	$(monodir)/mono/metadata/libmonoruntimesgen-static.la \
 	$(monodir)/mono/sgen/libmonosgen-static.la \
 	$(monodir)/mono/io-layer/libwapi.la	\
