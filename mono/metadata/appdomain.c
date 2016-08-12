@@ -187,6 +187,7 @@ create_domain_objects (MonoDomain *domain)
 	mono_error_assert_ok (&error);
 	mono_field_static_set_value (string_vt, string_empty_fld, empty_str);
 
+#if 0
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
@@ -204,6 +205,7 @@ create_domain_objects (MonoDomain *domain)
 	arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
 	domain->stack_overflow_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL, &error);
 	mono_error_assert_ok (&error);
+#endif
 
 	/*The ephemeron tombstone i*/
 	domain->ephemeron_tombstone = mono_object_new_checked (domain, mono_defaults.object_class, &error);

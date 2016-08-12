@@ -4171,13 +4171,12 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 {
 	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
-	MonoError *error = NULL;
+	MonoError error;
 	int rval;
 
-	mono_error_init (error);
 	g_error ("FIXME: figure out method lookup");
 	// method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, &error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	if (!method)
 		g_error ("No entry point method found in %s", mono_image_get_filename (image));
@@ -4430,8 +4429,7 @@ static void main_thread_handler (gpointer user_data)
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 	}
 
-	assembly = mono_domain_assembly_open (main_args->domain,
-					      main_args->file);
+	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
 
 	if (!assembly){
 		fprintf (stderr, "Can not open image %s\n", main_args->file);
@@ -4549,6 +4547,7 @@ mono_interp_init(const char *file)
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	mono_thread_attach (domain);
+	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	return domain;
 }
 
@@ -4620,6 +4619,7 @@ mono_main (int argc, char *argv [])
 	main_args.argv=argv+i;
 	main_args.enable_debugging=enable_debugging;
 	
+	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	mono_runtime_exec_managed_code (domain, main_thread_handler,
 					&main_args);
 
