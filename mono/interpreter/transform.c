@@ -2935,8 +2935,8 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				class = mono_class_get_full (image, read32 (ip + 1), generic_context);
 				mono_class_init (class);
 				/* quick fix to not do this for the fake ptr classes - probably should not be getting the vtable at all here */
-				g_error ("FIXME: interface method lookup");
 #if 0
+				g_error ("FIXME: interface method lookup: %s (in method %s)", class->name, method->name);
 				if (!(class->flags & TYPE_ATTRIBUTE_INTERFACE) && class->interface_offsets != NULL)
 					mono_class_vtable (domain, class);
 #endif
@@ -3019,7 +3019,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	if (runtime_method->transformed) {
 		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		g_error ("FIXME: missing jinfo");
+		g_error ("FIXME: missing jinfo1");
 		mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 		return NULL;
 	}
@@ -3060,7 +3060,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	g_free (is_bb_start);
 
-	g_error ("FIXME: missing jinfo");
+	// g_error ("FIXME: missing jinfo2");
 	mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 	runtime_method->transformed = TRUE;
 	mono_os_mutex_unlock(&calc_section);

@@ -1627,6 +1627,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POP)
 			++ip;
+			fprintf (stderr, "POP: 0x%08lx\n", sp->data.l);
 			--sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_JMP) {
@@ -4478,6 +4479,13 @@ mono_interp_exec(MonoDomain *domain, MonoAssembly *assembly, int argc, char *arg
 	return ves_exec (domain, assembly, argc, argv);
 }
 
+gpointer*
+interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
+{
+	// FIXME: implement me
+	return NULL;
+}
+
 MonoDomain *
 mono_interp_init(const char *file)
 {
@@ -4505,6 +4513,7 @@ mono_interp_init(const char *file)
 	// TODO: replace with `mono_install_callbacks`
 	callbacks.compile_method = mono_create_method_pointer;
 	callbacks.runtime_invoke = interp_mono_runtime_invoke;
+	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
 #ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 #endif
