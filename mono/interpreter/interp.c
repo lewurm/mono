@@ -4464,6 +4464,13 @@ interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
 	return NULL;
 }
 
+static gpointer
+interp_create_ftnptr (MonoDomain *domain, gpointer addr)
+{
+	// FIXME: true on all arch?
+	return addr;
+}
+
 MonoDomain *
 mono_interp_init(const char *file)
 {
@@ -4491,6 +4498,7 @@ mono_interp_init(const char *file)
 	callbacks.compile_method = mono_create_method_pointer;
 	callbacks.runtime_invoke = interp_mono_runtime_invoke;
 	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
+	callbacks.create_ftnptr = interp_create_ftnptr;
 #ifndef DISABLE_REMOTING
 	mono_install_remoting_trampoline (interp_create_remoting_trampoline);
 #endif
@@ -4535,28 +4543,13 @@ typedef int (*TestMethod) (void);
 static void
 interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
 {
-	int result, expected, failed, cfailed, run, code_size;
+	int result, expected, failed, cfailed, run;
 	TestMethod func;
 	double elapsed, transform_time, start_time;
 	int i;
-	MonoInvocation frame;
-	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
-	ThreadContext context_struct;
-
-	frame.ex = NULL;
-	if (context == NULL) {
-		context = &context_struct;
-		context_struct.base_frame = &frame;
-		context_struct.current_frame = NULL;
-		context_struct.env_frame = &frame;
-		context_struct.search_for_handler = 0;
-		context_struct.managed_code = 0;
-		mono_native_tls_set_value (thread_context_id, context);
-	}
-	context->domain = mono_domain_get ();
 
 	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
-	cfailed = failed = run = code_size = 0;
+	cfailed = failed = run = 0;
 	transform_time = elapsed = 0.0;
 
 #if 0
@@ -4579,27 +4572,34 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 		}
 		if (strncmp (method->name, "test_", 5) == 0) {
 			RuntimeMethod *runtime_method;
+			MonoInvocation frame;
+			ThreadContext context;
+
+			frame.ex = NULL;
+			context.base_frame = &frame;
+			context.current_frame = NULL;
+			context.env_frame = &frame;
+			context.search_for_handler = 0;
+			context.managed_code = 0;
+			context.domain = mono_domain_get ();
+
 			expected = atoi (method->name + 5);  // FIXME: oh no.
 			run++;
 			start_time = g_timer_elapsed (timer, NULL);
 			transform_time -= start_time;
-			runtime_method = mono_interp_get_runtime_method (context->domain, method, &error);
-			mono_interp_transform_method (runtime_method, context);
+			runtime_method = mono_interp_get_runtime_method (context.domain, method, &error);
+			mono_interp_transform_method (runtime_method, &context);
 			// TODO: no return value?!
 			// if (transform_succes)
 			transform_time += g_timer_elapsed (timer, NULL);
 			if (verbose >= 2)
 				g_print ("Running '%s' ...\n", method->name);
-			func = (TestMethod)(gpointer)cfg->native_code;
-			func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
-			result = func ();
+			ves_exec_method_with_context (&frame, &context);
+			result = frame.stack->data.i;
 			if (result != expected) {
 				failed++;
 				g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
 			}
-			code_size += cfg->code_len;
-			mono_destroy_compile (cfg);
-
 			// else (!transform_success)
 #if 0
 			} else {
@@ -4618,8 +4618,8 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 		g_print ("Results: total tests: %d, all pass \n",  run);
 	}
 
-	g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed,
-			elapsed - transform_time, transform_time, code_size);
+	g_print ("Elapsed time: %f secs (%f, %f)\n\n", elapsed,
+			elapsed - transform_time, transform_time);
 	*total += failed + cfailed;
 	*total_run += run;
 }
@@ -4679,7 +4679,7 @@ interp_regression_list (int verbose, int count, char *images [])
 enum {
 	DO_EXEC,
 	DO_REGRESSION
-}
+};
 
 int 
 mono_main (int argc, char *argv [])
