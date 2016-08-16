@@ -4206,6 +4206,7 @@ usage (void)
 		 "   --profile\n"
 		 "   --trace\n"
 		 "   --traceops\n"
+		 "   --regression\n"
 		 "\n"
 		 "Runtime:\n"
 		 "   --config filename  load the specified config file instead of the default\n"
@@ -4213,21 +4214,6 @@ usage (void)
 		);
 	exit (1);
 }
-
-#ifdef RUN_TEST
-static void
-test_load_class (MonoImage* image)
-{
-	MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEDEF];
-	MonoClass *klass;
-	int i;
-
-	for (i = 1; i <= t->rows; ++i) {
-		klass = mono_class_get (image, MONO_TOKEN_TYPE_DEF | i);
-		mono_class_init (klass);
-	}
-}
-#endif
 
 static void
 add_signal_handler (int signo, void (*handler)(int))
@@ -4435,12 +4421,7 @@ static void main_thread_handler (gpointer user_data)
 		exit (1);
 	}
 
-#ifdef RUN_TEST
-	test_load_class (assembly->image);
-#else
-
 	ves_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
-#endif
 }
 
 static void
@@ -4492,7 +4473,6 @@ mono_interp_init(const char *file)
 	MonoError error;
 
 	g_set_prgname (file);
-	mono_set_rootdir ();
 	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
@@ -4550,6 +4530,140 @@ mono_interp_init(const char *file)
 	return domain;
 }
 
+static void
+mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
+{
+	int result, expected, failed, cfailed, run, code_size;
+	TestMethod func;
+	double elapsed, comp_time, start_time;
+	int i;
+
+	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
+	cfailed = failed = run = code_size = 0;
+	transform_time = elapsed = 0.0;
+
+	/* fixme: ugly hack - delete all previously compiled methods */
+	if (domain_jit_info (domain)) {
+		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
+		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
+		mono_jit_code_hash_init (&(domain->jit_code_hash));
+	}
+
+	g_timer_start (timer);
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoError error;
+		MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error); /* FIXME don't swallow the error */
+			continue;
+		}
+		if (strncmp (method->name, "test_", 5) == 0) {
+			expected = atoi (method->name + 5);  // FIXME: oh no.
+			run++;
+			start_time = g_timer_elapsed (timer, NULL);
+			transform_time -= start_time;
+			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), mono_get_root_domain (), JIT_FLAG_RUN_CCTORS, 0, -1);
+			transform_time += g_timer_elapsed (timer, NULL);
+			if (cfg->exception_type == MONO_EXCEPTION_NONE) {
+				if (verbose >= 2)
+					g_print ("Running '%s' ...\n", method->name);
+#ifdef MONO_USE_AOT_COMPILER
+				MonoError error;
+				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error);
+				mono_error_cleanup (&error);
+				if (!func)
+					func = (TestMethod)(gpointer)cfg->native_code;
+#else
+					func = (TestMethod)(gpointer)cfg->native_code;
+#endif
+				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
+				result = func ();
+				if (result != expected) {
+					failed++;
+					g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
+				}
+				code_size += cfg->code_len;
+				mono_destroy_compile (cfg);
+
+			} else {
+				cfailed++;
+				g_print ("Test '%s' failed transformation.\n", method->name);
+			}
+		}
+	}
+	g_timer_stop (timer);
+	elapsed = g_timer_elapsed (timer, NULL);
+	if (failed > 0 || cfailed > 0){
+		g_print ("Results: total tests: %d, failed: %d, cfailed: %d (pass: %.2f%%)\n",
+				run, failed, cfailed, 100.0*(run-failed-cfailed)/run);
+	} else {
+		g_print ("Results: total tests: %d, all pass \n",  run);
+	}
+
+	g_print ("Elapsed time: %f secs (%f, %f), Code size: %d\n\n", elapsed,
+			elapsed - transform_time, transform_time, code_size);
+	*total += failed + cfailed;
+	*total_run += run;
+}
+static int
+interp_regression (MonoImage *image, int verbose, int *total_run)
+{
+	MonoMethod *method;
+	char *n;
+	GTimer *timer = g_timer_new ();
+	MonoDomain *domain = mono_domain_get ();
+	guint32 i, exclude = 0;
+	int total;
+
+	/* load the metadata */
+	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
+		MonoError error;
+		method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | (i + 1), NULL, NULL, &error);
+		if (!method) {
+			mono_error_cleanup (&error);
+			continue;
+		}
+		mono_class_init (method->klass);
+	}
+
+	total = 0;
+	*total_run = 0;
+	interp_regression_step (image, verbose, total_run, &total, timer, domain);
+
+	g_timer_destroy (timer);
+	return total;
+}
+
+static int
+interp_regression_list (int verbose, int count, char *images [])
+{
+	int i, total, total_run, run;
+	
+	total_run = total = 0;
+	for (i = 0; i < count; ++i) {
+		MonoAssembly *ass = mono_assembly_open (images [i], NULL);
+		if (!ass) {
+			g_warning ("failed to load assembly: %s", images [i]);
+			continue;
+		}
+		total += interp_regression (mono_assembly_get_image (ass), verbose, &run);
+		total_run += run;
+	}
+	if (total > 0) {
+		g_print ("Overall results: tests: %d, failed: %d (pass: %.2f%%)\n", total_run, total, 100.0*(total_run-total)/total_run);
+	} else {
+		g_print ("Overall results: tests: %d, 100%% pass\n", total_run);
+	}
+	
+	return total;
+}
+
+enum {
+	DO_EXEC,
+	DO_REGRESSION
+}
+
 int 
 mono_main (int argc, char *argv [])
 {
@@ -4559,6 +4673,7 @@ mono_main (int argc, char *argv [])
 	int enable_debugging = FALSE;
 	MainThreadArgs main_args;
 	const char *error;
+	int action = DO_EXEC;
 
 	setlocale (LC_ALL, "");
 	if (argc < 2)
@@ -4569,6 +4684,8 @@ mono_main (int argc, char *argv [])
 			global_tracing = 1;
 		if (strcmp (argv [i], "--noptr") == 0)
 			global_no_pointers = 1;
+		if (strcmp (argv [i], "--regression") == 0)
+			action = DO_REGRESSION;
 		if (strcmp (argv [i], "--traceops") == 0)
 			global_tracing = 2;
 		if (strcmp (argv [i], "--traceopt") == 0)
@@ -4602,6 +4719,7 @@ mono_main (int argc, char *argv [])
 	if (!file)
 		usage ();
 
+	mono_set_rootdir ();
 	domain = mono_interp_init (file);
 	mono_config_parse (config_file);
 
@@ -4617,10 +4735,19 @@ mono_main (int argc, char *argv [])
 	main_args.argc=argc-i;
 	main_args.argv=argv+i;
 	main_args.enable_debugging=enable_debugging;
+
+	switch (action) {
+	case DO_REGRESSION:
+		if (interp_regression_list (2, argc -i, argv + i)) {
+			g_print ("Regression ERRORS!\n");
+			// mini_cleanup (domain);
+			return 1;
+		}
+		// mini_cleanup (domain);
+		return 0;
+	}
 	
-	fprintf (stderr, "INTERPRETER: INIT DONE\n");
-	mono_runtime_exec_managed_code (domain, main_thread_handler,
-					&main_args);
+	mono_runtime_exec_managed_code (domain, main_thread_handler, &main_args);
 
 	quit_function (domain, NULL);
 
