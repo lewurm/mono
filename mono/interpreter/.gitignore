@@ -1,2 +1,4 @@
 Makefile
 *.lo
+libmint.la
+mint
