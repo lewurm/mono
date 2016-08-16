@@ -4530,18 +4530,36 @@ mono_interp_init(const char *file)
 	return domain;
 }
 
+typedef int (*TestMethod) (void);
+
 static void
-mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
+interp_regression_step (MonoImage *image, int verbose, int *total_run, int *total, GTimer *timer, MonoDomain *domain)
 {
 	int result, expected, failed, cfailed, run, code_size;
 	TestMethod func;
-	double elapsed, comp_time, start_time;
+	double elapsed, transform_time, start_time;
 	int i;
+	MonoInvocation frame;
+	ThreadContext * volatile context = mono_native_tls_get_value (thread_context_id);
+	ThreadContext context_struct;
+
+	frame.ex = NULL;
+	if (context == NULL) {
+		context = &context_struct;
+		context_struct.base_frame = &frame;
+		context_struct.current_frame = NULL;
+		context_struct.env_frame = &frame;
+		context_struct.search_for_handler = 0;
+		context_struct.managed_code = 0;
+		mono_native_tls_set_value (thread_context_id, context);
+	}
+	context->domain = mono_domain_get ();
 
 	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
 	cfailed = failed = run = code_size = 0;
 	transform_time = elapsed = 0.0;
 
+#if 0
 	/* fixme: ugly hack - delete all previously compiled methods */
 	if (domain_jit_info (domain)) {
 		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
@@ -4549,6 +4567,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
 		mono_jit_code_hash_init (&(domain->jit_code_hash));
 	}
+#endif
 
 	g_timer_start (timer);
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
@@ -4559,37 +4578,35 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 			continue;
 		}
 		if (strncmp (method->name, "test_", 5) == 0) {
+			RuntimeMethod *runtime_method;
 			expected = atoi (method->name + 5);  // FIXME: oh no.
 			run++;
 			start_time = g_timer_elapsed (timer, NULL);
 			transform_time -= start_time;
-			cfg = mini_method_compile (method, mono_get_optimizations_for_method (method, opt_flags), mono_get_root_domain (), JIT_FLAG_RUN_CCTORS, 0, -1);
+			runtime_method = mono_interp_get_runtime_method (context->domain, method, &error);
+			mono_interp_transform_method (runtime_method, context);
+			// TODO: no return value?!
+			// if (transform_succes)
 			transform_time += g_timer_elapsed (timer, NULL);
-			if (cfg->exception_type == MONO_EXCEPTION_NONE) {
-				if (verbose >= 2)
-					g_print ("Running '%s' ...\n", method->name);
-#ifdef MONO_USE_AOT_COMPILER
-				MonoError error;
-				func = (TestMethod)mono_aot_get_method_checked (mono_get_root_domain (), method, &error);
-				mono_error_cleanup (&error);
-				if (!func)
-					func = (TestMethod)(gpointer)cfg->native_code;
-#else
-					func = (TestMethod)(gpointer)cfg->native_code;
-#endif
-				func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
-				result = func ();
-				if (result != expected) {
-					failed++;
-					g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
-				}
-				code_size += cfg->code_len;
-				mono_destroy_compile (cfg);
+			if (verbose >= 2)
+				g_print ("Running '%s' ...\n", method->name);
+			func = (TestMethod)(gpointer)cfg->native_code;
+			func = (TestMethod)mono_create_ftnptr (mono_get_root_domain (), func);
+			result = func ();
+			if (result != expected) {
+				failed++;
+				g_print ("Test '%s' failed result (got %d, expected %d).\n", method->name, result, expected);
+			}
+			code_size += cfg->code_len;
+			mono_destroy_compile (cfg);
 
+			// else (!transform_success)
+#if 0
 			} else {
 				cfailed++;
 				g_print ("Test '%s' failed transformation.\n", method->name);
 			}
+#endif
 		}
 	}
 	g_timer_stop (timer);
