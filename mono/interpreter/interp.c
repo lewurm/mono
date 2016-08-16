@@ -1627,7 +1627,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POP)
 			++ip;
-			fprintf (stderr, "POP: 0x%08lx\n", sp->data.l);
+			fprintf (stderr, "POP: 0x%08x\n", (sp-1)->data.i);
 			--sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_JMP) {
@@ -4174,15 +4174,14 @@ ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
 	MonoError error;
 	int rval;
 
-	g_error ("FIXME: figure out method lookup");
-	// method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, &error);
+	method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, NULL, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	if (!method)
 		g_error ("No entry point method found in %s", mono_image_get_filename (image));
 
-	rval = mono_runtime_run_main_checked (method, argc, argv, error);
-	return_val_and_set_pending_if_nok (error, rval);
+	rval = mono_runtime_run_main_checked (method, argc, argv, &error);
+	return_val_and_set_pending_if_nok (&error, rval);
 }
 
 static void
