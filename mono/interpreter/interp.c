@@ -116,6 +116,8 @@ typedef void (*ICallMethod) (MonoInvocation *frame);
 static guint32 die_on_exception = 0;
 static MonoNativeTlsKey thread_context_id;
 
+static char* dump_args (MonoInvocation *inv);
+
 #define DEBUG_INTERP 1
 #define COUNT_OPS 0
 #if DEBUG_INTERP
@@ -143,25 +145,29 @@ db_match_method (gpointer data, gpointer user_data)
 		break_on_method = 1;
 }
 
-#define DEBUG_ENTER()	\
-	if (db_methods) { \
-		g_list_foreach (db_methods, db_match_method, (gpointer)frame->runtime_method->method);	\
-		if (break_on_method) tracing=nested_trace ? (global_tracing = 2, 3) : 2;	\
-		break_on_method = 0;	\
-	} \
-	if (tracing) {	\
-		MonoMethod *method = frame->runtime_method->method ;\
-		char *mn, *args = dump_args (frame);	\
-		debug_indent_level++;	\
-		output_indent ();	\
-		mn = mono_method_full_name (method, FALSE); \
-		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);	\
-		g_free (mn); \
-		g_printerr  ("%s)\n", args);	\
-		g_free (args);	\
-	}	\
-	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)	\
+static void debug_enter (MonoInvocation *frame, int *tracing)
+{
+	if (db_methods) {
+		g_list_foreach (db_methods, db_match_method, (gpointer)frame->runtime_method->method);
+		if (break_on_method)
+			*tracing = nested_trace ? (global_tracing = 2, 3) : 2;
+		break_on_method = 0;
+	}
+	if (*tracing) {
+		MonoMethod *method = frame->runtime_method->method;
+		char *mn, *args = dump_args (frame);
+		debug_indent_level++;
+		output_indent ();
+		mn = mono_method_full_name (method, FALSE);
+		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);
+		g_free (mn);
+		g_printerr  ("%s)\n", args);
+		g_free (args);
+	}
+	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)
 		mono_profiler_method_enter (frame->runtime_method->method);
+}
+
 
 #define DEBUG_LEAVE()	\
 	if (tracing) {	\
@@ -181,7 +187,9 @@ db_match_method (gpointer data, gpointer user_data)
 
 #else
 
-#define DEBUG_ENTER()
+static void debug_enter (MonoInvocation *frame, int *tracing)
+{
+}
 #define DEBUG_LEAVE()
 
 #endif
@@ -1482,7 +1490,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	frame->ip = NULL;
 	context->current_frame = frame;
 
-	DEBUG_ENTER ();
+	debug_enter (frame, &tracing);
 
 	if (!frame->runtime_method->transformed) {
 		context->managed_code = 0;
@@ -4150,7 +4158,7 @@ ves_exec_method (MonoInvocation *frame)
 	frame->runtime_method = mono_interp_get_runtime_method (context->domain, frame->method, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	context->managed_code = 1;
-	ves_exec_method_with_context(frame, context);
+	ves_exec_method_with_context (frame, context);
 	context->managed_code = 0;
 	if (frame->ex) {
 		if (context != &context_struct && context->current_env) {
@@ -4574,6 +4582,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			RuntimeMethod *runtime_method;
 			MonoInvocation frame;
 			ThreadContext context;
+			stackval frame_result;
 
 			frame.ex = NULL;
 			context.base_frame = &frame;
@@ -4587,8 +4596,10 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			run++;
 			start_time = g_timer_elapsed (timer, NULL);
 			transform_time -= start_time;
-			runtime_method = mono_interp_get_runtime_method (context.domain, method, &error);
-			mono_interp_transform_method (runtime_method, &context);
+			frame.runtime_method = mono_interp_get_runtime_method (context.domain, method, &error);
+			frame.retval = &frame_result;
+			g_assert (frame.runtime_method);
+			mono_interp_transform_method (frame.runtime_method, &context);
 			// TODO: no return value?!
 			// if (transform_succes)
 			transform_time += g_timer_elapsed (timer, NULL);
