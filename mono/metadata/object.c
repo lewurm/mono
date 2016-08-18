@@ -321,6 +321,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	fprintf (stderr, "class_init_full: trying to init 0x%016x (%s)\n", vtable, vtable->klass->name);
 	MonoMethod *method = NULL;
 	MonoClass *klass;
 	gchar *full_name;

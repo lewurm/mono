@@ -3014,6 +3014,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			g_assert_not_reached ();
 		}
 	}
+	fprintf (stderr, "TRANSFORM(0x%016lx): end %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 
 	/* the rest needs to be locked so it is only done once */
 	mono_os_mutex_lock(&calc_section);
