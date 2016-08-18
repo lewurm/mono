@@ -1171,14 +1171,12 @@ interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		break;
 	case MONO_TYPE_VALUETYPE:
 		retval = mono_object_new_checked (context->domain, klass, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
 		break;
 	default:
 		retval = mono_object_new_checked (context->domain, klass, error);
-		mono_error_cleanup (error); /* FIXME: don't swallow the error */
 		ret = ((char*)retval) + sizeof (MonoObject);
 		break;
 	}
@@ -1240,7 +1238,6 @@ handle_enum:
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) 
 		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
 	INIT_FRAME(&frame,context->current_frame,obj,args,&result,mono_get_root_domain (),method,error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
