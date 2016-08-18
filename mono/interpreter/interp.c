@@ -961,7 +961,7 @@ dump_frame (MonoInvocation *inv)
 	char *args;
 	MonoError error;
 
-	for (i = 0; inv; inv = inv->parent) {
+	for (i = 0; !!inv && i < 1; inv = inv->parent) {
 		if (inv->runtime_method != NULL) {
 			MonoMethod *method = inv->runtime_method->method;
 			MonoClass *k;
@@ -969,7 +969,7 @@ dump_frame (MonoInvocation *inv)
 			int codep = 0;
 			const char * opname = "";
 			char *name;
-			gchar *source = NULL;
+			char *source = NULL;
 
 			k = method->klass;
 
@@ -982,21 +982,22 @@ dump_frame (MonoInvocation *inv)
 					if (inv->ip) {
 						opname = mono_interp_opname [*inv->ip];
 						codep = inv->ip - inv->runtime_method->code;
+						source = g_strdup_printf ("%s:%d // (TODO: proper stacktrace)", method->name, codep);
 					} else 
 						opname = "";
-	
-					g_error ("FIXME: proper source location");
-					// source = mono_debug_source_location_from_il_offset (method, codep, NULL);
+
+#if 0
+					MonoDebugSourceLocation *minfo = mono_debug_lookup_method (method);
+					source = mono_debug_method_lookup_location (minfo, codep);
+#endif
 				}
 			}
 			args = dump_args (inv);
 			name = mono_method_full_name (method, TRUE);
 			if (source)
-				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s) at %s\n", i, codep, opname,
-						   name, args, source);
+				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s) at %s\n", i, codep, opname, name, args, source);
 			else
-				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s)\n", i, codep, opname,
-						   name, args);
+				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s)\n", i, codep, opname, name, args);
 			g_free (name);
 			g_free (args);
 			g_free (source);
@@ -1014,14 +1015,14 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 	MonoInvocation *inv;
 	MonoError error;
 
-	for (i = 0, inv = top; inv; inv = inv->parent)
+	for (i = 0, inv = top; inv && i < 1; inv = inv->parent)
 		if (inv->runtime_method != NULL)
 			++i;
 
 	res = mono_array_new_checked (domain, mono_defaults.int_class, 2 * i, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
-	for (i = 0, inv = top; inv; inv = inv->parent)
+	for (i = 0, inv = top; inv && i < 1; inv = inv->parent)
 		if (inv->runtime_method != NULL) {
 			mono_array_set (res, gpointer, i, inv->runtime_method);
 			++i;
