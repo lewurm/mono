@@ -10,6 +10,8 @@ export HOST_CC
 AM_CFLAGS = -O
 endif
 
+monodir=$(top_builddir)
+
 if ENABLE_INTERPRETER
 bin_PROGRAMS = mint
 
@@ -20,9 +22,6 @@ endif
 
 mint_SOURCES =		\
 	main.c
-
-mint_LDADD =		\
-	libmint.la
 
 libmint_la_SOURCES =	\
 	hacks.h		\
@@ -38,14 +37,22 @@ libmintincludedir = $(includedir)/mono-$(API_VER)/mono/interpreter
 libmintinclude_HEADERS = 	\
 	embed.h
 
-libmint_la_LIBADD =				\
-	../arch/libmonoarch.la		\
-	../metadata/libmonoruntime.la	\
-	../io-layer/libwapi.la		\
-	../utils/libmonoutils.la	\
-	$(GLIB_LIBS)			\
-	$(LIBICONV)			\
-	$(ICU_LIBS)			\
+#  $(monodir)/mono/mini/libmonosgen-2.0.la
+
+# TODO: CoreFoundation wtf, there must be a better way.
+
+mint_LDFLAGS = -Wl,-framework -Wl,CoreFoundation \
+	-Wl,-framework -Wl,Foundation
+
+mint_LDADD = \
+	libmint.la \
+	$(monodir)/mono/metadata/libmonoruntimesgen-static.la \
+	$(monodir)/mono/sgen/libmonosgen-static.la \
+	$(monodir)/mono/io-layer/libwapi.la	\
+	$(monodir)/mono/utils/libmonoutils.la \
+	$(GLIB_LIBS) \
+	$(LIBICONV) \
+	$(ICU_LIBS) \
 	-lm
 
 EXTRA_DIST = $(man_MANS)

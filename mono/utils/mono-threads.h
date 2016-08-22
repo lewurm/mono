@@ -98,7 +98,7 @@ and reduce the number of casts drastically.
 } while (0)
 
 
-#if 1
+#if 0
 #define THREADS_DEBUG(...)
 #else
 #define THREADS_DEBUG MOSTLY_ASYNC_SAFE_PRINTF
