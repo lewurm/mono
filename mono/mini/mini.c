@@ -849,13 +849,16 @@ void
 mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 {
 	int opcode;
+	MonoInst *last_ins;
 
 	if (!bb->code) {
 		MONO_ADD_INS (bb, inst);
 		return;
 	}
 
-	switch (bb->last_ins->opcode) {
+	last_ins = mono_bb_last_inst (bb, FILTER_SEQ_POINT | FILTER_IL_SEQ_POINT);
+
+	switch (last_ins->opcode) {
 	case OP_BR:
 	case OP_BR_REG:
 	case CEE_BEQ:
@@ -869,17 +872,17 @@ mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 	case CEE_BLE_UN:
 	case CEE_BLT_UN:
 	case OP_SWITCH:
-		mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+		mono_bblock_insert_before_ins (bb, last_ins, inst);
 		break;
 	default:
-		if (MONO_IS_COND_BRANCH_OP (bb->last_ins)) {
+		if (MONO_IS_COND_BRANCH_OP (last_ins)) {
 			/* Need to insert the ins before the compare */
-			if (bb->code == bb->last_ins) {
-				mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+			if (bb->code == last_ins) {
+				mono_bblock_insert_before_ins (bb, last_ins, inst);
 				return;
 			}
 
-			if (bb->code->next == bb->last_ins) {
+			if (bb->code->next == last_ins) {
 				/* Only two instructions */
 				opcode = bb->code->opcode;
 
@@ -887,16 +890,16 @@ mono_add_ins_to_end (MonoBasicBlock *bb, MonoInst *inst)
 					/* NEW IR */
 					mono_bblock_insert_before_ins (bb, bb->code, inst);
 				} else {
-					mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+					mono_bblock_insert_before_ins (bb, last_ins, inst);
 				}
 			} else {
-				opcode = bb->last_ins->prev->opcode;
+				opcode = last_ins->prev->opcode;
 
 				if ((opcode == OP_COMPARE) || (opcode == OP_COMPARE_IMM) || (opcode == OP_ICOMPARE) || (opcode == OP_ICOMPARE_IMM) || (opcode == OP_FCOMPARE) || (opcode == OP_LCOMPARE) || (opcode == OP_LCOMPARE_IMM) || (opcode == OP_RCOMPARE)) {
 					/* NEW IR */
-					mono_bblock_insert_before_ins (bb, bb->last_ins->prev, inst);
+					mono_bblock_insert_before_ins (bb, last_ins->prev, inst);
 				} else {
-					mono_bblock_insert_before_ins (bb, bb->last_ins, inst);
+					mono_bblock_insert_before_ins (bb, last_ins, inst);
 				}					
 			}
 		}
