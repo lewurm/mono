@@ -2251,7 +2251,8 @@ typedef void (*MonoInstFunc) (MonoInst *tree, gpointer data);
 
 enum {
 	FILTER_IL_SEQ_POINT = 1 << 0,
-	FILTER_NOP          = 1 << 1,
+	FILTER_SEQ_POINT    = 1 << 1,
+	FILTER_NOP          = 1 << 2,
 };
 
 static inline gboolean
@@ -2261,6 +2262,9 @@ mono_inst_filter (MonoInst *ins, int filter)
 		return FALSE;
 
 	if ((filter & FILTER_IL_SEQ_POINT) && ins->opcode == OP_IL_SEQ_POINT)
+		return TRUE;
+
+	if ((filter & FILTER_SEQ_POINT) && ins->opcode == OP_SEQ_POINT)
 		return TRUE;
 
 	if ((filter & FILTER_NOP) && ins->opcode == OP_NOP)
