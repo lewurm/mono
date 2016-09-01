@@ -1895,10 +1895,10 @@ mono_main (int argc, char* argv[])
 #ifdef ENABLE_INTERPRETER
 		} else if (strcmp (argv [i], "--interpreter") == 0) {
 			mono_use_interpreter = TRUE;
-#error that is okay
 #else
-#error oh noowooo
+#error TODO test the defaul config
 #endif
+
 #ifdef __native_client__
 		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
 			nacl_mono_path = g_strdup(argv[++i]);

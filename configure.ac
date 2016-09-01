@@ -3472,13 +3472,13 @@ if test "x$have_deprecated" = "xyes"; then
    AC_DEFINE(HAVE_DEPRECATED, 1, [Support for the deprecated attribute])
 fi
 
-AC_ARG_WITH(interpreter,             [  --with-interpreter=yes,no       Interpreter, default=no],[buildinterpreter=$with_interpreter],[buildinterpreter=no])
-if test "x$mono_feature_enable_interpreter" = "xyes"; then
+AC_ARG_WITH(interpreter, [  --with-interpreter=yes|no       Interpreter, default=no],[buildinterpreter=$with_interpreter],[buildinterpreter=no])
+if test "x$buildinterpreter" = "xyes"; then
     AC_DEFINE(ENABLE_INTERPRETER, 1, [Enable interpreter in the runtime.])
     AC_MSG_NOTICE([Enable interpreter in the runtime.])
 fi
 
-AM_CONDITIONAL(ENABLE_INTERPRETER, test x$buildinterpreter = xyes)
+AM_CONDITIONAL([ENABLE_INTERPRETER], [test x$buildinterpreter != xno])
 
 
 dnl 
