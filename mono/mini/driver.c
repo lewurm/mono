@@ -57,6 +57,7 @@
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
+#include "interpreter/interp.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -2048,6 +2049,17 @@ mono_main (int argc, char* argv[])
 	case DO_SINGLE_METHOD_REGRESSION:
 		mono_do_single_method_regression = TRUE;
 	case DO_REGRESSION:
+#ifdef ENABLE_INTERPRETER
+		if (mono_use_interpreter) {
+			if (interp_regression_list (2, argc -i, argv + i)) {
+				g_print ("Regression ERRORS!\n");
+				// mini_cleanup (domain);
+				return 1;
+			}
+			// mini_cleanup (domain);
+			return 0;
+		}
+#endif
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
 			g_print ("Regression ERRORS!\n");
 			mini_cleanup (domain);
@@ -2080,6 +2092,10 @@ mono_main (int argc, char* argv[])
 		aname = argv [i];
 		break;
 	default:
+#ifdef ENABLE_INTERPRETER
+		if (mono_use_interpreter)
+			g_error ("not yet");
+#endif
 		if (argc - i < 1) {
 			mini_usage ();
 			mini_cleanup (domain);

@@ -117,6 +117,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 MonoDelegate*
 mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 
+int
+interp_regression_list (int verbose, int count, char *images []);
+
 void
 mono_interp_transform_init (void);
 

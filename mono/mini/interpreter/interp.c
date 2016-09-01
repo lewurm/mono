@@ -11,7 +11,6 @@
  *
  * (C) 2001, 2002 Ximian, Inc.
  */
-#error lol
 #ifndef __USE_ISOC99
 #define __USE_ISOC99
 #endif
@@ -4648,7 +4647,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 	return total;
 }
 
-static int
+int
 interp_regression_list (int verbose, int count, char *images [])
 {
 	int i, total, total_run, run;
@@ -4677,6 +4676,7 @@ enum {
 	DO_REGRESSION
 };
 
+#if 0
 int 
 mono_main (int argc, char *argv [])
 {
@@ -4774,3 +4774,5 @@ mono_main (int argc, char *argv [])
 #endif
 	return retval;
 }
+#endif
+
