@@ -4594,6 +4594,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			} else {
 				result = *(gint32 *) mono_object_unbox (result_obj);
 				expected = atoi (method->name + 5);  // FIXME: oh no.
+				run++;
 
 				if (result != expected) {
 					failed++;
