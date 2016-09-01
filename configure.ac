@@ -3472,13 +3472,13 @@ if test "x$have_deprecated" = "xyes"; then
    AC_DEFINE(HAVE_DEPRECATED, 1, [Support for the deprecated attribute])
 fi
 
-AC_ARG_WITH(interpreter,             [ --with-interpreter=yes,no       Interpreter, default=no],[buildinterpreter=$with_interpreter],[buildinterpreter=no])
+AC_ARG_WITH(interpreter,             [  --with-interpreter=yes,no       Interpreter, default=no],[buildinterpreter=$with_interpreter],[buildinterpreter=no])
 if test "x$mono_feature_enable_interpreter" = "xyes"; then
     AC_DEFINE(ENABLE_INTERPRETER, 1, [Enable interpreter in the runtime.])
     AC_MSG_NOTICE([Enable interpreter in the runtime.])
 fi
 
-AM_CONDITIONAL(ENABLE_INTERPRETER, text x$buildinterpreter = xyes)
+AM_CONDITIONAL(ENABLE_INTERPRETER, test x$buildinterpreter = xyes)
 
 
 dnl 
@@ -3932,11 +3932,7 @@ AC_DEFINE(MONO_INSIDE_RUNTIME,1, [Disable banned functions from being used by th
 mono_build_root=`pwd`
 AC_SUBST(mono_build_root)
 
-if test "x$mono_feature_enable_interpreter" = "xyes"; then
-	mono_runtime=mono/interpreter/mint
-else
-	mono_runtime=mono/mini/mono
-fi
+mono_runtime=mono/mini/mono
 AC_SUBST(mono_runtime)
 
 mono_cfg_root=$mono_build_root/runtime
@@ -4144,7 +4140,6 @@ mono/unit-tests/Makefile
 mono/benchmark/Makefile
 mono/io-layer/Makefile
 mono/mini/Makefile
-mono/interpreter/Makefile
 mono/profiler/Makefile
 m4/Makefile
 ikvm-native/Makefile
@@ -4306,6 +4301,7 @@ echo "
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
+	Interpreter:   $buildinterpreter
 
    Libraries:
 	.NET 4.x:        $with_profile4_x

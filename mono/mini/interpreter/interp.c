@@ -11,6 +11,7 @@
  *
  * (C) 2001, 2002 Ximian, Inc.
  */
+#error lol
 #ifndef __USE_ISOC99
 #define __USE_ISOC99
 #endif
