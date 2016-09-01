@@ -4490,8 +4490,6 @@ mono_interp_init(const char *file)
 	MonoRuntimeExceptionHandlingCallbacks ecallbacks;
 	MonoError error;
 
-	g_set_prgname (file);
-	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
