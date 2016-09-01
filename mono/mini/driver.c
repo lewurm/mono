@@ -2026,6 +2026,11 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose, opt);
+#if ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		domain = mono_interp_init (argv [i]);
+	else
+#endif
 	domain = mini_init (argv [i], forced_version);
 
 	mono_gc_set_stack_end (&domain);
