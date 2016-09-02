@@ -85,7 +85,7 @@ enum {
 static gint *abort_requested;
 
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 0;
+static int global_tracing = 1;
 static int global_no_pointers = 0;
 
 int mono_interp_traceopt = 0;
@@ -118,7 +118,7 @@ static MonoNativeTlsKey thread_context_id;
 
 static char* dump_args (MonoInvocation *inv);
 
-#define DEBUG_INTERP 0
+#define DEBUG_INTERP 1
 #define COUNT_OPS 0
 #if DEBUG_INTERP
 
@@ -3612,6 +3612,7 @@ array_constructed:
 		MINT_IN_CASE(MINT_MONO_FREE)
 			++ip;
 			--sp;
+			g_error ("that doesn't seem right");
 			g_free (sp->data.p);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
@@ -4543,7 +4544,6 @@ mono_interp_init(const char *file)
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	mono_thread_attach (domain);
-	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	return domain;
 }
 
