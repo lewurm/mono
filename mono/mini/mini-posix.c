@@ -477,7 +477,7 @@ mono_runtime_posix_install_handlers (void)
 
 	add_signal_handler (SIGFPE, mono_sigfpe_signal_handler, 0);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
-	// add_signal_handler (SIGILL, mono_sigill_signal_handler, 0);
+	add_signal_handler (SIGILL, mono_sigill_signal_handler, 0);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
 	if (mono_jit_trace_calls != NULL)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler, SA_RESTART);

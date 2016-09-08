@@ -2770,6 +2770,38 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 	mono_arch_handle_exception (ctx, exc);
 }
 
+#if defined (PLATFORM_ANDROID)
+#ifndef DISABLE_JIT
+#ifdef TARGET_ARM64
+char ascii(char s) {
+  if(s < 0x20) return '.';
+  if(s > 0x7E) return '.';
+  return s;
+}
+
+void hexdump(void *d, int len) {
+  guint8 *data;
+  int i, off;
+  data = (guint8*)d;
+  for (off=0; off<len; off += 16) {
+    gchar *line;
+    line = g_strdup_printf ("%016llx  ", ((guint8 *) d) + off);
+    for(i=0; i<16; i++)
+      if((i+off)>=len) line = g_strdup_printf ("%s   ", line);
+      else line = g_strdup_printf ("%s%02x ",line, data[off+i]);
+
+    line = g_strdup_printf ("%s ", line);
+    for(i=0; i<16; i++)
+      if((i+off)>=len) line = g_strdup_printf ("%s ", line);
+      else line = g_strdup_printf ("%s%c", line, ascii(data[off+i]));
+    g_print ("%s\n", line);
+  }
+}
+#endif
+#endif
+#endif
+
+
 MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 {
 	MonoException *exc;
@@ -2778,6 +2810,25 @@ MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 
 	MONO_ENTER_GC_UNSAFE_UNBALANCED;
 
+#if defined (PLATFORM_ANDROID)
+#ifndef DISABLE_JIT
+#ifdef TARGET_ARM64
+#include <sys/ucontext.h>
+	mcontext_t *mctx = &((ucontext_t *) ctx)->uc_mcontext;
+	guint64 *regs = mctx->regs;
+	g_print ("SIGILL at ip=0x%016llx\n", mctx->pc);
+	for (int i = 0; i < 28; i += 4)
+		g_print ("x%02d: 0x%016llx\tx%02d: 0x%016llx\tx%02d: 0x%016llx\tx%02d: 0x%016llx\n", i, regs[i], i + 1, regs[i + 1], i + 2, regs[i + 2], i + 3, regs[i + 3]);
+	g_print ("x28: 0x%016llx\tx29: 0x%016llx\tx30: 0x%016llx\n", regs[28], regs[29], regs[30]);
+	g_print ("sp:  0x%016llx\tpc:  0x%016llx\tpstate: 0x%016llx\n", mctx->sp, mctx->pc, mctx->pstate);
+	guint8 *area = ((guint8 *) mctx->pc) - 0x100;
+	g_print ("hex dumping 0x%016llx-0x%016llx\n", area, area + 0x200);
+	hexdump (area, 0x200);
+
+	abort ();
+#endif
+#endif
+#endif
 	mono_handle_native_sigsegv (SIGILL, ctx, info);
 	exc = mono_get_exception_execution_engine ("SIGILL");
 
