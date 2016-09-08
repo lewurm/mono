@@ -870,8 +870,10 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 		thunks = cfg->arch.thunks;
 		thunks_size = cfg->arch.thunks_size;
 		if (!thunks_size) {
-			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+			// g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
 			g_assert_not_reached ();
+		} else {
+			// g_print ("thunk success %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
 		}
 
 		g_assert (*(guint32*)thunks == 0);
@@ -912,12 +914,13 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 			}
 		}
 
-		//printf ("THUNK: %p %p %p\n", code, target, target_thunk);
 
 		if (!target_thunk) {
 			mono_domain_unlock (domain);
 			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
 			g_assert_not_reached ();
+		} else {
+			// g_print ("THUNK success: %p->%p, thunk space=%d mehtod %s (%p)\n", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), target_thunk);
 		}
 
 		emit_thunk (target_thunk, target);
@@ -931,19 +934,23 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 static void
 arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *target, int relocation)
 {
+	guint8 *start = code;
 	switch (relocation) {
 	case MONO_R_ARM64_B:
 		arm_b (code, target);
+		mono_arch_flush_icache (start, 4);
 		break;
 	case MONO_R_ARM64_BCC: {
 		int cond;
 
 		cond = arm_get_bcc_cond (code);
 		arm_bcc (code, cond, target);
+		mono_arch_flush_icache (start, 4);
 		break;
 	}
 	case MONO_R_ARM64_CBZ:
 		arm_set_cbz_target (code, target);
+		mono_arch_flush_icache (start, 4);
 		break;
 	case MONO_R_ARM64_IMM: {
 		guint64 imm = (guint64)target;
@@ -955,6 +962,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 		arm_movkx (code, dreg, (imm >> 16) & 0xffff, 16);
 		arm_movkx (code, dreg, (imm >> 32) & 0xffff, 32);
 		arm_movkx (code, dreg, (imm >> 48) & 0xffff, 48);
+		mono_arch_flush_icache (start, 16);
 		break;
 	}
 	case MONO_R_ARM64_BL:
@@ -967,6 +975,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_bl (code, thunk);			
 		}
+		mono_arch_flush_icache (start, 4);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -1776,7 +1785,40 @@ mono_arch_flush_icache (guint8 *code, gint size)
 #if __APPLE__
 	sys_icache_invalidate (code, size);
 #else
+#if 1
+	// usually we would use __clear_cache here, but that is potentially broken.
+	guint8 *end = code + size;
+	guint8 *address;
+	guint32 icache_lsize, dcache_lsize;
+
+	static guint32 cache_info = 0;
+
+	if (!cache_info)
+		// CTR_EL0 [3:0] contains log2 of icache line size in words.
+		// CTR_EL0 [19:16] contains log2 of dcache line size in words.
+		asm volatile ("mrs\t%0, ctr_el0" : "=r" (cache_info));
+	icache_lsize = 4 << (cache_info & 0xf);
+	dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
+
+	/* Loop over the address range, clearing one cache line at once.  Data
+	 * cache must be flushed to unification first to make sure the instruction
+	 * cache fetches the updated data.  'end' is exclusive, as per the GNU
+	 * definition of __clear_cache.  */
+	address = (guint8 *) ((guint64) code & ~ (guint64) (dcache_lsize - 1));
+	for (; address < end; address += dcache_lsize)
+		/* We would prefer to use "cvau" (clean to the point of unification)
+		 * here but we use "civac" to work around Cortex-A53 errata 819472,
+		 * 826319, 827319 and 824069. */
+		asm volatile ("dc\tcivac, %0" : : "r" (address) : "memory");
+	asm volatile ("dsb\tish" : : : "memory");
+
+	address = (guint8 *) ((guint64) code & ~ (guint64) (icache_lsize - 1));
+	for (; address < end; address += icache_lsize)
+		asm volatile ("ic\tivau, %0" : : "r" (address) : "memory");
+	asm volatile ("dsb\tish; isb" : : : "memory");
+#else
 	__clear_cache (code, code + size);
+#endif
 #endif
 #endif
 }

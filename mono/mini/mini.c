@@ -3236,7 +3236,11 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->prof_options = mono_profiler_get_events ();
 	cfg->run_cctors = run_cctors;
 	cfg->domain = domain;
+#if 0
+	cfg->verbose_level = mini_verbose > 1 ? mini_verbose : 1;
+#else
 	cfg->verbose_level = mini_verbose;
+#endif
 	cfg->compile_aot = compile_aot;
 	cfg->full_aot = full_aot;
 	cfg->disable_omit_fp = debug_options.disable_omit_fp;
@@ -3439,6 +3443,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	if (!verbose_method_inited) {
 		verbose_method_name = g_getenv ("MONO_VERBOSE_METHOD");
+		// verbose_method_name = g_strdup ("System.Threading.Tasks.AwaitTaskContinuation::InvokeAction");
 		verbose_method_inited = TRUE;
 	}
 	if (verbose_method_name) {

@@ -2773,10 +2773,12 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 {
 	MonoException *exc;
+	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	MONO_ENTER_GC_UNSAFE_UNBALANCED;
 
+	mono_handle_native_sigsegv (SIGILL, ctx, info);
 	exc = mono_get_exception_execution_engine ("SIGILL");
 
 	mono_arch_handle_exception (ctx, exc);
