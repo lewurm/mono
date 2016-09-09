@@ -840,7 +840,10 @@ emit_thunk (guint8 *code, gconstpointer target)
 	arm_brx (code, ARMREG_IP0);
 	*(guint64*)code = (guint64)target;
 
-	mono_arch_flush_icache (p, code - p);
+	// (code - p) == 16);
+	g_print ("told you so: %d (should be 16)\n", code - p);
+
+	mono_arch_flush_icache (p, 16);
 	return code;
 }
 
