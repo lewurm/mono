@@ -1811,17 +1811,19 @@ mono_arch_flush_icache (guint8 *code, gint size)
 
 	static guint32 cache_info = 0;
 
-	if (!cache_info) {
+	// if (!cache_info) {
 		// CTR_EL0 [3:0] contains log2 of icache line size in words.
 		// CTR_EL0 [19:16] contains log2 of dcache line size in words.
 		asm volatile ("mrs\t%0, ctr_el0" : "=r" (cache_info));
 		icache_lsize = 4 << (cache_info & 0xf);
 		dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
-		g_print ("flush_icache: 0x%08x, %d, %d\n", cache_info, icache_lsize, dcache_lsize);
-		print_proc_cpuinfo ();
-	}
-	icache_lsize = 4 << (cache_info & 0xf);
-	dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
+		if (icache_lsize < 128) {
+			g_print ("flush_icache: 0x%08x, %d, %d\n", cache_info, icache_lsize, dcache_lsize);
+		}
+		// print_proc_cpuinfo ();
+	// }
+	// icache_lsize = 4 << (cache_info & 0xf);
+	// dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
 
 	icache_lsize = icache_lsize > 64 ? 64 : icache_lsize;
 	dcache_lsize = dcache_lsize > 64 ? 64 : dcache_lsize;
