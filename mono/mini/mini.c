@@ -2376,7 +2376,7 @@ mono_codegen (MonoCompile *cfg)
 	}
 #endif
  
-	if (cfg->verbose_level > 0) {
+	// if (cfg->verbose_level > 0) {
 		char* nm = mono_method_get_full_name (cfg->method);
 		char *opt_descr = mono_opt_descr (cfg->opt);
 		g_print ("Method %s emitted at %p to %p (code length %d) [%s] with opts %s\n", 
@@ -2385,7 +2385,7 @@ mono_codegen (MonoCompile *cfg)
 				 opt_descr);
 		g_free (nm);
 		g_free (opt_descr);
-	}
+	// }
 
 	{
 		gboolean is_generic = FALSE;

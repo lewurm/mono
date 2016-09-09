@@ -870,10 +870,10 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 		thunks = cfg->arch.thunks;
 		thunks_size = cfg->arch.thunks_size;
 		if (!thunks_size) {
-			// g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
 			g_assert_not_reached ();
 		} else {
-			// g_print ("thunk success %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+			g_print ("thunk success %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
 		}
 
 		g_assert (*(guint32*)thunks == 0);
@@ -920,7 +920,7 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
 			g_assert_not_reached ();
 		} else {
-			// g_print ("THUNK success: %p->%p, thunk space=%d mehtod %s (%p)\n", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), target_thunk);
+			g_print ("THUNK success: %p->%p, thunk space=%d mehtod %s (%p)\n", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), target_thunk);
 		}
 
 		emit_thunk (target_thunk, target);
@@ -955,6 +955,7 @@ arm_patch_full (MonoCompile *cfg, MonoDomain *domain, guint8 *code, guint8 *targ
 	case MONO_R_ARM64_IMM: {
 		guint64 imm = (guint64)target;
 		int dreg;
+		g_print ("patch imm64: %p->%p (%s)\n", code, target, cfg ? mono_method_full_name (cfg->method, TRUE) : "<not available>");
 
 		/* emit_imm64_template () */
 		dreg = arm_get_movzx_rd (code);
@@ -2977,8 +2978,12 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 	if (island_size) {
 		offset = code - cfg->native_code;
 		if (offset > (cfg->code_size - island_size - 16)) {
+			int old = cfg->code_size;
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+			for (int i = old; i < cfg->code_size; i += 4) {
+				*(guint32 *) (cfg->native_code + i) = (guint32) 0xd4200000;
+			}
 			code = cfg->native_code + offset;
 		}
 
@@ -3022,8 +3027,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		max_len = ((guint8 *)ins_get_spec (ins->opcode))[MONO_INST_LEN];
 
 		if (offset > (cfg->code_size - max_len - 16)) {
+			int old = cfg->code_size;
 			cfg->code_size *= 2;
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+			for (int i = old; i < cfg->code_size; i += 4) {
+				*(guint32 *) (cfg->native_code + i) = (guint32) 0xd4200000;
+			}
 			code = cfg->native_code + offset;
 		}
 
@@ -4724,6 +4733,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	sig = mono_method_signature (method);
 	cfg->code_size = 256 + sig->param_count * 64;
 	code = cfg->native_code = g_malloc (cfg->code_size);
+	guint8 *start = code;
+	for (int i = 0; i < cfg->code_size; i += 4) {
+		*(guint32 *) (start + i) = (guint32) 0xd4200000;
+	}
 
 	/* This can be unaligned */
 	cfg->stack_offset = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
@@ -4847,8 +4860,12 @@ static guint8*
 realloc_code (MonoCompile *cfg, int size)
 {
 	while (cfg->code_len + size > (cfg->code_size - 16)) {
+		int old = cfg->code_size;
 		cfg->code_size *= 2;
 		cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
+		for (int i = old; i < cfg->code_size; i += 4) {
+			*(guint32 *) (cfg->native_code + i) = (guint32) 0xd4200000;
+		}
 		cfg->stat_code_reallocs++;
 	}
 	return cfg->native_code + cfg->code_len;

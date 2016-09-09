@@ -2816,7 +2816,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 #include <sys/ucontext.h>
 	mcontext_t *mctx = &((ucontext_t *) ctx)->uc_mcontext;
 	guint64 *regs = mctx->regs;
-	g_print ("SIGILL at ip=0x%016llx\n", mctx->pc);
+	g_print ("SIGILL at ip=0x%016llx (0x%016llx)\n", mctx->pc, mctx->fault_address);
 	for (int i = 0; i < 28; i += 4)
 		g_print ("x%02d: 0x%016llx\tx%02d: 0x%016llx\tx%02d: 0x%016llx\tx%02d: 0x%016llx\n", i, regs[i], i + 1, regs[i + 1], i + 2, regs[i + 2], i + 3, regs[i + 3]);
 	g_print ("x28: 0x%016llx\tx29: 0x%016llx\tx30: 0x%016llx\n", regs[28], regs[29], regs[30]);
