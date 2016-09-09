@@ -1823,6 +1823,9 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	icache_lsize = 4 << (cache_info & 0xf);
 	dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
 
+	icache_lsize = icache_lsize > 64 ? 64 : icache_lsize;
+	dcache_lsize = dcache_lsize > 64 ? 64 : dcache_lsize;
+
 	/* Loop over the address range, clearing one cache line at once.  Data
 	 * cache must be flushed to unification first to make sure the instruction
 	 * cache fetches the updated data.  'end' is exclusive, as per the GNU
