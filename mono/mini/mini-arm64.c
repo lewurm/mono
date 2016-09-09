@@ -876,7 +876,7 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
 			g_assert_not_reached ();
 		} else {
-			g_print ("thunk success %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+			g_print ("thunk success %p->%p (@ %p - %p), thunk space=%d method %s", code, target, thunks, thunks + thunks_size, thunks_size, mono_method_full_name (cfg->method, TRUE));
 		}
 
 		g_assert (*(guint32*)thunks == 0);
@@ -923,7 +923,7 @@ create_thunk (MonoCompile *cfg, MonoDomain *domain, guchar *code, const guchar *
 			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
 			g_assert_not_reached ();
 		} else {
-			g_print ("THUNK success: %p->%p, thunk space=%d mehtod %s (%p)\n", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), target_thunk);
+			g_print ("THUNK success: %p->%p, thunk space=%d mehtod %s (%p-%p)\n", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), target_thunk, target_thunk + thunks_size);
 		}
 
 		emit_thunk (target_thunk, target);
@@ -1782,6 +1782,20 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 void sys_icache_invalidate (void *start, size_t len);
 #endif
 
+void print_proc_cpuinfo ()
+{
+	char buf [1024];
+	char *line;
+
+	FILE *file = fopen ("/proc/cpuinfo", "r");
+	if (!file)
+		return;
+
+	g_print ("content of /proc/cpuinfo:\n");
+	while ((line = fgets (buf, 1024, file)))
+		g_print ("%s\n", line);
+}
+
 void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
@@ -1797,10 +1811,15 @@ mono_arch_flush_icache (guint8 *code, gint size)
 
 	static guint32 cache_info = 0;
 
-	if (!cache_info)
+	if (!cache_info) {
 		// CTR_EL0 [3:0] contains log2 of icache line size in words.
 		// CTR_EL0 [19:16] contains log2 of dcache line size in words.
 		asm volatile ("mrs\t%0, ctr_el0" : "=r" (cache_info));
+		icache_lsize = 4 << (cache_info & 0xf);
+		dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
+		g_print ("flush_icache: 0x%08x, %d, %d\n", cache_info, icache_lsize, dcache_lsize);
+		print_proc_cpuinfo ();
+	}
 	icache_lsize = 4 << (cache_info & 0xf);
 	dcache_lsize = 4 << ((cache_info >> 16) & 0xf);
 
@@ -1808,7 +1827,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 	 * cache must be flushed to unification first to make sure the instruction
 	 * cache fetches the updated data.  'end' is exclusive, as per the GNU
 	 * definition of __clear_cache.  */
-	address = (guint8 *) ((guint64) code & ~ (guint64) (dcache_lsize - 1));
+	address = (guint8 *) ((((guint64) code)) & ~ (guint64) (dcache_lsize - 1));
 	for (; address < end; address += dcache_lsize)
 		/* We would prefer to use "cvau" (clean to the point of unification)
 		 * here but we use "civac" to work around Cortex-A53 errata 819472,
@@ -1816,7 +1835,7 @@ mono_arch_flush_icache (guint8 *code, gint size)
 		asm volatile ("dc\tcivac, %0" : : "r" (address) : "memory");
 	asm volatile ("dsb\tish" : : : "memory");
 
-	address = (guint8 *) ((guint64) code & ~ (guint64) (icache_lsize - 1));
+	address = (guint8 *) ((((guint64) code)) & ~ (guint64) (icache_lsize - 1));
 	for (; address < end; address += icache_lsize)
 		asm volatile ("ic\tivau, %0" : : "r" (address) : "memory");
 	asm volatile ("dsb\tish; isb" : : : "memory");
@@ -2983,6 +3002,7 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 		if (offset > (cfg->code_size - island_size - 16)) {
 			int old = cfg->code_size;
 			cfg->code_size *= 2;
+			g_print ("code size: resize from %x to %x", old, cfg->code_size);
 			cfg->native_code = g_realloc (cfg->native_code, cfg->code_size);
 			for (int i = old; i < cfg->code_size; i += 4) {
 				*(guint32 *) (cfg->native_code + i) = (guint32) 0xd4200000;
@@ -2991,6 +3011,7 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 		}
 
 		/* Branch over the island */
+		g_print ("branch over island, from %p to %p", code, code + 4 + island_size);
 		arm_b (code, code + 4 + island_size);
 
 		for (ji = cfg->patch_info; ji; ji = ji->next) {
@@ -2998,6 +3019,7 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 				break;
 			if (ji->relocation == MONO_R_ARM64_BCC || ji->relocation == MONO_R_ARM64_CBZ) {
 				/* Rewrite the cond branch so it branches to an uncoditional branch in the branch island */
+				g_print ("branch island: patching %p to jump to %p (%d)", cfg->native_code + ji->ip.i, code, ji->relocation);
 				arm_patch_rel (cfg->native_code + ji->ip.i, code, ji->relocation);
 				/* Rewrite the patch so it points to the unconditional branch */
 				ji->ip.i = code - cfg->native_code;
@@ -3005,7 +3027,8 @@ emit_branch_island (MonoCompile *cfg, guint8 *code, int start_offset)
 				arm_b (code, code);
 			}
 		}
-	}
+	} else
+		g_print ("no branch island today");
 	return code;
 }
 
