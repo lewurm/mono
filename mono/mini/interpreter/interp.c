@@ -85,7 +85,7 @@ enum {
 static gint *abort_requested;
 
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 1;
+static int global_tracing = 0;
 static int global_no_pointers = 0;
 
 int mono_interp_traceopt = 0;
@@ -118,7 +118,7 @@ static MonoNativeTlsKey thread_context_id;
 
 static char* dump_args (MonoInvocation *inv);
 
-#define DEBUG_INTERP 1
+#define DEBUG_INTERP 0
 #define COUNT_OPS 0
 #if DEBUG_INTERP
 
@@ -3612,7 +3612,6 @@ array_constructed:
 		MINT_IN_CASE(MINT_MONO_FREE)
 			++ip;
 			--sp;
-			g_error ("that doesn't seem right");
 			g_free (sp->data.p);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
@@ -4491,6 +4490,8 @@ mono_interp_init(const char *file)
 	MonoRuntimeExceptionHandlingCallbacks ecallbacks;
 	MonoError error;
 
+	g_set_prgname (file);
+	
 	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
 	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
 
@@ -4544,6 +4545,7 @@ mono_interp_init(const char *file)
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 	mono_thread_attach (domain);
+	fprintf (stderr, "INTERPRETER: INIT DONE\n");
 	return domain;
 }
 
@@ -4594,7 +4596,6 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 			} else {
 				result = *(gint32 *) mono_object_unbox (result_obj);
 				expected = atoi (method->name + 5);  // FIXME: oh no.
-				run++;
 
 				if (result != expected) {
 					failed++;
@@ -4646,7 +4647,7 @@ interp_regression (MonoImage *image, int verbose, int *total_run)
 	return total;
 }
 
-int
+static int
 interp_regression_list (int verbose, int count, char *images [])
 {
 	int i, total, total_run, run;
@@ -4675,7 +4676,6 @@ enum {
 	DO_REGRESSION
 };
 
-#if 0
 int 
 mono_main (int argc, char *argv [])
 {
@@ -4773,5 +4773,3 @@ mono_main (int argc, char *argv [])
 #endif
 	return retval;
 }
-#endif
-
