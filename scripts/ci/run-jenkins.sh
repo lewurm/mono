@@ -29,6 +29,9 @@ elif [[ ${label} != w* ]] && [[ ${label} != 'debian-ppc64el' ]] && [[ ${label} !
     # only enable the mobile profiles and mobile_static on the main architectures
     # only enable the concurrent collector by default on main unix archs
     EXTRA_CONF_FLAGS="${EXTRA_CONF_FLAGS} --with-runtime_preset=all --with-sgen-default-concurrent=yes"
+elif [[ ${CI_TAGS} == *'interpreter'* ]];
+    then
+    EXTRA_CONF_FLAGS="${EXTRA_CONF_FLAGS} --with-interpreter=yes";
 fi
 
 if [ -x "/usr/bin/dpkg-architecture" ];
@@ -64,6 +67,9 @@ if [[ ${CI_TAGS} == *'acceptance-tests'* ]];
 elif [[ ${CI_TAGS} == *'profiler-stress-tests'* ]];
     then
 	$(dirname "${BASH_SOURCE[0]}")/run-test-profiler-stress-tests.sh
+elif [[ ${CI_TAGS} == *'interpreter'* ]];
+    then
+    $(dirname "${BASH_SOURCE[0]}")/run-test-interpreter.sh
 else
 	make check-ci
 fi
