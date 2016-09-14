@@ -1892,6 +1892,13 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
+#ifdef ENABLE_INTERPRETER
+		} else if (strcmp (argv [i], "--interpreter") == 0) {
+			mono_use_interpreter = TRUE;
+#error that is okay
+#else
+#error oh noowooo
+#endif
 #ifdef __native_client__
 		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
 			nacl_mono_path = g_strdup(argv[++i]);
