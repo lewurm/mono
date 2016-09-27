@@ -836,6 +836,7 @@ ves_icall_System_Array_SetGenericValueImpl (MonoArray *arr, guint32 pos, gpointe
 ICALL_EXPORT void
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray (MonoArray *array, MonoClassField *field_handle)
 {
+	g_printerr ("[InitializeArray] array: %p, field_handle: %p\n", array, field_handle);
 	MonoClass *klass = array->obj.vtable->klass;
 	guint32 size = mono_array_element_size (klass);
 	MonoType *type = mono_type_get_underlying_type (&klass->element_class->byval_arg);
