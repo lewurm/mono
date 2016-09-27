@@ -169,7 +169,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 
 	/* restore_contect (MonoContext *ctx) */
 
-	start = code = (guint8 *)mono_global_codeman_reserve (256);
+	start = code = (guint8 *) mono_global_codeman_reserve (256);
 
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG1, 8);
 
