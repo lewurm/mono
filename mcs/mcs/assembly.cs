@@ -20,6 +20,7 @@ using System.Security.Cryptography;
 using System.Security.Permissions;
 using Mono.Security.Cryptography;
 using Mono.CompilerServices.SymbolWriter;
+using System.Linq;
 
 #if STATIC
 using IKVM.Reflection;
@@ -42,6 +43,18 @@ namespace Mono.CSharp
 
 		byte[] GetPublicKeyToken ();
 		bool IsFriendAssemblyTo (IAssemblyDefinition assembly);
+	}
+
+	public class AssemblyReferenceMessageInfo
+	{
+		public AssemblyReferenceMessageInfo (AssemblyName dependencyName, Action<Report> reportMessage)
+		{
+			this.DependencyName = dependencyName;
+			this.ReportMessage = reportMessage;
+		}
+
+		public AssemblyName DependencyName { get; private set; }
+		public Action<Report> ReportMessage { get; private set; }
 	}
                 
 	public abstract class AssemblyDefinition : IAssemblyDefinition
@@ -77,6 +90,7 @@ namespace Mono.CSharp
 
 		// Win32 version info values
 		string vi_product, vi_product_version, vi_company, vi_copyright, vi_trademark;
+		string pa_file_version, pa_assembly_version;
 
 		protected AssemblyDefinition (ModuleContainer module, string name)
 		{
@@ -240,6 +254,7 @@ namespace Mono.CSharp
 					SetCustomAttribute (ctor, cdata);
 				} else {
 					builder_extra.SetVersion (vinfo, a.Location);
+					pa_assembly_version = vinfo.ToString ();
 				}
 
 				return;
@@ -312,7 +327,7 @@ namespace Mono.CSharp
 					return;
 				}
 
-				builder_extra.AddTypeForwarder (t.GetDefinition (), a.Location);
+				AddTypeForwarders (t, a.Location);
 				return;
 			}
 
@@ -357,15 +372,15 @@ namespace Mono.CSharp
 			} else if (a.Type == pa.RuntimeCompatibility) {
 				wrap_non_exception_throws_custom = true;
 			} else if (a.Type == pa.AssemblyFileVersion) {
-				vi_product_version = a.GetString ();
-				if (string.IsNullOrEmpty (vi_product_version) || IsValidAssemblyVersion (vi_product_version, false) == null) {
+				pa_file_version = a.GetString ();
+				if (string.IsNullOrEmpty (pa_file_version) || IsValidAssemblyVersion (pa_file_version, false) == null) {
 					Report.Warning (7035, 1, a.Location, "The specified version string `{0}' does not conform to the recommended format major.minor.build.revision",
-						vi_product_version, a.Name);
+					                pa_file_version, a.Name);
 					return;
 				}
 
 				// File version info decoding from blob is not supported
-				var cab = new CustomAttributeBuilder ((ConstructorInfo) ctor.GetMetaInfo (), new object[] { vi_product_version });
+				var cab = new CustomAttributeBuilder ((ConstructorInfo)ctor.GetMetaInfo (), new object [] { pa_file_version });
 				Builder.SetCustomAttribute (cab);
 				return;
 			} else if (a.Type == pa.AssemblyProduct) {
@@ -378,6 +393,8 @@ namespace Mono.CSharp
 				vi_trademark = a.GetString ();
 			} else if (a.Type == pa.Debuggable) {
 				has_user_debuggable = true;
+			} else if (a.Type == pa.AssemblyInformationalVersion) {
+				vi_product_version = a.GetString ();
 			}
 
 			//
@@ -389,6 +406,22 @@ namespace Mono.CSharp
 			SetCustomAttribute (ctor, cdata);
 		}
 
+		void AddTypeForwarders (TypeSpec type, Location loc)
+		{
+			builder_extra.AddTypeForwarder (type.GetDefinition (), loc);
+
+			var ntypes = MemberCache.GetDeclaredNestedTypes (type);
+			if (ntypes == null)
+				return;
+			
+			foreach (var nested in ntypes) {
+				if (nested.IsPrivate)
+					continue;
+
+				AddTypeForwarders (nested, loc);
+			}
+		}
+
 		//
 		// When using assembly public key attributes InternalsVisibleTo key
 		// was not checked, we have to do it later when we actually know what
@@ -396,34 +429,46 @@ namespace Mono.CSharp
 		//
 		void CheckReferencesPublicToken ()
 		{
-			// TODO: It should check only references assemblies but there is
-			// no working SRE API
-			foreach (var entry in Importer.Assemblies) {
-				var a = entry as ImportedAssemblyDefinition;
-				if (a == null || a.IsMissing)
-					continue;
-
-				if (public_key != null && !a.HasStrongName) {
+			var references = builder_extra.GetReferencedAssemblies ();
+			foreach (var an in references) {
+				if (public_key != null && an.GetPublicKey ().Length == 0) {
 					Report.Error (1577, "Referenced assembly `{0}' does not have a strong name",
-						a.FullName);
+						an.FullName);
 				}
 
-				var ci = a.Assembly.GetName ().CultureInfo;
+				var ci = an.CultureInfo;
 				if (!ci.Equals (CultureInfo.InvariantCulture)) {
 					Report.Warning (8009, 1, "Referenced assembly `{0}' has different culture setting of `{1}'",
-						a.Name, ci.Name);
+						an.Name, ci.Name);
 				}
 
-				if (!a.IsFriendAssemblyTo (this))
+				var ia = Importer.GetImportedAssemblyDefinition (an);
+				if (ia == null)
 					continue;
 
-				var attr = a.GetAssemblyVisibleToName (this);
+				var an_references = GetNotUnifiedReferences (an);
+				if (an_references != null) {
+					foreach (var r in an_references) {
+						//
+						// Secondary check when assembly references is resolved but not used. For example
+						// due to type-forwarding
+						//
+						if (references.Any (l => l.Name == r.DependencyName.Name)) {
+							r.ReportMessage (Report);
+						}
+					}
+				}
+
+				if (!ia.IsFriendAssemblyTo (this))
+					continue;
+				
+				var attr = ia.GetAssemblyVisibleToName (this);
 				var atoken = attr.GetPublicKeyToken ();
 
 				if (ArrayComparer.IsEqual (GetPublicKeyToken (), atoken))
 					continue;
 
-				Report.SymbolRelatedToPreviousError (a.Location);
+				Report.SymbolRelatedToPreviousError (ia.Location);
 				Report.Error (281,
 					"Friend access was granted to `{0}', but the output assembly is named `{1}'. Try adding a reference to `{0}' or change the output assembly name to match it",
 					attr.FullName, FullName);
@@ -542,6 +587,11 @@ namespace Mono.CSharp
 			Buffer.BlockCopy (hash, hash.Length - 8, public_key_token, 0, 8);
 			Array.Reverse (public_key_token, 0, 8);
 			return public_key_token;
+		}
+
+		protected virtual List<AssemblyReferenceMessageInfo> GetNotUnifiedReferences (AssemblyName assemblyName)
+		{
+			return null;
 		}
 
 		//
@@ -790,7 +840,11 @@ namespace Mono.CSharp
 			if (Compiler.Settings.Win32ResourceFile != null) {
 				Builder.DefineUnmanagedResource (Compiler.Settings.Win32ResourceFile);
 			} else {
-				Builder.DefineVersionInfoResource (vi_product, vi_product_version, vi_company, vi_copyright, vi_trademark);
+				Builder.DefineVersionInfoResource (vi_product, 
+				                                   vi_product_version ?? pa_file_version ?? pa_assembly_version,
+				                                   vi_company,
+				                                   vi_copyright,
+				                                   vi_trademark);
 			}
 
 			if (Compiler.Settings.Win32IconFile != null) {
@@ -874,7 +928,7 @@ namespace Mono.CSharp
 					Builder.Save (module.Builder.ScopeName, pekind, machine);
 				}
 			} catch (ArgumentOutOfRangeException) {
-				Report.Error (16, "Output file `{0}' exceeds the 4GB limit");
+				Report.Error (16, "Output file `{0}' exceeds the 4GB limit", name);
 			} catch (Exception e) {
 				Report.Error (16, "Could not write to file `{0}'. {1}", name, e.Message);
 			}
@@ -1092,7 +1146,7 @@ namespace Mono.CSharp
 	//
 	public class AssemblyBuilderExtension
 	{
-		readonly CompilerContext ctx;
+		protected readonly CompilerContext ctx;
 
 		public AssemblyBuilderExtension (CompilerContext ctx)
 		{
@@ -1118,6 +1172,11 @@ namespace Mono.CSharp
 		public virtual void DefineWin32IconResource (string fileName)
 		{
 			ctx.Report.RuntimeMissingSupport (Location.Null, "-win32icon");
+		}
+
+		public virtual AssemblyName[] GetReferencedAssemblies ()
+		{
+			return null;
 		}
 
 		public virtual void SetAlgorithmId (uint value, Location loc)

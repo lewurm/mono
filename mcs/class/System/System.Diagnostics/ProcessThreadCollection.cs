@@ -45,6 +45,11 @@ namespace System.Diagnostics
 			base.Add (thread);
 			return Count - 1;
 		}
+
+		public System.Collections.IEnumerator GetEnumerator ()
+		{
+			return ((System.Collections.IEnumerable)InnerList).GetEnumerator ();
+		}
 	}
 #endif
 
@@ -69,7 +74,6 @@ namespace System.Diagnostics
 			InnerList.AddRange (processThreads);
 		}
 
-#if !NET_2_1		
 		public ProcessThread this[int index] {
 			get {
 				return (ProcessThread)InnerList[index];
@@ -105,6 +109,5 @@ namespace System.Diagnostics
 		{
 			InnerList.Remove (thread);
 		}
-#endif
 	}
 }
