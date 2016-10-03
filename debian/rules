@@ -12,7 +12,6 @@ SOURCE_DIR = $(DEBIAN_DIR)/..
 
 VERSION = $(shell dpkg-parsechangelog -l$(DEBIAN_DIR)/changelog | grep ^Vers | cut -d\  -f2)
 UPVERSION = $(shell echo $(VERSION) | sed 's,-.*,,' | sed 's,+dfsg.*,,')
-UPVERSION_3PART = $(shell echo $(UPVERSION) | cut -f1-3 -d'.')
 NEXT_UPVERSION = $(shell perl -e '$$_=pop; s/(\d+)$$/$$1+1/e; print' $(UPVERSION))
 DEB_SOURCE_NAME = $(shell dpkg-parsechangelog -l$(DEBIAN_DIR)/changelog | grep ^Source | cut -d" " -f2)
 
@@ -361,7 +360,7 @@ endif
 	dh_md5sums -s
 	dh_builddeb -s
 
-get-orig-source: TARBALL_DIR = $(DEB_SOURCE_NAME)-$(UPVERSION_3PART)
+get-orig-source: TARBALL_DIR = $(DEB_SOURCE_NAME)-$(UPVERSION)
 get-orig-source:
 	uscan \
 		--package $(DEB_SOURCE_NAME) \
