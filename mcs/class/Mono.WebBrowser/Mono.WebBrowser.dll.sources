@@ -133,6 +133,9 @@ Mono.Mozilla/interfaces/nsIWebNavigation.cs
 Mono.Mozilla/interfaces/extras/NodeType.cs
 Mono.Mozilla/interfaces/extras/nsIWriteSegmentFun.cs
 Mono.Mozilla/interfaces/extras/Options.cs
+Mono.NullBrowser/Base.cs
+Mono.NullBrowser/WebBrowser.cs
+Mono.NullBrowser/DOM/Navigation.cs
 Mono.WebBrowser/DOM/IDocumentType.cs
 Mono.WebBrowser/DOM/IDOMImplementation.cs
 Mono.WebBrowser/DOM/IMediaList.cs
