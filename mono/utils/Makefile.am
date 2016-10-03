@@ -15,7 +15,7 @@ monoutils_sources = \
 	mono-md5.c		\
 	mono-sha1.c		\
 	mono-logger.c		\
-	mono-logger-internal.h	\
+	mono-logger-internals.h	\
 	mono-codeman.c		\
 	dlmalloc.h      	\
 	dlmalloc.c      	\
@@ -36,9 +36,10 @@ monoutils_sources = \
 	mono-math.c  		\
 	mono-mmap.c  		\
 	mono-mmap.h  		\
-	mono-mmap-internal.h	\
-	mono-mutex.c  		\
-	mono-mutex.h  		\
+	mono-mmap-internals.h	\
+	mono-os-mutex.h		\
+	mono-coop-mutex.h		\
+	mono-once.h		\
 	mono-lazy-init.h		\
 	mono-networkinterfaces.c		\
 	mono-networkinterfaces.h		\
@@ -53,8 +54,8 @@ monoutils_sources = \
 	mono-uri.c		\
 	mono-poll.c		\
 	mono-path.c		\
-	mono-semaphore.c	\
-	mono-semaphore.h	\
+	mono-os-semaphore.h	\
+	mono-coop-semaphore.h		\
 	mono-sigcontext.h	\
 	mono-stdlib.c 		\
 	mono-property-hash.h 	\
@@ -101,6 +102,8 @@ monoutils_sources = \
 	mono-threads.c	\
 	mono-threads-state-machine.c	\
 	mono-threads-posix.c	\
+	mono-threads-posix-signals.c	\
+	mono-threads-posix-signals.h	\
 	mono-threads-mach.c	\
 	mono-threads-mach-helper.c	\
 	mono-threads-windows.c	\
@@ -109,8 +112,12 @@ monoutils_sources = \
 	mono-threads-openbsd.c	\
 	mono-threads-android.c	\
 	mono-threads.h	\
+	mono-threads-api.h	\
 	mono-threads-coop.c	\
 	mono-threads-coop.h	\
+	mono-threads-mach-abort-syscall.c	\
+	mono-threads-posix-abort-syscall.c	\
+	mono-threads-windows-abort-syscall.c	\
 	mono-tls.h	\
 	mono-tls.c	\
 	linux_magic.h	\
@@ -119,6 +126,7 @@ monoutils_sources = \
 	atomic.c	\
 	mono-hwcap.h	\
 	mono-hwcap.c	\
+	mono-hwcap-vars.h	\
 	bsearch.h	\
 	bsearch.c	\
 	mono-signal-handler.h	\
@@ -139,7 +147,9 @@ monoutils_sources = \
 	memfuncs.c \
 	memfuncs.h \
 	parse.c \
-	parse.h
+	parse.h	\
+	checked-build.c \
+	checked-build.h
 
 arch_sources = 
 
@@ -158,7 +168,7 @@ arch_sources += mach-support-arm.c
 endif
 
 if ARM64
-arch_sources += mach-support-arm.c
+arch_sources += mach-support-arm64.c
 endif
 
 else
@@ -167,48 +177,56 @@ arch_sources += mach-support-unknown.c
 
 endif
 
+if !CROSS_COMPILE
+
 if X86
-arch_sources += mono-hwcap-x86.c mono-hwcap-x86.h
+arch_sources += mono-hwcap-x86.c
 endif
 
 if AMD64
-arch_sources += mono-hwcap-x86.c mono-hwcap-x86.h
+arch_sources += mono-hwcap-x86.c
 endif
 
 if ARM
-arch_sources += mono-hwcap-arm.c mono-hwcap-arm.h
+arch_sources += mono-hwcap-arm.c
 endif
 
 if ARM64
-arch_sources += mono-hwcap-arm64.c mono-hwcap-arm64.h
+arch_sources += mono-hwcap-arm64.c
 endif
 
 if MIPS
-arch_sources += mono-hwcap-mips.c mono-hwcap-mips.h
+arch_sources += mono-hwcap-mips.c
 endif
 
 if POWERPC
-arch_sources += mono-hwcap-ppc.c mono-hwcap-ppc.h
+arch_sources += mono-hwcap-ppc.c
 endif
 
 if POWERPC64
-arch_sources += mono-hwcap-ppc.c mono-hwcap-ppc.h
+arch_sources += mono-hwcap-ppc.c
 endif
 
 if SPARC
-arch_sources += mono-hwcap-sparc.c mono-hwcap-sparc.h
+arch_sources += mono-hwcap-sparc.c
 endif
 
 if SPARC64
-arch_sources += mono-hwcap-sparc.c mono-hwcap-sparc.h
+arch_sources += mono-hwcap-sparc.c
 endif
 
 if IA64
-arch_sources += mono-hwcap-ia64.c mono-hwcap-ia64.h
+arch_sources += mono-hwcap-ia64.c
 endif
 
 if S390X
-arch_sources += mono-hwcap-s390x.c mono-hwcap-s390x.h
+arch_sources += mono-hwcap-s390x.c
+endif
+
+else
+
+arch_sources += mono-hwcap-cross.c
+
 endif
 
 libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
@@ -221,4 +239,4 @@ libmonoutilsinclude_HEADERS = 	\
 	mono-dl-fallback.h	\
 	mono-counters.h
 
-EXTRA_DIST = ChangeLog mono-embed.h mono-embed.c
+EXTRA_DIST = mono-embed.h mono-embed.c

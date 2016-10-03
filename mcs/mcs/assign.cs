@@ -363,7 +363,6 @@ namespace Mono.CSharp {
 			return this;
 		}
 
-#if NET_4_0 || MOBILE_DYNAMIC
 		public override System.Linq.Expressions.Expression MakeExpression (BuilderContext ctx)
 		{
 			var tassign = target as IDynamicAssign;
@@ -391,7 +390,6 @@ namespace Mono.CSharp {
 
 			return System.Linq.Expressions.Expression.Assign (target_object, source_object);
 		}
-#endif
 		protected virtual Expression ResolveConversions (ResolveContext ec)
 		{
 			source = Convert.ImplicitConversionRequired (ec, source, target.Type, source.Location);
@@ -721,9 +719,11 @@ namespace Mono.CSharp {
 				this.loc = child.Location;
 			}
 
+			public bool RequiresEmitWithAwait { get; set; }
+
 			public override bool ContainsEmitWithAwait ()
 			{
-				return child.ContainsEmitWithAwait ();
+				return RequiresEmitWithAwait || child.ContainsEmitWithAwait ();
 			}
 
 			public override Expression CreateExpressionTree (ResolveContext ec)

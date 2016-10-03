@@ -583,15 +583,21 @@ namespace Mono.CSharp {
 		{
 			bool valid = true;
 			foreach (string wid in text.Split (numeric_value_separator, StringSplitOptions.RemoveEmptyEntries)) {
+				var warning = wid;
+				if (warning.Length == 6 && warning [0] == 'C' && warning [1] == 'S')
+					warning = warning.Substring (2);
+
 				int id;
-				if (!int.TryParse (wid, NumberStyles.AllowLeadingWhite, CultureInfo.InvariantCulture, out id)) {
-					report.Error (1904, "`{0}' is not a valid warning number", wid);
-					valid = false;
+				if (!int.TryParse (warning, NumberStyles.AllowLeadingWhite, CultureInfo.InvariantCulture, out id)) {
 					continue;
 				}
 
-				if (report.CheckWarningCode (id, Location.Null))
+				if (report.CheckWarningCode (id, Location.Null)) {
 					action (id);
+				} else {
+					report.Error (1904, "`{0}' is not a valid warning number", wid);
+					valid = false;
+				}
 			}
 
 			return valid;
@@ -1202,6 +1208,32 @@ namespace Mono.CSharp {
 				}
 
 				settings.RuntimeMetadataVersion = value;
+				return ParseResult.Success;
+
+			// csc options that we don't support
+			case "/analyzer":
+			case "/appconfig":
+			case "/baseaddress":
+			case "/deterministic":
+			case "/errorendlocation":
+			case "/errorlog":
+			case "/features":
+			case "/highentropyva":
+			case "/highentropyva+":
+			case "/highentropyva-":
+			case "/link":
+			case "/moduleassemblyname":
+			case "/nowin32manifest":
+			case "/pathmap":
+			case "/pdb":
+			case "/preferreduilang":
+			case "/publicsign":
+			case "/reportanalyzer":
+			case "/ruleset":
+			case "/sqmsessionguid":
+			case "/subsystemversion":
+			case "/utf8output":
+			case "/win32manifest":
 				return ParseResult.Success;
 
 			default:
