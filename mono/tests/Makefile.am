@@ -371,7 +371,6 @@ BASE_TEST_CS_SRC=		\
 	bug-81673.cs	\
 	bug-36848.cs    \
 	bug-81691.cs	\
-	bug-80307.cs	\
 	bug-415577.cs	\
 	filter-stack.cs	\
 	vararg2.cs	\
