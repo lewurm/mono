@@ -1423,9 +1423,7 @@ namespace MonoTests.System.Net
 			IPEndPoint ep = NetworkHelpers.LocalEphemeralEndPoint ();
 			string url = "http://" + ep.ToString () + "/test/";
 
-			using (SocketResponder responder = new SocketResponder (ep, new SocketRequestHandler (EchoRequestHandler))) {
-				responder.Start ();
-
+			using (SocketResponder responder = new SocketResponder (ep, s => EchoRequestHandler (s))) {
 				WebClient wc = new WebClient ();
 				wc.Encoding = Encoding.ASCII;
 
@@ -1855,7 +1853,8 @@ namespace MonoTests.System.Net
 		[Category ("AndroidNotWorking")] // Test suite hangs if the tests runs as part of the entire BCL suite. Works when only this fixture is ran
 		public void UploadFileAsyncContentType ()
 		{
-			var serverUri = "http://localhost:13370/";
+			var port = NetworkHelpers.FindFreePort ();
+			var serverUri = "http://localhost:" + port + "/";
 			var filename = Path.GetTempFileName ();
 
 			HttpListener listener = new HttpListener ();
@@ -1875,16 +1874,13 @@ namespace MonoTests.System.Net
 		}
 #endif
 
-#if NET_4_0
 		public void UploadAsyncCancelEventTest (int port, Action<WebClient, Uri, EventWaitHandle> uploadAction)
 		{
 			var ep = NetworkHelpers.LocalEphemeralEndPoint ();
 			string url = "http://" + ep.ToString() + "/test/";
 
-			using (var responder = new SocketResponder (ep, EchoRequestHandler))
+			using (var responder = new SocketResponder (ep, s => EchoRequestHandler (s)))
 			{
-				responder.Start ();
-
 				var webClient = new WebClient ();
 
 				var cancellationTokenSource = new CancellationTokenSource ();
@@ -1899,6 +1895,5 @@ namespace MonoTests.System.Net
 				Assert.IsTrue (cancelEvent.WaitOne (1000));
 			}
 		}
-#endif
 	}
 }

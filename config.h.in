@@ -1,8 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* The architecture this is running on */
-#undef ARCHITECTURE
-
 /* GC description */
 #undef DEFAULT_GC_NAME
 
@@ -10,7 +7,7 @@
 #undef DISABLED_FEATURES
 
 /* Disable AOT Compiler */
-#undef DISABLE_AOT_COMPILER
+#undef DISABLE_AOT
 
 /* Disable support for multiple appdomains. */
 #undef DISABLE_APPDOMAINS
@@ -35,6 +32,9 @@
 
 /* Disable generics support */
 #undef DISABLE_GENERICS
+
+/* ... */
+#undef DISABLE_HW_TRAPS
 
 /* Icall tables disabled */
 #undef DISABLE_ICALL_TABLES
@@ -94,9 +94,6 @@
 /* Disable Shadow Copy for AppDomains */
 #undef DISABLE_SHADOW_COPY
 
-/* Disable inter-process shared handles */
-#undef DISABLE_SHARED_HANDLES
-
 /* Disable shared perfcounters. */
 #undef DISABLE_SHARED_PERFCOUNTERS
 
@@ -115,14 +112,23 @@
 /* Disables the verifier */
 #undef DISABLE_VERIFIER
 
+/* Enable checked build */
+#undef ENABLE_CHECKED_BUILD
+
+/* Enable GC checked build */
+#undef ENABLE_CHECKED_BUILD_GC
+
+/* Enable metadata checked build */
+#undef ENABLE_CHECKED_BUILD_METADATA
+
+/* Enable thread checked build */
+#undef ENABLE_CHECKED_BUILD_THREAD
+
 /* Enable DTrace probes */
 #undef ENABLE_DTRACE
 
 /* Extension module enabled */
 #undef ENABLE_EXTENSION_MODULE
-
-/* Gsharedvt */
-#undef ENABLE_GSHAREDVT
 
 /* Icall export enabled */
 #undef ENABLE_ICALL_EXPORT
@@ -133,11 +139,17 @@
 /* Enable the LLVM back end */
 #undef ENABLE_LLVM
 
+/* Runtime support code for llvm enabled */
+#undef ENABLE_LLVM_RUNTIME
+
 /* Enable using `perf` for profiling on Linux */
 #undef ENABLE_PERF_EVENTS
 
 /* Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY */
 #undef GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY
+
+/* Define to 1 if you have the `accept4' function. */
+#undef HAVE_ACCEPT4
 
 /* Has the 'aintl' function */
 #undef HAVE_AINTL
@@ -178,11 +190,17 @@
 /* Define to 1 if you have the <checklist.h> header file. */
 #undef HAVE_CHECKLIST_H
 
+/* Define to 1 if you have the `clock_nanosleep' function. */
+#undef HAVE_CLOCK_NANOSLEEP
+
 /* Define to 1 if you have the <CommonCrypto/CommonDigest.h> header file. */
 #undef HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
 /* Define to 1 if you have the <complex.h> header file. */
 #undef HAVE_COMPLEX_H
+
+/* Defaults to concurrent GC */
+#undef HAVE_CONC_GC_AS_DEFAULT
 
 /* Define to 1 if you have the `confstr' function. */
 #undef HAVE_CONFSTR
@@ -260,6 +278,12 @@
 /* Define to 1 if you have the <execinfo.h> header file. */
 #undef HAVE_EXECINFO_H
 
+/* Define to 1 if you have the `execv' function. */
+#undef HAVE_EXECV
+
+/* Define to 1 if you have the `execve' function. */
+#undef HAVE_EXECVE
+
 /* Define to 1 if you have the `execvp' function. */
 #undef HAVE_EXECVP
 
@@ -271,6 +295,9 @@
 
 /* Define to 1 if you have the `finite' function. */
 #undef HAVE_FINITE
+
+/* Define to 1 if you have the `fork' function. */
+#undef HAVE_FORK
 
 /* Define to 1 if you have the <fstab.h> header file. */
 #undef HAVE_FSTAB_H
@@ -331,9 +358,6 @@
 
 /* Define to 1 if you have the `getpriority' function. */
 #undef HAVE_GETPRIORITY
-
-/* Define if GetProcessId is available */
-#undef HAVE_GETPROCESSID
 
 /* Have getprotobyname */
 #undef HAVE_GETPROTOBYNAME
@@ -413,6 +437,9 @@
 /* isinf available */
 #undef HAVE_ISINF
 
+/* Define to 1 if you have the `kill' function. */
+#undef HAVE_KILL
+
 /* Define to 1 if you have the `kqueue' function. */
 #undef HAVE_KQUEUE
 
@@ -470,6 +497,9 @@
 /* Define to 1 if you have the `mmap' function. */
 #undef HAVE_MMAP
 
+/* Moving collector */
+#undef HAVE_MOVING_COLLECTOR
+
 /* Define to 1 if you have the `mremap' function. */
 #undef HAVE_MREMAP
 
@@ -493,9 +523,6 @@
 
 /* No GC support. */
 #undef HAVE_NULL_GC
-
-/* Have oprofile support */
-#undef HAVE_OPROFILE
 
 /* Define to 1 if you have the <pathconf.h> header file. */
 #undef HAVE_PATHCONF_H
@@ -575,11 +602,8 @@
 /* Define to 1 if you have the `remap_file_pages' function. */
 #undef HAVE_REMAP_FILE_PAGES
 
-/* Define to 1 if you have the `rint' function. */
-#undef HAVE_RINT
-
-/* Define to 1 if you have the `round' function. */
-#undef HAVE_ROUND
+/* Define to 1 if you have the `sched_getaffinity' function. */
+#undef HAVE_SCHED_GETAFFINITY
 
 /* Define to 1 if you have the `sched_getcpu' function. */
 #undef HAVE_SCHED_GETCPU
@@ -632,6 +656,9 @@
 /* Define to 1 if you have the `sigaction' function. */
 #undef HAVE_SIGACTION
 
+/* Define to 1 if you have the `signal' function. */
+#undef HAVE_SIGNAL
+
 /* Define to 1 if you have the <signal.h> header file. */
 #undef HAVE_SIGNAL_H
 
@@ -683,6 +710,9 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if the system has the type `struct cmsghdr'. */
+#undef HAVE_STRUCT_CMSGHDR
+
 /* Define to 1 if `d_off' is a member of `struct dirent'. */
 #undef HAVE_STRUCT_DIRENT_D_OFF
 
@@ -707,11 +737,29 @@
 /* Define to 1 if `kp_proc' is a member of `struct kinfo_proc'. */
 #undef HAVE_STRUCT_KINFO_PROC_KP_PROC
 
+/* Define to 1 if the system has the type `struct linger'. */
+#undef HAVE_STRUCT_LINGER
+
 /* Define to 1 if `pw_gecos' is a member of `struct passwd'. */
 #undef HAVE_STRUCT_PASSWD_PW_GECOS
 
 /* Define to 1 if the system has the type `struct pollfd'. */
 #undef HAVE_STRUCT_POLLFD
+
+/* Define to 1 if the system has the type `struct sockaddr'. */
+#undef HAVE_STRUCT_SOCKADDR
+
+/* Define to 1 if the system has the type `struct sockaddr_in'. */
+#undef HAVE_STRUCT_SOCKADDR_IN
+
+/* Define to 1 if the system has the type `struct sockaddr_in6'. */
+#undef HAVE_STRUCT_SOCKADDR_IN6
+
+/* Define to 1 if the system has the type `struct sockaddr_storage'. */
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
+
+/* Define to 1 if the system has the type `struct sockaddr_un'. */
+#undef HAVE_STRUCT_SOCKADDR_UN
 
 /* Define to 1 if the system has the type `struct stat'. */
 #undef HAVE_STRUCT_STAT
@@ -806,9 +854,6 @@
 /* Define to 1 if you have the <sys/select.h> header file. */
 #undef HAVE_SYS_SELECT_H
 
-/* Define to 1 if you have the <sys/sem.h> header file. */
-#undef HAVE_SYS_SEM_H
-
 /* Define to 1 if you have the <sys/sendfile.h> header file. */
 #undef HAVE_SYS_SENDFILE_H
 
@@ -896,6 +941,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if you have the <unwind.h> header file. */
+#undef HAVE_UNWIND_H
+
 /* Define to 1 if you have /usr/include/malloc.h. */
 #undef HAVE_USR_INCLUDE_MALLOC_H
 
@@ -929,8 +977,41 @@
 /* Define to 1 if you have the `_finite' function. */
 #undef HAVE__FINITE
 
+/* ... */
+#undef HOST_AMD64
+
+/* ... */
+#undef HOST_ARM
+
+/* ... */
+#undef HOST_ARM64
+
+/* ... */
+#undef HOST_IA64
+
+/* ... */
+#undef HOST_MIPS
+
+/* ... */
+#undef HOST_POWERPC
+
+/* ... */
+#undef HOST_POWERPC64
+
+/* ... */
+#undef HOST_S390X
+
+/* ... */
+#undef HOST_SPARC
+
+/* ... */
+#undef HOST_SPARC64
+
 /* Host Platform is Win32 */
 #undef HOST_WIN32
+
+/* ... */
+#undef HOST_X86
 
 /* Define as const if the declaration of iconv() needs const. */
 #undef ICONV_CONST
@@ -945,17 +1026,23 @@
    */
 #undef LT_OBJDIR
 
+/* The architecture this is running on */
+#undef MONO_ARCHITECTURE
+
 /* Enable the allocation and indexing of arrays greater than Int32.MaxValue */
 #undef MONO_BIG_ARRAYS
 
 /* The runtime is compiled for cross-compiling mode */
 #undef MONO_CROSS_COMPILE
 
+/* Disable banned functions from being used by the runtime */
+#undef MONO_INSIDE_RUNTIME
+
 /* The LLVM back end is dynamically loaded */
 #undef MONO_LLVM_LOADED
 
-/* native types */
-#undef MONO_NATIVE_TYPES
+/* AOT cross offsets file */
+#undef MONO_OFFSETS_FILE
 
 /* Reduce runtime requirements (and capabilities) */
 #undef MONO_SMALL_CONFIG
@@ -971,9 +1058,6 @@
 
 /* Define if Unix sockets cannot be created in an anonymous namespace */
 #undef NEED_LINK_UNLINK
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Name of package */
 #undef PACKAGE
@@ -1071,6 +1155,9 @@
 /* ... */
 #undef TARGET_SPARC64
 
+/* The JIT/AOT targets WatchOS */
+#undef TARGET_WATCHOS
+
 /* Target Platform is Win32 */
 #undef TARGET_WIN32
 
@@ -1086,9 +1173,6 @@
 /* ... */
 #undef USE_GCC_ATOMIC_OPS
 
-/* Use jump tables in JIT */
-#undef USE_JUMP_TABLES
-
 /* Use kqueue for the threadpool */
 #undef USE_KQUEUE_FOR_THREADPOOL
 
@@ -1100,9 +1184,6 @@
 
 /* Version number of package */
 #undef VERSION
-
-/* ... */
-#undef __default_codegen__
 
 /* 64 bit mode with 4 byte longs and pointers */
 #undef __mono_ilp32__

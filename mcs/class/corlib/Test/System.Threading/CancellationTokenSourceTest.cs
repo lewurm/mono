@@ -27,7 +27,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if NET_4_0
 
 using System;
 using System.Threading;
@@ -56,8 +55,10 @@ namespace MonoTests.System.Threading
 		{
 			int called = 0;
 			var cts = new CancellationTokenSource (TimeSpan.FromMilliseconds (20));
-			cts.Token.Register (() => called++);
-			Thread.Sleep (50);
+			var mre = new ManualResetEvent (false);
+			cts.Token.Register (() => { called++; mre.Set (); });
+
+			Assert.IsTrue (mre.WaitOne (1000), "Not called in 1000ms");
 			Assert.AreEqual (1, called, "#1");
 		}
 
@@ -66,9 +67,11 @@ namespace MonoTests.System.Threading
 		{
 			int called = 0;
 			var cts = new CancellationTokenSource ();
-			cts.Token.Register (() => called++);
+			var mre = new ManualResetEvent(false);
+			cts.Token.Register (() => { called++; mre.Set (); });
 			cts.CancelAfter (20);
-			Thread.Sleep (50);
+
+			Assert.IsTrue(mre.WaitOne (1000), "Should be cancelled in ~20ms");
 			Assert.AreEqual (1, called, "#1");
 		}
 
@@ -88,10 +91,12 @@ namespace MonoTests.System.Threading
 		{
 			int called = 0;
 			var cts = new CancellationTokenSource ();
-			cts.Token.Register (() => called++);
+			var mre = new ManualResetEvent (false);
+			cts.Token.Register (() => { called++; mre.Set (); });
 			cts.CancelAfter (50);
 			cts.Dispose ();
-			Thread.Sleep (100);
+
+			Assert.IsFalse (mre.WaitOne (100), "Shouldn't have been called");
 			Assert.AreEqual (0, called, "#1");
 		}
 
@@ -489,5 +494,4 @@ namespace MonoTests.System.Threading
 	}
 }
 
-#endif
 

@@ -3,6 +3,7 @@
  *
  *
  * Copyright (c) 2011 Novell, Inc (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 
@@ -15,10 +16,6 @@
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
-#endif
-
-#ifdef HOST_WATCHOS
-#include <ucontext.h>
 #endif
 
 /*
@@ -34,13 +31,13 @@
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
        defined(__FreeBSD__) || defined(__OpenBSD__)
-#ifdef HAVE_SIGACTION
-#define MONO_SIGNAL_USE_SIGACTION 1
+#if defined(HAVE_SIGACTION) || defined(__APPLE__)  // the __APPLE__ check is required for the tvos simulator, which has ucontext_t but not sigaction
+#define MONO_SIGNAL_USE_UCONTEXT_T 1
 #endif
 #endif
 
 #if defined(__native_client__)
-#undef MONO_SIGNAL_USE_SIGACTION
+#undef MONO_SIGNAL_USE_UCONTEXT_T
 #endif
 
 #ifdef HOST_WIN32
@@ -155,8 +152,8 @@ typedef struct {
 
 #if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
 
-#ifdef HAVE_SIGACTION
-#define MONO_SIGNAL_USE_SIGACTION 1
+#if defined(HAVE_SIGACTION) || defined(__APPLE__)  // the __APPLE__ check is required for the tvos simulator, which has ucontext_t but not sigaction
+#define MONO_SIGNAL_USE_UCONTEXT_T 1
 #endif
 
 #endif
@@ -183,11 +180,11 @@ extern void mono_context_get_current (void *);
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
 		"movq $0x0,  %%nacl:0x00(%%r15, %0, 1)\n"	\
-		"movq %%rbx, %%nacl:0x08(%%r15, %0, 1)\n"	\
-		"movq %%rcx, %%nacl:0x10(%%r15, %0, 1)\n"	\
-		"movq %%rdx, %%nacl:0x18(%%r15, %0, 1)\n"	\
-		"movq %%rbp, %%nacl:0x20(%%r15, %0, 1)\n"	\
-		"movq %%rsp, %%nacl:0x28(%%r15, %0, 1)\n"	\
+		"movq %%rcx, %%nacl:0x08(%%r15, %0, 1)\n"	\
+		"movq %%rdx, %%nacl:0x10(%%r15, %0, 1)\n"	\
+		"movq %%rbx, %%nacl:0x18(%%r15, %0, 1)\n"	\
+		"movq %%rsp, %%nacl:0x20(%%r15, %0, 1)\n"	\
+		"movq %%rbp, %%nacl:0x28(%%r15, %0, 1)\n"	\
 		"movq %%rsi, %%nacl:0x30(%%r15, %0, 1)\n"	\
 		"movq %%rdi, %%nacl:0x38(%%r15, %0, 1)\n"	\
 		"movq %%r8,  %%nacl:0x40(%%r15, %0, 1)\n"	\
@@ -204,14 +201,15 @@ extern void mono_context_get_current (void *);
 		: "a" ((int64_t)&(ctx))	\
 		: "rdx", "memory")
 #else
+
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
 		"movq $0x0,  0x00(%0)\n"	\
-		"movq %%rbx, 0x08(%0)\n"	\
-		"movq %%rcx, 0x10(%0)\n"	\
-		"movq %%rdx, 0x18(%0)\n"	\
-		"movq %%rbp, 0x20(%0)\n"	\
-		"movq %%rsp, 0x28(%0)\n"	\
+		"movq %%rcx, 0x08(%0)\n"	\
+		"movq %%rdx, 0x10(%0)\n"	\
+		"movq %%rbx, 0x18(%0)\n"	\
+		"movq %%rsp, 0x20(%0)\n"	\
+		"movq %%rbp, 0x28(%0)\n"	\
 		"movq %%rsi, 0x30(%0)\n"	\
 		"movq %%rdi, 0x38(%0)\n"	\
 		"movq %%r8,  0x40(%0)\n"	\
@@ -254,18 +252,9 @@ typedef struct {
 
 #if defined(HOST_WATCHOS)
 
-#define MONO_CONTEXT_GET_CURRENT(ctx) do {							\
-	ucontext_t uctx;												\
-	struct __darwin_mcontext32 *mctx;								\
-	getcontext(&uctx);												\
-	mctx = uctx.uc_mcontext;										\
-	memcpy(ctx.regs, mctx->__ss.__r, 13 * sizeof(__uint32_t));		\
-	ctx.regs[ARMREG_SP] = mctx->__ss.__sp;							\
-	ctx.regs[ARMREG_LR] = mctx->__ss.__lr;							\
-	ctx.regs[ARMREG_PC] = mctx->__ss.__pc;							\
-	ctx.pc = mctx->__ss.__pc;										\
-	memcpy(ctx.fregs, mctx->__fs.__r, 16 * sizeof(__uint32_t));		\
-	ctx.cpsr = mctx->__ss.__cpsr;									\
+#define MONO_CONTEXT_GET_CURRENT(ctx) do { \
+	gpointer _dummy; \
+    ctx.regs [ARMREG_SP] = &_dummy; \
 } while (0);
 
 #else
@@ -315,6 +304,21 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) (gpointer)((ctx)->regs [ARMREG_FP])
 #define MONO_CONTEXT_GET_SP(ctx) (gpointer)((ctx)->regs [ARMREG_SP])
 
+#if defined (HOST_APPLETVOS)
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) do { \
+	arm_unified_thread_state_t thread_state;	\
+	int state_flavor = ARM_UNIFIED_THREAD_STATE;	\
+	unsigned state_count = ARM_UNIFIED_THREAD_STATE_COUNT;	\
+	thread_port_t self = mach_thread_self ();	\
+	kern_return_t ret = thread_get_state (self, state_flavor, (thread_state_t) &thread_state, &state_count);	\
+	g_assert (ret == 0);	\
+	mono_mach_arch_thread_state_to_mono_context ((thread_state_t)&thread_state, &ctx); \
+	mach_port_deallocate (current_task (), self);	\
+} while (0);
+
+#else
+
 #define MONO_CONTEXT_GET_CURRENT(ctx)	do { 	\
 	__asm__ __volatile__(			\
 		"mov x16, %0\n" \
@@ -341,13 +345,15 @@ typedef struct {
 		: "x30", "memory"			\
 	);								\
 	__asm__ __volatile__( \
-		"adr %0, L0\n" \
-		"L0:\n"	\
+		"adr %0, L0%=\n" \
+		"L0%=:\n"	\
 		: "=r" (ctx.pc)		\
 		:					\
 		: "memory"			 \
 	); \
 } while (0)
+
+#endif
 
 #define MONO_ARCH_HAS_MONO_CONTEXT 1
 
@@ -359,16 +365,17 @@ typedef struct {
  * We might also want to add an additional field to propagate
  * the original context from the signal handler.
  */
+#ifdef __mono_ppc64__
+
 typedef struct {
 	gulong sc_ir;          // pc 
 	gulong sc_sp;          // r1
-	mgreg_t regs [19]; /*FIXME, this must be changed to 32 for sgen*/
-	double fregs [18];
+	mgreg_t regs [32];
+	double fregs [32];
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */
 #define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)ip; } while (0);
-/* FIXME: should be called SET_SP */
 #define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
 #define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)sp; } while (0);
 
@@ -376,9 +383,177 @@ typedef struct {
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
 
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"std 0, 0(%0)\n"	\
+		"std 1, 8(%0)\n"	\
+		"std 0, 8*0+16(%0)\n"	\
+		"std 1, 8*1+16(%0)\n"	\
+		"std 2, 8*2+16(%0)\n"	\
+		"std 3, 8*3+16(%0)\n"	\
+		"std 4, 8*4+16(%0)\n"	\
+		"std 5, 8*5+16(%0)\n"	\
+		"std 6, 8*6+16(%0)\n"	\
+		"std 7, 8*7+16(%0)\n"	\
+		"std 8, 8*8+16(%0)\n"	\
+		"std 9, 8*9+16(%0)\n"	\
+		"std 10, 8*10+16(%0)\n"	\
+		"std 11, 8*11+16(%0)\n"	\
+		"std 12, 8*12+16(%0)\n"	\
+		"std 13, 8*13+16(%0)\n"	\
+		"std 14, 8*14+16(%0)\n"	\
+		"std 15, 8*15+16(%0)\n"	\
+		"std 16, 8*16+16(%0)\n"	\
+		"std 17, 8*17+16(%0)\n"	\
+		"std 18, 8*18+16(%0)\n"	\
+		"std 19, 8*19+16(%0)\n"	\
+		"std 20, 8*20+16(%0)\n"	\
+		"std 21, 8*21+16(%0)\n"	\
+		"std 22, 8*22+16(%0)\n"	\
+		"std 23, 8*23+16(%0)\n"	\
+		"std 24, 8*24+16(%0)\n"	\
+		"std 25, 8*25+16(%0)\n"	\
+		"std 26, 8*26+16(%0)\n"	\
+		"std 27, 8*27+16(%0)\n"	\
+		"std 28, 8*28+16(%0)\n"	\
+		"std 29, 8*29+16(%0)\n"	\
+		"std 30, 8*30+16(%0)\n"	\
+		"std 31, 8*31+16(%0)\n"	\
+		"stfd 0, 8*0+8*32+16(%0)\n"	\
+		"stfd 1, 8*1+8*32+16(%0)\n"	\
+		"stfd 2, 8*2+8*32+16(%0)\n"	\
+		"stfd 3, 8*3+8*32+16(%0)\n"	\
+		"stfd 4, 8*4+8*32+16(%0)\n"	\
+		"stfd 5, 8*5+8*32+16(%0)\n"	\
+		"stfd 6, 8*6+8*32+16(%0)\n"	\
+		"stfd 7, 8*7+8*32+16(%0)\n"	\
+		"stfd 8, 8*8+8*32+16(%0)\n"	\
+		"stfd 9, 8*9+8*32+16(%0)\n"	\
+		"stfd 10, 8*10+8*32+16(%0)\n"	\
+		"stfd 11, 8*11+8*32+16(%0)\n"	\
+		"stfd 12, 8*12+8*32+16(%0)\n"	\
+		"stfd 13, 8*13+8*32+16(%0)\n"	\
+		"stfd 14, 8*14+8*32+16(%0)\n"	\
+		"stfd 15, 8*15+8*32+16(%0)\n"	\
+		"stfd 16, 8*16+8*32+16(%0)\n"	\
+		"stfd 17, 8*17+8*32+16(%0)\n"	\
+		"stfd 18, 8*18+8*32+16(%0)\n"	\
+		"stfd 19, 8*19+8*32+16(%0)\n"	\
+		"stfd 20, 8*20+8*32+16(%0)\n"	\
+		"stfd 21, 8*21+8*32+16(%0)\n"	\
+		"stfd 22, 8*22+8*32+16(%0)\n"	\
+		"stfd 23, 8*23+8*32+16(%0)\n"	\
+		"stfd 24, 8*24+8*32+16(%0)\n"	\
+		"stfd 25, 8*25+8*32+16(%0)\n"	\
+		"stfd 26, 8*26+8*32+16(%0)\n"	\
+		"stfd 27, 8*27+8*32+16(%0)\n"	\
+		"stfd 28, 8*28+8*32+16(%0)\n"	\
+		"stfd 29, 8*29+8*32+16(%0)\n"	\
+		"stfd 30, 8*30+8*32+16(%0)\n"	\
+		"stfd 31, 8*31+8*32+16(%0)\n"	\
+		: : "r" (&(ctx))	\
+		: "memory"			\
+	)
+
+#else /* !defined(__mono_ppc64__) */
+
+typedef struct {
+	mgreg_t sc_ir;          // pc
+	mgreg_t sc_sp;          // r1
+	mgreg_t regs [32];
+	double fregs [32];
+} MonoContext;
+
+/* we have the stack pointer, not the base pointer in sigcontext */
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (mgreg_t)ip; } while (0);
+/* FIXME: should be called SET_SP */
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (mgreg_t)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (mgreg_t)sp; } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31-13]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"std 0, 0(%0)\n"	\
+		"std 1, 4(%0)\n"	\
+		"std 0, 4*0+8(%0)\n"	\
+		"std 1, 4*1+8(%0)\n"	\
+		"std 2, 4*2+8(%0)\n"	\
+		"std 3, 4*3+8(%0)\n"	\
+		"std 4, 4*4+8(%0)\n"	\
+		"std 5, 4*5+8(%0)\n"	\
+		"std 6, 4*6+8(%0)\n"	\
+		"std 7, 4*7+8(%0)\n"	\
+		"std 8, 4*8+8(%0)\n"	\
+		"std 9, 4*9+8(%0)\n"	\
+		"std 10, 4*10+8(%0)\n"	\
+		"std 11, 4*11+8(%0)\n"	\
+		"std 12, 4*12+8(%0)\n"	\
+		"std 13, 4*13+8(%0)\n"	\
+		"std 14, 4*14+8(%0)\n"	\
+		"std 15, 4*15+8(%0)\n"	\
+		"std 16, 4*16+8(%0)\n"	\
+		"std 17, 4*17+8(%0)\n"	\
+		"std 18, 4*18+8(%0)\n"	\
+		"std 19, 4*19+8(%0)\n"	\
+		"std 20, 4*20+8(%0)\n"	\
+		"std 21, 4*21+8(%0)\n"	\
+		"std 22, 4*22+8(%0)\n"	\
+		"std 23, 4*23+8(%0)\n"	\
+		"std 24, 4*24+8(%0)\n"	\
+		"std 25, 4*25+8(%0)\n"	\
+		"std 26, 4*26+8(%0)\n"	\
+		"std 27, 4*27+8(%0)\n"	\
+		"std 28, 4*28+8(%0)\n"	\
+		"std 29, 4*29+8(%0)\n"	\
+		"std 30, 4*30+8(%0)\n"	\
+		"std 31, 4*31+8(%0)\n"	\
+		"stfd 0, 8*0+4*32+8(%0)\n"	\
+		"stfd 1, 8*1+4*32+8(%0)\n"	\
+		"stfd 2, 8*2+4*32+8(%0)\n"	\
+		"stfd 3, 8*3+4*32+8(%0)\n"	\
+		"stfd 4, 8*4+4*32+8(%0)\n"	\
+		"stfd 5, 8*5+4*32+8(%0)\n"	\
+		"stfd 6, 8*6+4*32+8(%0)\n"	\
+		"stfd 7, 8*7+4*32+8(%0)\n"	\
+		"stfd 8, 8*8+4*32+8(%0)\n"	\
+		"stfd 9, 8*9+4*32+8(%0)\n"	\
+		"stfd 10, 8*10+4*32+8(%0)\n"	\
+		"stfd 11, 8*11+4*32+8(%0)\n"	\
+		"stfd 12, 8*12+4*32+8(%0)\n"	\
+		"stfd 13, 8*13+4*32+8(%0)\n"	\
+		"stfd 14, 8*14+4*32+8(%0)\n"	\
+		"stfd 15, 8*15+4*32+8(%0)\n"	\
+		"stfd 16, 8*16+4*32+8(%0)\n"	\
+		"stfd 17, 8*17+4*32+8(%0)\n"	\
+		"stfd 18, 8*18+4*32+8(%0)\n"	\
+		"stfd 19, 8*19+4*32+8(%0)\n"	\
+		"stfd 20, 8*20+4*32+8(%0)\n"	\
+		"stfd 21, 8*21+4*32+8(%0)\n"	\
+		"stfd 22, 8*22+4*32+8(%0)\n"	\
+		"stfd 23, 8*23+4*32+8(%0)\n"	\
+		"stfd 24, 8*24+4*32+8(%0)\n"	\
+		"stfd 25, 8*25+4*32+8(%0)\n"	\
+		"stfd 26, 8*26+4*32+8(%0)\n"	\
+		"stfd 27, 8*27+4*32+8(%0)\n"	\
+		"stfd 28, 8*28+4*32+8(%0)\n"	\
+		"stfd 29, 8*29+4*32+8(%0)\n"	\
+		"stfd 30, 8*30+4*32+8(%0)\n"	\
+		"stfd 31, 8*31+4*32+8(%0)\n"	\
+		: : "r" (&(ctx))	\
+		: "memory"			\
+	)
+
+#endif
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
+
 #elif defined(__sparc__) || defined(sparc) /* defined(__mono_ppc__) */
 
 typedef struct MonoContext {
+	mgreg_t regs [15];
 	guint8 *ip;
 	gpointer *sp;
 	gpointer *fp;
@@ -391,6 +566,54 @@ typedef struct MonoContext {
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->ip))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->fp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sp))
+
+#ifdef __sparcv9
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"st %%g1,[%0]\n"	\
+		"st %%g2,[%0+0x08]\n"	\
+		"st %%g3,[%0+0x10]\n"	\
+		"st %%g4,[%0+0x18]\n"	\
+		"st %%g5,[%0+0x20]\n"	\
+		"st %%g6,[%0+0x28]\n"	\
+		"st %%g7,[%0+0x30]\n"	\
+		"st %%o0,[%0+0x38]\n"	\
+		"st %%o1,[%0+0x40]\n"	\
+		"st %%o2,[%0+0x48]\n"	\
+		"st %%o3,[%0+0x50]\n"	\
+		"st %%o4,[%0+0x58]\n"	\
+		"st %%o5,[%0+0x60]\n"	\
+		"st %%o6,[%0+0x68]\n"	\
+		"st %%o7,[%0+0x70]\n"	\
+		: 			\
+		: "r" (&(ctx))		\
+		: "memory"			\
+	)
+#else
+#define MONO_CONTEXT_GET_CURRENT(ctx)	\
+	__asm__ __volatile__(	\
+		"st %%g1,[%0]\n"	\
+		"st %%g2,[%0+0x04]\n"	\
+		"st %%g3,[%0+0x08]\n"	\
+		"st %%g4,[%0+0x0c]\n"	\
+		"st %%g5,[%0+0x10]\n"	\
+		"st %%g6,[%0+0x14]\n"	\
+		"st %%g7,[%0+0x18]\n"	\
+		"st %%o0,[%0+0x1c]\n"	\
+		"st %%o1,[%0+0x20]\n"	\
+		"st %%o2,[%0+0x24]\n"	\
+		"st %%o3,[%0+0x28]\n"	\
+		"st %%o4,[%0+0x2c]\n"	\
+		"st %%o5,[%0+0x30]\n"	\
+		"st %%o6,[%0+0x34]\n"	\
+		"st %%o7,[%0+0x38]\n"	\
+		: 			\
+		: "r" (&(ctx))		\
+		: "memory"			\
+	)
+#endif
+
+#define MONO_ARCH_HAS_MONO_CONTEXT 1
 
 #elif defined(__ia64__) /*defined(__sparc__) || defined(sparc) */
 
