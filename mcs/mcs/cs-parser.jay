@@ -400,6 +400,17 @@ outer_declaration
 	  }
 	| opt_extern_alias_directives opt_using_directives attribute_sections
 	  {
+		Attributes attrs = (Attributes) $3;
+		if (attrs != null) {
+			foreach (var a in attrs.Attrs) {
+				if (a.ExplicitTarget == "assembly" || a.ExplicitTarget == "module")
+					continue;
+
+				if (a.ExplicitTarget == null)
+					report.Error (-1671, a.Location, "Global attributes must have attribute target specified");
+			}
+		}
+
 		module.AddAttributes ((Attributes) $3, current_namespace);
 	  }
 	| error
@@ -1818,9 +1829,9 @@ property_declaration
 	  accessor_declarations 
 	  {
 		lexer.PropertyParsing = false;
-		
+
 		if (doc_support)
-			current_property.DocComment = ConsumeStoredComment ();				
+			current_property.DocComment = ConsumeStoredComment ();
 	  }
 	  CLOSE_BRACE
 	  {
@@ -1882,6 +1893,9 @@ opt_property_initializer
 		lbag.AppendToMember (current_property, GetLocation ($1), GetLocation ($4));
 		end_block (GetLocation ($4));
 		current_local_parameters = null;
+
+		if (doc_support)
+			Lexer.doc_state = XmlCommentState.Allowed;
 	  }
 	;
 
@@ -3337,10 +3351,16 @@ boolean_literal
 interpolated_string
 	: INTERPOLATED_STRING interpolations INTERPOLATED_STRING_END
 	  {
+		if (lang_version < LanguageVersion.V_6)
+			FeatureIsNotAvailable (GetLocation ($1), "interpolated strings");
+
 		$$ = new InterpolatedString ((StringLiteral) $1, (List<Expression>) $2, (StringLiteral) $3);
 	  }
 	| INTERPOLATED_STRING_END
 	  {
+		if (lang_version < LanguageVersion.V_6)
+			FeatureIsNotAvailable (GetLocation ($1), "interpolated strings");
+
 		$$ = new InterpolatedString ((StringLiteral) $1, null, null);
 	  }
 	;
@@ -3912,7 +3932,9 @@ array_creation_expression
 	  	if ($4 == null)
 	  		report.Error (1586, GetLocation ($1), "Array creation must have array size or array initializer");
 
-		$$ = new ArrayCreation ((FullNamedExpression) $2, (ComposedTypeSpecifier) $3, (ArrayInitializer) $4, GetLocation ($1));
+		$$ = new ArrayCreation ((FullNamedExpression) $2, (ComposedTypeSpecifier) $3, (ArrayInitializer) $4, GetLocation ($1)) {
+			NoEmptyInterpolation = true
+		};
 	  }
 	| NEW rank_specifier array_initializer
 	  {

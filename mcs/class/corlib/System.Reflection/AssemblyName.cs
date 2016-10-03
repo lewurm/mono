@@ -433,6 +433,9 @@ namespace System.Reflection {
 			get {
 				return (cultureinfo == null)? null : cultureinfo.Name;
 			}
+			set {
+				throw new NotImplementedException ();
+			}
 		}
 
 		[ComVisibleAttribute(false)]

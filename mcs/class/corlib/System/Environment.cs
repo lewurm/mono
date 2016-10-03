@@ -57,7 +57,7 @@ namespace System {
 		 * of icalls, do not require an increment.
 		 */
 #pragma warning disable 169
-		private const int mono_corlib_version = 138;
+		private const int mono_corlib_version = 149;
 #pragma warning restore 169
 
 		[ComVisible (true)]
@@ -375,7 +375,7 @@ namespace System {
 		/// </summary>
 		public static Version Version {
 			get {
-				return new Version (Consts.FxFileVersion);
+				return new Version (Consts.EnvironmentVersion);
 			}
 		}
 
@@ -862,6 +862,22 @@ namespace System {
 			}
 		}
 #else
+		public static string GetEnvironmentVariable (string variable, EnvironmentVariableTarget target)
+		{
+			if (target == EnvironmentVariableTarget.Process)
+				return GetEnvironmentVariable (variable);
+
+			return null;
+		}
+
+		public static IDictionary GetEnvironmentVariables (EnvironmentVariableTarget target)
+		{
+			if (target == EnvironmentVariableTarget.Process)
+				return GetEnvironmentVariables ();
+
+			return (IDictionary)new Hashtable ();
+		}
+
 		public static void SetEnvironmentVariable (string variable, string value)
 		{
 			if (variable == null)
@@ -874,6 +890,14 @@ namespace System {
 				throw new ArgumentException ("The first char in the string is the null character.", "variable");
 
 			InternalSetEnvironmentVariable (variable, value);
+		}
+
+		public static void SetEnvironmentVariable (string variable, string value, EnvironmentVariableTarget target)
+		{
+			if (target == EnvironmentVariableTarget.Process)
+				SetEnvironmentVariable (variable, value);
+
+			// other targets ignored
 		}
 #endif
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -896,8 +920,11 @@ namespace System {
 			throw new NotImplementedException ();
 		}
 
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		extern static bool GetIs64BitOperatingSystem ();
+
 		public static bool Is64BitOperatingSystem {
-			get { return IntPtr.Size == 8; } // FIXME: is this good enough?
+			get { return GetIs64BitOperatingSystem (); }
 		}
 
 		public static int SystemPageSize {
@@ -981,6 +1008,19 @@ namespace System {
 		internal static void TriggerCodeContractFailure(ContractFailureKind failureKind, String message, String condition, String exceptionAsString)
 		{
 
+		}
+
+		// Copied from referencesource Environment
+		internal static String GetStackTrace(Exception e, bool needFileInfo)
+		{
+			System.Diagnostics.StackTrace st;
+			if (e == null)
+				st = new System.Diagnostics.StackTrace(needFileInfo);
+			else
+				st = new System.Diagnostics.StackTrace(e, needFileInfo);
+
+			// Do not include a trailing newline for backwards compatibility
+			return st.ToString( System.Diagnostics.StackTrace.TraceFormat.Normal );
 		}
 	}
 }
