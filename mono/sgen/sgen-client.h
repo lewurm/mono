@@ -3,18 +3,7 @@
  *
  * Copyright (C) 2014 Xamarin Inc
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License 2.0 as published by the Free Software Foundation;
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
- *
- * You should have received a copy of the GNU Library General Public
- * License 2.0 along with this library; if not, write to the Free
- * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include "mono/sgen/sgen-pointer-queue.h"
@@ -88,11 +77,24 @@ gboolean sgen_client_mark_ephemerons (ScanCopyContext ctx);
 void sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx);
 
 /*
+ * May return NULL.  Must be an aligned pointer.
+ */
+gpointer sgen_client_default_metadata (void);
+gpointer sgen_client_metadata_for_object (GCObject *obj);
+
+/*
+ * No action required.
+ */
+void sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle);
+void sgen_client_gchandle_destroyed (int handle_type, guint32 handle);
+void sgen_client_ensure_weak_gchandles_accessible (void);
+
+/*
  * This is called for objects that are larger than one card.  If it's possible to scan only
  * parts of the object based on which cards are marked, do so and return TRUE.  Otherwise,
  * return FALSE.
  */
-gboolean sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, gboolean mod_union, ScanCopyContext ctx);
+gboolean sgen_client_cardtable_scan_object (GCObject *obj, mword block_obj_size, guint8 *cards, ScanCopyContext ctx);
 
 /*
  * Called after nursery objects have been pinned.  No action is necessary.
@@ -126,14 +128,6 @@ void sgen_client_degraded_allocation (size_t size);
  * is necessary.
  */
 void sgen_client_total_allocated_heap_changed (size_t allocated_heap_size);
-
-/*
- * Called when an object allocation fails.  The suggested action is to abort the program.
- *
- * FIXME: Don't we want to return a BOOL here that indicates whether to retry the
- * allocation?
- */
-void sgen_client_out_of_memory (size_t size);
 
 /*
  * If the client has registered any internal memory types, this must return a string
@@ -180,7 +174,7 @@ void sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gbool
  * single-threaded programs this is a nop.
  */
 void sgen_client_stop_world (int generation);
-void sgen_client_restart_world (int generation, GGTimingInfo *timing);
+void sgen_client_restart_world (int generation, gint64 *stw_time);
 
 /*
  * Must return FALSE.  The bridge is not supported outside of Mono.
@@ -202,12 +196,6 @@ void sgen_client_bridge_register_finalized_object (GCObject *object);
  */
 void sgen_client_mark_togglerefs (char *start, char *end, ScanCopyContext ctx);
 void sgen_client_clear_togglerefs (char *start, char *end, ScanCopyContext ctx);
-
-/*
- * Called after collections, reporting the amount of time they took.  No action is
- * necessary.
- */
-void sgen_client_log_timing (GGTimingInfo *info, mword last_major_num_sections, mword last_los_memory_usage);
 
 /*
  * Called to handle `MONO_GC_PARAMS` and `MONO_GC_DEBUG` options.  The `handle` functions
@@ -272,8 +260,6 @@ void sgen_client_describe_invalid_pointer (GCObject *ptr);
 #define BEGIN_PROTOCOL_ENTRY_HEAVY6(method,t1,f1,t2,f2,t3,f3,t4,f4,t5,f5,t6,f6) \
 	void sgen_client_ ## method (t1 f1, t2 f2, t3 f3, t4 f4, t5 f5, t6 f6);
 
-#define FLUSH()
-
 #define DEFAULT_PRINT()
 #define CUSTOM_PRINT(_)
 
@@ -282,6 +268,7 @@ void sgen_client_describe_invalid_pointer (GCObject *ptr);
 #define IS_VTABLE_MATCH(_)
 
 #define END_PROTOCOL_ENTRY
+#define END_PROTOCOL_ENTRY_FLUSH
 #define END_PROTOCOL_ENTRY_HEAVY
 
 #include "sgen-protocol-def.h"

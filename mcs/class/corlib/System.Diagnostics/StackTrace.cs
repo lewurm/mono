@@ -37,6 +37,7 @@ using System.Security;
 using System.Security.Permissions;
 using System.Text;
 using System.Threading;
+using System.IO;
 
 namespace System.Diagnostics {
 
@@ -60,6 +61,9 @@ namespace System.Diagnostics {
 		readonly StackTrace[] captured_traces;
 		private bool debug_info;
 
+		private static Dictionary<string, Func<StackTrace, string>> metadataHandlers;
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public StackTrace ()
 		{
 			init_frames (METHODS_TO_SKIP, false);
@@ -149,6 +153,10 @@ namespace System.Diagnostics {
 			throw new NotImplementedException ();
 		}
 
+		internal StackTrace (StackFrame[] frames) {
+			this.frames = frames;
+		}
+
 		public virtual int FrameCount {
 			get {
 				return (frames == null) ? 0 : frames.Length;
@@ -168,6 +176,20 @@ namespace System.Diagnostics {
 		public virtual StackFrame[] GetFrames ()
 		{
 			return frames;
+		}
+
+		static bool isAotidSet;
+		static string aotid;
+		static string GetAotId ()
+		{
+			if (!isAotidSet) {
+				aotid = Assembly.GetAotId ();
+				if (aotid != null)
+					aotid = new Guid (aotid).ToString ("N");
+				isAotidSet = true;
+			}
+
+			return aotid;
 		}
 
 		bool AddFrames (StringBuilder sb)
@@ -207,25 +229,32 @@ namespace System.Diagnostics {
 						sb.AppendFormat (" [0x{0:x5}]", frame.GetILOffset ());
 					}
 
-					sb.AppendFormat (debugInfo, frame.GetSecureFileName (),
-					                 frame.GetFileLineNumber ());
+					var filename = frame.GetSecureFileName ();
+					if (filename[0] == '<') {
+						var mvid = frame.GetMethod ().Module.ModuleVersionId.ToString ("N");
+						var aotid = GetAotId ();
+						if (frame.GetILOffset () != -1 || aotid == null) {
+							filename = string.Format ("<{0}>", mvid);
+						} else {
+							filename = string.Format ("<{0}#{1}>", mvid, aotid);
+						}
+					}
+
+					sb.AppendFormat (debugInfo, filename, frame.GetFileLineNumber ());
 				}
 			}
 
 			return i != 0;
 		}
 
-		// This method is also used with reflection by mono-symbolicate tool.
-		// mono-symbolicate tool uses this method to check which method matches
-		// the stack frame method signature.
-		static void GetFullNameForStackTrace (StringBuilder sb, MethodBase mi)
+		internal void GetFullNameForStackTrace (StringBuilder sb, MethodBase mi)
 		{
 			var declaringType = mi.DeclaringType;
 			if (declaringType.IsGenericType && !declaringType.IsGenericTypeDefinition)
 				declaringType = declaringType.GetGenericTypeDefinition ();
 
 			// Get generic definition
-			var bindingflags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+			const BindingFlags bindingflags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 			foreach (var m in declaringType.GetMethods (bindingflags)) {
 				if (m.MetadataToken == mi.MetadataToken) {
 					mi = m;
@@ -249,7 +278,7 @@ namespace System.Diagnostics {
 				sb.Append ("]");
 			}
 
-			ParameterInfo[] p = mi.GetParametersInternal ();
+			ParameterInfo[] p = mi.GetParameters ();
 
 			sb.Append (" (");
 			for (int i = 0; i < p.Length; ++i) {
@@ -260,18 +289,15 @@ namespace System.Diagnostics {
 				if (pt.IsGenericType && ! pt.IsGenericTypeDefinition)
 					pt = pt.GetGenericTypeDefinition ();
 
-				if (pt.IsClass && !String.IsNullOrEmpty (pt.Namespace)) {
-					sb.Append (pt.Namespace);
-					sb.Append (".");
-				}
-				sb.Append (pt.Name);
+				sb.Append (pt.ToString());
+
 				if (p [i].Name != null) {
 					sb.Append (" ");
 					sb.Append (p [i].Name);
 				}
 			}
 			sb.Append (")");
-		}
+		}		
 
 		public override string ToString ()
 		{
@@ -292,6 +318,7 @@ namespace System.Diagnostics {
 			}
 
 			AddFrames (sb);
+
 			return sb.ToString ();
 		}
 

@@ -3,24 +3,7 @@
  * Copyright 2003-2010 Novell, Inc.
  * Copyright 2011 Xamarin Inc (http://www.xamarin.com)
  * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include "config.h"
@@ -107,7 +90,7 @@ sgen_pin_stats_register_address (char *addr, int pin_type)
 			node_ptr = &node->right;
 	}
 
-	node = sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS, TRUE);
+	node = (PinStatAddress *)sgen_alloc_internal_dynamic (sizeof (PinStatAddress), INTERNAL_MEM_STATISTICS, TRUE);
 	node->addr = addr;
 	node->pin_types = pin_type_bit;
 	node->left = node->right = NULL;
@@ -161,7 +144,7 @@ register_vtable (GCVTable vtable, int pin_types)
 	int i;
 
 	memset (&empty_entry, 0, sizeof (PinnedClassEntry));
-	entry = lookup_vtable_entry (&pinned_class_hash_table, vtable, &empty_entry);
+	entry = (PinnedClassEntry *)lookup_vtable_entry (&pinned_class_hash_table, vtable, &empty_entry);
 
 	for (i = 0; i < PIN_TYPE_MAX; ++i) {
 		if (pin_types & (1 << i))
@@ -194,7 +177,7 @@ sgen_pin_stats_register_global_remset (GCObject *obj)
 		return;
 
 	memset (&empty_entry, 0, sizeof (GlobalRemsetClassEntry));
-	entry = lookup_vtable_entry (&global_remset_class_hash_table, SGEN_LOAD_VTABLE (obj), &empty_entry);
+	entry = (GlobalRemsetClassEntry *)lookup_vtable_entry (&global_remset_class_hash_table, SGEN_LOAD_VTABLE (obj), &empty_entry);
 
 	++entry->num_remsets;
 }
@@ -210,7 +193,7 @@ sgen_pin_stats_print_class_stats (void)
 		return;
 
 	mono_gc_printf (gc_debug_file, "\n%-50s  %10s  %10s  %10s\n", "Class", "Stack", "Static", "Other");
-	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, name, pinned_entry) {
+	SGEN_HASH_TABLE_FOREACH (&pinned_class_hash_table, char *, name, PinnedClassEntry *, pinned_entry) {
 		int i;
 		mono_gc_printf (gc_debug_file, "%-50s", name);
 		for (i = 0; i < PIN_TYPE_MAX; ++i)
@@ -219,7 +202,7 @@ sgen_pin_stats_print_class_stats (void)
 	} SGEN_HASH_TABLE_FOREACH_END;
 
 	mono_gc_printf (gc_debug_file, "\n%-50s  %10s\n", "Class", "#Remsets");
-	SGEN_HASH_TABLE_FOREACH (&global_remset_class_hash_table, name, remset_entry) {
+	SGEN_HASH_TABLE_FOREACH (&global_remset_class_hash_table, char *, name, GlobalRemsetClassEntry *, remset_entry) {
 		mono_gc_printf (gc_debug_file, "%-50s  %10ld\n", name, remset_entry->num_remsets);
 	} SGEN_HASH_TABLE_FOREACH_END;
 

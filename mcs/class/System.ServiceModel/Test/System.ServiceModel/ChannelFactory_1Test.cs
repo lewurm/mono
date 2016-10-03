@@ -434,14 +434,12 @@ namespace MonoTests.System.ServiceModel
 			Assert.AreEqual ("callResult", res.val, "#2");
 		}
 
-#if NET_4_0
 		[Test]
 		public void ConstructorServiceEndpoint ()
 		{
 			// It is okay to pass ServiceEndpoint that does not have Binding or EndpointAddress.
 			new ChannelFactory<IRequestChannel> (new ServiceEndpoint (ContractDescription.GetContract (typeof (IMetadataExchange)), null, null));
 		}
-#endif
 
 		public T CreateFooComplexMC_Channel<T> (bool isXml)
 		{
@@ -482,15 +480,16 @@ namespace MonoTests.System.ServiceModel
 		[Test]
 		public void OneWayOperationWithRequestReplyChannel ()
 		{
+			var port = NetworkHelpers.FindFreePort ();
 			var host = new ServiceHost (typeof (OneWayService));
 			host.AddServiceEndpoint (typeof (IOneWayService),
 				new BasicHttpBinding (),
-				new Uri ("http://localhost:30158"));
+				new Uri ("http://localhost:" + port));
 			host.Open ();
 			try {
 				var cf = new ChannelFactory<IOneWayService> (
 					new BasicHttpBinding (),
-					new EndpointAddress ("http://localhost:30158"));
+					new EndpointAddress ("http://localhost:" + port));
 				var ch = cf.CreateChannel ();
 				ch.GiveMessage ("test");
 				

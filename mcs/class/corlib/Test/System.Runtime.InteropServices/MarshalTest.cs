@@ -260,6 +260,15 @@ namespace MonoTests.System.Runtime.InteropServices
 			}
 		}
 #endif
+
+		[Test]
+		public void GetHRForException ()
+		{
+			Assert.AreEqual (0, Marshal.GetHRForException (null));
+			Assert.IsTrue (Marshal.GetHRForException (new Exception ()) < 0);
+			Assert.AreEqual (12345, Marshal.GetHRForException (new IOException ("test message", 12345)));
+		}
+
 		[Test] // bug #319009
 		public void StringToHGlobalUni ()
 		{
@@ -805,6 +814,7 @@ namespace MonoTests.System.Runtime.InteropServices
 			}
 		}
 
+#if !MOBILE
 		[DllImport ("kernel32.dll", SetLastError = true)]
 		[PreserveSig]
 		static extern uint GetModuleFileName (
@@ -816,6 +826,7 @@ namespace MonoTests.System.Runtime.InteropServices
 			[MarshalAs (UnmanagedType.U4)]
 			int nSize
 		);
+#endif
 	}
 #if !NET_2_1
 	[ComImport()]
