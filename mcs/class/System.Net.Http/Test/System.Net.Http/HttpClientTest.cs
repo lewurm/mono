@@ -150,17 +150,41 @@ namespace MonoTests.System.Net.Http
 			}
 		}
 
+		class ThrowOnlyProxy : IWebProxy
+		{
+			public ICredentials Credentials {
+				get {
+					throw new NotImplementedException ();
+				}
+
+				set {
+					throw new NotImplementedException ();
+				}
+			}
+
+			public Uri GetProxy (Uri destination)
+			{
+				throw new NotImplementedException ();
+			}
+
+			public bool IsBypassed (Uri host)
+			{
+				throw new NotImplementedException ();
+			}
+		}
+
 		const int WaitTimeout = 5000;
 
-		string port, TestHost, LocalServer;
+		string TestHost, LocalServer;
+		int port;
 
 		[SetUp]
 		public void SetupFixture ()
 		{
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-				port = "810";
+				port = 810;
 			} else {
-				port = "8810";
+				port = 8810;
 			}
 
 			TestHost = "localhost:" + port;
@@ -293,6 +317,25 @@ namespace MonoTests.System.Net.Http
 				client.Timeout = TimeSpan.MinValue;
 				Assert.Fail ("#2");
 			} catch (ArgumentOutOfRangeException) {
+			}
+		}
+
+		[Test]
+		public void Proxy_Disabled ()
+		{
+			var pp = WebRequest.DefaultWebProxy;
+
+			try {
+				WebRequest.DefaultWebProxy = new ThrowOnlyProxy ();
+
+				var request = new HttpClientHandler {
+					UseProxy = false
+				};
+
+				var client = new HttpClient (request);
+				Assert.IsTrue (client.GetAsync ("http://google.com").Wait (5000), "needs internet access");
+			} finally {
+				WebRequest.DefaultWebProxy = pp;
 			}
 		}
 
@@ -996,10 +1039,30 @@ namespace MonoTests.System.Net.Http
 		[Category ("MobileNotWorking")] // Missing encoding
 		public void GetString_Many ()
 		{
-			var client = new HttpClient ();
-			var t1 = client.GetStringAsync ("http://www.google.com");
-			var t2 = client.GetStringAsync ("http://www.google.com");
-			Assert.IsTrue (Task.WaitAll (new [] { t1, t2 }, WaitTimeout));		
+			Action<HttpListenerContext> context = (HttpListenerContext l) => {
+				var response = l.Response;
+				response.StatusCode = 200;
+				response.OutputStream.WriteByte (0x68);
+				response.OutputStream.WriteByte (0x65);
+				response.OutputStream.WriteByte (0x6c);
+				response.OutputStream.WriteByte (0x6c);
+				response.OutputStream.WriteByte (0x6f);
+			};
+
+			var listener = CreateListener (context); // creates a default request handler
+			AddListenerContext (listener, context);  // add another request handler for the second request
+
+			try {
+				var client = new HttpClient ();
+				var t1 = client.GetStringAsync (LocalServer);
+				var t2 = client.GetStringAsync (LocalServer);
+				Assert.IsTrue (Task.WaitAll (new [] { t1, t2 }, WaitTimeout));
+				Assert.AreEqual ("hello", t1.Result, "#1");
+				Assert.AreEqual ("hello", t2.Result, "#2");
+			} finally {
+				listener.Abort ();
+				listener.Close ();
+			}
 		}
 
 		[Test]
@@ -1060,8 +1123,19 @@ namespace MonoTests.System.Net.Http
 				var response = l.Response;
 
 				response.StatusCode = (int)HttpStatusCode.Moved;
-				response.RedirectLocation = "http://xamarin.com/";
+				response.RedirectLocation = "http://localhost:8811/";
 			});
+
+			var listener2 = CreateListener (l => {
+				var response = l.Response;
+
+				response.StatusCode = (int)HttpStatusCode.OK;
+				response.OutputStream.WriteByte (0x68);
+				response.OutputStream.WriteByte (0x65);
+				response.OutputStream.WriteByte (0x6c);
+				response.OutputStream.WriteByte (0x6c);
+				response.OutputStream.WriteByte (0x6f);
+			}, 8811);
 
 			try {
 				var chandler = new HttpClientHandler ();
@@ -1071,10 +1145,13 @@ namespace MonoTests.System.Net.Http
 				var r = client.GetAsync (LocalServer);
 				Assert.IsTrue (r.Wait (WaitTimeout), "#1");
 				var resp = r.Result;
-				Assert.AreEqual ("http://xamarin.com/", resp.RequestMessage.RequestUri.AbsoluteUri, "#2");
+				Assert.AreEqual ("http://localhost:8811/", resp.RequestMessage.RequestUri.AbsoluteUri, "#2");
+				Assert.AreEqual ("hello", resp.Content.ReadAsStringAsync ().Result, "#3");
 			} finally {
 				listener.Abort ();
 				listener.Close ();
+				listener2.Abort ();
+				listener2.Close ();
 			}
 		}
 
@@ -1132,9 +1209,21 @@ namespace MonoTests.System.Net.Http
 
 		HttpListener CreateListener (Action<HttpListenerContext> contextAssert)
 		{
+			return CreateListener (contextAssert, port);
+		}
+
+		HttpListener CreateListener (Action<HttpListenerContext> contextAssert, int port)
+		{
 			var l = new HttpListener ();
 			l.Prefixes.Add (string.Format ("http://+:{0}/", port));
 			l.Start ();
+			AddListenerContext(l, contextAssert);
+
+			return l;
+		}
+
+		HttpListener AddListenerContext (HttpListener l, Action<HttpListenerContext> contextAssert)
+		{
 			l.BeginGetContext (ar => {
 				var ctx = l.EndGetContext (ar);
 

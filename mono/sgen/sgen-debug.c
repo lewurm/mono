@@ -10,18 +10,7 @@
  * Copyright 2011 Xamarin, Inc.
  * Copyright (C) 2012 Xamarin Inc
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License 2.0 as published by the Free Software Foundation;
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
- *
- * You should have received a copy of the GNU Library General Public
- * License 2.0 along with this library; if not, write to the Free
- * Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #include "config.h"
@@ -113,7 +102,7 @@ describe_pointer (char *ptr, gboolean need_setup)
 	if (object_is_pinned (ptr))
 		printf ("Object is pinned.\n");
 
-	if ((forwarded = object_is_forwarded (ptr))) {
+	if ((forwarded = (char *)object_is_forwarded (ptr))) {
 		printf ("Object is forwarded to %p:\n", forwarded);
 		ptr = forwarded;
 		goto restart;
@@ -334,9 +323,9 @@ static void
 setup_valid_nursery_objects (void)
 {
 	if (!valid_nursery_objects)
-		valid_nursery_objects = sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE, "debugging data");
+		valid_nursery_objects = (GCObject **)sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "debugging data");
 	valid_nursery_object_count = 0;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE);
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE, FALSE);
 }
 
 static gboolean
@@ -469,7 +458,7 @@ sgen_check_whole_heap (gboolean allow_missing_pinned)
 	setup_valid_nursery_objects ();
 
 	broken_heap = FALSE;
-	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE);
+	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned, FALSE, TRUE);
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 	sgen_los_iterate_objects (verify_object_pointers_callback, (void*) (size_t) allow_missing_pinned);
 
@@ -504,11 +493,10 @@ static void
 find_pinning_ref_from_thread (char *obj, size_t size)
 {
 #ifndef SGEN_WITHOUT_MONO
-	int j;
-	SgenThreadInfo *info;
 	char *endobj = obj + size;
 
 	FOREACH_THREAD (info) {
+		mword *ctxstart, *ctxcurrent, *ctxend;
 		char **start = (char**)info->client_info.stack_start;
 		if (info->client_info.skip || info->client_info.gc_disabled)
 			continue;
@@ -518,17 +506,13 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 			start++;
 		}
 
-		for (j = 0; j < ARCH_NUM_REGS; ++j) {
-#ifdef USE_MONO_CTX
-			mword w = ((mword*)&info->client_info.ctx) [j];
-#else
-			mword w = (mword)&info->client_info.regs [j];
-#endif
+		for (ctxstart = ctxcurrent = (mword*) &info->client_info.ctx, ctxend = (mword*) (&info->client_info.ctx + 1); ctxcurrent < ctxend; ctxcurrent ++) {
+			mword w = *ctxcurrent;
 
 			if (w >= (mword)obj && w < (mword)obj + size)
-				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, j, info, (gpointer)mono_thread_info_get_tid (info));
-		} END_FOREACH_THREAD
-	}
+				SGEN_LOG (0, "Object %p referenced in saved reg %d of thread %p (id %p)", obj, (int) (ctxcurrent - ctxstart), info, (gpointer)mono_thread_info_get_tid (info));
+		}
+	} FOREACH_THREAD_END
 #endif
 }
 
@@ -542,7 +526,7 @@ find_pinning_reference (char *obj, size_t size)
 	RootRecord *root;
 	char *endobj = obj + size;
 
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_NORMAL], start, root) {
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_NORMAL], char **, start, RootRecord *, root) {
 		/* if desc is non-null it has precise info */
 		if (!root->root_desc) {
 			while (start < (char**)root->end_root) {
@@ -623,7 +607,7 @@ sgen_check_nursery_objects_pinned (gboolean pinned)
 {
 	sgen_clear_nursery_fragments ();
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE);
+			(IterateObjectCallbackFunc)check_nursery_objects_pinned_callback, (void*) (size_t) pinned /* (void*)&ctx */, FALSE, TRUE);
 }
 
 static void
@@ -679,7 +663,7 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 					is_array_fill);
 		}
 		if (nursery_canaries_enabled () && !is_array_fill) {
-			CHECK_CANARY_FOR_OBJECT ((GCObject*)cur);
+			CHECK_CANARY_FOR_OBJECT ((GCObject*)cur, TRUE);
 			CANARIFY_SIZE (size);
 		}
 		cur += size;
@@ -786,7 +770,7 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 	RootRecord *root;
 	check_key = key;
 
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], void **, start_root, RootRecord *, root) {
 		SgenDescriptor desc = root->root_desc;
 
 		check_root = root;
@@ -796,13 +780,13 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 			desc >>= ROOT_DESC_TYPE_SHIFT;
 			while (desc) {
 				if (desc & 1)
-					check_root_obj_specific_ref (root, key, *start_root);
+					check_root_obj_specific_ref (root, key, (GCObject *)*start_root);
 				desc >>= 1;
 				start_root++;
 			}
 			return;
 		case ROOT_DESC_COMPLEX: {
-			gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
+			gsize *bitmap_data = (gsize *)sgen_get_complex_descriptor_bitmap (desc);
 			int bwords = (int) ((*bitmap_data) - 1);
 			void **start_run = start_root;
 			bitmap_data++;
@@ -811,7 +795,7 @@ scan_roots_for_specific_ref (GCObject *key, int root_type)
 				void **objptr = start_run;
 				while (bmap) {
 					if (bmap & 1)
-						check_root_obj_specific_ref (root, key, *objptr);
+						check_root_obj_specific_ref (root, key, (GCObject *)*objptr);
 					bmap >>= 1;
 					++objptr;
 				}
@@ -844,7 +828,7 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 	scan_object_for_specific_ref_precise = precise;
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE);
+			(IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key, TRUE, FALSE);
 
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_specific_ref_callback, key);
 
@@ -853,9 +837,9 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 	scan_roots_for_specific_ref (key, ROOT_TYPE_NORMAL);
 	scan_roots_for_specific_ref (key, ROOT_TYPE_WBARRIER);
 
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], ptr, root) {
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_PINNED], void **, ptr, RootRecord *, root) {
 		while (ptr < (void**)root->end_root) {
-			check_root_obj_specific_ref (root, *ptr, key);
+			check_root_obj_specific_ref (root, (GCObject *)*ptr, key);
 			++ptr;
 		}
 	} SGEN_HASH_TABLE_FOREACH_END;
@@ -887,7 +871,7 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 	void **start_root;
 	RootRecord *root;
 	check_domain = domain;
-	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], start_root, root) {
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [root_type], void **, start_root, RootRecord *, root) {
 		SgenDescriptor desc = root->root_desc;
 
 		/* The MonoDomain struct is allowed to hold
@@ -900,13 +884,13 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 			desc >>= ROOT_DESC_TYPE_SHIFT;
 			while (desc) {
 				if ((desc & 1) && *start_root)
-					check_obj_not_in_domain (*start_root);
+					check_obj_not_in_domain ((MonoObject **)*start_root);
 				desc >>= 1;
 				start_root++;
 			}
 			break;
 		case ROOT_DESC_COMPLEX: {
-			gsize *bitmap_data = sgen_get_complex_descriptor_bitmap (desc);
+			gsize *bitmap_data = (gsize *)sgen_get_complex_descriptor_bitmap (desc);
 			int bwords = (int)((*bitmap_data) - 1);
 			void **start_run = start_root;
 			bitmap_data++;
@@ -915,7 +899,7 @@ sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 				void **objptr = start_run;
 				while (bmap) {
 					if ((bmap & 1) && *objptr)
-						check_obj_not_in_domain (*objptr);
+						check_obj_not_in_domain ((MonoObject **)*objptr);
 					bmap >>= 1;
 					++objptr;
 				}
@@ -985,7 +969,7 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 {
 	MonoObject *ref = *ptr;
 	size_t offset = (char*)(ptr) - (char*)obj;
-	MonoClass *class;
+	MonoClass *klass;
 	MonoClassField *field;
 	char *str;
 
@@ -995,12 +979,12 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 		return;
 
 	field = NULL;
-	for (class = obj->vtable->klass; class; class = class->parent) {
+	for (klass = obj->vtable->klass; klass; klass = klass->parent) {
 		int i;
 
-		for (i = 0; i < class->field.count; ++i) {
-			if (class->fields[i].offset == offset) {
-				field = &class->fields[i];
+		for (i = 0; i < klass->field.count; ++i) {
+			if (klass->fields[i].offset == offset) {
+				field = &klass->fields[i];
 				break;
 			}
 		}
@@ -1008,9 +992,11 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 			break;
 	}
 
-	if (ref->vtable->klass == mono_defaults.string_class)
-		str = mono_string_to_utf8 ((MonoString*)ref);
-	else
+	if (ref->vtable->klass == mono_defaults.string_class) {
+		MonoError error;
+		str = mono_string_to_utf8_checked ((MonoString*)ref, &error);
+		mono_error_cleanup (&error);
+	} else
 		str = NULL;
 	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
 			obj, obj->vtable->klass->name_space, obj->vtable->klass->name,
@@ -1041,7 +1027,7 @@ sgen_check_for_xdomain_refs (void)
 	LOSObject *bigobj;
 
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE);
+			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE, TRUE);
 
 	major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
 
@@ -1113,7 +1099,7 @@ dump_object (GCObject *obj, gboolean dump_location)
 #ifndef SGEN_WITHOUT_MONO
 	static char class_name [1024];
 
-	MonoClass *class = mono_object_class (obj);
+	MonoClass *klass = mono_object_class (obj);
 	int i, j;
 
 	/*
@@ -1121,16 +1107,16 @@ dump_object (GCObject *obj, gboolean dump_location)
 	 * in strings, so we just ignore them;
 	 */
 	i = j = 0;
-	while (class->name [i] && j < sizeof (class_name) - 1) {
-		if (!strchr ("<>\"", class->name [i]))
-			class_name [j++] = class->name [i];
+	while (klass->name [i] && j < sizeof (class_name) - 1) {
+		if (!strchr ("<>\"", klass->name [i]))
+			class_name [j++] = klass->name [i];
 		++i;
 	}
 	g_assert (j < sizeof (class_name));
 	class_name [j] = 0;
 
 	fprintf (heap_dump_file, "<object class=\"%s.%s\" size=\"%zd\"",
-			class->name_space, class_name,
+			klass->name_space, class_name,
 			safe_object_get_size (obj));
 	if (dump_location) {
 		const char *location;
@@ -1181,7 +1167,7 @@ sgen_debug_dump_heap (const char *type, int num, const char *reason)
 	fprintf (heap_dump_file, "<pinned-objects>\n");
 	pinned_objects = sgen_pin_stats_get_object_list ();
 	for (i = 0; i < pinned_objects->next_slot; ++i)
-		dump_object (pinned_objects->data [i], TRUE);
+		dump_object ((GCObject *)pinned_objects->data [i], TRUE);
 	fprintf (heap_dump_file, "</pinned-objects>\n");
 
 	sgen_dump_section (nursery_section, "nursery");
@@ -1201,7 +1187,7 @@ static GCObject *found_obj;
 static void
 find_object_for_ptr_callback (GCObject *obj, size_t size, void *user_data)
 {
-	char *ptr = user_data;
+	char *ptr = (char *)user_data;
 
 	if (ptr >= (char*)obj && ptr < (char*)obj + size) {
 		g_assert (!found_obj);
@@ -1216,7 +1202,7 @@ sgen_find_object_for_ptr (char *ptr)
 	if (ptr >= nursery_section->data && ptr < nursery_section->end_data) {
 		found_obj = NULL;
 		sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data,
-				find_object_for_ptr_callback, ptr, TRUE);
+				find_object_for_ptr_callback, ptr, TRUE, FALSE);
 		if (found_obj)
 			return found_obj;
 	}

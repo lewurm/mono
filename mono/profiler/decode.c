@@ -6,6 +6,7 @@
  *   Alex Rønne Petersen (alexrp@xamarin.com)
  *
  * Copyright 2010 Novell, Inc (http://www.novell.com)
+ * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 /*
@@ -133,7 +134,7 @@ static char*
 pstrdup (const char *s)
 {
 	int len = strlen (s) + 1;
-	char *p = malloc (len);
+	char *p = (char *)malloc (len);
 	memcpy (p, s, len);
 	return p;
 }
@@ -196,7 +197,7 @@ add_counter_to_section (Counter *counter)
 	CounterSection *csection, *s;
 	CounterList *clist;
 
-	clist = calloc (1, sizeof (CounterList));
+	clist = (CounterList *)calloc (1, sizeof (CounterList));
 	clist->counter = counter;
 
 	for (csection = counters_sections; csection; csection = csection->next) {
@@ -212,7 +213,7 @@ add_counter_to_section (Counter *counter)
 	}
 
 	/* If section does not exist */
-	csection = calloc (1, sizeof (CounterSection));
+	csection = (CounterSection *)calloc (1, sizeof (CounterSection));
 	csection->value = counter->section;
 	csection->counters = clist;
 	csection->counters_last = clist;
@@ -237,7 +238,7 @@ add_counter (const char *section, const char *name, int type, int unit, int vari
 		if (list->counter->index == index)
 			return;
 
-	counter = calloc (1, sizeof (Counter));
+	counter = (Counter *)calloc (1, sizeof (Counter));
 	counter->section = section;
 	counter->name = name;
 	counter->type = type;
@@ -245,7 +246,7 @@ add_counter (const char *section, const char *name, int type, int unit, int vari
 	counter->variance = variance;
 	counter->index = index;
 
-	list = calloc (1, sizeof (CounterList));
+	list = (CounterList *)calloc (1, sizeof (CounterList));
 	list->counter = counter;
 
 	if (!counters) {
@@ -268,7 +269,7 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 	CounterSection *csection;
 	CounterList *clist;
 
-	clist = calloc (1, sizeof (CounterList));
+	clist = (CounterList *)calloc (1, sizeof (CounterList));
 	clist->counter = counter;
 
 	for (ctimestamp = counters_timestamps; ctimestamp; ctimestamp = ctimestamp->next) {
@@ -286,7 +287,7 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 			}
 
 			/* if timestamp exist and section does not exist */
-			csection = calloc (1, sizeof (CounterSection));
+			csection = (CounterSection *)calloc (1, sizeof (CounterSection));
 			csection->value = counter->section;
 			csection->counters = clist;
 			csection->counters_last = clist;
@@ -301,12 +302,12 @@ add_counter_to_timestamp (uint64_t timestamp, Counter *counter)
 	}
 
 	/* If timestamp do not exist and section does not exist */
-	csection = calloc (1, sizeof (CounterSection));
+	csection = (CounterSection *)calloc (1, sizeof (CounterSection));
 	csection->value = counter->section;
 	csection->counters = clist;
 	csection->counters_last = clist;
 
-	ctimestamp = calloc (1, sizeof (CounterTimestamp));
+	ctimestamp = (CounterTimestamp *)calloc (1, sizeof (CounterTimestamp));
 	ctimestamp->value = timestamp;
 	ctimestamp->sections = csection;
 	ctimestamp->sections_last = csection;
@@ -353,6 +354,7 @@ section_name (int section)
 	case MONO_COUNTER_SECURITY: return "Mono Security";
 	case MONO_COUNTER_RUNTIME: return "Mono Runtime";
 	case MONO_COUNTER_SYSTEM: return "Mono System";
+	case MONO_COUNTER_PROFILER: return "Mono Profiler";
 	default: return "<unknown>";
 	}
 }
@@ -564,7 +566,7 @@ static void
 add_image (intptr_t image, char *name)
 {
 	int slot = ((image >> 2) & 0xffff) % SMALL_HASH_SIZE;
-	ImageDesc *cd = malloc (sizeof (ImageDesc));
+	ImageDesc *cd = (ImageDesc *)malloc (sizeof (ImageDesc));
 	cd->image = image;
 	cd->filename = pstrdup (name);
 	cd->next = image_hash [slot];
@@ -587,7 +589,7 @@ static void
 add_assembly (intptr_t assembly, char *name)
 {
 	int slot = ((assembly >> 2) & 0xffff) % SMALL_HASH_SIZE;
-	AssemblyDesc *cd = malloc (sizeof (AssemblyDesc));
+	AssemblyDesc *cd = (AssemblyDesc *)malloc (sizeof (AssemblyDesc));
 	cd->assembly = assembly;
 	cd->asmname = pstrdup (name);
 	cd->next = assembly_hash [slot];
@@ -635,7 +637,7 @@ add_class (intptr_t klass, const char *name)
 		cd->name = pstrdup (name);
 		return cd;
 	}
-	cd = calloc (sizeof (ClassDesc), 1);
+	cd = (ClassDesc *)calloc (sizeof (ClassDesc), 1);
 	cd->klass = klass;
 	cd->name = pstrdup (name);
 	cd->next = class_hash [slot];
@@ -701,7 +703,7 @@ add_method (intptr_t method, const char *name, intptr_t code, int len)
 		cd->name = pstrdup (name);
 		return cd;
 	}
-	cd = calloc (sizeof (MethodDesc), 1);
+	cd = (MethodDesc *)calloc (sizeof (MethodDesc), 1);
 	cd->method = method;
 	cd->name = pstrdup (name);
 	cd->code = code;
@@ -743,8 +745,8 @@ add_stat_sample (int type, uintptr_t ip) {
 		size_stat_samples *= 2;
 		if (!size_stat_samples)
 		size_stat_samples = 32;
-		stat_samples = realloc (stat_samples, size_stat_samples * sizeof (uintptr_t));
-		stat_sample_desc = realloc (stat_sample_desc, size_stat_samples * sizeof (int));
+		stat_samples = (uintptr_t *)realloc (stat_samples, size_stat_samples * sizeof (uintptr_t));
+		stat_sample_desc = (int *)realloc (stat_sample_desc, size_stat_samples * sizeof (int));
 	}
 	stat_samples [num_stat_samples] = ip;
 	stat_sample_desc [num_stat_samples++] = type;
@@ -772,8 +774,8 @@ lookup_method_by_ip (uintptr_t ip)
 static int
 compare_method_samples (const void *a, const void *b)
 {
-	MethodDesc *const*A = a;
-	MethodDesc *const*B = b;
+	MethodDesc *const *A = (MethodDesc *const *)a;
+	MethodDesc *const *B = (MethodDesc *const *)b;
 	if ((*A)->sample_hits == (*B)->sample_hits)
 		return 0;
 	if ((*B)->sample_hits < (*A)->sample_hits)
@@ -798,8 +800,8 @@ static int usymbols_num = 0;
 static int
 compare_usymbol_addr (const void *a, const void *b)
 {
-	UnmanagedSymbol *const*A = a;
-	UnmanagedSymbol *const*B = b;
+	UnmanagedSymbol *const *A = (UnmanagedSymbol *const *)a;
+	UnmanagedSymbol *const *B = (UnmanagedSymbol *const *)b;
 	if ((*B)->addr == (*A)->addr)
 		return 0;
 	if ((*B)->addr > (*A)->addr)
@@ -810,8 +812,8 @@ compare_usymbol_addr (const void *a, const void *b)
 static int
 compare_usymbol_samples (const void *a, const void *b)
 {
-	UnmanagedSymbol *const*A = a;
-	UnmanagedSymbol *const*B = b;
+	UnmanagedSymbol *const *A = (UnmanagedSymbol *const *)a;
+	UnmanagedSymbol *const *B = (UnmanagedSymbol *const *)b;
 	if ((*B)->sample_hits == (*A)->sample_hits)
 		return 0;
 	if ((*B)->sample_hits < (*A)->sample_hits)
@@ -827,10 +829,10 @@ add_unmanaged_symbol (uintptr_t addr, char *name, uintptr_t size)
 		int new_size = usymbols_size * 2;
 		if (!new_size)
 			new_size = 16;
-		usymbols = realloc (usymbols, sizeof (void*) * new_size);
+		usymbols = (UnmanagedSymbol **)realloc (usymbols, sizeof (void*) * new_size);
 		usymbols_size = new_size;
 	}
-	sym = calloc (sizeof (UnmanagedSymbol), 1);
+	sym = (UnmanagedSymbol *)calloc (sizeof (UnmanagedSymbol), 1);
 	sym->addr = addr;
 	sym->name = name;
 	sym->size = size;
@@ -875,10 +877,10 @@ add_unmanaged_binary (uintptr_t addr, char *name, uintptr_t size)
 		int new_size = ubinaries_size * 2;
 		if (!new_size)
 			new_size = 16;
-		ubinaries = realloc (ubinaries, sizeof (void*) * new_size);
+		ubinaries = (UnmanagedSymbol **)realloc (ubinaries, sizeof (void*) * new_size);
 		ubinaries_size = new_size;
 	}
-	sym = calloc (sizeof (UnmanagedSymbol), 1);
+	sym = (UnmanagedSymbol *)calloc (sizeof (UnmanagedSymbol), 1);
 	sym->addr = addr;
 	sym->name = name;
 	sym->size = size;
@@ -965,7 +967,7 @@ dump_samples (void)
 					msize *= 2;
 					if (!msize)
 						msize = 4;
-					cachedm = realloc (cachedm, sizeof (void*) * msize);
+					cachedm = (MethodDesc **)realloc (cachedm, sizeof (void*) * msize);
 				}
 				cachedm [count++] = m;
 			}
@@ -983,7 +985,7 @@ dump_samples (void)
 						usize *= 2;
 						if (!usize)
 							usize = 4;
-						cachedus = realloc (cachedus, sizeof (void*) * usize);
+						cachedus = (UnmanagedSymbol **)realloc (cachedus, sizeof (void*) * usize);
 					}
 					cachedus [ucount++] = usym;
 				}
@@ -1091,7 +1093,7 @@ add_heap_class_rev (HeapClassDesc *from, HeapClassDesc *to)
 		to->rev_hash_size *= 2;
 		if (to->rev_hash_size == 0)
 			to->rev_hash_size = 4;
-		n = calloc (sizeof (HeapClassRevRef) * to->rev_hash_size, 1);
+		n = (HeapClassRevRef *)calloc (sizeof (HeapClassRevRef) * to->rev_hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (to->rev_hash [i].klass)
 				add_rev_class_hashed (n, to->rev_hash_size, to->rev_hash [i].klass, to->rev_hash [i].count);
@@ -1133,9 +1135,9 @@ static int num_heap_shots = 0;
 static HeapShot*
 new_heap_shot (uint64_t timestamp)
 {
-	HeapShot *hs = calloc (sizeof (HeapShot), 1);
+	HeapShot *hs = (HeapShot *)calloc (sizeof (HeapShot), 1);
 	hs->hash_size = 4;
-	hs->class_hash = calloc (sizeof (void*), hs->hash_size);
+	hs->class_hash = (HeapClassDesc **)calloc (sizeof (void*), hs->hash_size);
 	hs->timestamp = timestamp;
 	num_heap_shots++;
 	hs->next = heap_shots;
@@ -1181,7 +1183,7 @@ add_heap_hashed (HeapClassDesc **hash, HeapClassDesc **retv, uintptr_t hsize, Cl
 				hash [i] = *retv;
 				return 1;
 			}
-			hash [i] = calloc (sizeof (HeapClassDesc), 1);
+			hash [i] = (HeapClassDesc *)calloc (sizeof (HeapClassDesc), 1);
 			hash [i]->klass = klass;
 			hash [i]->total_size += size;
 			hash [i]->count += count;
@@ -1208,7 +1210,7 @@ add_heap_shot_class (HeapShot *hs, ClassDesc *klass, uint64_t size)
 		hs->hash_size *= 2;
 		if (hs->hash_size == 0)
 			hs->hash_size = 4;
-		n = calloc (sizeof (void*) * hs->hash_size, 1);
+		n = (HeapClassDesc **)calloc (sizeof (void*) * hs->hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
 			res = hs->class_hash [i];
 			if (hs->class_hash [i])
@@ -1228,7 +1230,7 @@ add_heap_shot_class (HeapShot *hs, ClassDesc *klass, uint64_t size)
 static HeapObjectDesc*
 alloc_heap_obj (uintptr_t objaddr, HeapClassDesc *hklass, uintptr_t num_refs)
 {
-	HeapObjectDesc* ho = calloc (sizeof (HeapObjectDesc) + num_refs * sizeof (uintptr_t), 1);
+	HeapObjectDesc* ho = (HeapObjectDesc *)calloc (sizeof (HeapObjectDesc) + num_refs * sizeof (uintptr_t), 1);
 	ho->objaddr = objaddr;
 	ho->hklass = hklass;
 	ho->num_refs = num_refs;
@@ -1311,7 +1313,7 @@ add_heap_shot_obj (HeapShot *hs, HeapObjectDesc *obj)
 		hs->objects_hash_size *= 2;
 		if (hs->objects_hash_size == 0)
 			hs->objects_hash_size = 4;
-		n = calloc (sizeof (void*) * hs->objects_hash_size, 1);
+		n = (HeapObjectDesc **)calloc (sizeof (void*) * hs->objects_hash_size, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (hs->objects_hash [i])
 				add_heap_hashed_obj (n, hs->objects_hash_size, hs->objects_hash [i]);
@@ -1365,7 +1367,7 @@ heap_shot_mark_objects (HeapShot *hs)
 	if (!debug)
 		return;
 	/* consistency checks: it seems not all the objects are walked in the heap in some cases */
-	marks = calloc (hs->objects_hash_size, 1);
+	marks = (unsigned char *)calloc (hs->objects_hash_size, 1);
 	if (!marks)
 		return;
 	for (i = 0; i < hs->num_roots; ++i) {
@@ -1478,14 +1480,14 @@ add_backtrace (int count, MethodDesc **methods)
 			return bt;
 		bt = bt->next;
 	}
-	bt = malloc (sizeof (BackTrace) + ((count - 1) * sizeof (void*)));
+	bt = (BackTrace *)malloc (sizeof (BackTrace) + ((count - 1) * sizeof (void*)));
 	bt->next = backtrace_hash [slot];
 	backtrace_hash [slot] = bt;
 	if (next_backtrace == num_backtraces) {
 		num_backtraces *= 2;
 		if (!num_backtraces)
 			num_backtraces = 16;
-		backtraces = realloc (backtraces, sizeof (void*) * num_backtraces);
+		backtraces = (BackTrace **)realloc (backtraces, sizeof (void*) * num_backtraces);
 	}
 	bt->id = next_backtrace++;
 	backtraces [bt->id] = bt;
@@ -1515,6 +1517,9 @@ typedef struct {
 	int timer_overhead;
 	int pid;
 	int port;
+	char *args;
+	char *arch;
+	char *os;
 	uint64_t startup_time;
 	ThreadContext *threads;
 	ThreadContext *current_thread;
@@ -1562,7 +1567,7 @@ static void
 ensure_buffer (ProfContext *ctx, int size)
 {
 	if (ctx->size < size) {
-		ctx->buf = realloc (ctx->buf, size);
+		ctx->buf = (unsigned char *)realloc (ctx->buf, size);
 		ctx->size = size;
 	}
 }
@@ -1600,16 +1605,16 @@ get_thread (ProfContext *ctx, intptr_t thread_id)
 		}
 		thread = thread->next;
 	}
-	thread = calloc (sizeof (ThreadContext), 1);
+	thread = (ThreadContext *)calloc (sizeof (ThreadContext), 1);
 	thread->next = ctx->threads;
 	ctx->threads = thread;
 	thread->thread_id = thread_id;
 	thread->last_time = 0;
 	thread->stack_id = 0;
 	thread->stack_size = 32;
-	thread->stack = malloc (thread->stack_size * sizeof (void*));
-	thread->time_stack = malloc (thread->stack_size * sizeof (uint64_t));
-	thread->callee_time_stack = malloc (thread->stack_size * sizeof (uint64_t));
+	thread->stack = (MethodDesc **)malloc (thread->stack_size * sizeof (void*));
+	thread->time_stack = (uint64_t *)malloc (thread->stack_size * sizeof (uint64_t));
+	thread->callee_time_stack = (uint64_t *)malloc (thread->stack_size * sizeof (uint64_t));
 	return thread;
 }
 
@@ -1628,7 +1633,7 @@ get_domain (ProfContext *ctx, intptr_t domain_id)
 		domain = domain->next;
 	}
 
-	domain = calloc (sizeof (DomainContext), 1);
+	domain = (DomainContext *)calloc (sizeof (DomainContext), 1);
 	domain->next = ctx->domains;
 	ctx->domains = domain;
 	domain->domain_id = domain_id;
@@ -1651,7 +1656,7 @@ get_remctx (ProfContext *ctx, intptr_t remctx_id)
 		remctx = remctx->next;
 	}
 
-	remctx = calloc (sizeof (RemCtxContext), 1);
+	remctx = (RemCtxContext *)calloc (sizeof (RemCtxContext), 1);
 	remctx->next = ctx->remctxs;
 	ctx->remctxs = remctx;
 	remctx->remctx_id = remctx_id;
@@ -1672,9 +1677,9 @@ ensure_thread_stack (ThreadContext *thread)
 {
 	if (thread->stack_id == thread->stack_size) {
 		thread->stack_size *= 2;
-		thread->stack = realloc (thread->stack, thread->stack_size * sizeof (void*));
-		thread->time_stack = realloc (thread->time_stack, thread->stack_size * sizeof (uint64_t));
-		thread->callee_time_stack = realloc (thread->callee_time_stack, thread->stack_size * sizeof (uint64_t));
+		thread->stack = (MethodDesc **)realloc (thread->stack, thread->stack_size * sizeof (void*));
+		thread->time_stack = (uint64_t *)realloc (thread->time_stack, thread->stack_size * sizeof (uint64_t));
+		thread->callee_time_stack = (uint64_t *)realloc (thread->callee_time_stack, thread->stack_size * sizeof (uint64_t));
 	}
 }
 
@@ -1715,7 +1720,7 @@ add_trace_bt (BackTrace *bt, TraceDesc *trace, uint64_t value)
 		trace->size *= 2;
 		if (trace->size == 0)
 			trace->size = 4;
-		n = calloc (sizeof (CallContext) * trace->size, 1);
+		n = (CallContext *)calloc (sizeof (CallContext) * trace->size, 1);
 		for (i = 0; i < old_size; ++i) {
 			if (trace->traces [i].bt)
 				add_trace_hashed (n, trace->size, trace->traces [i].bt, trace->traces [i].count);
@@ -1761,9 +1766,9 @@ thread_add_root (ThreadContext *ctx, uintptr_t obj, int root_type, uintptr_t ext
 		int new_size = ctx->size_roots * 2;
 		if (!new_size)
 			new_size = 4;
-		ctx->roots = realloc (ctx->roots, new_size * sizeof (uintptr_t));
-		ctx->roots_extra = realloc (ctx->roots_extra, new_size * sizeof (uintptr_t));
-		ctx->roots_types = realloc (ctx->roots_types, new_size * sizeof (int));
+		ctx->roots = (uintptr_t *)realloc (ctx->roots, new_size * sizeof (uintptr_t));
+		ctx->roots_extra = (uintptr_t *)realloc (ctx->roots_extra, new_size * sizeof (uintptr_t));
+		ctx->roots_types = (int *)realloc (ctx->roots_types, new_size * sizeof (int));
 		ctx->size_roots = new_size;
 	}
 	ctx->roots_types [ctx->num_roots] = root_type;
@@ -1774,8 +1779,8 @@ thread_add_root (ThreadContext *ctx, uintptr_t obj, int root_type, uintptr_t ext
 static int
 compare_callc (const void *a, const void *b)
 {
-	const CallContext *A = a;
-	const CallContext *B = b;
+	const CallContext *A = (const CallContext *)a;
+	const CallContext *B = (const CallContext *)b;
 	if (B->count == A->count)
 		return 0;
 	if (B->count < A->count)
@@ -1860,9 +1865,23 @@ gc_event_name (int ev)
 	case MONO_GC_EVENT_RECLAIM_END: return "reclaim end";
 	case MONO_GC_EVENT_END: return "end";
 	case MONO_GC_EVENT_PRE_STOP_WORLD: return "pre stop";
+	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED: return "pre stop lock";
 	case MONO_GC_EVENT_POST_STOP_WORLD: return "post stop";
 	case MONO_GC_EVENT_PRE_START_WORLD: return "pre start";
 	case MONO_GC_EVENT_POST_START_WORLD: return "post start";
+	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED: return "post start unlock";
+	default:
+		return "unknown";
+	}
+}
+
+static const char*
+sync_point_name (int type)
+{
+	switch (type) {
+	case SYNC_POINT_PERIODIC: return "periodic";
+	case SYNC_POINT_WORLD_STOP: return "world stop";
+	case SYNC_POINT_WORLD_START: return "world start";
 	default:
 		return "unknown";
 	}
@@ -1908,7 +1927,7 @@ lookup_monitor (uintptr_t objid)
 	while (cd && cd->objid != objid)
 		cd = cd->next;
 	if (!cd) {
-		cd = calloc (sizeof (MonitorDesc), 1);
+		cd = (MonitorDesc *)calloc (sizeof (MonitorDesc), 1);
 		cd->objid = objid;
 		cd->next = monitor_hash [slot];
 		monitor_hash [slot] = cd;
@@ -1954,21 +1973,25 @@ get_root_name (int rtype)
 }
 
 static MethodDesc**
-decode_bt (MethodDesc** sframes, int *size, unsigned char *p, unsigned char **endp, intptr_t ptr_base)
+decode_bt (ProfContext *ctx, MethodDesc** sframes, int *size, unsigned char *p, unsigned char **endp, intptr_t ptr_base, intptr_t *method_base)
 {
 	MethodDesc **frames;
 	int i;
-	int flags = decode_uleb128 (p, &p);
+	if (ctx->data_version < 13)
+		decode_uleb128 (p, &p); /* flags */
 	int count = decode_uleb128 (p, &p);
-	if (flags != 0)
-		return NULL;
 	if (count > *size)
-		frames = malloc (count * sizeof (void*));
+		frames = (MethodDesc **)malloc (count * sizeof (void*));
 	else
 		frames = sframes;
 	for (i = 0; i < count; ++i) {
 		intptr_t ptrdiff = decode_sleb128 (p, &p);
-		frames [i] = lookup_method (ptr_base + ptrdiff);
+		if (ctx->data_version > 12) {
+			*method_base += ptrdiff;
+			frames [i] = lookup_method (*method_base);
+		} else {
+			frames [i] = lookup_method (ptr_base + ptrdiff);
+		}
 	}
 	*size = count;
 	*endp = p;
@@ -2033,7 +2056,7 @@ static void
 found_object (uintptr_t obj)
 {
 	num_tracked_objects ++;
-	tracked_objects = realloc (tracked_objects, num_tracked_objects * sizeof (tracked_objects [0]));
+	tracked_objects = (uintptr_t *)realloc (tracked_objects, num_tracked_objects * sizeof (tracked_objects [0]));
 	tracked_objects [num_tracked_objects - 1] = obj;
 }
 
@@ -2120,8 +2143,8 @@ static void
 gather_coverage_statements (void)
 {
 	for (guint i = 0; i < coverage_statements->len; i++) {
-		CoverageCoverage *coverage = coverage_statements->pdata[i];
-		CoverageMethod *method = g_hash_table_lookup (coverage_methods_hash, GINT_TO_POINTER (coverage->method_id));
+		CoverageCoverage *coverage = (CoverageCoverage *)coverage_statements->pdata[i];
+		CoverageMethod *method = (CoverageMethod *)g_hash_table_lookup (coverage_methods_hash, GINT_TO_POINTER (coverage->method_id));
 		if (method == NULL) {
 			fprintf (outfile, "Cannot find method with ID: %d\n", coverage->method_id);
 			continue;
@@ -2163,7 +2186,7 @@ coverage_add_class (CoverageClass *klass)
 	}
 
 	g_ptr_array_add (coverage_classes, klass);
-	classes = g_hash_table_lookup (coverage_assembly_classes, klass->assembly_name);
+	classes = (GPtrArray *)g_hash_table_lookup (coverage_assembly_classes, klass->assembly_name);
 	if (classes == NULL) {
 		classes = g_ptr_array_new ();
 		g_hash_table_insert (coverage_assembly_classes, klass->assembly_name, classes);
@@ -2182,6 +2205,28 @@ coverage_add_coverage (CoverageCoverage *coverage)
 
 #define OBJ_ADDR(diff) ((obj_base + diff) << 3)
 #define LOG_TIME(base,diff) /*fprintf("outfile, time %llu + %llu near offset %d\n", base, diff, p - ctx->buf)*/
+
+
+/* Stats */
+#define BUFFER_HEADER_SIZE 48
+
+typedef struct {
+	int count, min_size, max_size, bytes;
+} EventStat;
+
+static int buffer_count;
+static EventStat stats [256];
+
+static void
+record_event_stats (int type, int size)
+{
+	++stats [type].count;
+	if (!stats [type].min_size)
+		stats [type].min_size = size;
+	stats [type].min_size = MIN (stats [type].min_size, size);
+	stats [type].max_size = MAX (stats [type].max_size, size);
+	stats [type].bytes += size;
+}
 
 static int
 decode_buffer (ProfContext *ctx)
@@ -2224,20 +2269,23 @@ decode_buffer (ProfContext *ctx)
 	thread = load_thread (ctx, thread_id);
 	if (!load_data (ctx, len))
 		return 0;
+
+	++buffer_count;
+
 	if (!startup_time) {
 		startup_time = time_base;
 		if (use_time_filter) {
 			time_from += startup_time;
 			time_to += startup_time;
 		}
-		if (!thread->name)
-			thread->name = pstrdup ("Main");
 	}
 	for (i = 0; i < thread->stack_id; ++i)
 		thread->stack [i]->recurse_count++;
 	p = ctx->buf;
 	end = p + len;
 	while (p < end) {
+		unsigned char *start = p;
+		unsigned char event = *p;
 		switch (*p & 0xf) {
 		case TYPE_GC: {
 			int subtype = *p & 0xf0;
@@ -2252,8 +2300,16 @@ decode_buffer (ProfContext *ctx)
 				if (new_size > max_heap_size)
 					max_heap_size = new_size;
 			} else if (subtype == TYPE_GC_EVENT) {
-				uint64_t ev = decode_uleb128 (p, &p);
-				int gen = decode_uleb128 (p, &p);
+				uint64_t ev;
+				if (ctx->data_version > 12)
+					ev = *p++;
+				else
+					ev = decode_uleb128 (p, &p);
+				int gen;
+				if (ctx->data_version > 12)
+					gen = *p++;
+				else
+					gen = decode_uleb128 (p, &p);
 				if (debug)
 					fprintf (outfile, "gc event for gen%d: %s at %llu (thread: 0x%zx)\n", gen, gc_event_name (ev), (unsigned long long) time_base, thread->thread_id);
 				if (gen > 2) {
@@ -2291,7 +2347,7 @@ decode_buffer (ProfContext *ctx)
 				intptr_t objdiff = decode_sleb128 (p, &p);
 				if (has_bt) {
 					num_bt = 8;
-					frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+					frames = decode_bt (ctx, sframes, &num_bt, p, &p, ptr_base, &method_base);
 					if (!frames) {
 						fprintf (outfile, "Cannot load backtrace\n");
 						return 0;
@@ -2325,7 +2381,7 @@ decode_buffer (ProfContext *ctx)
 				uint32_t handle = decode_uleb128 (p, &p);
 				if (has_bt) {
 					num_bt = 8;
-					frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+					frames = decode_bt (ctx, sframes, &num_bt, p, &p, ptr_base, &method_base);
 					if (!frames) {
 						fprintf (outfile, "Cannot load backtrace\n");
 						return 0;
@@ -2347,6 +2403,21 @@ decode_buffer (ProfContext *ctx)
 					fprintf (outfile, "handle (%s) %u destroyed\n", get_handle_name (htype), handle);
 				if (frames != sframes)
 					free (frames);
+			} else if (subtype == TYPE_GC_FINALIZE_START) {
+				// TODO: Generate a finalizer report based on these events.
+				if (debug)
+					fprintf (outfile, "gc finalizer queue being processed at %llu\n", (unsigned long long) time_base);
+			} else if (subtype == TYPE_GC_FINALIZE_END) {
+				if (debug)
+					fprintf (outfile, "gc finalizer queue finished processing at %llu\n", (unsigned long long) time_base);
+			} else if (subtype == TYPE_GC_FINALIZE_OBJECT_START) {
+				intptr_t objdiff = decode_sleb128 (p, &p);
+				if (debug)
+					fprintf (outfile, "gc finalizing object %p at %llu\n", (void *) OBJ_ADDR (objdiff), (unsigned long long) time_base);
+			} else if (subtype == TYPE_GC_FINALIZE_OBJECT_END) {
+				intptr_t objdiff = decode_sleb128 (p, &p);
+				if (debug)
+					fprintf (outfile, "gc finalized object %p at %llu\n", (void *) OBJ_ADDR (objdiff), (unsigned long long) time_base);
 			}
 			break;
 		}
@@ -2360,11 +2431,8 @@ decode_buffer (ProfContext *ctx)
 			time_base += tdiff;
 			if (mtype == TYPE_CLASS) {
 				intptr_t imptrdiff = decode_sleb128 (p, &p);
-				uint64_t flags = decode_uleb128 (p, &p);
-				if (flags) {
-					fprintf (outfile, "non-zero flags in class\n");
-					return 0;
-				}
+				if (ctx->data_version < 13)
+					decode_uleb128 (p, &p); /* flags */
 				if (debug)
 					fprintf (outfile, "%s class %p (%s in %p) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), p, (void*)(ptr_base + imptrdiff), (unsigned long long) time_base);
 				if (subtype == TYPE_END_LOAD)
@@ -2372,11 +2440,8 @@ decode_buffer (ProfContext *ctx)
 				while (*p) p++;
 				p++;
 			} else if (mtype == TYPE_IMAGE) {
-				uint64_t flags = decode_uleb128 (p, &p);
-				if (flags) {
-					fprintf (outfile, "non-zero flags in image\n");
-					return 0;
-				}
+				if (ctx->data_version < 13)
+					decode_uleb128 (p, &p); /* flags */
 				if (debug)
 					fprintf (outfile, "%s image %p (%s) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), p, (unsigned long long) time_base);
 				if (subtype == TYPE_END_LOAD)
@@ -2384,11 +2449,8 @@ decode_buffer (ProfContext *ctx)
 				while (*p) p++;
 				p++;
 			} else if (mtype == TYPE_ASSEMBLY) {
-				uint64_t flags = decode_uleb128 (p, &p);
-				if (flags) {
-					fprintf (outfile, "non-zero flags in assembly\n");
-					return 0;
-				}
+				if (ctx->data_version < 13)
+					decode_uleb128 (p, &p); /* flags */
 				if (debug)
 					fprintf (outfile, "%s assembly %p (%s) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), p, (unsigned long long) time_base);
 				if (subtype == TYPE_END_LOAD)
@@ -2396,11 +2458,8 @@ decode_buffer (ProfContext *ctx)
 				while (*p) p++;
 				p++;
 			} else if (mtype == TYPE_DOMAIN) {
-				uint64_t flags = decode_uleb128 (p, &p);
-				if (flags) {
-					fprintf (outfile, "non-zero flags in domain\n");
-					return 0;
-				}
+				if (ctx->data_version < 13)
+					decode_uleb128 (p, &p); /* flags */
 				DomainContext *nd = get_domain (ctx, ptr_base + ptrdiff);
 				/* no subtype means it's a name event, rather than start/stop */
 				if (subtype == 0)
@@ -2416,22 +2475,16 @@ decode_buffer (ProfContext *ctx)
 					p++;
 				}
 			} else if (mtype == TYPE_CONTEXT) {
-				uint64_t flags = decode_uleb128 (p, &p);
-				if (flags) {
-					fprintf (outfile, "non-zero flags in context\n");
-					return 0;
-				}
+				if (ctx->data_version < 13)
+					decode_uleb128 (p, &p); /* flags */
 				intptr_t domaindiff = decode_sleb128 (p, &p);
 				if (debug)
 					fprintf (outfile, "%s context %p (%p) at %llu\n", load_str, (void*)(ptr_base + ptrdiff), (void *) (ptr_base + domaindiff), (unsigned long long) time_base);
 				if (subtype == TYPE_END_LOAD)
 					get_remctx (ctx, ptr_base + ptrdiff)->domain_id = ptr_base + domaindiff;
 			} else if (mtype == TYPE_THREAD) {
-				uint64_t flags = decode_uleb128 (p, &p);
-				if (flags) {
-					fprintf (outfile, "non-zero flags in thread\n");
-					return 0;
-				}
+				if (ctx->data_version < 13)
+					decode_uleb128 (p, &p); /* flags */
 				ThreadContext *nt = get_thread (ctx, ptr_base + ptrdiff);
 				/* no subtype means it's a name event, rather than start/stop */
 				if (subtype == 0)
@@ -2466,7 +2519,7 @@ decode_buffer (ProfContext *ctx)
 				fprintf (outfile, "alloced object %p, size %llu (%s) at %llu\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) len, lookup_class (ptr_base + ptrdiff)->name, (unsigned long long) time_base);
 			if (has_bt) {
 				num_bt = 8;
-				frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+				frames = decode_bt (ctx, sframes, &num_bt, p, &p, ptr_base, &method_base);
 				if (!frames) {
 					fprintf (outfile, "Cannot load backtrace\n");
 					return 0;
@@ -2534,7 +2587,14 @@ decode_buffer (ProfContext *ctx)
 			if (subtype == TYPE_HEAP_OBJECT) {
 				HeapObjectDesc *ho = NULL;
 				int i;
-				intptr_t objdiff = decode_sleb128 (p + 1, &p);
+				intptr_t objdiff;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					objdiff = decode_sleb128 (p, &p);
+				} else
+					objdiff = decode_sleb128 (p + 1, &p);
 				intptr_t ptrdiff = decode_sleb128 (p, &p);
 				uint64_t size = decode_uleb128 (p, &p);
 				uintptr_t num = decode_uleb128 (p, &p);
@@ -2567,12 +2627,23 @@ decode_buffer (ProfContext *ctx)
 				if (debug && size)
 					fprintf (outfile, "traced object %p, size %llu (%s), refs: %zd\n", (void*)OBJ_ADDR (objdiff), (unsigned long long) size, cd->name, num);
 			} else if (subtype == TYPE_HEAP_ROOT) {
-				uintptr_t num = decode_uleb128 (p + 1, &p);
+				uintptr_t num;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					num = decode_uleb128 (p, &p);
+				} else
+					num = decode_uleb128 (p + 1, &p);
 				uintptr_t gc_num G_GNUC_UNUSED = decode_uleb128 (p, &p);
 				int i;
 				for (i = 0; i < num; ++i) {
 					intptr_t objdiff = decode_sleb128 (p, &p);
-					int root_type = decode_uleb128 (p, &p);
+					int root_type;
+					if (ctx->data_version > 12)
+						root_type = *p++;
+					else
+						root_type = decode_uleb128 (p, &p);
 					/* we just discard the extra info for now */
 					uintptr_t extra_info = decode_uleb128 (p, &p);
 					if (debug)
@@ -2643,7 +2714,7 @@ decode_buffer (ProfContext *ctx)
 				}
 				if (has_bt) {
 					num_bt = 8;
-					frames = decode_bt (sframes, &num_bt, p, &p, ptr_base);
+					frames = decode_bt (ctx, sframes, &num_bt, p, &p, ptr_base, &method_base);
 					if (!frames) {
 						fprintf (outfile, "Cannot load backtrace\n");
 						return 0;
@@ -2687,7 +2758,7 @@ decode_buffer (ProfContext *ctx)
 		}
 		case TYPE_EXCEPTION: {
 			int subtype = *p & 0x70;
-			int has_bt = *p & TYPE_EXCEPTION_BT;
+			int has_bt = *p & TYPE_THROW_BT;
 			uint64_t tdiff = decode_uleb128 (p + 1, &p);
 			MethodDesc* sframes [8];
 			MethodDesc** frames = sframes;
@@ -2698,7 +2769,11 @@ decode_buffer (ProfContext *ctx)
 			if (!(time_base >= time_from && time_base < time_to))
 				record = 0;
 			if (subtype == TYPE_CLAUSE) {
-				int clause_type = decode_uleb128 (p, &p);
+				int clause_type;
+				if (ctx->data_version > 12)
+					clause_type = *p++;
+				else
+					clause_type = decode_uleb128 (p, &p);
 				int clause_num = decode_uleb128 (p, &p);
 				int64_t ptrdiff = decode_sleb128 (p, &p);
 				method_base += ptrdiff;
@@ -2712,7 +2787,7 @@ decode_buffer (ProfContext *ctx)
 					throw_count++;
 				if (has_bt) {
 					has_bt = 8;
-					frames = decode_bt (sframes, &has_bt, p, &p, ptr_base);
+					frames = decode_bt (ctx, sframes, &has_bt, p, &p, ptr_base, &method_base);
 					if (!frames) {
 						fprintf (outfile, "Cannot load backtrace\n");
 						return 0;
@@ -2736,12 +2811,16 @@ decode_buffer (ProfContext *ctx)
 			LOG_TIME (time_base, tdiff);
 			time_base += tdiff;
 			if (subtype == TYPE_JITHELPER) {
-				int type = decode_uleb128 (p, &p);
+				int type;
+				if (ctx->data_version > 12)
+					type = *p++;
+				else
+					type = decode_uleb128 (p, &p);
 				intptr_t codediff = decode_sleb128 (p, &p);
 				int codelen = decode_uleb128 (p, &p);
 				const char *name;
 				if (type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE) {
-					name = (void*)p;
+					name = (const char *)p;
 					while (*p) p++;
 						p++;
 				} else {
@@ -2758,8 +2837,18 @@ decode_buffer (ProfContext *ctx)
 			int subtype = *p & 0xf0;
 			if (subtype == TYPE_SAMPLE_HIT) {
 				int i;
-				int sample_type = decode_uleb128 (p + 1, &p);
-				uint64_t tstamp = decode_uleb128 (p, &p);
+				int sample_type;
+				uint64_t tstamp;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					sample_type = *p++;
+					tstamp = time_base;
+				} else {
+					sample_type = decode_uleb128 (p + 1, &p);
+					tstamp = decode_uleb128 (p, &p);
+				}
 				void *tid = (void *) thread_id;
 				if (ctx->data_version > 10)
 					tid = (void *) (ptr_base + decode_sleb128 (p, &p));
@@ -2776,17 +2865,26 @@ decode_buffer (ProfContext *ctx)
 					for (i = 0; i < count; ++i) {
 						MethodDesc *method;
 						int64_t ptrdiff = decode_sleb128 (p, &p);
-						int il_offset = decode_sleb128 (p, &p);
-						int native_offset = decode_sleb128 (p, &p);
 						method_base += ptrdiff;
 						method = lookup_method (method_base);
 						if (debug)
-							fprintf (outfile, "sample hit bt %d: %s at IL offset %d (native: %d)\n", i, method->name, il_offset, native_offset);
+							fprintf (outfile, "sample hit bt %d: %s\n", i, method->name);
+						if (ctx->data_version < 13) {
+							decode_sleb128 (p, &p); /* il offset */
+							decode_sleb128 (p, &p); /* native offset */
+						}
 					}
 				}
 			} else if (subtype == TYPE_SAMPLE_USYM) {
 				/* un unmanaged symbol description */
-				uintptr_t addr = ptr_base + decode_sleb128 (p + 1, &p);
+				uintptr_t addr;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					addr = ptr_base + decode_sleb128 (p, &p);
+				} else
+					addr = ptr_base + decode_sleb128 (p + 1, &p);
 				uintptr_t size = decode_uleb128 (p, &p);
 				char *name;
 				name = pstrdup ((char*)p);
@@ -2811,7 +2909,14 @@ decode_buffer (ProfContext *ctx)
 				while (*p) p++;
 				p++;
 			} else if (subtype == TYPE_SAMPLE_COUNTERS_DESC) {
-				uint64_t i, len = decode_uleb128 (p + 1, &p);
+				uint64_t i, len;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					len = decode_uleb128 (p, &p);
+				} else
+					len = decode_uleb128 (p + 1, &p);
 				for (i = 0; i < len; i++) {
 					uint64_t type, unit, variance, index;
 					uint64_t section = decode_uleb128 (p, &p);
@@ -2824,9 +2929,15 @@ decode_buffer (ProfContext *ctx)
 					}
 					name = pstrdup ((char*)p);
 					while (*p++);
-					type = decode_uleb128 (p, &p);
-					unit = decode_uleb128 (p, &p);
-					variance = decode_uleb128 (p, &p);
+					if (ctx->data_version > 12) {
+						type = *p++;
+						unit = *p++;
+						variance = *p++;
+					} else {
+						type = decode_uleb128 (p, &p);
+						unit = decode_uleb128 (p, &p);
+						variance = decode_uleb128 (p, &p);
+					}
 					index = decode_uleb128 (p, &p);
 					add_counter (section_str, name, (int)type, (int)unit, (int)variance, (int)index);
 				}
@@ -2834,7 +2945,14 @@ decode_buffer (ProfContext *ctx)
 				int i;
 				CounterValue *value, *previous = NULL;
 				CounterList *list;
-				uint64_t timestamp = decode_uleb128 (p + 1, &p);
+				uint64_t timestamp; // milliseconds since startup
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p + 1, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+					timestamp = (time_base - startup_time) / 1000 / 1000;
+				} else
+					timestamp = decode_uleb128 (p + 1, &p);
 				uint64_t time_between = timestamp / 1000 * 1000 * 1000 * 1000 + startup_time;
 				while (1) {
 					uint64_t type, index = decode_uleb128 (p, &p);
@@ -2848,9 +2966,12 @@ decode_buffer (ProfContext *ctx)
 						}
 					}
 
-					type = decode_uleb128 (p, &p);
+					if (ctx->data_version > 12)
+						type = *p++;
+					else
+						type = decode_uleb128 (p, &p);
 
-					value = calloc (1, sizeof (CounterValue));
+					value = (CounterValue *)calloc (1, sizeof (CounterValue));
 					value->timestamp = timestamp;
 
 					switch (type) {
@@ -2858,11 +2979,11 @@ decode_buffer (ProfContext *ctx)
 #if SIZEOF_VOID_P == 4
 					case MONO_COUNTER_WORD:
 #endif
-						value->buffer = malloc (sizeof (int32_t));
+						value->buffer = (unsigned char *)malloc (sizeof (int32_t));
 						*(int32_t*)value->buffer = (int32_t)decode_sleb128 (p, &p) + (previous ? (*(int32_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_UINT:
-						value->buffer = malloc (sizeof (uint32_t));
+						value->buffer = (unsigned char *)malloc (sizeof (uint32_t));
 						*(uint32_t*)value->buffer = (uint32_t)decode_uleb128 (p, &p) + (previous ? (*(uint32_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_LONG:
@@ -2870,15 +2991,15 @@ decode_buffer (ProfContext *ctx)
 					case MONO_COUNTER_WORD:
 #endif
 					case MONO_COUNTER_TIME_INTERVAL:
-						value->buffer = malloc (sizeof (int64_t));
+						value->buffer = (unsigned char *)malloc (sizeof (int64_t));
 						*(int64_t*)value->buffer = (int64_t)decode_sleb128 (p, &p) + (previous ? (*(int64_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_ULONG:
-						value->buffer = malloc (sizeof (uint64_t));
+						value->buffer = (unsigned char *)malloc (sizeof (uint64_t));
 						*(uint64_t*)value->buffer = (uint64_t)decode_uleb128 (p, &p) + (previous ? (*(uint64_t*)previous->buffer) : 0);
 						break;
 					case MONO_COUNTER_DOUBLE:
-						value->buffer = malloc (sizeof (double));
+						value->buffer = (unsigned char *)malloc (sizeof (double));
 #if TARGET_BYTE_ORDER == G_LITTLE_ENDIAN
 						for (i = 0; i < sizeof (double); i++)
 #else
@@ -2912,11 +3033,18 @@ decode_buffer (ProfContext *ctx)
 				int token, n_offsets, method_id;
 
 				p++;
-				assembly = (void *)p; while (*p) p++; p++;
-				klass = (void *)p; while (*p) p++; p++;
-				name = (void *)p; while (*p) p++; p++;
-				sig = (void *)p; while (*p) p++; p++;
-				filename = (void *)p; while (*p) p++; p++;
+
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
+
+				assembly = (const char *)p; while (*p) p++; p++;
+				klass = (const char *)p; while (*p) p++; p++;
+				name = (const char *)p; while (*p) p++; p++;
+				sig = (const char *)p; while (*p) p++; p++;
+				filename = (const char *)p; while (*p) p++; p++;
 
 				token = decode_uleb128 (p, &p);
 				method_id = decode_uleb128 (p, &p);
@@ -2941,6 +3069,13 @@ decode_buffer (ProfContext *ctx)
 				int offset, count, line, column, method_id;
 
 				p++;
+
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
+
 				method_id = decode_uleb128 (p, &p);
 				offset = decode_uleb128 (p, &p);
 				count = decode_uleb128 (p, &p);
@@ -2962,9 +3097,15 @@ decode_buffer (ProfContext *ctx)
 				int number_of_methods, fully_covered, partially_covered;
 				p++;
 
-				name = (void *)p; while (*p) p++; p++;
-				guid = (void *)p; while (*p) p++; p++;
-				filename = (void *)p; while (*p) p++; p++;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
+
+				name = (char *)p; while (*p) p++; p++;
+				guid = (char *)p; while (*p) p++; p++;
+				filename = (char *)p; while (*p) p++; p++;
 				number_of_methods = decode_uleb128 (p, &p);
 				fully_covered = decode_uleb128 (p, &p);
 				partially_covered = decode_uleb128 (p, &p);
@@ -2985,8 +3126,14 @@ decode_buffer (ProfContext *ctx)
 				int number_of_methods, fully_covered, partially_covered;
 				p++;
 
-				assembly_name = (void *)p; while (*p) p++; p++;
-				class_name = (void *)p; while (*p) p++; p++;
+				if (ctx->data_version > 12) {
+					uint64_t tdiff = decode_uleb128 (p, &p);
+					LOG_TIME (time_base, tdiff);
+					time_base += tdiff;
+				}
+
+				assembly_name = (char *)p; while (*p) p++; p++;
+				class_name = (char *)p; while (*p) p++; p++;
 				number_of_methods = decode_uleb128 (p, &p);
 				fully_covered = decode_uleb128 (p, &p);
 				partially_covered = decode_uleb128 (p, &p);
@@ -3006,10 +3153,23 @@ decode_buffer (ProfContext *ctx)
 			}
 			break;
 		}
+		case TYPE_META: {
+			int subtype = *p & 0xf0;
+			uint64_t tdiff = decode_uleb128 (p + 1, &p);
+			LOG_TIME (time_base, tdiff);
+			time_base += tdiff;
+			if (subtype == TYPE_SYNC_POINT) {
+				int type = *p++;
+				if (debug)
+					fprintf (outfile, "sync point %i (%s)\n", type, sync_point_name (type));
+			}
+			break;
+		}
 		default:
 			fprintf (outfile, "unhandled profiler event: 0x%x at file offset: %llu + %lld (len: %d\n)\n", *p, (unsigned long long) file_offset, (long long) (p - ctx->buf), len);
 			exit (1);
 		}
+		record_event_stats (event, p - start);
 	}
 	thread->last_time = time_base;
 	for (i = 0; i < thread->stack_id; ++i)
@@ -3017,11 +3177,25 @@ decode_buffer (ProfContext *ctx)
 	return 1;
 }
 
+static int
+read_header_string (ProfContext *ctx, char **field)
+{
+	if (!load_data (ctx, 4))
+		return 0;
+
+	if (!load_data (ctx, read_int32 (ctx->buf)))
+		return 0;
+
+	*field = pstrdup ((const char *) ctx->buf);
+
+	return 1;
+}
+
 static ProfContext*
 load_file (char *name)
 {
 	unsigned char *p;
-	ProfContext *ctx = calloc (sizeof (ProfContext), 1);
+	ProfContext *ctx = (ProfContext *)calloc (sizeof (ProfContext), 1);
 	if (strcmp (name, "-") == 0)
 		ctx->file = stdin;
 	else
@@ -3034,7 +3208,7 @@ load_file (char *name)
 	if (ctx->file != stdin)
 		ctx->gzfile = gzdopen (fileno (ctx->file), "rb");
 #endif
-	if (!load_data (ctx, 32))
+	if (!load_data (ctx, 30))
 		return NULL;
 	p = ctx->buf;
 	if (read_int32 (p) != LOG_HEADER_ID || p [6] > LOG_DATA_VERSION)
@@ -3051,6 +3225,17 @@ load_file (char *name)
 	ctx->timer_overhead = read_int32 (p + 16);
 	ctx->pid = read_int32 (p + 24);
 	ctx->port = read_int16 (p + 28);
+	if (ctx->version_major >= 1) {
+		if (!read_header_string (ctx, &ctx->args))
+			return NULL;
+		if (!read_header_string (ctx, &ctx->arch))
+			return NULL;
+		if (!read_header_string (ctx, &ctx->os))
+			return NULL;
+	} else {
+		if (!load_data (ctx, 2)) /* old opsys field, was never used */
+			return NULL;
+	}
 	return ctx;
 }
 
@@ -3063,8 +3248,8 @@ static int alloc_sort_mode = ALLOC_SORT_BYTES;
 static int
 compare_class (const void *a, const void *b)
 {
-	ClassDesc *const*A = a;
-	ClassDesc *const*B = b;
+	ClassDesc *const *A = (ClassDesc *const *)a;
+	ClassDesc *const *B = (ClassDesc *const *)b;
 	uint64_t vala, valb;
 	if (alloc_sort_mode == ALLOC_SORT_BYTES) {
 		vala = (*A)->alloc_size;
@@ -3088,6 +3273,11 @@ dump_header (ProfContext *ctx)
 	fprintf (outfile, "\nMono log profiler data\n");
 	fprintf (outfile, "\tProfiler version: %d.%d\n", ctx->version_major, ctx->version_minor);
 	fprintf (outfile, "\tData version: %d\n", ctx->data_version);
+	if (ctx->version_major >= 1) {
+		fprintf (outfile, "\tArguments: %s\n", ctx->args);
+		fprintf (outfile, "\tArchitecture: %s\n", ctx->arch);
+		fprintf (outfile, "\tOperating system: %s\n", ctx->os);
+	}
 	fprintf (outfile, "\tMean timer overhead: %d nanoseconds\n", ctx->timer_overhead);
 	fprintf (outfile, "\tProgram startup: %s", t);
 	if (ctx->pid)
@@ -3123,7 +3313,9 @@ dump_threads (ProfContext *ctx)
 	ThreadContext *thread;
 	fprintf (outfile, "\nThread summary\n");
 	for (thread = ctx->threads; thread; thread = thread->next) {
-		fprintf (outfile, "\tThread: %p, name: \"%s\"\n", (void*)thread->thread_id, thread->name? thread->name: "");
+		if (thread->thread_id) {
+			fprintf (outfile, "\tThread: %p, name: \"%s\"\n", (void*)thread->thread_id, thread->name? thread->name: "");
+		}
 	}
 }
 
@@ -3162,8 +3354,8 @@ dump_exceptions (void)
 static int
 compare_monitor (const void *a, const void *b)
 {
-	MonitorDesc *const*A = a;
-	MonitorDesc *const*B = b;
+	MonitorDesc *const *A = (MonitorDesc *const *)a;
+	MonitorDesc *const *B = (MonitorDesc *const *)b;
 	if ((*B)->wait_time == (*A)->wait_time)
 		return 0;
 	if ((*B)->wait_time < (*A)->wait_time)
@@ -3178,7 +3370,7 @@ dump_monitors (void)
 	int i, j;
 	if (!num_monitors)
 		return;
-	monitors = malloc (sizeof (void*) * num_monitors);
+	monitors = (MonitorDesc **)malloc (sizeof (void*) * num_monitors);
 	for (i = 0, j = 0; i < SMALL_HASH_SIZE; ++i) {
 		MonitorDesc *mdesc = monitor_hash [i];
 		while (mdesc) {
@@ -3260,7 +3452,7 @@ dump_allocations (void)
 	intptr_t allocs = 0;
 	uint64_t size = 0;
 	int header_done = 0;
-	ClassDesc **classes = malloc (num_classes * sizeof (void*));
+	ClassDesc **classes = (ClassDesc **)malloc (num_classes * sizeof (void*));
 	ClassDesc *cd;
 	c = 0;
 	for (i = 0; i < HASH_SIZE; ++i) {
@@ -3303,8 +3495,8 @@ static int method_sort_mode = METHOD_SORT_TOTAL;
 static int
 compare_method (const void *a, const void *b)
 {
-	MethodDesc *const*A = a;
-	MethodDesc *const*B = b;
+	MethodDesc *const *A = (MethodDesc *const *)a;
+	MethodDesc *const *B = (MethodDesc *const *)b;
 	uint64_t vala, valb;
 	if (method_sort_mode == METHOD_SORT_SELF) {
 		vala = (*A)->self_time;
@@ -3359,7 +3551,7 @@ dump_methods (void)
 	int i, c;
 	uint64_t calls = 0;
 	int header_done = 0;
-	MethodDesc **methods = malloc (num_methods * sizeof (void*));
+	MethodDesc **methods = (MethodDesc **)malloc (num_methods * sizeof (void*));
 	MethodDesc *cd;
 	c = 0;
 	for (i = 0; i < HASH_SIZE; ++i) {
@@ -3400,8 +3592,8 @@ dump_methods (void)
 static int
 compare_heap_class (const void *a, const void *b)
 {
-	HeapClassDesc *const*A = a;
-	HeapClassDesc *const*B = b;
+	HeapClassDesc *const *A = (HeapClassDesc *const *)a;
+	HeapClassDesc *const *B = (HeapClassDesc *const *)b;
 	uint64_t vala, valb;
 	if (alloc_sort_mode == ALLOC_SORT_BYTES) {
 		vala = (*A)->total_size;
@@ -3420,8 +3612,8 @@ compare_heap_class (const void *a, const void *b)
 static int
 compare_rev_class (const void *a, const void *b)
 {
-	const HeapClassRevRef *A = a;
-	const HeapClassRevRef *B = b;
+	const HeapClassRevRef *A = (const HeapClassRevRef *)a;
+	const HeapClassRevRef *B = (const HeapClassRevRef *)b;
 	if (B->count == A->count)
 		return 0;
 	if (B->count < A->count)
@@ -3454,7 +3646,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 	int i;
 	HeapClassDesc *cd;
 	HeapClassDesc **sorted;
-	sorted = malloc (sizeof (void*) * hs->class_count);
+	sorted = (HeapClassDesc **)malloc (sizeof (void*) * hs->class_count);
 	for (i = 0; i < hs->hash_size; ++i) {
 		cd = hs->class_hash [i];
 		if (!cd)
@@ -3495,7 +3687,7 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 		}
 		if (!collect_traces)
 			continue;
-		rev_sorted = malloc (cd->rev_count * sizeof (HeapClassRevRef));
+		rev_sorted = (HeapClassRevRef *)malloc (cd->rev_count * sizeof (HeapClassRevRef));
 		k = 0;
 		for (j = 0; j < cd->rev_hash_size; ++j) {
 			if (cd->rev_hash [j].klass)
@@ -3514,8 +3706,8 @@ heap_shot_summary (HeapShot *hs, int hs_num, HeapShot *last_hs)
 static int
 compare_heap_shots (const void *a, const void *b)
 {
-	HeapShot *const*A = a;
-	HeapShot *const*B = b;
+	HeapShot *const *A = (HeapShot *const *)a;
+	HeapShot *const *B = (HeapShot *const *)b;
 	if ((*B)->timestamp == (*A)->timestamp)
 		return 0;
 	if ((*B)->timestamp > (*A)->timestamp)
@@ -3532,7 +3724,7 @@ dump_heap_shots (void)
 	int i;
 	if (!heap_shots)
 		return;
-	hs_sorted = malloc (num_heap_shots * sizeof (void*));
+	hs_sorted = (HeapShot **)malloc (num_heap_shots * sizeof (void*));
 	fprintf (outfile, "\nHeap shot summary\n");
 	i = 0;
 	for (hs = heap_shots; hs; hs = hs->next)
@@ -3622,7 +3814,7 @@ dump_coverage (void)
 	g_ptr_array_sort (coverage_assemblies, sort_assemblies);
 
 	for (guint i = 0; i < coverage_assemblies->len; i++) {
-		CoverageAssembly *assembly = coverage_assemblies->pdata[i];
+		CoverageAssembly *assembly = (CoverageAssembly *)coverage_assemblies->pdata[i];
 		GPtrArray *classes;
 
 		if (assembly->number_of_methods != 0) {
@@ -3642,10 +3834,10 @@ dump_coverage (void)
 			g_free (escaped_filename);
 		}
 
-		classes = g_hash_table_lookup (coverage_assembly_classes, assembly->name);
+		classes = (GPtrArray *)g_hash_table_lookup (coverage_assembly_classes, assembly->name);
 		if (classes) {
 			for (guint j = 0; j < classes->len; j++) {
-				CoverageClass *klass = classes->pdata[j];
+				CoverageClass *klass = (CoverageClass *)classes->pdata [j];
 
 				if (klass->number_of_methods > 0) {
 					int percentage = ((klass->fully_covered + klass->partially_covered) * 100) / klass->number_of_methods;
@@ -3665,7 +3857,7 @@ dump_coverage (void)
 	}
 
 	for (guint i = 0; i < coverage_methods->len; i++) {
-		CoverageMethod *method = coverage_methods->pdata[i];
+		CoverageMethod *method = (CoverageMethod *)coverage_methods->pdata [i];
 
 		if (coverage_outfile) {
 			char *escaped_assembly, *escaped_class, *escaped_method, *escaped_sig, *escaped_filename;
@@ -3685,7 +3877,7 @@ dump_coverage (void)
 			g_free (escaped_filename);
 
 			for (guint j = 0; j < method->coverage->len; j++) {
-				CoverageCoverage *coverage = method->coverage->pdata[j];
+				CoverageCoverage *coverage = (CoverageCoverage *)method->coverage->pdata [j];
 				fprintf (coverage_outfile, "\t\t<statement offset=\"%d\" counter=\"%d\" line=\"%d\" column=\"%d\"/>\n", coverage->offset, coverage->count, coverage->line, coverage->column);
 			}
 			fprintf (coverage_outfile, "\t</method>\n");
@@ -3698,6 +3890,75 @@ dump_coverage (void)
 		coverage_outfile = NULL;
 	}
 }
+
+#define DUMP_EVENT_STAT(EVENT,SUBTYPE) dump_event (#EVENT, #SUBTYPE, EVENT, SUBTYPE);
+
+static void
+dump_event (const char *event_name, const char *subtype_name, int event, int subtype)
+{
+	int idx = event | subtype;
+	EventStat evt = stats [idx];
+	if (!evt.count)
+		return;
+
+	fprintf (outfile, "\t%16s\t%26s\tcount %6d\tmin %3d\tmax %6d\tbytes %d\n", event_name, subtype_name, evt.count, evt.min_size, evt.max_size, evt.bytes);
+}
+
+static void
+dump_stats (void)
+{
+	fprintf (outfile, "\nMlpd statistics\n");
+	fprintf (outfile, "\tBuffer count %d\toverhead %d (%d bytes per header)\n", buffer_count, buffer_count * BUFFER_HEADER_SIZE, BUFFER_HEADER_SIZE);
+	fprintf (outfile, "\nEvent details:\n");
+
+	DUMP_EVENT_STAT (TYPE_ALLOC, TYPE_ALLOC_NO_BT);
+	DUMP_EVENT_STAT (TYPE_ALLOC, TYPE_ALLOC_BT);
+
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_EVENT);
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_RESIZE);
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_MOVE);
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_HANDLE_CREATED);
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_HANDLE_DESTROYED);
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_HANDLE_CREATED_BT);
+	DUMP_EVENT_STAT (TYPE_GC, TYPE_GC_HANDLE_DESTROYED_BT);
+
+	DUMP_EVENT_STAT (TYPE_METADATA, TYPE_END_LOAD);
+	DUMP_EVENT_STAT (TYPE_METADATA, TYPE_END_UNLOAD);
+
+	DUMP_EVENT_STAT (TYPE_METHOD, TYPE_LEAVE);
+	DUMP_EVENT_STAT (TYPE_METHOD, TYPE_ENTER);
+	DUMP_EVENT_STAT (TYPE_METHOD, TYPE_EXC_LEAVE);
+	DUMP_EVENT_STAT (TYPE_METHOD, TYPE_JIT);
+
+	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_THROW_NO_BT);
+	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_THROW_BT);
+	DUMP_EVENT_STAT (TYPE_EXCEPTION, TYPE_CLAUSE);
+
+	DUMP_EVENT_STAT (TYPE_MONITOR, TYPE_MONITOR_NO_BT);
+	DUMP_EVENT_STAT (TYPE_MONITOR, TYPE_MONITOR_BT);
+
+	DUMP_EVENT_STAT (TYPE_HEAP, TYPE_HEAP_START);
+	DUMP_EVENT_STAT (TYPE_HEAP, TYPE_HEAP_END);
+	DUMP_EVENT_STAT (TYPE_HEAP, TYPE_HEAP_OBJECT);
+	DUMP_EVENT_STAT (TYPE_HEAP, TYPE_HEAP_ROOT);
+
+	DUMP_EVENT_STAT (TYPE_SAMPLE, TYPE_SAMPLE_HIT);
+	DUMP_EVENT_STAT (TYPE_SAMPLE, TYPE_SAMPLE_USYM);
+	DUMP_EVENT_STAT (TYPE_SAMPLE, TYPE_SAMPLE_UBIN);
+	DUMP_EVENT_STAT (TYPE_SAMPLE, TYPE_SAMPLE_COUNTERS_DESC);
+	DUMP_EVENT_STAT (TYPE_SAMPLE, TYPE_SAMPLE_COUNTERS);
+
+	DUMP_EVENT_STAT (TYPE_RUNTIME, TYPE_JITHELPER);
+
+	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_ASSEMBLY);
+	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_METHOD);
+	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_STATEMENT);
+	DUMP_EVENT_STAT (TYPE_COVERAGE, TYPE_COVERAGE_CLASS);
+
+	DUMP_EVENT_STAT (TYPE_META, TYPE_SYNC_POINT);
+}
+
+
 
 static void
 flush_context (ProfContext *ctx)
@@ -3806,6 +4067,11 @@ print_reports (ProfContext *ctx, const char *reps, int parse_only)
 		if ((opt = match_option (p, "coverage")) != p) {
 			if (!parse_only)
 				dump_coverage ();
+			continue;
+		}
+		if ((opt = match_option (p, "stats")) != p) {
+			if (!parse_only)
+				dump_stats ();
 			continue;
 		}
 		return 0;

@@ -1095,6 +1095,7 @@ namespace Mono.CSharp
 						case Token.DECIMAL:
 						case Token.BOOL:
 						case Token.STRING:
+						case Token.SBYTE:
 							return Token.OPEN_PARENS_CAST;
 						}
 					}
@@ -2522,7 +2523,6 @@ namespace Mono.CSharp
 
 		int TokenizePragmaWarningIdentifier (ref int c, ref bool identifier)
 		{
-
 			if ((c >= '0' && c <= '9') || is_identifier_start_character (c)) {
 				int number;
 
@@ -2547,7 +2547,7 @@ namespace Mono.CSharp
 						id_builder [pos] = (char)c;
 
 						if (c >= '0' && c <= '9') {
-							if (pos == 6 && id_builder [0] == 'C' && id_builder [1] == 'S') {
+							if (pos == 5 && id_builder [0] == 'C' && id_builder [1] == 'S') {
 								// Recognize CSXXXX as C# XXXX warning
 								number = 0;
 								int pow = 1000;
@@ -2562,6 +2562,9 @@ namespace Mono.CSharp
 									pow /= 10;
 								}
 							}
+						} else if (c == '\n' || c == UnicodeLS || c == UnicodePS) {
+							advance_line ();
+							break;
 						} else if ((c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && c != '_') {
 							break;
 						}
@@ -4057,6 +4060,9 @@ namespace Mono.CSharp
 					--braces;
 					break;
 				case '\\':
+					if (parsing_string_interpolation_quoted != null && parsing_string_interpolation_quoted.Peek ())
+						break;
+
 					++col;
 					int surrogate;
 					ch = escape (ch, out surrogate);
@@ -4101,8 +4107,6 @@ namespace Mono.CSharp
 		private void handle_one_line_xml_comment ()
 		{
 			int c;
-			while ((c = peek_char ()) == ' ')
-				get_char (); // skip heading whitespaces.
 			while ((c = peek_char ()) != -1 && c != '\n' && c != '\r') {
 				xml_comment_buffer.Append ((char) get_char ());
 			}
