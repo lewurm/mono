@@ -32,6 +32,7 @@ ifeq (4, $(FRAMEWORK_VERSION_MAJOR))
 ifndef NO_SYSTEM_SERVICEMODEL_ACTIVATION_DEPENDENCY
 activation = $(the_libdir_base)System.ServiceModel.Activation.dll
 servicemodel_deps = $(activation)
+endif
 
 ifneq (plainservice/,$(intermediate))
 LIB_REFS += System.ServiceModel.Activation

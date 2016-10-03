@@ -1,0 +1,20 @@
+#include "libmonoboehm-2.0-1.symbols"
+ GC_allocate_lock@Base 4.2.1.102+dfsg2
+ GC_apply_to_maps@Base 4.1.0.1738
+ GC_err_write@Base 4.1.0.1738
+ GC_get_nprocs@Base 4.1.0.1738
+ GC_key_create@Base 4.1.0.1738
+ GC_linux_stack_base@Base 4.1.0.1738
+ GC_merge_unmapped@Base 4.1.0.1738
+ GC_print_address_map@Base 4.1.0.1738
+ GC_remap@Base 4.1.0.1738
+ GC_remove_specific@Base 4.1.0.1738
+ GC_repeat_read@Base 4.1.0.1738
+ GC_set_stackbottom@Base 4.1.0.1738
+ GC_setspecific@Base 4.1.0.1738
+ GC_slow_getspecific@Base 4.1.0.1738
+ GC_unmap@Base 4.1.0.1738
+ GC_unmap_end@Base 4.1.0.1738
+ GC_unmap_gap@Base 4.1.0.1738
+ GC_unmap_old@Base 4.1.0.1738
+ GC_unmap_start@Base 4.1.0.1738
