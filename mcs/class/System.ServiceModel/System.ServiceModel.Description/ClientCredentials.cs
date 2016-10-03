@@ -51,25 +51,23 @@ namespace System.ServiceModel.Description
 		}
 
 		[MonoTODO]
-		protected ClientCredentials (ClientCredentials source)
+		protected ClientCredentials (ClientCredentials other)
 		{
-			userpass = source.userpass.Clone ();
+			userpass = other.userpass.Clone ();
+			digest = other.digest.Clone ();
+			initiator = other.initiator.Clone ();
+			recipient = other.recipient.Clone ();
+			windows = other.windows.Clone ();
 #if !NET_2_1
-			issued_token = source.issued_token.Clone ();
-			digest = source.digest.Clone ();
-			initiator = source.initiator.Clone ();
-			recipient = source.recipient.Clone ();
-			windows = source.windows.Clone ();
-			peer = source.peer.Clone ();
-			support_interactive = source.support_interactive;
+			issued_token = other.issued_token.Clone ();
+			peer = other.peer.Clone ();
+			support_interactive = other.support_interactive;
 #endif
 		}
 
 		UserNamePasswordClientCredential userpass =
 			new UserNamePasswordClientCredential ();
-#if !NET_2_1
-		IssuedTokenClientCredential issued_token =
-			new IssuedTokenClientCredential ();
+
 		HttpDigestClientCredential digest =
 			new HttpDigestClientCredential ();
 		X509CertificateInitiatorClientCredential initiator =
@@ -78,8 +76,6 @@ namespace System.ServiceModel.Description
 			new X509CertificateRecipientClientCredential ();
 		WindowsClientCredential windows =
 			new WindowsClientCredential ();
-		PeerCredential peer = new PeerCredential ();
-		bool support_interactive = true;
 
 		public X509CertificateInitiatorClientCredential ClientCertificate {
 			get { return initiator; }
@@ -89,6 +85,20 @@ namespace System.ServiceModel.Description
 			get { return digest; }
 		}
 
+		public X509CertificateRecipientClientCredential ServiceCertificate {
+			get { return recipient; }
+		}
+
+		public WindowsClientCredential Windows {
+			get { return windows; }
+		}
+
+#if !NET_2_1
+		IssuedTokenClientCredential issued_token =
+			new IssuedTokenClientCredential ();
+		PeerCredential peer = new PeerCredential ();
+		bool support_interactive = true;
+
 		public IssuedTokenClientCredential IssuedToken {
 			get { return issued_token; }
 		}
@@ -97,17 +107,9 @@ namespace System.ServiceModel.Description
 			get { return peer; }
 		}
 
-		public X509CertificateRecipientClientCredential ServiceCertificate {
-			get { return recipient; }
-		}
-
 		public bool SupportInteractive {
 			get { return support_interactive; }
 			set { support_interactive = value; }
-		}
-
-		public WindowsClientCredential Windows {
-			get { return windows; }
 		}
 #endif
 
@@ -157,10 +159,10 @@ namespace System.ServiceModel.Description
 
 		[MonoTODO]
 		public virtual void ApplyClientBehavior (
-			ServiceEndpoint endpoint, ClientRuntime behavior)
+			ServiceEndpoint serviceEndpoint, ClientRuntime behavior)
 		{
-			if (endpoint == null)
-				throw new ArgumentNullException ("endpoint");
+			if (serviceEndpoint == null)
+				throw new ArgumentNullException ("serviceEndpoint");
 			if (behavior == null)
 				throw new ArgumentNullException ("behavior");
 

@@ -88,11 +88,7 @@ namespace MonoTests.System
 		}
 
 		[Test] // ctor (Uri)
-#if NET_4_0
 		[ExpectedException (typeof (ArgumentNullException))]
-#else
-		[ExpectedException (typeof (NullReferenceException))]
-#endif
 		public void Constructor2_Uri_Null ()
 		{
 			new UriBuilder ((Uri) null);
@@ -142,7 +138,7 @@ namespace MonoTests.System
 			b.UserName = "myname";
 			Assert.AreEqual ("myname", b.Uri.UserInfo, "2.UserName");
 			b.Password = "mypwd";
-			Assert.AreEqual ("myname", b.Uri.UserInfo, "2.Password");
+			Assert.AreEqual ("myname:mypwd", b.Uri.UserInfo, "2.Password");
 			Assert.AreEqual ("/", b.Uri.LocalPath, "2.Uri.LocalPath");
 
 			b = new UriBuilder ("mailto", "contoso.com");

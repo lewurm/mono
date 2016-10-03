@@ -14,12 +14,14 @@ with_mono_path = MONO_PATH="$(topdir)/class/lib/$(PROFILE)$(PLATFORM_PATH_SEPARA
 ilasm = $(topdir)/class/lib/$(PROFILE)/ilasm.exe
 ILASM = MONO_PATH="$(topdir)/class/lib/$(PROFILE)$(PLATFORM_PATH_SEPARATOR)$$MONO_PATH" $(RUNTIME) $(RUNTIME_FLAGS) $(ilasm)
 
+-include $(mcs_topdir)/build/config.make
+
 USE_MCS_FLAGS :=
 
 # mention all targets
 all-local $(STD_TARGETS:=-local):
 
-VALID_PROFILE := $(filter net_4_5, $(PROFILE))
+VALID_PROFILE := $(filter $(DEFAULT_PROFILE), $(PROFILE))
 ifdef VALID_PROFILE
 # casts
 bootstrap-cast.exe: gen-cast-test.cs
@@ -46,9 +48,9 @@ test-casts: boot-casts.out mcs-casts.out
 
 TEST_PATTERN = 'v2'
 
-ifeq (net_4_5, $(PROFILE))
+ifeq (net_4_x, $(PROFILE))
 TEST_PATTERN = 'v4'
-DEFINES = -compiler-options:"-d:NET_4_0;NET_4_5"
+DEFINES = -compiler-options:"-d:NET_4_0;NET_4_5 -debug"
 endif
 
 LOCAL_RUNTIME_FLAGS = --verify-all
@@ -96,4 +98,8 @@ csproj-local:
 setup:
 	$(CSCOMPILE) -t:library dlls/test-679-2/test-679-lib-2.cs
 	$(CSCOMPILE) -t:library dlls/test-679-1/test-679-lib.cs -r:dlls/test-679-2/test-679-lib-2.dll
+	$(CSCOMPILE) -t:library dlls/test-939-common.cs -keyfile:key.snk -publicsign
+	$(CSCOMPILE) -t:library dlls/test-939-1/test-939-lib.cs -keyfile:key.snk -publicsign
+	$(CSCOMPILE) -t:library dlls/test-939-1/test-939-ref.cs -r:dlls/test-939-1/test-939-lib.dll -keyfile:key.snk -publicsign
+	$(CSCOMPILE) -t:library dlls/test-939-2/test-939-lib.cs -r:dlls/test-939-common.dll -keyfile:key.snk -publicsign
 	$(ILASM) -dll dlls/test-883.il

@@ -482,10 +482,7 @@ namespace Mono.CSharp {
 				return null;
 			}
 
-			ObsoleteAttribute obsolete_attr = Type.GetAttributeObsolete ();
-			if (obsolete_attr != null) {
-				AttributeTester.Report_ObsoleteMessage (obsolete_attr, Type.GetSignatureForError (), Location, Report);
-			}
+			Type.CheckObsoleteness (context, expression.StartLocation);
 
 			ResolveContext rc = null;
 
@@ -579,8 +576,6 @@ namespace Mono.CSharp {
 					return false;
 				}
 
-				ObsoleteAttribute obsolete_attr;
-
 				if (member is PropertyExpr) {
 					var pi = ((PropertyExpr) member).PropertyInfo;
 
@@ -596,7 +591,9 @@ namespace Mono.CSharp {
 						return false;
 					}
 
-					obsolete_attr = pi.GetAttributeObsolete ();
+//					if (!context.IsObsolete)
+						pi.CheckObsoleteness (ec, member.StartLocation);
+					
 					pi.MemberDefinition.SetIsAssigned ();
 				} else {
 					var fi = ((FieldExpr) member).Spec;
@@ -612,12 +609,11 @@ namespace Mono.CSharp {
 						return false;
 					}
 
-					obsolete_attr = fi.GetAttributeObsolete ();
+//					if (!context.IsObsolete)
+						fi.CheckObsoleteness (ec, member.StartLocation);
+
 					fi.MemberDefinition.SetIsAssigned ();
 				}
-
-				if (obsolete_attr != null && !context.IsObsolete)
-					AttributeTester.Report_ObsoleteMessage (obsolete_attr, member.GetSignatureForError (), member.Location, Report);
 
 				if (a.Type != member.Type) {
 					a.Expr = Convert.ImplicitConversionRequired (ec, a.Expr, member.Type, a.Expr.Location);
@@ -1704,6 +1700,7 @@ namespace Mono.CSharp {
 		public readonly PredefinedAttribute AssemblyAlgorithmId;
 		public readonly PredefinedAttribute AssemblyFlags;
 		public readonly PredefinedAttribute AssemblyFileVersion;
+		public readonly PredefinedAttribute AssemblyInformationalVersion;
 		public readonly PredefinedAttribute ComImport;
 		public readonly PredefinedAttribute CoClass;
 		public readonly PredefinedAttribute AttributeUsage;
@@ -1804,6 +1801,7 @@ namespace Mono.CSharp {
 			AssemblyCompany = new PredefinedAttribute (module, "System.Reflection", "AssemblyCompanyAttribute");
 			AssemblyCopyright = new PredefinedAttribute (module, "System.Reflection", "AssemblyCopyrightAttribute");
 			AssemblyTrademark = new PredefinedAttribute (module, "System.Reflection", "AssemblyTrademarkAttribute");
+			AssemblyInformationalVersion = new PredefinedAttribute (module, "System.Reflection", "AssemblyInformationalVersionAttribute");
 
 			AsyncStateMachine = new PredefinedStateMachineAttribute (module, "System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
 
