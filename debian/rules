@@ -96,6 +96,7 @@ configure-stamp: autoreconf-stamp
 	touch $@
 
 build: build-stamp
+build-indep: build-stamp
 build-stamp: configure-stamp
 	dh_testdir
 	cd eglib && $(MAKE) $(EGLIB_MAKE_FLAGS)
