@@ -1,3 +1,35 @@
+mono (4.6.1.3+dfsg-1) unstable; urgency=medium
+
+  [ Jo Shields ]
+  * [068b9ee] Imported Upstream version 4.6.1.3+dfsg
+  * [247c71f] Delete files inexplicably included by our crazy git setup
+  * [4d0e950] Corlib needs tzdata (Closes: #839510, #839504, #839431,
+    #839415, #839452, #839467, #839447, #839496, #839491, #839441, #839430,
+    #839439, #839493, #839416, #839451, #839489, #839523, #839429, #839423,
+    #839458, #839419, #839464, #839502, #839483, #839446, #839453, #839427,
+    #839438, #839455, #839519, #839501, #839448, #839520, #839518, #839425,
+    #839521, #839440, #839470, #839414, #839436, #839507, #839434, #839471,
+    #839426, #839517, #839503, #839506, #839509, #839457, #839463, #839420,
+    #839482, #839450, #839480, #839499, #839473, #839422, #839408, #839490)
+  * [338fb58] Add a dummy build-indep (Closes: #831933)
+  * [8470ce9] SGen is default libmono now
+  * [79e78c1] Re-add PowerPC (Closes: #819711)
+  * [1a6afe4] Clean up some unneeded [arch lists]
+  * [39cdd36] Add python build dep, so test suite runs
+  * [4524eef] Stop trying to enforce 3-part version semantics
+  * [10dc309] Fix libmono symlinking
+  * [627b699] Stop installing non-existent Jay changelog
+  * [a3ff308] Updated dh_clideps
+  * [037c229] Refreshed symbols
+  * [3077246] Refreshed mono-devel install
+  * [414b078] Depend on binutils, for AOT generation
+  * [05a36a1] Get rid of C5 package
+  * [85cba34] Add new libs added from 4.2->4.6
+  * [9313b6b] Add new TLS providers
+  * [3042d1a] Refresh makecliclibs symbols versioning
+
+ -- Jo Shields <joshield@microsoft.com>  Mon, 03 Oct 2016 11:23:50 +0100
+
 mono (4.2.1.102+dfsg2-8) unstable; urgency=medium
 
   * [cf4937c] Fixes for ARM64 packages. Thanks to Matthias Klose
