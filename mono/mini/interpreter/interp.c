@@ -4585,7 +4585,9 @@ static void main_thread_handler (gpointer user_data)
 static void
 mono_runtime_install_handlers (void)
 {
+#if 0
 	add_signal_handler (SIGSEGV, segv_handler);
+#endif
 	add_signal_handler (SIGINT, quit_handler);
 	add_signal_handler (SIGABRT, abrt_handler);
 #if 0
@@ -4629,6 +4631,12 @@ interp_create_ftnptr (MonoDomain *domain, gpointer addr)
 	return addr;
 }
 
+static gboolean
+mono_current_thread_has_handle_block_guard (void)
+{
+	return FALSE;
+}
+
 MonoDomain *
 mono_interp_init(const char *file)
 {
@@ -4664,6 +4672,7 @@ mono_interp_init(const char *file)
 
 	memset (&ecallbacks, 0, sizeof (ecallbacks));
 	ecallbacks.mono_raise_exception = interp_ex_handler;
+	ecallbacks.mono_current_thread_has_handle_block_guard = mono_current_thread_has_handle_block_guard;
 #if 0
 	// FIXME: ...
 	mono_install_stack_walk (interp_walk_stack);
