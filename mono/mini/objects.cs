@@ -1232,7 +1232,6 @@ ncells ) {
 
 		return (a2.Length == 100) ? 0 : 1;
 	}
-#endif
 
 	public static int test_0_intrins_runtimehelpers_offset_to_string_data () {
 		int i = RuntimeHelpers.OffsetToStringData;
@@ -1247,6 +1246,7 @@ ncells ) {
 
 		return sb.ToString () == "ADC" ? 0 : 1;
 	}
+#endif
 
 	public class Bar {
 		bool allowLocation = true;
@@ -1259,6 +1259,7 @@ ncells ) {
 		return 0;
 	}
 
+#if false
 	public static unsafe int test_97_negative_index () {
 		char[] arr = new char[] {'a', 'b'};
 		fixed (char *p = arr) {
@@ -1267,6 +1268,7 @@ ncells ) {
 			return a;
 		}
 	}
+#endif
 
 	/* bug #82281 */
 	public static int test_0_unsigned_right_shift_imm0 () {
@@ -1440,6 +1442,7 @@ ncells ) {
 		return arr [0, 0] == 256f ? 0 : 1;
 	}
 
+#if false
 	//repro for #506915
 	struct Bug506915 { public int val; }
 	static int test_2_ldobj_stobj_optization ()
@@ -1455,6 +1458,7 @@ ncells ) {
 		
 		return array [1].val;
 	}
+#endif
 
 	/* mcs can't compile this (#646744) */
 #if FALSE
@@ -1580,11 +1584,14 @@ ncells ) {
 	}
 	*/
 
+#if false
 	static int test_0_char_ctor () {
 		string s = new String (new char[] { 'A', 'B' }, 0, 1);
 		return 0;
 	}
+#endif
 
+#if false
 	static object mInstance = null;
 
 	[MethodImpl(MethodImplOptions.Synchronized)]
@@ -1598,6 +1605,7 @@ ncells ) {
 		getInstance ();
 		return 0;
 	}
+#endif
 
 	struct BStruct {
 		public Type t;
@@ -1609,6 +1617,7 @@ ncells ) {
 		}
 	}
 
+#if false
 	delegate BStruct ADelegate ();
 
 	static int test_0_regress_10601 () {
@@ -1618,6 +1627,7 @@ ncells ) {
 			return 1;
 		return 0;
 	}
+#endif
 
 	static int test_0_regress_11058 () {
 		int foo = -252674008;
@@ -1710,6 +1720,7 @@ ncells ) {
 		return res == 10.0 ? 0 : 1;
 	}
 
+#if false
 	class MulOvfClass {
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public unsafe void EncodeIntoBuffer(char* value, int valueLength, char* buffer, int bufferLength) {
@@ -1728,6 +1739,7 @@ ncells ) {
 		}
 		return 0;
 	}
+#endif
 
 	struct Struct16 {
 		public int a, b, c, d;
@@ -1762,12 +1774,14 @@ ncells ) {
 		}
 	}
 
+#if false
 	public static int test_0_delegate_to_virtual_generic_on_ifaces () {
 		IComparer2 c = new AClass ();
 
 		Func<Type> f = c.foo<string>;
 		return f () == typeof(string) ? 0 : 1;
 	}
+#endif
 
 	public enum ByteEnum2 : byte {
 		High = 142
