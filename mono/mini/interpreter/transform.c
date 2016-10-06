@@ -2887,6 +2887,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_end_invoke (method);
 				} else {
+					g_printerr ("multicastdelegate_class: %s\n", name);
 					g_assert_not_reached ();
 				}
 			} 
@@ -3021,11 +3022,10 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	// g_printerr ("TRANSFORM(0x%016lx): end %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 
 	/* the rest needs to be locked so it is only done once */
-	mono_os_mutex_lock(&calc_section);
+	mono_os_mutex_lock (&calc_section);
 	if (runtime_method->transformed) {
 		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		g_error ("FIXME: missing jinfo1");
 		mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
 		return NULL;
 	}

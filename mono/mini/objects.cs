@@ -149,11 +149,13 @@ class Tests {
 		return 0;
 	}
 
+#if false
 	public static int test_0_iface_call () {
 		string s = "Hello";
 		object o = ((ICloneable)s).Clone ();
 		return 0;
 	}
+#endif
 
 	public static int test_5_newobj () {
 		Sample s = new Sample (5);
@@ -473,6 +475,7 @@ class Tests {
 		return o.GetHashCode ();
 	}
 
+#if false
 	public static int test_0_unbox_trampoline2 () {
 		int i = 12;
 		object o = i;
@@ -485,6 +488,7 @@ class Tests {
 			return 3;
 		return 0;
 	}
+#endif
 
 	// Test fields with big offsets
 	public static int test_0_fields_with_big_offsets () {
@@ -557,10 +561,12 @@ class Tests {
 
 	}
 
+#if false
 	public static int test_0_seektest () {
 		TestRegA t = new TestRegA ();
 		return (int)t.Seek (0);
 	}
+#endif
 
 	class Super : ICloneable {
 		public virtual object Clone () {
@@ -636,6 +642,7 @@ class Tests {
 		return 0;
 	}
 
+#if false
 	public static int test_0_vector_array_cast () {
 		Array arr1 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {0});
 		Array arr2 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {10});
@@ -666,6 +673,7 @@ class Tests {
 
 		return 0;
 	}
+#endif
 
 	public static int test_0_enum_array_cast () {
 		TypeCode[] tc = new TypeCode [0];
@@ -708,6 +716,7 @@ class Tests {
 		return 0;
 	}
 
+#if false
 	public static int test_0_more_cast_corner_cases () {
 		ValueType[] vta = new ValueType [0];
 		Enum[] ea = new Enum [0];
@@ -785,6 +794,7 @@ class Tests {
 			return 12;
 		return 0;
 	}
+#endif
 
 	public static int test_0_cast_iface_array () {
 		object o = new ICloneable [0];
@@ -857,6 +867,7 @@ class Tests {
 		return 5;
 	}
 
+#if false
 	public static int test_2_static_delegate () {
 		GetIntDel del = new GetIntDel (return4);
 		int v = del ();
@@ -899,6 +910,7 @@ class Tests {
 		Func<int> f = s.return_field;
 		return f ();
 	}
+#endif
 
 	public static int test_1_store_decimal () {
 		decimal[,] a = {{1}};
@@ -960,6 +972,7 @@ class Tests {
 		return 0;
 	}
 
+#if false
 	public static unsafe int test_0_pin_string () {
 		string x = "xxx";
 		fixed (char *c = x) {
@@ -968,6 +981,7 @@ class Tests {
 		}
 		return 0;
 	}
+#endif
 	
 	public static int my_flags;
 	public static int test_0_and_cmp_static ()
@@ -1184,6 +1198,7 @@ ncells ) {
 		return (s [0] == 'A' && s [1] == 'B' && s [2] == 'C') ? 0 : 1;
 	}
 
+#if false
 	public static int test_0_intrins_object_gettype () {
 		object o = 1;
 
@@ -1217,6 +1232,7 @@ ncells ) {
 
 		return (a2.Length == 100) ? 0 : 1;
 	}
+#endif
 
 	public static int test_0_intrins_runtimehelpers_offset_to_string_data () {
 		int i = RuntimeHelpers.OffsetToStringData;
