@@ -1,3 +1,10 @@
+mono (4.6.1.3+dfsg-2) unstable; urgency=medium
+
+  * [bee458a] Build-dep on tzdata (Closes: #837014)
+  * [b9f7593] Add a build-arch target
+
+ -- Jo Shields <joshield@microsoft.com>  Fri, 07 Oct 2016 13:19:51 +0100
+
 mono (4.6.1.3+dfsg-1) unstable; urgency=medium
 
   [ Jo Shields ]
