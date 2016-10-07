@@ -1,3 +1,15 @@
+mono (4.6.1.3+dfsg-3) unstable; urgency=medium
+
+  [ Jo Shields ]
+  * [a46898f] Add missing PowerPC symbols
+  * [bea9df8] Remove obsolete PPC64el symbol
+  * [0cacfe8] Refreshed symbols across all architectures.
+
+  [ Łukasz Domeradzki ]
+  * [a7a9773] Fix compilation of AOT-less Mono
+
+ -- Jo Shields <joshield@microsoft.com>  Fri, 07 Oct 2016 20:48:40 +0100
+
 mono (4.6.1.3+dfsg-2) unstable; urgency=medium
 
   * [bee458a] Build-dep on tzdata (Closes: #837014)
