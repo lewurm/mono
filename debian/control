@@ -15,6 +15,7 @@ Build-Depends: debhelper (>= 7),
 	lsb-release,
 	libx11-dev,
 	libxt-dev,
+	tzdata,
 	zlib1g-dev,
 	autoconf,
 	automake
