@@ -3,7 +3,6 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mini_parse_debug_option@Base 4.3.3.38
  mono_add_internal_call@Base 4.1.0.1738
  mono_aot_get_method@Base 4.1.0.1738
- mono_aot_register_module@Base 4.1.0.1738
  mono_array_addr_with_size@Base 4.1.0.1738
  mono_array_class_get@Base 4.1.0.1738
  mono_array_clone@Base 4.1.0.1738
@@ -483,7 +482,6 @@ libmonosgen-2.0.so.1 libmonosgen-2.0-1 #MINVER#
  mono_install_assembly_refonly_search_hook@Base 4.1.0.1738
  mono_install_assembly_search_hook@Base 4.1.0.1738
  mono_install_ftnptr_eh_callback@Base 4.5.2.48
- mono_install_load_aot_data_hook@Base 4.3.2.147
  mono_install_runtime_cleanup@Base 4.1.0.1738
  mono_install_unhandled_exception_hook@Base 4.1.0.1738
  mono_is_debugger_attached@Base 4.1.0.1738

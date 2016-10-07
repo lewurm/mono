@@ -23,7 +23,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_allow_register_threads@Base 4.3.0.2390
  GC_aobjfreelist_ptr@Base 4.1.0.1738
  GC_apply_to_all_blocks@Base 4.1.0.1738
- GC_apply_to_maps@Base 4.1.0.1738
  GC_approx_sp@Base 4.1.0.1738
  GC_arobjfreelist@Base 4.1.0.1738
  GC_array_kind@Base 4.1.0.1738
@@ -75,7 +74,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_copy_bl@Base 4.1.0.1738
  GC_copyright@Base 4.1.0.1738
  GC_current_warn_proc@Base 4.1.0.1738
- GC_data_start@Base 4.1.0.1738
  GC_debug_change_stubborn@Base 4.1.0.1738
  GC_debug_end_stubborn_change@Base 4.1.0.1738
  GC_debug_free@Base 4.1.0.1738
@@ -135,7 +133,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_eobjfreelist@Base 4.1.0.1738
  GC_err_printf@Base 4.1.0.1738
  GC_err_puts@Base 4.1.0.1738
- GC_err_write@Base 4.1.0.1738
  GC_excl_table_entries@Base 4.1.0.1738
  GC_exclude_static_roots@Base 4.1.0.1738
  GC_exit_check@Base 4.1.0.1738
@@ -146,7 +143,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_ext_descriptors@Base 4.1.0.1738
  GC_extend_size_map@Base 4.1.0.1738
  GC_fail_count@Base 4.1.0.1738
- GC_fault_handler@Base 4.1.0.1738
  GC_finalization_failures@Base 4.1.0.1738
  GC_finalize@Base 4.1.0.1738
  GC_finalize_all@Base 4.1.0.1738
@@ -155,7 +151,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_finalizer_notifier@Base 4.1.0.1738
  GC_find_header@Base 4.1.0.1738
  GC_find_leak@Base 4.1.0.1738
- GC_find_limit@Base 4.1.0.1738
  GC_find_start@Base 4.1.0.1738
  GC_finish_collection@Base 4.1.0.1738
  GC_fo_entries@Base 4.1.0.1738
@@ -190,7 +185,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_get_first_part@Base 4.1.0.1738
  GC_get_free_bytes@Base 4.1.0.1738
  GC_get_heap_size@Base 4.1.0.1738
- GC_get_nprocs@Base 4.1.0.1738
  GC_get_stack_base@Base 4.1.0.1738
  GC_get_suspend_signal@Base 4.1.0.1738
  GC_get_thr_restart_signal@Base 4.3.0.2390
@@ -217,7 +211,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_init_gcj_malloc@Base 4.1.0.1738
  GC_init_headers@Base 4.1.0.1738
  GC_init_inner@Base 4.1.0.1738
- GC_init_linux_data_start@Base 4.1.0.1738
  GC_init_parallel@Base 4.1.0.1738
  GC_init_size_map@Base 4.1.0.1738
  GC_initiate_gc@Base 4.1.0.1738
@@ -239,13 +232,10 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_is_visible@Base 4.1.0.1738
  GC_is_visible_print_proc@Base 4.1.0.1738
  GC_java_finalization@Base 4.1.0.1738
- GC_jmp_buf@Base 4.1.0.1738
- GC_key_create@Base 4.1.0.1738
  GC_large_alloc_warn_interval@Base 4.1.0.1738
  GC_large_alloc_warn_suppressed@Base 4.1.0.1738
  GC_leaked@Base 4.1.0.1738
  GC_least_plausible_heap_addr@Base 4.1.0.1738
- GC_linux_stack_base@Base 4.1.0.1738
  GC_lock@Base 4.1.0.1738
  GC_lock_holder@Base 4.1.0.1738
  GC_lookup_thread@Base 4.1.0.1738
@@ -332,7 +322,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_post_incr@Base 4.1.0.1738
  GC_pre_incr@Base 4.1.0.1738
  GC_prev_block@Base 4.1.0.1738
- GC_print_address_map@Base 4.1.0.1738
  GC_print_all_errors@Base 4.1.0.1738
  GC_print_all_smashed@Base 4.1.0.1738
  GC_print_all_smashed_proc@Base 4.1.0.1738
@@ -418,10 +407,7 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_remove_protection@Base 4.1.0.1738
  GC_remove_roots@Base 4.1.0.1738
  GC_remove_roots_inner@Base 4.1.0.1738
- GC_remove_specific@Base 4.1.0.1738
  GC_remove_tmp_roots@Base 4.1.0.1738
- GC_repeat_read@Base 4.1.0.1738
- GC_reset_fault_handler@Base 4.1.0.1738
  GC_restart_handler@Base 4.1.0.1738
  GC_retry_signals@Base 4.1.0.1738
  GC_root_size@Base 4.1.0.1738
@@ -437,18 +423,14 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  GC_set_mark_bit@Base 4.1.0.1738
  GC_set_max_heap_size@Base 4.1.0.1738
  GC_set_on_collection_event@Base 4.3.0.2390
- GC_set_stackbottom@Base 4.1.0.1738
  GC_set_toggleref_func@Base 4.3.0.2390
  GC_set_warn_proc@Base 4.1.0.1738
  GC_setpagesize@Base 4.1.0.1738
- GC_setspecific@Base 4.1.0.1738
- GC_setup_temporary_fault_handler@Base 4.1.0.1738
  GC_should_collect@Base 4.1.0.1738
  GC_should_invoke_finalizers@Base 4.1.0.1738
  GC_signal_mark_stack_overflow@Base 4.1.0.1738
  GC_size@Base 4.1.0.1738
  GC_sleep@Base 4.1.0.1738
- GC_slow_getspecific@Base 4.1.0.1738
  GC_smashed@Base 4.1.0.1738
  GC_split_block@Base 4.1.0.1738
  GC_stack_last_cleared@Base 4.1.0.1738
@@ -509,7 +491,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mini_parse_debug_option@Base 4.3.3.38
  mono_add_internal_call@Base 4.1.0.1738
  mono_aot_get_method@Base 4.1.0.1738
- mono_aot_register_module@Base 4.1.0.1738
  mono_array_addr_with_size@Base 4.1.0.1738
  mono_array_class_get@Base 4.1.0.1738
  mono_array_clone@Base 4.1.0.1738
@@ -987,7 +968,6 @@ libmonoboehm-2.0.so.1 libmonoboehm-2.0-1 #MINVER#
  mono_install_assembly_refonly_search_hook@Base 4.1.0.1738
  mono_install_assembly_search_hook@Base 4.1.0.1738
  mono_install_ftnptr_eh_callback@Base 4.5.2.48
- mono_install_load_aot_data_hook@Base 4.3.2.147
  mono_install_runtime_cleanup@Base 4.1.0.1738
  mono_install_unhandled_exception_hook@Base 4.1.0.1738
  mono_is_debugger_attached@Base 4.1.0.1738
