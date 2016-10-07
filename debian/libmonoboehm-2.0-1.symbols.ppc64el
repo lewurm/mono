@@ -5,7 +5,6 @@
  GC_err_write@Base 4.1.0.1738
  GC_fault_handler@Base 4.1.0.1738
  GC_find_limit@Base 4.1.0.1738
- GC_free_bytes@Base 4.2.1.102+dfsg2
  GC_get_nprocs@Base 4.1.0.1738
  GC_init_linux_data_start@Base 4.1.0.1738
  GC_jmp_buf@Base 4.1.0.1738
