@@ -559,12 +559,10 @@ class Tests {
 
 	}
 
-#if false
 	public static int test_0_seektest () {
 		TestRegA t = new TestRegA ();
 		return (int)t.Seek (0);
 	}
-#endif
 
 	class Super : ICloneable {
 		public virtual object Clone () {
