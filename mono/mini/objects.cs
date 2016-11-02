@@ -149,13 +149,11 @@ class Tests {
 		return 0;
 	}
 
-#if false
 	public static int test_0_iface_call () {
 		string s = "Hello";
 		object o = ((ICloneable)s).Clone ();
 		return 0;
 	}
-#endif
 
 	public static int test_5_newobj () {
 		Sample s = new Sample (5);
