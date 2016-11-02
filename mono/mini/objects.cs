@@ -710,7 +710,6 @@ class Tests {
 		return 0;
 	}
 
-#if false
 	public static int test_0_more_cast_corner_cases () {
 		ValueType[] vta = new ValueType [0];
 		Enum[] ea = new Enum [0];
@@ -788,7 +787,6 @@ class Tests {
 			return 12;
 		return 0;
 	}
-#endif
 
 	public static int test_0_cast_iface_array () {
 		object o = new ICloneable [0];
