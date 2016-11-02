@@ -638,7 +638,6 @@ class Tests {
 		return 0;
 	}
 
-#if false
 	public static int test_0_vector_array_cast () {
 		Array arr1 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {0});
 		Array arr2 = Array.CreateInstance (typeof (int), new int[] {1}, new int[] {10});
@@ -669,7 +668,6 @@ class Tests {
 
 		return 0;
 	}
-#endif
 
 	public static int test_0_enum_array_cast () {
 		TypeCode[] tc = new TypeCode [0];
