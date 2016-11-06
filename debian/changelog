@@ -1,3 +1,19 @@
+mono (4.6.1.3+dfsg-5) unstable; urgency=medium
+
+  [ Martin Baulig ]
+  * [873636b] ChainValidationHelper: ignore port number when validating a 
+    certificate's host name.
+    This fixes the certificate validation bug here:
+    https://bugzilla.xamarin.com/show_bug.cgi?id=44708
+
+  [ Jo Shields ]
+  * [3cfd6a2] On Debian, we don't have any reference assemblies for .NET 4.5
+    (as they can't be built fully from source right now), so make 
+    TargetFrameworkVersion 4.5.x point to $latest. This avoids the need for 
+    a packaging transition to change every TargetFrameworkVersion 4.5 into 4.6
+
+ -- Jo Shields <directhex@apebox.org>  Sun, 06 Nov 2016 08:05:57 +0000
+
 mono (4.6.1.3+dfsg-4) unstable; urgency=medium
 
   * [5fa63d4] Fix PowerPC symbols. This symbols stuff is exhausting.
