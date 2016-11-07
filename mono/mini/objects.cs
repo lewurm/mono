@@ -859,7 +859,6 @@ class Tests {
 		return 5;
 	}
 
-#if false
 	public static int test_2_static_delegate () {
 		GetIntDel del = new GetIntDel (return4);
 		int v = del ();
@@ -868,6 +867,7 @@ class Tests {
 		return 2;
 	}
 
+#if false
 	public static int test_2_instance_delegate () {
 		Tests t = new Tests ();
 		GetIntDel del = new GetIntDel (t.return5);

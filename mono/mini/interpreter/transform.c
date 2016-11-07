@@ -2411,9 +2411,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					interp_transform_call (&td, method, domain, generic_context, is_bb_start, body_start_offset);
 					break;
 				case CEE_MONO_ICALL: {
-					if (mono_interp_traceopt) {
-						g_print ("there's a ICALL at ip=%x\n", td.ip);
-					}
 					guint32 token;
 					gpointer func;
 					MonoJitICallInfo *info;
@@ -2421,6 +2418,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					token = read32 (td.ip + 1);
 					td.ip += 5;
 					func = mono_method_get_wrapper_data (method, token);
+					if (mono_interp_traceopt) {
+						g_print ("there's a ICALL at ip=%x to %p\n", td.ip, func);
+					}
 					info = mono_find_jit_icall_by_addr (func);
 					g_assert (info);
 
@@ -2907,7 +2907,6 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
 				if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
-					g_error ("FIXME: no del?");
 					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
