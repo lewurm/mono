@@ -1,3 +1,20 @@
+mono (4.6.1.3+dfsg-6) unstable; urgency=medium
+
+  [ Vlad Brezae ]
+  * [9763265] [mips] Don't assert when decomposing longs.
+    There is no point in asserting if we encounter an unhandled long op.
+    These ops may still get removed, if emulated later on, or maybe from
+    other passes. Asserting happens as a last resort when emitting the
+    native code for the method.
+  * [29ab403] [mips] Add missing define
+  * [d85c294] [mips] Disable div with mul on 32bit mips
+
+  [ Jo Shields ]
+  * [18f2ec0] Refreshed MIPS symbols (Closes: #840494)
+  * [e5724c1] Force pthreads on ARM and MIPS.
+
+ -- Jo Shields <joshield@microsoft.com>  Mon, 07 Nov 2016 19:32:46 +0000
+
 mono (4.6.1.3+dfsg-5) unstable; urgency=medium
 
   [ Martin Baulig ]
