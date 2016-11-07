@@ -38,7 +38,15 @@ ifeq ($(DEB_BUILD_ARCH_OS), kfreebsd)
 endif
 
 ifeq ($(DEB_BUILD_ARCH), armel)
-	CONF_FLAGS += --with-fpu=NONE
+	CONF_FLAGS += --with-fpu=NONE --with-tls=pthread
+endif
+
+ifeq ($(DEB_BUILD_ARCH), armhf)
+	CONF_FLAGS += --with-tls=pthread
+endif
+
+ifeq ($(DEB_BUILD_ARCH), mipsel)
+	CONF_FLAGS += --with-tls=pthread
 endif
 
 ifneq (,$(findstring $(DEB_BUILD_ARCH),$(DEB_MONO_SGEN_ARCHS)))
