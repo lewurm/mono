@@ -867,7 +867,6 @@ class Tests {
 		return 2;
 	}
 
-#if false
 	public static int test_2_instance_delegate () {
 		Tests t = new Tests ();
 		GetIntDel del = new GetIntDel (t.return5);
@@ -877,6 +876,7 @@ class Tests {
 		return 2;
 	}
 
+#if false
 	interface IFaceVirtualDel {
 		int return_field ();
 	}

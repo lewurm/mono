@@ -2436,9 +2436,13 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			++ip;
 			sp[-1].data.l = *(gint64*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_I)
+		MINT_IN_CASE(MINT_LDIND_I) {
 			++ip;
-			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
+
+			gpointer *addr = (gpointer *) sp [-1].data.p;
+			sp[-1].data.p = *addr;
+			g_printerr ("LDIND_I: from %p -> %p\n", addr, sp [-1].data.p);
+					}
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_R4)
 			++ip;
