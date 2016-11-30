@@ -118,7 +118,7 @@ mono_exception_native_unwind (void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 	char *unwind_err;
 
 	mono_runtime_printf_err ("\nAttempting native Android stacktrace:\n");
-	mono_extension_handle_native_sigsegv_libunwind (ctx, info);
+	unwind_err = mono_extension_handle_native_sigsegv_libunwind (ctx, info);
 
 	if (unwind_err) {
 		mono_runtime_printf_err ("\tCould not unwind with `libunwind.so`: %s", unwind_err);
