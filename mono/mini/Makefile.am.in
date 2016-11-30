@@ -580,7 +580,50 @@ monobin_platform_ldflags=
 endif
 
 if PLATFORM_SIGPOSIX
+if PLATFORM_ANDROID
+LIBUWPREFIX = ../../external/android-libunwind/src
+
+libunwind_sources = \
+	../../external/android-libunwind/src/Los-common.c \
+	../../external/android-libunwind/src/elf32.c \
+	../../external/android-libunwind/src/elf64.c \
+	../../external/android-libunwind/src/elfxx.c \
+	../../external/android-libunwind/src/os-common.c \
+	../../external/android-libunwind/src/os-freebsd.c \
+	../../external/android-libunwind/src/os-hpux.c \
+	../../external/android-libunwind/src/os-linux.c \
+	../../external/android-libunwind/src/os-qnx.c
+
+libunwind_sources_arch = \
+	../../external/android-libunwind/src/aarch64/Gcreate_addr_space.c \
+	../../external/android-libunwind/src/aarch64/Gget_proc_info.c \
+	../../external/android-libunwind/src/aarch64/Gget_save_loc.c \
+	../../external/android-libunwind/src/aarch64/Gglobal.c \
+	../../external/android-libunwind/src/aarch64/Ginit.c \
+	../../external/android-libunwind/src/aarch64/Ginit_local.c \
+	../../external/android-libunwind/src/aarch64/Ginit_remote.c \
+	../../external/android-libunwind/src/aarch64/Gis_signal_frame.c \
+	../../external/android-libunwind/src/aarch64/Gregs.c \
+	../../external/android-libunwind/src/aarch64/Gresume.c \
+	../../external/android-libunwind/src/aarch64/Gstep.c \
+	../../external/android-libunwind/src/aarch64/Lcreate_addr_space.c \
+	../../external/android-libunwind/src/aarch64/Lget_proc_info.c \
+	../../external/android-libunwind/src/aarch64/Lget_save_loc.c \
+	../../external/android-libunwind/src/aarch64/Lglobal.c \
+	../../external/android-libunwind/src/aarch64/Linit.c \
+	../../external/android-libunwind/src/aarch64/Linit_local.c \
+	../../external/android-libunwind/src/aarch64/Linit_remote.c \
+	../../external/android-libunwind/src/aarch64/Lis_signal_frame.c \
+	../../external/android-libunwind/src/aarch64/Lregs.c \
+	../../external/android-libunwind/src/aarch64/Lresume.c \
+	../../external/android-libunwind/src/aarch64/Lstep.c \
+	../../external/android-libunwind/src/aarch64/gen-offsets.c \
+	../../external/android-libunwind/src/aarch64/is_fpreg.c
+
+os_sources = $(posix_sources) $(libunwind_sources) $(libunwind_sources_arch)
+else
 os_sources = $(posix_sources)
+endif
 monobin_platform_ldflags=
 endif
 
