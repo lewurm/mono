@@ -2336,6 +2336,34 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 
 #ifndef MONO_CROSS_COMPILE
 
+
+struct sigaction * get_saved_signal_handler (int signo, gboolean remove);
+
+static void print_process_map ()
+{
+	// TODO: use somethingn g_prefixed?
+	FILE *fp = fopen ("/proc/self/maps", "r");
+	char line [256];
+
+	if (fp == NULL) {
+		mono_runtime_printf_err ("no /proc/self/maps, not on linux?\n");
+		return;
+	}
+
+	mono_runtime_printf_err ("/proc/self/maps:");
+
+	while (fgets (line, sizeof (line), fp)) {
+		// stirp newline
+		size_t len = strlen (line) - 1;
+		if (*line && line [len] == '\n')
+			line [len] = '\0';
+
+		mono_runtime_printf_err ("%s", line);
+	}
+
+	fclose (fp);
+}
+
 static gboolean handling_sigsegv = FALSE;
 
 /*
@@ -2448,6 +2476,8 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 			 "=================================================================\n",
 			signal_str);
 
+	// XXX: guard it properly for linux
+	print_process_map ();
 
 #ifdef MONO_ARCH_USE_SIGACTION
 
