@@ -641,7 +641,19 @@ libunwind_sources = \
 	../../external/android-libunwind/src/dwarf/global.c \
 	../../external/android-libunwind/src/os-common.c \
 	../../external/android-libunwind/src/os-linux.c \
-	../../external/android-libunwind/src/Los-common.c
+	../../external/android-libunwind/src/Los-common.c \
+	../../external/android-libunwind/src/ptrace/_UPT_accessors.c \
+	../../external/android-libunwind/src/ptrace/_UPT_access_fpreg.c \
+	../../external/android-libunwind/src/ptrace/_UPT_access_mem.c \
+	../../external/android-libunwind/src/ptrace/_UPT_access_reg.c \
+	../../external/android-libunwind/src/ptrace/_UPT_create.c \
+	../../external/android-libunwind/src/ptrace/_UPT_destroy.c \
+	../../external/android-libunwind/src/ptrace/_UPT_find_proc_info.c \
+	../../external/android-libunwind/src/ptrace/_UPT_get_dyn_info_list_addr.c \
+	../../external/android-libunwind/src/ptrace/_UPT_put_unwind_info.c \
+	../../external/android-libunwind/src/ptrace/_UPT_get_proc_name.c \
+	../../external/android-libunwind/src/ptrace/_UPT_reg_offset.c \
+	../../external/android-libunwind/src/ptrace/_UPT_resume.c
 
 # TODO: make arch depentend.
 # 	../../external/android-libunwind/src/elf32.c
