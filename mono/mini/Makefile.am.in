@@ -59,11 +59,12 @@ AM_CFLAGS = \
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS) $(SHARED_CFLAGS)
 
 if PLATFORM_ANDROID
-AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep
 # TODO: arch
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-aarch64
-AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src/
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src/ptrace
 endif
 
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)

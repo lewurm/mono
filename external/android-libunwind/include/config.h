@@ -212,12 +212,41 @@
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 /* #undef NO_MINUS_C_MINUS_O */
 
+#undef PACKAGE
+/* Name of package */
+#define PACKAGE "libunwind"
+
+#undef PACKAGE_BUGREPORT
+/* Define to the address where bug reports for this package should be sent. */
+#define PACKAGE_BUGREPORT "libunwind-devel@nongnu.org"
+
+#undef PACKAGE_NAME
+/* Define to the full name of this package. */
+#define PACKAGE_NAME "libunwind"
+
+#undef PACKAGE_STRING
+/* Define to the full name and version of this package. */
+#define PACKAGE_STRING "libunwind 1.1"
+
+#undef PACKAGE_TARNAME
+/* Define to the one symbol short name of this package. */
+#define PACKAGE_TARNAME "libunwind"
+
+#undef PACKAGE_URL
+/* Define to the home page for this package. */
+#define PACKAGE_URL ""
+
+#undef PACKAGE_VERSION
+/* Define to the version of this package. */
+#define PACKAGE_VERSION "1.1"
+
 /* The size of `off_t', as computed by sizeof. */
 #define SIZEOF_OFF_T 4
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+#undef VERSION
 /* Version number of package */
 #define VERSION "1.1"
 
