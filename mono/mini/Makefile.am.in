@@ -61,8 +61,12 @@ AM_CFLAGS = \
 if PLATFORM_ANDROID
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep
-# TODO: arch
+if ARM
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-arm
+endif
+if ARM64
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-aarch64
+endif
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src/ptrace
 AM_CFLAGS += -DHAVE_CONFIG_H
@@ -661,6 +665,7 @@ libunwind_sources = \
 # 	../../external/android-libunwind/src/elf32.c
 libunwind_sources += ../../external/android-libunwind/src/elf64.c
 
+if ARM64
 libunwind_sources_arch = \
 	../../external/android-libunwind/src/aarch64/Gcreate_addr_space.c \
 	../../external/android-libunwind/src/aarch64/Gget_proc_info.c \
@@ -684,6 +689,43 @@ libunwind_sources_arch = \
 	../../external/android-libunwind/src/aarch64/Lstep.c \
 	../../external/android-libunwind/src/aarch64/gen-offsets.c \
 	../../external/android-libunwind/src/aarch64/is_fpreg.c
+endif
+
+if ARM
+libunwind_sources_arch = \
+	../../external/android-libunwind/src/arm/Gcreate_addr_space.c \
+	../../external/android-libunwind/src/arm/Gex_tables.c \
+	../../external/android-libunwind/src/arm/Gget_proc_info.c \
+	../../external/android-libunwind/src/arm/Gget_save_loc.c \
+	../../external/android-libunwind/src/arm/Gglobal.c \
+	../../external/android-libunwind/src/arm/Ginit.c \
+	../../external/android-libunwind/src/arm/Ginit_local.c \
+	../../external/android-libunwind/src/arm/Ginit_remote.c \
+	../../external/android-libunwind/src/arm/Gis_signal_frame.c \
+	../../external/android-libunwind/src/arm/Gregs.c \
+	../../external/android-libunwind/src/arm/Gresume.c \
+	../../external/android-libunwind/src/arm/Gstep.c \
+	../../external/android-libunwind/src/arm/Lcreate_addr_space.c \
+	../../external/android-libunwind/src/arm/Lex_tables.c \
+	../../external/android-libunwind/src/arm/Lget_proc_info.c \
+	../../external/android-libunwind/src/arm/Lget_save_loc.c \
+	../../external/android-libunwind/src/arm/Lglobal.c \
+	../../external/android-libunwind/src/arm/Linit.c \
+	../../external/android-libunwind/src/arm/Linit_local.c \
+	../../external/android-libunwind/src/arm/Linit_remote.c \
+	../../external/android-libunwind/src/arm/Lis_signal_frame.c \
+	../../external/android-libunwind/src/arm/Lregs.c \
+	../../external/android-libunwind/src/arm/Lresume.c \
+	../../external/android-libunwind/src/arm/Lstep.c \
+	../../external/android-libunwind/src/arm/gen-offsets.c \
+	../../external/android-libunwind/src/arm/getcontext.S \
+	../../external/android-libunwind/src/arm/init.h \
+	../../external/android-libunwind/src/arm/is_fpreg.c \
+	../../external/android-libunwind/src/arm/offsets.h \
+	../../external/android-libunwind/src/arm/regname.c \
+	../../external/android-libunwind/src/arm/siglongjmp.S \
+	../../external/android-libunwind/src/arm/unwind_i.h
+endif
 
 os_sources = $(posix_sources) $(libunwind_sources) $(libunwind_sources_arch)
 else
