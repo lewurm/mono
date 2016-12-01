@@ -592,7 +592,6 @@ if PLATFORM_ANDROID
 libunwind_sources = \
 	../../external/android-libunwind/src/Los-common.c \
 	../../external/android-libunwind/src/elf64.c \
-	../../external/android-libunwind/src/elfxx.c \
 	../../external/android-libunwind/src/os-common.c \
 	../../external/android-libunwind/src/os-linux.c
 
