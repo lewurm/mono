@@ -590,13 +590,62 @@ endif
 if PLATFORM_SIGPOSIX
 if PLATFORM_ANDROID
 libunwind_sources = \
-	../../external/android-libunwind/src/Los-common.c \
-	../../external/android-libunwind/src/elf64.c \
+	../../external/android-libunwind/src/mi/init.c \
+	../../external/android-libunwind/src/mi/flush_cache.c \
+	../../external/android-libunwind/src/mi/mempool.c \
+	../../external/android-libunwind/src/mi/strerror.c \
+	../../external/android-libunwind/src/mi/backtrace.c \
+	../../external/android-libunwind/src/mi/dyn-cancel.c \
+	../../external/android-libunwind/src/mi/dyn-info-list.c \
+	../../external/android-libunwind/src/mi/dyn-register.c \
+	../../external/android-libunwind/src/mi/map.c \
+	../../external/android-libunwind/src/mi/Lmap.c \
+	../../external/android-libunwind/src/mi/Ldyn-extract.c \
+	../../external/android-libunwind/src/mi/Lfind_dynamic_proc_info.c \
+	../../external/android-libunwind/src/mi/Lget_proc_info_by_ip.c \
+	../../external/android-libunwind/src/mi/Lget_proc_name.c \
+	../../external/android-libunwind/src/mi/Lput_dynamic_unwind_info.c \
+	../../external/android-libunwind/src/mi/Ldestroy_addr_space.c \
+	../../external/android-libunwind/src/mi/Lget_reg.c \
+	../../external/android-libunwind/src/mi/Lset_reg.c \
+	../../external/android-libunwind/src/mi/Lget_fpreg.c \
+	../../external/android-libunwind/src/mi/Lset_fpreg.c \
+	../../external/android-libunwind/src/mi/Lset_caching_policy.c \
+	../../external/android-libunwind/src/mi/Gdyn-extract.c \
+	../../external/android-libunwind/src/mi/Gdyn-remote.c \
+	../../external/android-libunwind/src/mi/Gfind_dynamic_proc_info.c \
+	../../external/android-libunwind/src/mi/Gget_accessors.c \
+	../../external/android-libunwind/src/mi/Gget_proc_info_by_ip.c \
+	../../external/android-libunwind/src/mi/Gget_proc_name.c \
+	../../external/android-libunwind/src/mi/Gput_dynamic_unwind_info.c \
+	../../external/android-libunwind/src/mi/Gdestroy_addr_space.c \
+	../../external/android-libunwind/src/mi/Gget_reg.c \
+	../../external/android-libunwind/src/mi/Gset_reg.c \
+	../../external/android-libunwind/src/mi/Gget_fpreg.c \
+	../../external/android-libunwind/src/mi/Gset_fpreg.c \
+	../../external/android-libunwind/src/mi/Gset_caching_policy.c \
+	../../external/android-libunwind/src/dwarf/Lexpr.c \
+	../../external/android-libunwind/src/dwarf/Lfde.c \
+	../../external/android-libunwind/src/dwarf/Lparser.c \
+	../../external/android-libunwind/src/dwarf/Lpe.c \
+	../../external/android-libunwind/src/dwarf/Lstep_dwarf.c \
+	../../external/android-libunwind/src/dwarf/Lfind_proc_info-lsb.c \
+	../../external/android-libunwind/src/dwarf/Lfind_unwind_table.c \
+	../../external/android-libunwind/src/dwarf/Gexpr.c \
+	../../external/android-libunwind/src/dwarf/Gfde.c \
+	../../external/android-libunwind/src/dwarf/Gfind_proc_info-lsb.c \
+	../../external/android-libunwind/src/dwarf/Gfind_unwind_table.c \
+	../../external/android-libunwind/src/dwarf/Gparser.c \
+	../../external/android-libunwind/src/dwarf/Gpe.c \
+	../../external/android-libunwind/src/dwarf/Gstep_dwarf.c \
+	../../external/android-libunwind/src/dwarf/global.c \
 	../../external/android-libunwind/src/os-common.c \
-	../../external/android-libunwind/src/os-linux.c
+	../../external/android-libunwind/src/os-linux.c \
+	../../external/android-libunwind/src/Los-common.c
 
 # TODO: make arch depentend.
 # 	../../external/android-libunwind/src/elf32.c
+libunwind_sources += ../../external/android-libunwind/src/elf64.c
 
 libunwind_sources_arch = \
 	../../external/android-libunwind/src/aarch64/Gcreate_addr_space.c \
@@ -605,7 +654,6 @@ libunwind_sources_arch = \
 	../../external/android-libunwind/src/aarch64/Gglobal.c \
 	../../external/android-libunwind/src/aarch64/Ginit.c \
 	../../external/android-libunwind/src/aarch64/Ginit_local.c \
-	../../external/android-libunwind/src/aarch64/Ginit_remote.c \
 	../../external/android-libunwind/src/aarch64/Gis_signal_frame.c \
 	../../external/android-libunwind/src/aarch64/Gregs.c \
 	../../external/android-libunwind/src/aarch64/Gresume.c \
@@ -616,7 +664,6 @@ libunwind_sources_arch = \
 	../../external/android-libunwind/src/aarch64/Lglobal.c \
 	../../external/android-libunwind/src/aarch64/Linit.c \
 	../../external/android-libunwind/src/aarch64/Linit_local.c \
-	../../external/android-libunwind/src/aarch64/Linit_remote.c \
 	../../external/android-libunwind/src/aarch64/Lis_signal_frame.c \
 	../../external/android-libunwind/src/aarch64/Lregs.c \
 	../../external/android-libunwind/src/aarch64/Lresume.c \
