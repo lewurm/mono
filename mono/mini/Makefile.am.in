@@ -65,6 +65,7 @@ AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-aarch64
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src/ptrace
+AM_CFLAGS += -DHAVE_CONFIG_H
 endif
 
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)

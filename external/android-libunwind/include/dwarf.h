@@ -34,7 +34,7 @@ struct elf_dyn_info;
 struct elf_image;
 
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+# include "config-libunwind.h"
 #endif
 
 #include "dwarf-config.h"
