@@ -40,15 +40,17 @@ PROTECTED int
 unw_init_local (unw_cursor_t *cursor, unw_context_t *uc)
 {
   struct cursor *c = (struct cursor *) cursor;
-
+  mono_runtime_printf_err ("unw_init_local: WTF?: %d", tdep_init_done);
   if (!tdep_init_done)
     tdep_init ();
 
+  mono_runtime_printf_err ("unw_init_local: after tdep_init");
   Debug (1, "(cursor=%p)\n", c);
 
   c->dwarf.as = unw_local_addr_space;
   c->dwarf.as_arg = uc;
 
+  mono_runtime_printf_err ("unw_init_local: before common_init");
   return common_init (c, 1);
 }
 

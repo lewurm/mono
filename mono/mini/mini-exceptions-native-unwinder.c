@@ -28,10 +28,10 @@
 #include <sys/types.h>
 #include <mono/utils/mono-dl.h>
 
-#define UNW_LOCAL_ONLY
-#undef _U /* ctype.h apparently defines this and it screws up the libunwind headers. */
+// #define UNW_LOCAL_ONLY
+// #undef _U /* ctype.h apparently defines this and it screws up the libunwind headers. */
 #include "../../external/android-libunwind/include/libunwind.h"
-#define _U 0x01
+// #define _U 0x01
 
 #define FUNC_NAME_LENGTH 512
 #define FRAMES_TO_UNWIND 256
@@ -46,9 +46,11 @@ mono_extension_handle_native_sigsegv_libunwind (void *ctx, MONO_SIG_HANDLER_INFO
 
 	size_t frames = 0;
 
+	mono_runtime_printf_err ("before init local");
 	if ((unw_err = unw_init_local (&cursor, ctx))) {
 		return g_strdup_printf ("unw_init_local () returned %d", unw_err);
 	}
+	mono_runtime_printf_err ("after init local");
 
 	do {
 		int reg_err;
@@ -56,12 +58,15 @@ mono_extension_handle_native_sigsegv_libunwind (void *ctx, MONO_SIG_HANDLER_INFO
 		unw_word_t ip, off;
 		char name [FUNC_NAME_LENGTH];
 
+		mono_runtime_printf_err ("before unw_get_reg ");
 		if ((reg_err = unw_get_reg (&cursor, UNW_REG_IP, &ip))) {
 			mono_runtime_printf_err ("unw_get_reg (UNW_REG_IP) returned %d", reg_err);
 			break;
 		}
+		mono_runtime_printf_err ("after unw_get_reg ");
 
 		reg_err = unw_get_proc_name (&cursor, name, FUNC_NAME_LENGTH, &off);
+		mono_runtime_printf_err ("after unw_get_proc_name ");
 
 		if (reg_err == -UNW_ENOINFO)
 			strcpy (name, "???");

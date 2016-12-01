@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #ifndef libunwind_i_h
 #define libunwind_i_h
 
+#include <mono/utils/mono-logger-internals.h>
 #ifdef HAVE_CONFIG_H
 # include "config-libunwind.h"
 #endif
