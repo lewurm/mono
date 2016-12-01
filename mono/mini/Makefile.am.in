@@ -60,6 +60,10 @@ AM_CFLAGS = \
 
 if PLATFORM_ANDROID
 AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep
+# TODO: arch
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-aarch64
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src/
 endif
 
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)
@@ -587,11 +591,13 @@ if PLATFORM_SIGPOSIX
 if PLATFORM_ANDROID
 libunwind_sources = \
 	../../external/android-libunwind/src/Los-common.c \
-	../../external/android-libunwind/src/elf32.c \
 	../../external/android-libunwind/src/elf64.c \
 	../../external/android-libunwind/src/elfxx.c \
 	../../external/android-libunwind/src/os-common.c \
 	../../external/android-libunwind/src/os-linux.c
+
+# TODO: make arch depentend.
+# 	../../external/android-libunwind/src/elf32.c
 
 libunwind_sources_arch = \
 	../../external/android-libunwind/src/aarch64/Gcreate_addr_space.c \
