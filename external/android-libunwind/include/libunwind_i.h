@@ -32,7 +32,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #define libunwind_i_h
 
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+# include "config-libunwind.h"
 #endif
 
 #include "compiler.h"

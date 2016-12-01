@@ -27,7 +27,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #define _UPT_internal_h
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include <config-libunwind.h>
+#ifdef CONFIG_TEST_HACK
+#endif
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
