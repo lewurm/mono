@@ -46,11 +46,9 @@ mono_extension_handle_native_sigsegv_libunwind (void *ctx, MONO_SIG_HANDLER_INFO
 
 	size_t frames = 0;
 
-	mono_runtime_printf_err ("before init local");
 	if ((unw_err = unw_init_local (&cursor, ctx))) {
 		return g_strdup_printf ("unw_init_local () returned %d", unw_err);
 	}
-	mono_runtime_printf_err ("after init local");
 
 	do {
 		int reg_err;
@@ -58,15 +56,12 @@ mono_extension_handle_native_sigsegv_libunwind (void *ctx, MONO_SIG_HANDLER_INFO
 		unw_word_t ip, off;
 		char name [FUNC_NAME_LENGTH];
 
-		mono_runtime_printf_err ("before unw_get_reg ");
 		if ((reg_err = unw_get_reg (&cursor, UNW_REG_IP, &ip))) {
 			mono_runtime_printf_err ("unw_get_reg (UNW_REG_IP) returned %d", reg_err);
 			break;
 		}
-		mono_runtime_printf_err ("after unw_get_reg ");
 
 		reg_err = unw_get_proc_name (&cursor, name, FUNC_NAME_LENGTH, &off);
-		mono_runtime_printf_err ("after unw_get_proc_name ");
 
 		if (reg_err == -UNW_ENOINFO)
 			strcpy (name, "???");
