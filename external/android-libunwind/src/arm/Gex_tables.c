@@ -39,6 +39,8 @@ http://infocenter.arm.com/help/topic/com.arm.doc.ihi0038a/IHI0038A_ehabi.pdf
 
 #define ARM_EXTBL_OP_FINISH	0xb0
 
+int dl_iterate_phdr(int (*cb)(struct dl_phdr_info*, size_t, void*), void*);
+
 enum arm_exbuf_cmd_flags {
   ARM_EXIDX_VFP_SHIFT_16 = 1 << 16,
   ARM_EXIDX_VFP_DOUBLE = 1 << 17,

@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <stddef.h>
 #include <stdio.h>
 #include <limits.h>
+#include <link.h>
 
 #include "dwarf_i.h"
 #include "dwarf-eh.h"
@@ -39,6 +40,8 @@ struct table_entry
     int32_t start_ip_offset;
     int32_t fde_offset;
   };
+
+int dl_iterate_phdr(int (*cb)(struct dl_phdr_info*, size_t, void*), void*);
 
 #ifndef UNW_REMOTE_ONLY
 
