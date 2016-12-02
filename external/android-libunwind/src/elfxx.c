@@ -35,6 +35,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <XzCrc64.h>
 #endif /* HAVE_LZMA */
 
+#ifndef MIN
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#endif
+
 // --------------------------------------------------------------------------
 // Functions to read elf data from memory.
 // --------------------------------------------------------------------------
