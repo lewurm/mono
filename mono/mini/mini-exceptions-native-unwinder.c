@@ -28,10 +28,11 @@
 #include <sys/types.h>
 #include <mono/utils/mono-dl.h>
 
-// #define UNW_LOCAL_ONLY
-// #undef _U /* ctype.h apparently defines this and it screws up the libunwind headers. */
-#include "../../external/android-libunwind/include/libunwind.h"
-// #define _U 0x01
+#define UNW_LOCAL_ONLY
+/* ctype.h apparently defines this and it screws up the libunwind headers. */
+#undef _U
+#include <libunwind.h>
+#define _U 0x01
 
 #define FUNC_NAME_LENGTH 512
 #define FRAMES_TO_UNWIND 256
