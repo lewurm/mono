@@ -58,6 +58,25 @@ AM_CFLAGS = \
 	$(LLVM_CFLAGS)		\
 	$(PLATFORM_CFLAGS) $(ARCH_CFLAGS) $(SHARED_CFLAGS)
 
+if PLATFORM_ANDROID
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep
+if ARM
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-arm
+endif
+if ARM64
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-aarch64
+endif
+if X86
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-x86
+endif
+if AMD64
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/include/tdep-x86_64
+endif
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src
+AM_CFLAGS += -I$(top_srcdir)/external/android-libunwind/src/ptrace
+endif
+
 AM_CXXFLAGS = $(LLVM_CXXFLAGS) $(GLIB_CFLAGS)
 
 if HOST_WIN32
@@ -580,7 +599,203 @@ monobin_platform_ldflags=
 endif
 
 if PLATFORM_SIGPOSIX
+if PLATFORM_ANDROID
+libunwind_sources = \
+	../../external/android-libunwind/src/mi/init.c \
+	../../external/android-libunwind/src/mi/flush_cache.c \
+	../../external/android-libunwind/src/mi/mempool.c \
+	../../external/android-libunwind/src/mi/strerror.c \
+	../../external/android-libunwind/src/mi/backtrace.c \
+	../../external/android-libunwind/src/mi/dyn-cancel.c \
+	../../external/android-libunwind/src/mi/dyn-info-list.c \
+	../../external/android-libunwind/src/mi/dyn-register.c \
+	../../external/android-libunwind/src/mi/map.c \
+	../../external/android-libunwind/src/mi/Lmap.c \
+	../../external/android-libunwind/src/mi/Ldyn-extract.c \
+	../../external/android-libunwind/src/mi/Lfind_dynamic_proc_info.c \
+	../../external/android-libunwind/src/mi/Lget_proc_info_by_ip.c \
+	../../external/android-libunwind/src/mi/Lget_proc_name.c \
+	../../external/android-libunwind/src/mi/Lput_dynamic_unwind_info.c \
+	../../external/android-libunwind/src/mi/Ldestroy_addr_space.c \
+	../../external/android-libunwind/src/mi/Lget_reg.c \
+	../../external/android-libunwind/src/mi/Lset_reg.c \
+	../../external/android-libunwind/src/mi/Lget_fpreg.c \
+	../../external/android-libunwind/src/mi/Lset_fpreg.c \
+	../../external/android-libunwind/src/mi/Lset_caching_policy.c \
+	../../external/android-libunwind/src/mi/Gdyn-extract.c \
+	../../external/android-libunwind/src/mi/Gdyn-remote.c \
+	../../external/android-libunwind/src/mi/Gfind_dynamic_proc_info.c \
+	../../external/android-libunwind/src/mi/Gget_accessors.c \
+	../../external/android-libunwind/src/mi/Gget_proc_info_by_ip.c \
+	../../external/android-libunwind/src/mi/Gget_proc_name.c \
+	../../external/android-libunwind/src/mi/Gput_dynamic_unwind_info.c \
+	../../external/android-libunwind/src/mi/Gdestroy_addr_space.c \
+	../../external/android-libunwind/src/mi/Gget_reg.c \
+	../../external/android-libunwind/src/mi/Gset_reg.c \
+	../../external/android-libunwind/src/mi/Gget_fpreg.c \
+	../../external/android-libunwind/src/mi/Gset_fpreg.c \
+	../../external/android-libunwind/src/mi/Gset_caching_policy.c \
+	../../external/android-libunwind/src/dwarf/Lexpr.c \
+	../../external/android-libunwind/src/dwarf/Lfde.c \
+	../../external/android-libunwind/src/dwarf/Lparser.c \
+	../../external/android-libunwind/src/dwarf/Lpe.c \
+	../../external/android-libunwind/src/dwarf/Lstep_dwarf.c \
+	../../external/android-libunwind/src/dwarf/Lfind_proc_info-lsb.c \
+	../../external/android-libunwind/src/dwarf/Lfind_unwind_table.c \
+	../../external/android-libunwind/src/dwarf/Gexpr.c \
+	../../external/android-libunwind/src/dwarf/Gfde.c \
+	../../external/android-libunwind/src/dwarf/Gfind_proc_info-lsb.c \
+	../../external/android-libunwind/src/dwarf/Gfind_unwind_table.c \
+	../../external/android-libunwind/src/dwarf/Gparser.c \
+	../../external/android-libunwind/src/dwarf/Gpe.c \
+	../../external/android-libunwind/src/dwarf/Gstep_dwarf.c \
+	../../external/android-libunwind/src/dwarf/global.c \
+	../../external/android-libunwind/src/os-common.c \
+	../../external/android-libunwind/src/os-linux.c \
+	../../external/android-libunwind/src/Los-common.c \
+	../../external/android-libunwind/src/ptrace/_UPT_accessors.c \
+	../../external/android-libunwind/src/ptrace/_UPT_access_fpreg.c \
+	../../external/android-libunwind/src/ptrace/_UPT_access_mem.c \
+	../../external/android-libunwind/src/ptrace/_UPT_access_reg.c \
+	../../external/android-libunwind/src/ptrace/_UPT_create.c \
+	../../external/android-libunwind/src/ptrace/_UPT_destroy.c \
+	../../external/android-libunwind/src/ptrace/_UPT_find_proc_info.c \
+	../../external/android-libunwind/src/ptrace/_UPT_get_dyn_info_list_addr.c \
+	../../external/android-libunwind/src/ptrace/_UPT_put_unwind_info.c \
+	../../external/android-libunwind/src/ptrace/_UPT_get_proc_name.c \
+	../../external/android-libunwind/src/ptrace/_UPT_reg_offset.c \
+	../../external/android-libunwind/src/ptrace/_UPT_resume.c
+
+if ARM64
+libunwind_sources_arch = \
+	../../external/android-libunwind/src/elf64.c \
+	../../external/android-libunwind/src/aarch64/Gcreate_addr_space.c \
+	../../external/android-libunwind/src/aarch64/Gget_proc_info.c \
+	../../external/android-libunwind/src/aarch64/Gget_save_loc.c \
+	../../external/android-libunwind/src/aarch64/Gglobal.c \
+	../../external/android-libunwind/src/aarch64/Ginit.c \
+	../../external/android-libunwind/src/aarch64/Ginit_local.c \
+	../../external/android-libunwind/src/aarch64/Gis_signal_frame.c \
+	../../external/android-libunwind/src/aarch64/Gregs.c \
+	../../external/android-libunwind/src/aarch64/Gresume.c \
+	../../external/android-libunwind/src/aarch64/Gstep.c \
+	../../external/android-libunwind/src/aarch64/Lcreate_addr_space.c \
+	../../external/android-libunwind/src/aarch64/Lget_proc_info.c \
+	../../external/android-libunwind/src/aarch64/Lget_save_loc.c \
+	../../external/android-libunwind/src/aarch64/Lglobal.c \
+	../../external/android-libunwind/src/aarch64/Linit.c \
+	../../external/android-libunwind/src/aarch64/Linit_local.c \
+	../../external/android-libunwind/src/aarch64/Lis_signal_frame.c \
+	../../external/android-libunwind/src/aarch64/Lregs.c \
+	../../external/android-libunwind/src/aarch64/Lresume.c \
+	../../external/android-libunwind/src/aarch64/Lstep.c \
+	../../external/android-libunwind/src/aarch64/gen-offsets.c \
+	../../external/android-libunwind/src/aarch64/is_fpreg.c
+endif
+
+if ARM
+libunwind_sources_arch = \
+	../../external/android-libunwind/src/elf32.c \
+	../../external/android-libunwind/src/arm/Gcreate_addr_space.c \
+	../../external/android-libunwind/src/arm/Gex_tables.c \
+	../../external/android-libunwind/src/arm/Gget_proc_info.c \
+	../../external/android-libunwind/src/arm/Gget_save_loc.c \
+	../../external/android-libunwind/src/arm/Gglobal.c \
+	../../external/android-libunwind/src/arm/Ginit.c \
+	../../external/android-libunwind/src/arm/Ginit_local.c \
+	../../external/android-libunwind/src/arm/Ginit_remote.c \
+	../../external/android-libunwind/src/arm/Gis_signal_frame.c \
+	../../external/android-libunwind/src/arm/Gregs.c \
+	../../external/android-libunwind/src/arm/Gresume.c \
+	../../external/android-libunwind/src/arm/Gstep.c \
+	../../external/android-libunwind/src/arm/Lcreate_addr_space.c \
+	../../external/android-libunwind/src/arm/Lex_tables.c \
+	../../external/android-libunwind/src/arm/Lget_proc_info.c \
+	../../external/android-libunwind/src/arm/Lget_save_loc.c \
+	../../external/android-libunwind/src/arm/Lglobal.c \
+	../../external/android-libunwind/src/arm/Linit.c \
+	../../external/android-libunwind/src/arm/Linit_local.c \
+	../../external/android-libunwind/src/arm/Linit_remote.c \
+	../../external/android-libunwind/src/arm/Lis_signal_frame.c \
+	../../external/android-libunwind/src/arm/Lregs.c \
+	../../external/android-libunwind/src/arm/Lresume.c \
+	../../external/android-libunwind/src/arm/Lstep.c \
+	../../external/android-libunwind/src/arm/gen-offsets.c \
+	../../external/android-libunwind/src/arm/getcontext.S \
+	../../external/android-libunwind/src/arm/init.h \
+	../../external/android-libunwind/src/arm/is_fpreg.c \
+	../../external/android-libunwind/src/arm/offsets.h \
+	../../external/android-libunwind/src/arm/regname.c \
+	../../external/android-libunwind/src/arm/siglongjmp.S \
+	../../external/android-libunwind/src/arm/unwind_i.h
+endif
+
+if X86
+libunwind_sources_arch = \
+	../../external/android-libunwind/src/elf32.c \
+	../../external/android-libunwind/src/x86/Gcreate_addr_space.c \
+	../../external/android-libunwind/src/x86/Gget_proc_info.c \
+	../../external/android-libunwind/src/x86/Gget_save_loc.c \
+	../../external/android-libunwind/src/x86/Gglobal.c \
+	../../external/android-libunwind/src/x86/Ginit.c \
+	../../external/android-libunwind/src/x86/Ginit_local.c \
+	../../external/android-libunwind/src/x86/Ginit_remote.c \
+	../../external/android-libunwind/src/x86/Gos-linux.c \
+	../../external/android-libunwind/src/x86/Gregs.c \
+	../../external/android-libunwind/src/x86/Gresume.c \
+	../../external/android-libunwind/src/x86/Gstep.c \
+	../../external/android-libunwind/src/x86/Lcreate_addr_space.c \
+	../../external/android-libunwind/src/x86/Lget_proc_info.c \
+	../../external/android-libunwind/src/x86/Lget_save_loc.c \
+	../../external/android-libunwind/src/x86/Lglobal.c \
+	../../external/android-libunwind/src/x86/Linit.c \
+	../../external/android-libunwind/src/x86/Linit_local.c \
+	../../external/android-libunwind/src/x86/Linit_remote.c \
+	../../external/android-libunwind/src/x86/Los-linux.c \
+	../../external/android-libunwind/src/x86/Lregs.c \
+	../../external/android-libunwind/src/x86/Lresume.c \
+	../../external/android-libunwind/src/x86/Lstep.c \
+	../../external/android-libunwind/src/x86/is_fpreg.c \
+	../../external/android-libunwind/src/x86/regname.c
+endif
+
+if AMD64
+libunwind_sources_arch = \
+	../../external/android-libunwind/src/elf64.c \
+	../../external/android-libunwind/src/x86_64/Gcreate_addr_space.c \
+	../../external/android-libunwind/src/x86_64/Gget_proc_info.c \
+	../../external/android-libunwind/src/x86_64/Gget_save_loc.c \
+	../../external/android-libunwind/src/x86_64/Gglobal.c \
+	../../external/android-libunwind/src/x86_64/Ginit.c \
+	../../external/android-libunwind/src/x86_64/Ginit_local.c \
+	../../external/android-libunwind/src/x86_64/Ginit_remote.c \
+	../../external/android-libunwind/src/x86_64/Gos-linux.c \
+	../../external/android-libunwind/src/x86_64/Gregs.c \
+	../../external/android-libunwind/src/x86_64/Gresume.c \
+	../../external/android-libunwind/src/x86_64/Gstash_frame.c \
+	../../external/android-libunwind/src/x86_64/Gstep.c \
+	../../external/android-libunwind/src/x86_64/Gtrace.c \
+	../../external/android-libunwind/src/x86_64/Lcreate_addr_space.c \
+	../../external/android-libunwind/src/x86_64/Lget_proc_info.c \
+	../../external/android-libunwind/src/x86_64/Lget_save_loc.c \
+	../../external/android-libunwind/src/x86_64/Lglobal.c \
+	../../external/android-libunwind/src/x86_64/Linit.c \
+	../../external/android-libunwind/src/x86_64/Linit_local.c \
+	../../external/android-libunwind/src/x86_64/Linit_remote.c \
+	../../external/android-libunwind/src/x86_64/Los-linux.c \
+	../../external/android-libunwind/src/x86_64/Lregs.c \
+	../../external/android-libunwind/src/x86_64/Lresume.c \
+	../../external/android-libunwind/src/x86_64/Lstash_frame.c \
+	../../external/android-libunwind/src/x86_64/Lstep.c \
+	../../external/android-libunwind/src/x86_64/Ltrace.c \
+	../../external/android-libunwind/src/x86_64/is_fpreg.c \
+	../../external/android-libunwind/src/x86_64/regname.c
+endif
+
+os_sources = $(posix_sources) $(libunwind_sources) $(libunwind_sources_arch)
+else
 os_sources = $(posix_sources)
+endif
 monobin_platform_ldflags=
 endif
 
