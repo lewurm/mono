@@ -2336,6 +2336,35 @@ print_stack_frame_to_string (StackFrameInfo *frame, MonoContext *ctx, gpointer d
 
 #ifndef MONO_CROSS_COMPILE
 
+
+#ifdef TARGET_ANDROID
+static void print_process_map ()
+{
+	FILE *fp = fopen ("/proc/self/maps", "r");
+	char line [256];
+
+	if (fp == NULL) {
+		mono_runtime_printf_err ("no /proc/self/maps, not on linux?\n");
+		return;
+	}
+
+	mono_runtime_printf_err ("/proc/self/maps:");
+
+	while (fgets (line, sizeof (line), fp)) {
+		// strip newline
+		size_t len = strlen (line) - 1;
+		if (*line && line [len] == '\n')
+			line [len] = '\0';
+
+		mono_runtime_printf_err ("%s", line);
+	}
+
+	fclose (fp);
+}
+#endif
+
+struct sigaction * get_saved_signal_handler (int signo, gboolean remove);
+
 static gboolean handling_sigsegv = FALSE;
 
 /*
@@ -2370,6 +2399,10 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 
 	/* To prevent infinite loops when the stack walk causes a crash */
 	handling_sigsegv = TRUE;
+
+#ifdef TARGET_ANDROID
+	print_process_map ();
+#endif
 
 	/* !jit_tls means the thread was not registered with the runtime */
 	if (jit_tls && mono_thread_internal_current ()) {
@@ -2447,7 +2480,6 @@ mono_handle_native_sigsegv (int signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *i
 			 "used by your application.\n"
 			 "=================================================================\n",
 			signal_str);
-
 
 #ifdef MONO_ARCH_USE_SIGACTION
 
