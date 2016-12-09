@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include "dwarf_i.h"
 #include "dwarf-eh.h"
 #include "libunwind_i.h"
+#include "custom-dl-iterate-phdr.h"
 
 struct table_entry
   {
@@ -804,7 +805,11 @@ dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
   cb_data.di_debug.format = -1;
 
   SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
+#if __ANDROID_API__ < 21
+  ret = custom_dl_iterate_phdr (dwarf_callback, &cb_data);
+#else
   ret = dl_iterate_phdr (dwarf_callback, &cb_data);
+#endif
   SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
 
   if (ret <= 0)

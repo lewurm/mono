@@ -728,7 +728,8 @@ libunwind_sources_arch = \
 	../../external/android-libunwind/src/arm/offsets.h \
 	../../external/android-libunwind/src/arm/regname.c \
 	../../external/android-libunwind/src/arm/siglongjmp.S \
-	../../external/android-libunwind/src/arm/unwind_i.h
+	../../external/android-libunwind/src/arm/unwind_i.h \
+	../../external/android-libunwind/src/custom-dl-iterate-phdr.c
 endif
 
 if X86

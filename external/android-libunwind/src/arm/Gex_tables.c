@@ -29,6 +29,7 @@ http://infocenter.arm.com/help/topic/com.arm.doc.ihi0038a/IHI0038A_ehabi.pdf
 */ 
 
 #include "libunwind_i.h"
+#include "custom-dl-iterate-phdr.h"
 
 #define ARM_EXBUF_START(x)	(((x) >> 4) & 0x0f)
 #define ARM_EXBUF_COUNT(x)	((x) & 0x0f)
@@ -517,7 +518,12 @@ arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
       cb_data.di.format = -1;
 
       SIGPROCMASK (SIG_SETMASK, &unwi_full_mask, &saved_mask);
+#if __ANDROID_API__ < 21
+	  ret = custom_dl_iterate_phdr (arm_phdr_cb, &cb_data);
+#else
+#error "good news, remove hack above"
       ret = dl_iterate_phdr (arm_phdr_cb, &cb_data);
+#endif
       SIGPROCMASK (SIG_SETMASK, &saved_mask, NULL);
 
       if (cb_data.di.format != -1)
