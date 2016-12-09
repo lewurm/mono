@@ -23,6 +23,9 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
+#include <mono/utils/mono-mmap.h>
+#undef _U
+
 #include <limits.h>
 #include <stdio.h>
 
@@ -30,6 +33,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include "libunwind-ptrace.h"
 #include "map_info.h"
 #include "os-linux.h"
+
+#define ALIGN_UP_TO(val,align)	(((val) + (align - 1)) & ~(align - 1))
 
 /* ANDROID support update. */
 HIDDEN struct map_info *
@@ -40,8 +45,11 @@ map_create_list (int map_create_type, pid_t pid)
   struct map_info *map_list = NULL;
   struct map_info *cur_map;
   unw_addr_space_t as = NULL;
-  struct unw_addr_space local_as;
+  struct unw_addr_space *local_as = NULL;
   void* as_arg = NULL;
+
+  int pagesize = mono_pagesize ();
+  size_t unw_addr_space_size = ALIGN_UP_TO (sizeof (struct unw_addr_space), pagesize);
 
   if (maps_init (&mi, pid) < 0)
     return NULL;
@@ -100,8 +108,17 @@ map_create_list (int map_create_type, pid_t pid)
                 {
                   if (map_create_type == UNW_MAP_CREATE_LOCAL)
                     {
-                      as = &local_as;
-                      unw_local_access_addr_space_init (as);
+                      // This is a very large structure, so allocate it.
+                      if (local_as == NULL)
+                        {
+                          local_as = (struct unw_addr_space*) mono_valloc (NULL, unw_addr_space_size, MONO_MMAP_READ|MONO_MMAP_WRITE);
+                        }
+
+                      if (local_as != NULL)
+                        {
+                          as = local_as;
+                          unw_local_access_addr_space_init (as);
+                        }
                     }
                   else
                     {
@@ -145,6 +162,11 @@ map_create_list (int map_create_type, pid_t pid)
     {
       unw_destroy_addr_space (as);
       _UPT_destroy (as_arg);
+    }
+
+  if (local_as)
+    {
+      mono_vfree (local_as, unw_addr_space_size);
     }
 
   return map_list;
