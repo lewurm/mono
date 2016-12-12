@@ -26,6 +26,7 @@
 
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/prctl.h>
 #include <mono/utils/mono-mmap.h>
 
 #define UNW_LOCAL_ONLY
@@ -103,6 +104,12 @@ mono_exception_native_unwind (void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 		mono_runtime_printf_err ("\n\tNo options left to get a native stacktrace :-(");
 		g_free (unwind_err);
 	}
+
+    /* set DUMPABLE for this process so debuggerd can attach with ptrace(2), see:
+     * https://android.googlesource.com/platform/bionic/+/151da681000c07da3c24cd30a3279b1ca017f452/linker/debugger.cpp#206
+     * this has changed on later versions of Android.  Also, we don't want to
+     * set this on start-up as DUMPABLE has security implications. */
+    prctl (PR_SET_DUMPABLE, 1);
 }
 
 #else
