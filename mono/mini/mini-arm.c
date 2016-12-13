@@ -7503,6 +7503,10 @@ mono_arch_set_target (char *mtriple)
 gboolean
 mono_arch_opcode_supported (int opcode)
 {
+#if 0
+    volatile int *p = 0;
+    *p = 0;
+#endif
 	switch (opcode) {
 	case OP_ATOMIC_ADD_I4:
 	case OP_ATOMIC_EXCHANGE_I4:
