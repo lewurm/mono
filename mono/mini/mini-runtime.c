@@ -1768,6 +1768,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, MonoError *er
 
 	mono_error_init (error);
 
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		return interp_create_method_pointer (method, error);
+#endif
+
 	if (mono_llvm_only)
 		/* Should be handled by the caller */
 		g_assert (!(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED));

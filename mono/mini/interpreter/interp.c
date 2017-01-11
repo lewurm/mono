@@ -255,13 +255,6 @@ ves_real_abort (int line, MonoMethod *mh,
 		THROW_EX (mono_get_exception_execution_engine (NULL), ip); \
 	} while (0);
 
-static gpointer
-interp_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, MonoRemotingTarget target, MonoError *error)
-{
-	g_error ("FIXME: use domain and error");
-	// return mono_interp_get_runtime_method (mono_marshal_get_remoting_invoke_for_target (method, target));
-}
-
 static mono_mutex_t runtime_method_lookup_section;
 
 RuntimeMethod*
@@ -1470,12 +1463,11 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
-static gpointer
-mono_create_method_pointer (MonoMethod *method, MonoError *error)
+gpointer
+interp_create_method_pointer (MonoMethod *method, MonoError *error)
 {
 	gpointer addr;
 	MonoJitInfo *ji;
-	mono_error_init (error);
 
 	mono_os_mutex_lock (&create_method_pointer_mutex);
 	if (!method_pointer_hash) {
@@ -4549,20 +4541,6 @@ mono_interp_exec(MonoDomain *domain, MonoAssembly *assembly, int argc, char *arg
 	return ves_exec (domain, assembly, argc, argv);
 }
 
-static gpointer
-interp_get_imt_trampoline (MonoVTable *vtable, int imt_slot_index)
-{
-	// FIXME: implement me
-	return NULL;
-}
-
-static gpointer
-interp_create_ftnptr (MonoDomain *domain, gpointer addr)
-{
-	// FIXME: true on all arch?
-	return addr;
-}
-
 // FIXME
 static gboolean
 mono_current_thread_has_handle_block_guard (void)
@@ -4577,37 +4555,19 @@ mono_above_abort_threshold (void)
 	return FALSE;
 }
 
-MonoDomain *
-mono_interp_init(const char *file)
+void
+mono_interp_init ()
 {
-	MonoDomain *domain;
-	MonoRuntimeCallbacks callbacks;
-	MonoRuntimeExceptionHandlingCallbacks ecallbacks;
-	MonoError error;
-
-	g_log_set_always_fatal (G_LOG_LEVEL_ERROR);
-	g_log_set_fatal_mask (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR);
-
 	mono_native_tls_alloc (&thread_context_id, NULL);
     mono_native_tls_set_value (thread_context_id, NULL);
 	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
 	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
-	mono_tls_init_runtime_keys ();
-
-	// TODO: use callbacks?
-	interp_mono_runtime_install_handlers ();
 	mono_interp_transform_init ();
 
-	memset (&callbacks, 0, sizeof (callbacks));
-	// TODO: replace with `mono_install_callbacks`
+#if 0
 	callbacks.compile_method = mono_create_method_pointer;
 	callbacks.runtime_invoke = interp_mono_runtime_invoke;
-	callbacks.get_imt_trampoline = interp_get_imt_trampoline;
-	callbacks.create_ftnptr = interp_create_ftnptr;
-#ifndef DISABLE_REMOTING
-	callbacks.create_remoting_trampoline = interp_create_remoting_trampoline;
-#endif
 	callbacks.create_jit_trampoline = interp_create_trampoline;
 	mono_install_callbacks (&callbacks);
 
@@ -4626,10 +4586,6 @@ mono_interp_init(const char *file)
 
 	abort_requested = mono_thread_interruption_request_flag ();
 
-	domain = mono_init_from_assembly (file, file);
-#ifdef __hpux /* generates very big stack frames */
-	mono_threads_set_default_stacksize(32*1024*1024);
-#endif
 	mono_icall_init ();
 	/* TODO: this should use ves_icall_get_frame from mini-exceptions.c? */
 	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info", interp_ves_icall_get_frame_info);
@@ -4645,6 +4601,7 @@ mono_interp_init(const char *file)
 
 	mono_thread_attach (domain);
 	return domain;
+#endif
 }
 
 typedef int (*TestMethod) (void);
