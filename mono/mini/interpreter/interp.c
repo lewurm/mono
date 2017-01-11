@@ -75,8 +75,6 @@
 #endif
 #endif
 
-static gint *abort_requested;
-
 int mono_interp_traceopt = 0;
 
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,domain,mono_method,error)	\
@@ -862,7 +860,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	/* domain can only be changed by native code */
 	context->domain = mono_domain_get ();
 
-	if (*abort_requested)
+	if (*mono_thread_interruption_request_flag ())
 		mono_thread_interruption_checkpoint ();
 	
  	if (!MONO_TYPE_ISSTRUCT (sig->ret))
@@ -1214,7 +1212,7 @@ get_trace_ips (MonoDomain *domain, MonoInvocation *top)
 #define CHECK_MUL_OVERFLOW_NAT_UN(a,b) CHECK_MUL_OVERFLOW64_UN(a,b)
 #endif
 
-static MonoObject*
+MonoObject*
 interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
 	MonoInvocation frame;
@@ -2773,7 +2771,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 					o = mono_object_new_checked (context->domain, newobj_class, &error);
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					context->managed_code = 1;
-					if (*abort_requested)
+					if (*mono_thread_interruption_request_flag ())
 						mono_thread_interruption_checkpoint ();
 					child_frame.obj = o;
 				} else {
@@ -4298,75 +4296,6 @@ usage (void)
 	exit (1);
 }
 
-static void
-add_signal_handler (int signo, void (*handler)(int))
-{
-#ifdef HOST_WIN32
-	signal (signo, handler);
-#else
-	struct sigaction sa;
-
-	sa.sa_handler = handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-
-	g_assert (sigaction (signo, &sa, NULL) != -1);
-#endif
-}
-
-static void
-segv_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *segv_exception;
-
-	if (context == NULL)
-		return;
-	segv_exception = mono_get_exception_null_reference ();
-	segv_exception->message = mono_string_new (mono_domain_get (), "Null Reference (SIGSEGV)");
-	mono_raise_exception (segv_exception);
-}
-
-
-static void
-quit_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *quit_exception;
-
-	if (context == NULL)
-		return;
-	quit_exception = mono_get_exception_execution_engine ("Interrupted (SIGQUIT).");
-	mono_raise_exception (quit_exception);
-}
-
-static void
-abrt_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *abrt_exception;
-
-	if (context == NULL)
-		return;
-	abrt_exception = mono_get_exception_execution_engine ("Abort (SIGABRT).");
-	mono_raise_exception (abrt_exception);
-}
-
-#if 0
-static void
-thread_abort_handler (int signum)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoException *exc;
-
-	if (context == NULL)
-		return;
-
-	exc = mono_thread_request_interruption (context->managed_code); 
-	if (exc) mono_raise_exception (exc);
-}
-#endif
-
 static MonoBoolean
 interp_ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
 			  MonoReflectionMethod **method, 
@@ -4478,46 +4407,6 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, Mon
 	return delegate;
 }
 
-
-typedef struct
-{
-	MonoDomain *domain;
-	int enable_debugging;
-	char *file;
-	int argc;
-	char **argv;
-} MainThreadArgs;
-
-static void main_thread_handler (gpointer user_data)
-{
-	MainThreadArgs *main_args=(MainThreadArgs *)user_data;
-	MonoAssembly *assembly;
-
-	if (main_args->enable_debugging) {
-		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
-	}
-
-	assembly = mono_domain_assembly_open (main_args->domain, main_args->file);
-
-	if (!assembly){
-		fprintf (stderr, "Can not open image %s\n", main_args->file);
-		exit (1);
-	}
-
-	ves_exec (main_args->domain, assembly, main_args->argc, main_args->argv);
-}
-
-static void
-interp_mono_runtime_install_handlers (void)
-{
-	add_signal_handler (SIGSEGV, segv_handler);
-	add_signal_handler (SIGINT, quit_handler);
-	add_signal_handler (SIGABRT, abrt_handler);
-#if 0
-	add_signal_handler (mono_thread_get_abort_signal (), thread_abort_handler);
-#endif
-}
-
 static void
 quit_function (MonoDomain *domain, gpointer user_data)
 {
@@ -4565,8 +4454,6 @@ mono_interp_init ()
 	mono_interp_transform_init ();
 
 #if 0
-	callbacks.compile_method = mono_create_method_pointer;
-	callbacks.runtime_invoke = interp_mono_runtime_invoke;
 	callbacks.create_jit_trampoline = interp_create_trampoline;
 	mono_install_callbacks (&callbacks);
 
@@ -4582,8 +4469,6 @@ mono_interp_init ()
 	mono_install_eh_callbacks (&ecallbacks);
 
 	mono_install_runtime_cleanup (quit_function);
-
-	abort_requested = mono_thread_interruption_request_flag ();
 
 	mono_icall_init ();
 	/* TODO: this should use ves_icall_get_frame from mini-exceptions.c? */

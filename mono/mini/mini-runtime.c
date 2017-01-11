@@ -2357,6 +2357,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
 
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		return interp_mono_runtime_invoke (method, obj, params, exc, error);
+#endif
+
 	mono_error_init (error);
 
 	if (obj == NULL && !(method->flags & METHOD_ATTRIBUTE_STATIC) && !method->string_ctor && (method->wrapper_type == 0)) {

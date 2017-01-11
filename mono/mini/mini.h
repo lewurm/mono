@@ -2826,6 +2826,7 @@ GSList *mono_arch_get_trampolines               (gboolean aot);
 gpointer mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info);
 void mono_interp_init ();
 gpointer interp_create_method_pointer (MonoMethod *method, MonoError *error);
+MonoObject* interp_mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 #endif
 
 /* Handle block guard */
