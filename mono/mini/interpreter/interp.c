@@ -59,7 +59,6 @@
 
 #include "interp.h"
 #include "mintops.h"
-#include "embed.h"
 #include "hacks.h"
 
 #include <mono/mini/mini.h>

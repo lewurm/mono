@@ -2824,6 +2824,7 @@ guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *reg
 GSList *mono_arch_get_trampolines               (gboolean aot);
 #ifdef ENABLE_INTERPRETER
 gpointer mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info);
+void mono_interp_init ();
 gpointer interp_create_method_pointer (MonoMethod *method, MonoError *error);
 #endif
 
