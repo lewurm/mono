@@ -2495,11 +2495,15 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		MINT_IN_CASE(MINT_REM_I4)
 			if (sp [-1].data.i == 0)
 				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+			if (sp [-2].data.i == -2147483648 && sp [-1].data.i == -1)
+				THROW_EX (mono_get_exception_overflow (), ip);
 			BINOP(i, %);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_REM_I8)
 			if (sp [-1].data.l == 0)
 				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+			if (sp [-2].data.l == -9223372036854775808L && sp [-1].data.l == -1)
+				THROW_EX (mono_get_exception_arithmetic (), ip);
 			BINOP(l, %);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_REM_R8)
