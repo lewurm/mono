@@ -103,11 +103,11 @@ static MonoNativeTlsKey thread_context_id;
 
 static char* dump_args (MonoInvocation *inv);
 
-#define DEBUG_INTERP 0
+#define DEBUG_INTERP 1
 #define COUNT_OPS 0
 #if DEBUG_INTERP
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 1;
+static int global_tracing = 2;
 
 static int debug_indent_level = 0;
 
