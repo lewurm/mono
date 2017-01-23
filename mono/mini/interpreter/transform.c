@@ -15,14 +15,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/tabledefs.h>
 
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	a = i,
-
-enum {
-#include "mono/cil/opcode.def"
-	CEE_LASTOP
-};
-#undef OPDEF
+#include <mono/mini/mini.h>
 
 #include "mintops.h"
 #include "interp.h"
@@ -82,6 +75,7 @@ typedef struct
 #define MINT_TYPE_O  8
 #define MINT_TYPE_P  9
 #define MINT_TYPE_VT 10
+#define MINT_TYPE_GENERICINST 11
 
 #define STACK_TYPE_I4 0
 #define STACK_TYPE_I8 1
@@ -336,6 +330,8 @@ enum_type:
 			goto enum_type;
 		} else
 			return MINT_TYPE_VT;
+	case MONO_TYPE_GENERICINST:
+		return MINT_TYPE_GENERICINST;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();
@@ -856,7 +852,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 	for (i = 0; i < header->num_locals; i++) {
 		int mt = mint_type(header->locals [i]);
-		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O) {
+		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O || mt == MINT_TYPE_GENERICINST) {
 			ADD_CODE(&td, MINT_INITLOCALS);
 			break;
 		}
@@ -1800,7 +1796,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_R8);
 			++td.ip;
 			break;
-		case CEE_UNBOX_ANY: /* let's play a dangerous game, TODO */
 		case CEE_UNBOX:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
@@ -1813,6 +1808,25 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, MINT_UNBOX);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
+			td.ip += 5;
+			break;
+		case CEE_UNBOX_ANY:
+			CHECK_STACK (&td, 1);
+			token = read32 (td.ip + 1);
+
+			g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
+			klass = mono_class_get_full (image, token, generic_context);
+
+			if (mini_type_is_reference (&klass->byval_arg)) {
+				g_error ("unbox_any: generic class is reference type");
+			} else if (mono_class_is_nullable (klass)) {
+				g_error ("unbox_any: nullable");
+			} else {
+				ADD_CODE(&td, MINT_UNBOX);
+				ADD_CODE(&td, get_data_item_index (&td, klass));
+				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
+			}
+
 			td.ip += 5;
 			break;
 		case CEE_THROW:
