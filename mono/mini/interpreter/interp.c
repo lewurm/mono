@@ -75,8 +75,6 @@
 #endif
 #endif
 
-int mono_interp_traceopt = 0;
-
 #define INIT_FRAME(frame,parent_frame,obj_this,method_args,method_retval,domain,mono_method,error)	\
 	do {	\
 		(frame)->parent = (parent_frame);	\
@@ -106,6 +104,7 @@ static char* dump_args (MonoInvocation *inv);
 #define DEBUG_INTERP 1
 #define COUNT_OPS 0
 #if DEBUG_INTERP
+int mono_interp_traceopt = 2;
 /* If true, then we output the opcodes as we interpret them */
 static int global_tracing = 2;
 
@@ -148,7 +147,7 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		debug_indent_level++;
 		output_indent ();
 		mn = mono_method_full_name (method, FALSE);
-		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);
+		g_printerr ("(%p) Entering %s (", mono_thread_internal_current (), mn);
 		g_free (mn);
 		g_printerr  ("%s)\n", args);
 		g_free (args);
@@ -164,7 +163,7 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_printerr  ("(0x%08x) Leaving %s", mono_thread_internal_current (),  mn);	\
+		g_printerr  ("(%p) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
 		g_printerr  (" => %s\n", args);	\
 		g_free (args);	\
@@ -176,6 +175,7 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 
 #else
 
+int mono_interp_traceopt = 0;
 static void debug_enter (MonoInvocation *frame, int *tracing)
 {
 }
@@ -1522,7 +1522,9 @@ static int opcode_counts[512];
 		} \
 		sp->data.l = 0; \
 		output_indent (); \
-		g_print ("(%u) ", mono_thread_internal_current ()); \
+		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
+		g_print ("(%p) %s -> ", mono_thread_internal_current (), mn); \
+		g_free (mn); \
 		mono_interp_dis_mintop(rtm->code, ip); \
 		g_print ("\t%d:%s\n", vt_sp - vtalloc, ins); \
 		g_free (ins); \
@@ -1600,7 +1602,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		context->managed_code = 0;
 #if DEBUG_INTERP
 		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE);
-		g_printerr ("(0x%08x) Transforming %s\n", mono_thread_internal_current (), mn);
+		g_printerr ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
 		frame->ex = mono_interp_transform_method (frame->runtime_method, context);
