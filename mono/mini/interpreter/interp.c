@@ -147,9 +147,9 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		debug_indent_level++;
 		output_indent ();
 		mn = mono_method_full_name (method, FALSE);
-		g_printerr ("(%p) Entering %s (", mono_thread_internal_current (), mn);
+		g_print ("(%p) Entering %s (", mono_thread_internal_current (), mn);
 		g_free (mn);
-		g_printerr  ("%s)\n", args);
+		g_print  ("%s)\n", args);
 		g_free (args);
 	}
 	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)
@@ -163,9 +163,9 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_printerr  ("(%p) Leaving %s", mono_thread_internal_current (),  mn);	\
+		g_print  ("(%p) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
-		g_printerr  (" => %s\n", args);	\
+		g_print  (" => %s\n", args);	\
 		g_free (args);	\
 		debug_indent_level--;	\
 		if (tracing == 3) global_tracing = 0; \
@@ -802,7 +802,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_I8:
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
-			g_printerr ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
+			g_print ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
 #endif
 			int_i++;
 			break;
@@ -850,8 +850,8 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 
 	MethodArguments *margs = build_args_from_sig (sig, frame);
 #if DEBUG_INTERP
-	g_printerr ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
-	g_printerr ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
+	g_print ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
+	g_print ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);
 #endif
 
 	context->current_frame = frame;
@@ -1018,9 +1018,13 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 		break;
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-	default:
-		g_string_append_printf (str, "[%lld/0x%0llx] ", s->data.l, s->data.l);
+	default: {
+		GString *res = g_string_new ("");
+		mono_type_get_desc (res, type, TRUE);
+		g_string_append_printf (str, "[{%s} %lld/0x%0llx] ", res->str, s->data.l, s->data.l);
+		g_string_free (res, TRUE);
 		break;
+	}
 	}
 }
 
@@ -1605,7 +1609,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		context->managed_code = 0;
 #if DEBUG_INTERP
 		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE);
-		g_printerr ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
+		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
 		frame->ex = mono_interp_transform_method (frame->runtime_method, context);
@@ -2867,6 +2871,11 @@ array_constructed:
 			if (!(isinst_obj || ((o->vtable->klass->rank == 0) && (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
+			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+				int size = mono_class_native_size (c, NULL);
+				sp [-1].data.p = vt_sp;
+				vt_sp += (size + 7) & ~7;
+			}
 			stackval_from_data (&c->byval_arg, &sp [-1], mono_object_unbox (o), FALSE);
 			ip += 2;
 			MINT_IN_BREAK;
@@ -3244,7 +3253,9 @@ array_constructed:
 		MINT_IN_CASE(MINT_BOX)
 			c = rtm->data_items [* (guint16 *)(ip + 1)];
 
+			g_assert (!(c->byval_arg.type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (c->byval_arg.type)));
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+				g_print ("MINT_BOX: vt\n");
 				int size = mono_class_value_size (c, NULL);
 				sp [-1].data.p = mono_value_box_checked (context->domain, c, sp [-1].data.p, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -3252,6 +3263,7 @@ array_constructed:
 				vt_sp -= size;
 			}				
 			else {
+				g_print ("MINT_BOX: not vt\n");
 				stackval_to_data (&c->byval_arg, &sp [-1], (char*)&sp [-1], FALSE);
 				sp [-1].data.p = mono_value_box_checked (context->domain, c, &sp [-1], &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
