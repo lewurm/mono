@@ -75,7 +75,6 @@ typedef struct
 #define MINT_TYPE_O  8
 #define MINT_TYPE_P  9
 #define MINT_TYPE_VT 10
-#define MINT_TYPE_GENERICINST 11
 
 #define STACK_TYPE_I4 0
 #define STACK_TYPE_I8 1
@@ -331,7 +330,8 @@ enum_type:
 		} else
 			return MINT_TYPE_VT;
 	case MONO_TYPE_GENERICINST:
-		return MINT_TYPE_GENERICINST;
+		type = &type->data.generic_class->container_class->byval_arg;
+		goto enum_type;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();
@@ -535,6 +535,7 @@ load_local(TransformData *td, int n)
 		WRITE32(td, &size);
 		klass = type->data.klass;
 	} else {
+		g_assert (mt < MINT_TYPE_VT);
 		if (mt == MINT_TYPE_I4 && !td->is_bb_start [td->in_start - td->il_code] && td->last_new_ip != NULL &&
 			td->last_new_ip [0] == MINT_STLOC_I4 && td->last_new_ip [1] == offset) {
 			td->last_new_ip [0] = MINT_STLOC_NP_I4;
@@ -556,6 +557,29 @@ store_local(TransformData *td, int n)
 {
 	MonoType *type = td->header->locals [n];
 	int mt = mint_type (type);
+#if 0
+	if (mt == MINT_TYPE_GENERICINST) {
+		// TODO: can be recursive, factor this in into mint_type;
+		MonoClass *gklass = type->data.generic_class->container_class;
+		MonoError error;
+		mono_error_init (&error);
+
+		MonoClass *wtf = mono_class_inflate_generic_class_checked (gklass, &type->data.generic_class->context, &error);
+		GString *res = g_string_new ("");
+		mono_type_get_desc (res, type, TRUE);
+		g_print ("woah1: %s\n", res->str);
+		g_string_free (res, TRUE);
+		g_print ("WTF1: type           =%p -> %d\n", type, type->type);
+
+		type = &wtf->byval_arg;
+		res = g_string_new ("");
+		mono_type_get_desc (res, type, TRUE);
+		g_print ("woah2: %s\n", res->str);
+		g_string_free (res, TRUE);
+		g_print ("WTF2: underlying_type=%p -> %d\n", type, type->type);
+		mt = mint_type (type);
+	}
+#endif
 	int offset = td->rtm->local_offsets [n];
 	CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
@@ -571,12 +595,14 @@ store_local(TransformData *td, int n)
 	}
 	if (mt == MINT_TYPE_VT) {
 		gint32 size = mono_class_value_size (type->data.klass, NULL);
+		printf ("WTF: vt size = %d for \"%s\" (%p) %d\n", size, type->data.klass->name, type->data.klass, type->data.klass->byval_arg.type);
 		ADD_CODE(td, MINT_STLOC_VT);
 		ADD_CODE(td, offset); /*FIX for large offset */
 		WRITE32(td, &size);
 		if (td->sp [-1].type == STACK_TYPE_VT)
 			POP_VT(td, size);
 	} else {
+		g_assert (mt < MINT_TYPE_VT);
 		ADD_CODE(td, MINT_STLOC_I1 + (mt - MINT_TYPE_I1));
 		ADD_CODE(td, offset); /*FIX for large offset */
 	}
@@ -724,16 +750,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	/* need to handle typedbyref ... */
 	if (csignature->ret->type != MONO_TYPE_VOID) {
 		int mt = mint_type(csignature->ret);
-		MonoClass *klass = NULL;
+		MonoClass *klass = mono_class_from_mono_type (csignature->ret);
 		if (mt == MINT_TYPE_VT) {
 			if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
-				vt_res_size = mono_class_native_size (csignature->ret->data.klass, NULL);
+				vt_res_size = mono_class_native_size (klass, NULL);
 			else
-				vt_res_size = mono_class_value_size (csignature->ret->data.klass, NULL);
+				vt_res_size = mono_class_value_size (klass, NULL);
 			PUSH_VT(td, vt_res_size);
-			klass = csignature->ret->data.klass;
-		} else if (mt == MINT_TYPE_O)
-			klass = mono_class_from_mono_type (csignature->ret);
+		}
 		PUSH_TYPE(td, stack_type[mt], klass);
 	} else
 		is_void = TRUE;
@@ -856,7 +880,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 	for (i = 0; i < header->num_locals; i++) {
 		int mt = mint_type(header->locals [i]);
-		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O || mt == MINT_TYPE_GENERICINST) {
+		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O) {
 			ADD_CODE(&td, MINT_INITLOCALS);
 			break;
 		}
@@ -1828,16 +1852,21 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			if (mini_type_is_reference (&klass->byval_arg)) {
 				g_error ("unbox_any: generic class is reference type");
 			} else if (mono_class_is_nullable (klass)) {
+				int size = mono_class_value_size (klass, NULL);
+				g_print ("unbox_any: nullable case, size=%d for \"%s\" (%p) %d\n", size, klass->name, klass, klass->byval_arg.type);
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
+				/* td.ip is incremented by interp_transform_call */
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
 				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_VT);
+				PUSH_VT (&td, size);
 			} else {
+				g_print ("unbox_any: others case: %s\n", klass->name);
 				ADD_CODE(&td, MINT_UNBOX);
 				ADD_CODE(&td, get_data_item_index (&td, klass));
 				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
+				td.ip += 5;
 			}
 
-			td.ip += 5;
 			break;
 		case CEE_THROW:
 			CHECK_STACK (&td, 1);
