@@ -1792,6 +1792,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				WRITE32(&td, &vt_stack_used);
 				td.vt_sp -= vt_stack_used;
 			}
+			g_print ("HUM: mint_type (&klass->byval_arg): %d, %s\n", mint_type (&klass->byval_arg), klass->name);
 			PUSH_TYPE(&td, stack_type [mint_type (&klass->byval_arg)], klass);
 			break;
 		}
@@ -1865,7 +1866,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				g_print ("unbox_any: others case: %s\n", klass->name);
 				ADD_CODE(&td, MINT_UNBOX);
 				ADD_CODE(&td, get_data_item_index (&td, klass));
-				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
+				SET_SIMPLE_TYPE (td.sp - 1, stack_type [mint_type (&klass->byval_arg)]);
 				td.ip += 5;
 			}
 
