@@ -1913,11 +1913,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			}
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
+				klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
-				klass = field->type->data.klass;
 			} else if (mt == MINT_TYPE_O)
 				klass = mono_class_from_mono_type (field->type);
 			td.ip += 5;
@@ -1938,8 +1937,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
 			}
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
+				MonoClass *klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);
 			}
@@ -2071,7 +2070,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			g_assert (klass->valuetype);
 
 			if (mono_class_is_nullable (klass)) {
-				int size = mono_class_value_size (klass, NULL);
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
 				/* td.ip is incremented by interp_transform_call */
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
