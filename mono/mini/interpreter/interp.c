@@ -147,7 +147,7 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		debug_indent_level++;
 		output_indent ();
 		mn = mono_method_full_name (method, FALSE);
-		g_printerr ("(0x%08x) Entering %s (", mono_thread_internal_current (), mn);
+		g_printerr ("(%p) Entering %s (", mono_thread_internal_current (), mn);
 		g_free (mn);
 		g_printerr  ("%s)\n", args);
 		g_free (args);
@@ -163,7 +163,7 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		args = dump_retval (frame);	\
 		output_indent ();	\
 		mn = mono_method_full_name (frame->runtime_method->method, FALSE); \
-		g_printerr  ("(0x%08x) Leaving %s", mono_thread_internal_current (),  mn);	\
+		g_printerr  ("(%p) Leaving %s", mono_thread_internal_current (),  mn);	\
 		g_free (mn); \
 		g_printerr  (" => %s\n", args);	\
 		g_free (args);	\
