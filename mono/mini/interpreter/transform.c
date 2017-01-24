@@ -1148,7 +1148,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			if (td.sp > td.stack)
 				g_warning ("%s.%s: CEE_RET: more values on stack: %d", td.method->klass->name, td.method->name, td.sp - td.stack);
 			if (td.vt_sp != vt_size)
-				g_warning ("%s.%s: CEE_RET: value type stack: %d", td.method->klass->name, td.method->name, td.vt_sp);
+				g_warning ("%s.%s: CEE_RET: value type stack: %d vs. %d", td.method->klass->name, td.method->name, td.vt_sp, vt_size);
 			if (vt_size == 0)
 				SIMPLE_OP(td, signature->ret->type == MONO_TYPE_VOID ? MINT_RET_VOID : MINT_RET);
 			else {
@@ -1779,7 +1779,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			for (i = 0; i < csignature->param_count; ++i) {
 				int mt = mint_type(csignature->params [i]);
 				if (mt == MINT_TYPE_VT) {
-					gint32 size = mono_class_value_size (csignature->params [i]->data.klass, NULL);
+					// gint32 size = mono_class_value_size (csignature->params [i]->data.klass, NULL);
+					MonoClass *k = mono_class_from_mono_type (csignature->params [i]);
+					gint32 size = mono_class_value_size (k, NULL);
 					size = (size + 7) & ~7;
 					vt_stack_used += size;
 				}
@@ -1859,8 +1861,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td.ip is incremented by interp_transform_call */
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
-				SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_VT);
-				PUSH_VT (&td, size);
 			} else {
 				g_print ("unbox_any: others case: %s\n", klass->name);
 				ADD_CODE(&td, MINT_UNBOX);
