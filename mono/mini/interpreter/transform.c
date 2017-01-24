@@ -1139,8 +1139,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			int vt_size = 0;
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				--td.sp;
-				if (mint_type(signature->ret) == MINT_TYPE_VT) {
-					MonoClass *klass = mono_class_from_mono_type (signature->ret);
+				MonoClass *klass = mono_class_from_mono_type (signature->ret);
+				if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
 					vt_size = mono_class_value_size (klass, NULL);
 					vt_size = (vt_size + 7) & ~7;
 				}
@@ -1772,9 +1772,15 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, MINT_NEWOBJ);
 			ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			if (klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
+
+			GString *res = g_string_new ("");
+			mono_type_get_desc (res, &klass->byval_arg, TRUE);
+			g_print ("STUFF: %s\n", res->str);
+			g_string_free (res, TRUE);
+
+			if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
 				vt_res_size = mono_class_value_size (klass, NULL);
-				PUSH_VT(&td, vt_res_size);
+				PUSH_VT (&td, vt_res_size);
 			}
 			for (i = 0; i < csignature->param_count; ++i) {
 				int mt = mint_type(csignature->params [i]);
@@ -1787,13 +1793,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				}
 			}
 			if (vt_stack_used != 0 || vt_res_size != 0) {
+				g_print ("HUM0: vt_stack_used=%d, vt_res_size=%d\n", vt_stack_used, vt_res_size);
 				ADD_CODE(&td, MINT_VTRESULT);
 				ADD_CODE(&td, vt_res_size);
 				WRITE32(&td, &vt_stack_used);
 				td.vt_sp -= vt_stack_used;
 			}
 			g_print ("HUM: mint_type (&klass->byval_arg): %d, %s\n", mint_type (&klass->byval_arg), klass->name);
-			PUSH_TYPE(&td, stack_type [mint_type (&klass->byval_arg)], klass);
+			PUSH_TYPE (&td, stack_type [mint_type (&klass->byval_arg)], klass);
 			break;
 		}
 		case CEE_CASTCLASS:
