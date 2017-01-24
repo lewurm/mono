@@ -22,6 +22,7 @@ class Tests
 	}
 #endif
 
+#if FALSE
 	public static int test_1_no_nullable_unbox ()
 	{
 		return Unbox<int> (1);
@@ -47,6 +48,7 @@ class Tests
 		object o = 1;
 		return (o is int?) ? 1 : 0;
 	}
+#endif
 
 	public static int test_1_nullable_unbox_vtype ()
 	{
