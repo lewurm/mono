@@ -528,12 +528,12 @@ load_local(TransformData *td, int n)
 	int offset = td->rtm->local_offsets [n];
 	MonoClass *klass = NULL;
 	if (mt == MINT_TYPE_VT) {
-		gint32 size = mono_class_value_size (type->data.klass, NULL);
+		klass = mono_class_from_mono_type (type);
+		gint32 size = mono_class_value_size (klass, NULL);
 		PUSH_VT(td, size);
 		ADD_CODE(td, MINT_LDLOC_VT);
 		ADD_CODE(td, offset); /*FIX for large offset */
 		WRITE32(td, &size);
-		klass = type->data.klass;
 	} else {
 		g_assert (mt < MINT_TYPE_VT);
 		if (mt == MINT_TYPE_I4 && !td->is_bb_start [td->in_start - td->il_code] && td->last_new_ip != NULL &&
@@ -594,8 +594,9 @@ store_local(TransformData *td, int n)
 			stack_type [mt], td->sp [-1].type);
 	}
 	if (mt == MINT_TYPE_VT) {
-		gint32 size = mono_class_value_size (type->data.klass, NULL);
-		printf ("WTF: vt size = %d for \"%s\" (%p) %d\n", size, type->data.klass->name, type->data.klass, type->data.klass->byval_arg.type);
+		MonoClass *klass = mono_class_from_mono_type (type);
+		gint32 size = mono_class_value_size (klass, NULL);
+		printf ("WTF: vt size = %d for \"%s\" (%p) %d\n", size, klass->name, klass, klass->byval_arg.type);
 		ADD_CODE(td, MINT_STLOC_VT);
 		ADD_CODE(td, offset); /*FIX for large offset */
 		WRITE32(td, &size);
@@ -1139,7 +1140,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			if (signature->ret->type != MONO_TYPE_VOID) {
 				--td.sp;
 				if (mint_type(signature->ret) == MINT_TYPE_VT) {
-					vt_size = mono_class_value_size (signature->ret->data.klass, NULL);
+					MonoClass *klass = mono_class_from_mono_type (signature->ret);
+					vt_size = mono_class_value_size (klass, NULL);
 					vt_size = (vt_size + 7) & ~7;
 				}
 			}
