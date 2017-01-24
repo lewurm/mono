@@ -503,7 +503,7 @@ test_sources = 			\
 
 
 regtests_UNIVERSAL=basic.exe basic-float.exe basic-long.exe basic-calls.exe objects.exe arrays.exe basic-math.exe exceptions.exe iltests.exe devirtualization.exe generics.exe basic-simd.exe basic-vectors.exe
-iregtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe
+iregtests=basic.exe basic-float.exe basic-long.exe basic-calls.exe generics-interp.exe
 
 if INSTALL_TESTING_AOT_FULL
 regtests= \
