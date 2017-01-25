@@ -1670,8 +1670,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			unsigned char *ret_vt_sp = vt_sp;
 			vt_sp -= READ32(ip + 2);
 			if (ret_size > 0) {
-				// sp [-1].data.p = vt_sp;
+				g_print ("VTRESULT: writing to dst=%p from src=%p for len=%d (%d)\n", vt_sp, ret_vt_sp, ret_size, (ret_size + 7) & ~7);
 				memmove (vt_sp, ret_vt_sp, ret_size);
+				sp [-1].data.p = vt_sp;
 				vt_sp += (ret_size + 7) & ~7;
 			}
 			ip += 4;
