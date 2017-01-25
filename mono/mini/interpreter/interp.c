@@ -2874,6 +2874,7 @@ array_constructed:
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_native_size (c, NULL);
+				g_print ("MINT_UNBOX: using vt_sp=%p with len=%d\n", vt_sp, size);
 				sp [-1].data.p = vt_sp;
 				vt_sp += (size + 7) & ~7;
 			}
