@@ -22,7 +22,6 @@ class Tests
 	}
 #endif
 
-#if FALSE
 	public static int test_1_no_nullable_unbox ()
 	{
 		return Unbox<int> (1);
@@ -48,14 +47,12 @@ class Tests
 		object o = 1;
 		return (o is int?) ? 1 : 0;
 	}
-#endif
 
 	public static int test_1_nullable_unbox_vtype ()
 	{
 		return Unbox<TestStruct?> (new TestStruct (1, 2)).Value.i;
 	}
 
-#if FALSE
 
 	public static int test_1_nullable_unbox_null_vtype ()
 	{
@@ -90,6 +87,22 @@ class Tests
 			return 1;
 
 		return 0;
+	}
+
+#if FALSE
+	public static void stelem_any<T> (T[] arr, T elem) {
+		arr [0] = elem;
+	}
+
+	public static T ldelem_any<T> (T[] arr) {
+		return arr [0];
+	}
+
+	public static int test_1_ldelem_stelem_any_int () {
+		int[] arr = new int [3];
+		stelem_any (arr, 1);
+
+		return ldelem_any (arr);
 	}
 #endif
 
