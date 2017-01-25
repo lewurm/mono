@@ -89,7 +89,6 @@ class Tests
 		return 0;
 	}
 
-#if FALSE
 	public static void stelem_any<T> (T[] arr, T elem) {
 		arr [0] = elem;
 	}
@@ -104,7 +103,6 @@ class Tests
 
 		return ldelem_any (arr);
 	}
-#endif
 
 	static object Box<T> (T t)
 	{
