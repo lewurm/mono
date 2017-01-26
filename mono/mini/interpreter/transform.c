@@ -1971,24 +1971,23 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			td.ip += 5;
 			PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 			break;
-		case CEE_LDSFLD:
+		case CEE_LDSFLD: {
+			MonoClass *field_klass = NULL;
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
 			mt = mint_type(field->type);
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
-			if (klass->valuetype)
-				g_error ("TODO: pop vt_sp?");
-			klass = NULL;
+
 			if (mt == MINT_TYPE_VT) {
 				g_error ("data.klass");
 				int size = mono_class_value_size (field->type->data.klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
-				klass = field->type->data.klass;
+				field_klass = field->type->data.klass;
 			} else {
 				if (mt == MINT_TYPE_O) 
-					klass = mono_class_from_mono_type (field->type);
+					field_klass = mono_class_from_mono_type (field->type);
 				if (!domain->special_static_fields || !g_hash_table_lookup (domain->special_static_fields, field)) {
 					if (mt == MINT_TYPE_O)
 						td.new_ip [-2] = MINT_LDSFLD_O;
@@ -1997,9 +1996,17 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				}
 				ADD_CODE(&td, get_data_item_index (&td, mono_class_vtable (domain, field->parent)));
 			}
+#if 0
+			if (klass->valuetype) {
+				g_print ("klass->valuetype: %s\n", klass->name);
+				int size = mono_class_value_size (klass, NULL);
+				POP_VT (&td, size);
+			}
+#endif
 			td.ip += 5;
-			PUSH_TYPE(&td, stack_type [mt], klass);
+			PUSH_TYPE(&td, stack_type [mt], field_klass);
 			break;
+		}
 		case CEE_STSFLD:
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
