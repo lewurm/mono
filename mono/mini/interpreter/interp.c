@@ -938,7 +938,7 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	if (obj && isinst_obj) {
 		if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-			interp_delegate_ctor (context->domain, obj, frame->stack_args[0].data.p, frame->stack_args[1].data.p);
+			interp_delegate_ctor (context->domain, obj, frame->stack_args [1].data.p, frame->stack_args[2].data.p);
 			return;
 		}
 	}
