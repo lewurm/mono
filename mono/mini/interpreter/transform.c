@@ -1893,11 +1893,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
 			} else {
 				int mt = mint_type (&klass->byval_arg);
-				g_print ("unbox_any: others case: %s\n", klass->name);
-				ADD_CODE(&td, MINT_UNBOX);
-				ADD_CODE(&td, get_data_item_index (&td, klass));
-				SET_SIMPLE_TYPE (td.sp - 1, stack_type [mt]);
-				if (mt == MONO_TYPE_VALUETYPE) {
+				ADD_CODE (&td, MINT_UNBOX);
+				ADD_CODE (&td, get_data_item_index (&td, klass));
+				SET_TYPE (td.sp - 1, stack_type [mt], klass);
+				if (mt == MINT_TYPE_VT) {
 					int size = mono_class_value_size (klass, NULL);
 					PUSH_VT (&td, size);
 				}
