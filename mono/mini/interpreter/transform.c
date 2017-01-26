@@ -1919,10 +1919,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
 			}
 			if (mt == MINT_TYPE_VT) {
-				MonoClass *klass = mono_class_from_mono_type (field->type);
-				int size = mono_class_value_size (klass, NULL);
+				MonoClass *field_klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (field_klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);
+			}
+			if (klass->valuetype) {
+				int size = mono_class_value_size (klass, NULL);
+				POP_VT(&td, size);
 			}
 			td.ip += 5;
 			td.sp -= 2;
@@ -1941,6 +1945,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			mt = mint_type(field->type);
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
+			if (klass->valuetype)
+				g_error ("TODO: pop vt_sp?");
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
 				g_error ("data.klass");
