@@ -451,10 +451,18 @@ load_arg(TransformData *td, int n)
 			size = mono_class_native_size (klass, NULL);
 		else
 			size = mono_class_value_size (klass, NULL);
-		PUSH_VT(td, size);
-		ADD_CODE(td, MINT_LDARG_VT);
-		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
-		WRITE32(td, &size);		
+
+		if (hasthis && n == 0) {
+			mt = MINT_TYPE_P;
+			ADD_CODE (td, MINT_LDARG_P);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			klass = NULL;
+		} else {
+			PUSH_VT (td, size);
+			ADD_CODE (td, MINT_LDARG_VT);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			WRITE32 (td, &size);
+		}
 	} else {
 		ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
 		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
@@ -509,6 +517,11 @@ store_inarg(TransformData *td, int n)
 
 	int mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
+		if (hasthis && n == 0) {
+			ADD_CODE (td, MINT_STINARG_P);
+			ADD_CODE (td, n);
+			return;
+		}
 		MonoClass *klass = mono_class_from_mono_type (type);
 		gint32 size;
 		if (mono_method_signature (td->method)->pinvoke)
@@ -1879,11 +1892,12 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				/* td.ip is incremented by interp_transform_call */
 				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
 			} else {
+				int mt = mint_type (&klass->byval_arg);
 				g_print ("unbox_any: others case: %s\n", klass->name);
 				ADD_CODE(&td, MINT_UNBOX);
 				ADD_CODE(&td, get_data_item_index (&td, klass));
-				SET_SIMPLE_TYPE (td.sp - 1, stack_type [mint_type (&klass->byval_arg)]);
-				if (klass->byval_arg.type == MONO_TYPE_VALUETYPE) {
+				SET_SIMPLE_TYPE (td.sp - 1, stack_type [mt]);
+				if (mt == MONO_TYPE_VALUETYPE) {
 					int size = mono_class_value_size (klass, NULL);
 					PUSH_VT (&td, size);
 				}
@@ -1955,10 +1969,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				int size = mono_class_value_size (field_klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);
-			}
-			if (klass->valuetype) {
-				int size = mono_class_value_size (klass, NULL);
-				POP_VT(&td, size);
 			}
 			td.ip += 5;
 			td.sp -= 2;
