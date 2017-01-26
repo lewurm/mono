@@ -475,7 +475,7 @@ store_arg(TransformData *td, int n)
 	if (hasthis && n == 0)
 		type = &td->method->klass->byval_arg;
 	else
-		type = mono_method_signature (td->method)->params [hasthis ? n - 1 : n];
+		type = mono_method_signature (td->method)->params [n - !!hasthis];
 
 	mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
@@ -500,7 +500,13 @@ store_arg(TransformData *td, int n)
 static void 
 store_inarg(TransformData *td, int n)
 {
-	MonoClass *klass = mono_class_from_mono_type (mono_method_signature (td->method)->params [n]);
+	MonoClass *klass;
+	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	if (hasthis && n == 0)
+		klass = td->method->klass;
+	else
+		klass = mono_class_from_mono_type (mono_method_signature (td->method)->params [n - !!hasthis]);
+
 	int mt = mint_type (&klass->byval_arg);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
@@ -733,9 +739,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 	}
 	g_assert (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C);
-	td->sp -= csignature->param_count + csignature->hasthis;
+	td->sp -= csignature->param_count + !!csignature->hasthis;
 	for (i = 0; i < csignature->param_count; ++i) {
-		if (td->sp [i + csignature->hasthis].type == STACK_TYPE_VT) {
+		if (td->sp [i + !!csignature->hasthis].type == STACK_TYPE_VT) {
 			gint32 size;
 			MonoClass *klass = mono_class_from_mono_type (csignature->params [i]);
 			if (csignature->pinvoke && method->wrapper_type != MONO_WRAPPER_NONE)
@@ -873,8 +879,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		g_free (name);
 	}
 
+	if (signature->hasthis)
+		store_inarg (&td, 0);
 	for (i = 0; i < signature->param_count; i++)
-		store_inarg(&td, i);
+		store_inarg (&td, i + !!signature->hasthis);
 
 	body_start_offset = td.new_ip - td.new_code;
 

@@ -1034,11 +1034,13 @@ dump_args (MonoInvocation *inv)
 	int i;
 	MonoMethodSignature *signature = mono_method_signature (inv->runtime_method->method);
 	
-	if (signature->param_count == 0)
+	if (signature->param_count == 0 && !signature->hasthis)
 		return g_string_free (str, FALSE);
 
-	if (signature->hasthis)
-		g_string_append_printf (str, "%p ", inv->stack_args);
+	if (signature->hasthis) {
+		MonoMethod *method = inv->runtime_method->method;
+		dump_stackval (str, inv->stack_args, &method->klass->byval_arg);
+	}
 
 	for (i = 0; i < signature->param_count; ++i)
 		dump_stackval (str, inv->stack_args + (!!signature->hasthis) + i, signature->params [i]);
@@ -2747,7 +2749,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
 			}*/
 				
-
 			if (newobj_class->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
 				o = ves_array_create (context->domain, newobj_class, csig, sp);
@@ -2780,8 +2781,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				}
 			}
 
-			if (csig->param_count) {
-				sp -= csig->param_count;
+			if (csig->param_count || csig->hasthis) {
+				sp -= csig->param_count + !!csig->hasthis;
 				child_frame.stack_args = sp;
 			} else {
 				child_frame.stack_args = NULL;
