@@ -451,10 +451,18 @@ load_arg(TransformData *td, int n)
 			size = mono_class_native_size (klass, NULL);
 		else
 			size = mono_class_value_size (klass, NULL);
-		PUSH_VT(td, size);
-		ADD_CODE(td, MINT_LDARG_VT);
-		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
-		WRITE32(td, &size);		
+
+		if (hasthis && n == 0) {
+			mt = MINT_TYPE_P;
+			ADD_CODE (td, MINT_LDARG_P);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			klass = NULL;
+		} else {
+			PUSH_VT (td, size);
+			ADD_CODE (td, MINT_LDARG_VT);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			WRITE32 (td, &size);
+		}
 	} else {
 		ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
 		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
@@ -509,6 +517,11 @@ store_inarg(TransformData *td, int n)
 
 	int mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
+		if (hasthis && n == 0) {
+			ADD_CODE (td, MINT_STINARG_P);
+			ADD_CODE (td, n);
+			return;
+		}
 		MonoClass *klass = mono_class_from_mono_type (type);
 		gint32 size;
 		if (mono_method_signature (td->method)->pinvoke)
@@ -1923,10 +1936,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				int size = mono_class_value_size (field_klass, NULL);
 				POP_VT(&td, size);
 				WRITE32(&td, &size);
-			}
-			if (klass->valuetype) {
-				int size = mono_class_value_size (klass, NULL);
-				POP_VT(&td, size);
 			}
 			td.ip += 5;
 			td.sp -= 2;
