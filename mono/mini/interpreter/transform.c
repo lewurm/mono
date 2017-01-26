@@ -500,15 +500,16 @@ store_arg(TransformData *td, int n)
 static void 
 store_inarg(TransformData *td, int n)
 {
-	MonoClass *klass;
+	MonoType *type;
 	gboolean hasthis = mono_method_signature (td->method)->hasthis;
 	if (hasthis && n == 0)
-		klass = td->method->klass;
+		type = &td->method->klass->byval_arg;
 	else
-		klass = mono_class_from_mono_type (mono_method_signature (td->method)->params [n - !!hasthis]);
+		type= mono_method_signature (td->method)->params [n - !!hasthis];
 
-	int mt = mint_type (&klass->byval_arg);
+	int mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
+		MonoClass *klass = mono_class_from_mono_type (mono_method_signature (td->method)->params [n - !!hasthis]);
 		gint32 size;
 		if (mono_method_signature (td->method)->pinvoke)
 			size = mono_class_native_size (klass, NULL);
