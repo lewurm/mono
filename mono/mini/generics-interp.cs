@@ -154,6 +154,84 @@ class Tests
 		return 1;
 	}
 
+	public static int test_18_ldobj_stobj_generics () {
+		GenericClass<int> t = new GenericClass <int> ();
+		int i = 5;
+		int j = 6;
+		return t.ldobj_stobj (ref i, ref j) + i + j;
+	}
+
+	public static int test_5_ldelem_stelem_generics () {
+		GenericClass<TestStruct> t = new GenericClass<TestStruct> ();
+
+		TestStruct s = new TestStruct (5, 5);
+		return t.ldelem_stelem (s).i;
+	}
+
+	public struct GenericStruct<T> {
+		public T t;
+
+		public GenericStruct (T t) {
+			this.t = t;
+		}
+	}
+
+	public class GenericClass<T> {
+		public T t;
+
+		public GenericClass (T t) {
+			this.t = t;
+		}
+
+		public GenericClass () {
+		}
+
+		public T ldobj_stobj (ref T t1, ref T t2) {
+			t1 = t2;
+			T t = t1;
+
+			return t;
+		}
+
+		public T ldelem_stelem (T t) {
+			T[] arr = new T [10];
+			arr [0] = t;
+
+			return arr [0];
+		}
+
+		public String toString (T t) {
+			return t.ToString ();
+		}
+
+		public static IEnumerator<T> Y (IEnumerable <T> x)
+		{
+			return x.GetEnumerator ();
+		}
+
+		public static T Z (IList<T> x, int index)
+		{
+			return x [index];
+		}
+
+        protected static T NullB = default(T);       
+        private static Nullable<bool>  _BIsA = null;
+        public static bool BIsAClazz {
+            get {
+                _BIsA = false;
+                return _BIsA.Value;
+            }
+        }
+	}
+
+	static bool IsNull<T> (T t)
+	{
+		if (t == null)
+			return true;
+		else
+			return false;
+	}
+
 	static object Box<T> (T t)
 	{
 		return t;
