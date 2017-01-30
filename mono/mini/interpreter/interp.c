@@ -384,15 +384,8 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 		if (type->data.klass->enumtype) {
 			stackval_from_data (mono_class_enum_basetype (type->data.klass), result, data, pinvoke);
 			return;
-		} else {
-			int size;
-			
-			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
-			memcpy (result->data.vt, data, size);
-		}
+		} else
+			mono_value_copy (result->data.vt, data, type->data.klass);
 		return;
 	default:
 		g_warning ("got type 0x%02x", type->type);
@@ -479,16 +472,8 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 		if (type->data.klass->enumtype) {
 			stackval_to_data (mono_class_enum_basetype (type->data.klass), val, data, pinvoke);
 			return;
-		} else {
-			int size;
-
-			if (pinvoke)
-				size = mono_class_native_size (type->data.klass, NULL);
-			else
-				size = mono_class_value_size (type->data.klass, NULL);
-
-			memcpy (data, val->data.p, size);
-		}
+		} else
+			mono_value_copy (data, val->data.vt, type->data.klass);
 		return;
 	case MONO_TYPE_GENERICINST:
 		stackval_to_data (&type->data.generic_class->container_class->byval_arg, val, data, pinvoke);
@@ -3322,7 +3307,8 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDELEM_I)  /* fall through */
 		MINT_IN_CASE(MINT_LDELEM_R4) /* fall through */
 		MINT_IN_CASE(MINT_LDELEM_R8) /* fall through */
-		MINT_IN_CASE(MINT_LDELEM_REF) {
+		MINT_IN_CASE(MINT_LDELEM_REF) /* fall through */
+		MINT_IN_CASE(MINT_LDELEM_VT) {
 			MonoArray *o;
 			mono_u aindex;
 
@@ -3373,6 +3359,16 @@ array_constructed:
 			case MINT_LDELEM_REF:
 				sp [0].data.p = mono_array_get (o, gpointer, aindex);
 				break;
+			case MINT_LDELEM_VT: {
+				MonoClass *klass_vt = rtm->data_items [*(guint16 *) (ip + 1)];
+				i32 = READ32 (ip + 2);
+				char *src_addr = mono_array_addr_with_size ((MonoArray *) o, i32, aindex);
+				sp [0].data.vt = vt_sp;
+				stackval_from_data (&klass_vt->byval_arg, sp, src_addr, FALSE);
+				vt_sp += (i32 + 7) & ~7;
+				ip += 3;
+				break;
+			}
 			default:
 				ves_abort();
 			}
@@ -3388,7 +3384,8 @@ array_constructed:
 		MINT_IN_CASE(MINT_STELEM_I8) /* fall through */
 		MINT_IN_CASE(MINT_STELEM_R4) /* fall through */
 		MINT_IN_CASE(MINT_STELEM_R8) /* fall through */
-		MINT_IN_CASE(MINT_STELEM_REF) {
+		MINT_IN_CASE(MINT_STELEM_REF) /* fall through */
+		MINT_IN_CASE(MINT_STELEM_VT) {
 			mono_u aindex;
 
 			sp -= 3;
@@ -3429,7 +3426,18 @@ array_constructed:
 				if (sp [2].data.p && !isinst_obj)
 					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
 				mono_array_set ((MonoArray *)o, gpointer, aindex, sp [2].data.p);
-			} break;
+				break;
+			}
+			case MINT_STELEM_VT: {
+				MonoClass *klass_vt = rtm->data_items [*(guint16 *) (ip + 1)];
+				i32 = READ32 (ip + 2);
+				char *dst_addr = mono_array_addr_with_size ((MonoArray *) o, i32, aindex);
+
+				stackval_to_data (&klass_vt->byval_arg, &sp [2], dst_addr, FALSE);
+				vt_sp -= (i32 + 7) & ~7;
+				ip += 3;
+				break;
+			}
 			default:
 				ves_abort();
 			}

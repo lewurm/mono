@@ -2204,6 +2204,17 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					--td.sp;
 					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
 					break;
+				case MINT_TYPE_VT: {
+					int size = mono_class_value_size (klass, NULL);
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_VT);
+					ADD_CODE (&td, get_data_item_index (&td, klass));
+					WRITE32 (&td, &size);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_VT);
+					PUSH_VT (&td, size);
+					break;
+				}
 				default: {
 					GString *res = g_string_new ("");
 					mono_type_get_desc (res, &klass->byval_arg, TRUE);
@@ -2272,6 +2283,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				case MINT_TYPE_I4:
 					SIMPLE_OP (td, MINT_STELEM_I4);
 					break;
+				case MINT_TYPE_VT: {
+					int size = mono_class_value_size (klass, NULL);
+					SIMPLE_OP (td, MINT_STELEM_VT);
+					ADD_CODE (&td, get_data_item_index (&td, klass));
+					WRITE32 (&td, &size);
+					POP_VT (&td, size);
+					break;
+				}
 				default: {
 					GString *res = g_string_new ("");
 					mono_type_get_desc (res, &klass->byval_arg, TRUE);
