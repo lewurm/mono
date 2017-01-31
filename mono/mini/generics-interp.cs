@@ -174,7 +174,7 @@ class Tests
 #if __MOBILE__
 		return t.toString (new TestStruct ()) == "GenericsTests+TestStruct" ? 0 : 1;
 #else
-		return t.toString (new TestStruct ()) == "Tests+TestStruct" ? 0 : 1;
+		return t.toString (new TestStruct ()) == "Telolsts+TestStruct" ? 0 : 1;
 #endif
 	}
 

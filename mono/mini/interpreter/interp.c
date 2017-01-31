@@ -751,8 +751,8 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->ilen > 0)
 		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
 
-	if (margs->ilen > 3)
-		g_error ("build_args_from_sig: TODO, more than two iregs: %d\n", margs->ilen);
+	if (margs->ilen > 4)
+		g_error ("build_args_from_sig: TODO, more than four iregs: %d\n", margs->ilen);
 
 	if (margs->flen > 0)
 		g_error ("build_args_from_sig: TODO, allocate floats: %d\n", margs->flen);
@@ -3217,23 +3217,25 @@ array_constructed:
 			sp [-1].data.i = (mono_u)sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BOX)
+		MINT_IN_CASE(MINT_BOX) {
 			c = rtm->data_items [* (guint16 *)(ip + 1)];
+			guint16 offset = * (guint16 *)(ip + 2);
+			g_print ("MINT_BOX: %d\n", offset);
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
-				sp [-1].data.p = mono_value_box_checked (context->domain, c, sp [-1].data.p, &error);
+				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, sp [-1 - offset].data.p, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				size = (size + 7) & ~7;
 				vt_sp -= size;
-			}				
-			else {
-				stackval_to_data (&c->byval_arg, &sp [-1], (char*)&sp [-1], FALSE);
-				sp [-1].data.p = mono_value_box_checked (context->domain, c, &sp [-1], &error);
+			} else {
+				stackval_to_data (&c->byval_arg, &sp [-1 - offset], (char *) &sp [-1 - offset], FALSE);
+				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, &sp [-1 - offset], &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 2;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_NEWARR)
 			sp [-1].data.p = (MonoObject*) mono_array_new_checked (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */

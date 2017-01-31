@@ -678,6 +678,31 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		csignature = mono_method_signature (target_method);
 	}
 
+	if (constrained_class) {
+		g_print ("CONSTRAINED.CALLVIRT: %s (%p) ->", mono_signature_full_name (target_method->signature), target_method);
+		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, &error);
+		g_print (" %s (%p)\n", mono_signature_full_name (target_method->signature), target_method);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+
+		if (constrained_class->valuetype && (target_method->klass == mono_defaults.object_class || target_method->klass == mono_defaults.enum_class->parent || target_method->klass == mono_defaults.enum_class)) {
+			ADD_CODE (td, MINT_BOX);
+			ADD_CODE (td, get_data_item_index (td, constrained_class));
+			ADD_CODE (td, csignature->param_count);
+#if 0
+			if (mint_type (&constrained_class->byval_arg) == MINT_TYPE_VT) {
+				int size = mono_class_value_size (constrained_class, NULL);
+				td->vt_sp -= (size + 7) & ~7;
+			}
+			g_error ("we need to box that puppy");
+#endif
+		} else if (!constrained_class->valuetype) {
+			/* managed pointer on the stack, we need to deref that puppy */
+			g_error ("dereference managed pointer to get this pointer");
+		} else {
+			g_error ("other cases?");
+		}
+	}
+
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
 	if (!calli && (!virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
@@ -1133,6 +1158,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_CALLI:    /* Fall through */
 		case CEE_CALL: {
 			interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, constrained_class);
+			constrained_class = NULL;
 			break;
 		}
 		case CEE_RET: {
@@ -2077,6 +2103,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				}
 				ADD_CODE(&td, MINT_BOX);
 				ADD_CODE(&td, get_data_item_index (&td, klass));
+				ADD_CODE (&td, 0);
 				SET_TYPE(td.sp - 1, STACK_TYPE_O, klass);
 				td.ip += 5;
 			}
