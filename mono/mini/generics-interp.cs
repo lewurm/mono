@@ -168,6 +168,16 @@ class Tests
 		return t.ldelem_stelem (s).i;
 	}
 
+	public static int test_0_constrained_vtype_box () {
+		GenericClass<TestStruct> t = new GenericClass<TestStruct> ();
+
+#if __MOBILE__
+		return t.toString (new TestStruct ()) == "GenericsTests+TestStruct" ? 0 : 1;
+#else
+		return t.toString (new TestStruct ()) == "Tests+TestStruct" ? 0 : 1;
+#endif
+	}
+
 	public struct GenericStruct<T> {
 		public T t;
 

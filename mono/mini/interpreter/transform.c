@@ -628,7 +628,7 @@ get_data_item_index (TransformData *td, void *ptr)
 }
 
 static void
-interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset)
+interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class)
 {
 	MonoImage *image = method->klass->image;
 	MonoMethodSignature *csignature;
@@ -796,6 +796,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	MonoImage *image = method->klass->image;
 	MonoDomain *domain = mono_domain_get ();
 	MonoGenericContext *generic_context = NULL;
+	MonoClass *constrained_class = NULL;
 	MonoError error;
 	int offset, mt;
 	int i;
@@ -1131,7 +1132,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_CALLVIRT: /* Fall through */
 		case CEE_CALLI:    /* Fall through */
 		case CEE_CALL: {
-			interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset);
+			interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, constrained_class);
 			break;
 		}
 		case CEE_RET: {
@@ -1857,9 +1858,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			} else if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td.ip is incremented by interp_transform_call */
-				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
+				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL);
 			} else {
 				int mt = mint_type (&klass->byval_arg);
+				g_assert (klass->valuetype);
 				ADD_CODE (&td, MINT_UNBOX);
 				ADD_CODE (&td, get_data_item_index (&td, klass));
 				SET_TYPE (td.sp - 1, stack_type [mt], klass);
@@ -2066,7 +2068,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
 				/* td.ip is incremented by interp_transform_call */
-				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset);
+				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL);
 			} else {
 				if (klass->byval_arg.type == MONO_TYPE_VALUETYPE && !klass->enumtype) {
 					size = mono_class_value_size (klass, NULL);
@@ -2540,7 +2542,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		        switch (*td.ip) {
 				case CEE_MONO_CALLI_EXTRA_ARG:
 					/* Same as CEE_CALLI, llvm specific */
-					interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset);
+					interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL);
 					break;
 				case CEE_MONO_ICALL: {
 					guint32 token;
@@ -2853,16 +2855,12 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				td.sp -= 3;
 				++td.ip;
 				break;
-#if 0
-			case CEE_CONSTRAINED_: {
-				guint32 token;
-				/* FIXME: implement */
-				++ip;
-				token = read32 (ip);
-				ip += 4;
+			case CEE_CONSTRAINED_:
+				token = read32 (td.ip + 1);
+				constrained_class = mono_class_get_full (image, token, generic_context);
+				g_print ("CONSTRAINED: %s -> %s\n", constrained_class->name, mono_type_get_name (&constrained_class->byval_arg));
+				td.ip += 5;
 				break;
-			}
-#endif
 			case CEE_INITBLK:
 				CHECK_STACK(&td, 3);
 				ADD_CODE(&td, MINT_INITBLK);
