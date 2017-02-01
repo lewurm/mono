@@ -2120,10 +2120,6 @@ mono_main (int argc, char* argv[])
 		aname = argv [i];
 		break;
 	default:
-#ifdef ENABLE_INTERPRETER
-		if (mono_use_interpreter)
-			g_error ("not yet");
-#endif
 		if (argc - i < 1) {
 			mini_usage ();
 			mini_cleanup (domain);
