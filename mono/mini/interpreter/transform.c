@@ -2924,7 +2924,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			case CEE_CONSTRAINED_:
 				token = read32 (td.ip + 1);
 				constrained_class = mono_class_get_full (image, token, generic_context);
-				mono_class_init (klass);
+				mono_class_init (constrained_class);
 				g_print ("CONSTRAINED: %s -> %s\n", constrained_class->name, mono_type_get_name (&constrained_class->byval_arg));
 				td.ip += 5;
 				break;
