@@ -748,6 +748,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
 			margs->ilen++;
 			break;
 		default:
@@ -791,6 +792,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
