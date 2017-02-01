@@ -3075,28 +3075,10 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STSFLD) {
-			MonoVTable *vt;
-			MonoClassField *field;
-			guint32 token;
-			gpointer addr;
-
-			token = * (guint16 *)(ip + 1);
-			field = rtm->data_items[token];
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
 			ip += 2;
 			--sp;
-
-			vt = mono_class_vtable (context->domain, field->parent);
-			if (!vt->initialized) {
-				frame->ip = ip - 2;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				addr = (char*)(vt->vtable) + field->offset;
-
 			stackval_to_data (field->type, sp, addr, FALSE);
 			MINT_IN_BREAK;
 		}
