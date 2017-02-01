@@ -174,8 +174,20 @@ class Tests
 #if __MOBILE__
 		return t.toString (new TestStruct ()) == "GenericsTests+TestStruct" ? 0 : 1;
 #else
-		return t.toString (new TestStruct ()) == "Telolsts+TestStruct" ? 0 : 1;
+		return t.toString (new TestStruct ()) == "Tests+TestStruct" ? 0 : 1;
 #endif
+	}
+
+	public static int test_0_constrained_vtype () {
+		GenericClass<int> t = new GenericClass<int> ();
+
+		return t.toString (1234) == "1234" ? 0 : 1;
+	}
+
+	public static int test_0_constrained_reftype () {
+		GenericClass<String> t = new GenericClass<String> ();
+
+		return t.toString ("1234") == "1234" ? 0 : 1;
 	}
 
 	public struct GenericStruct<T> {
