@@ -178,6 +178,7 @@ class Tests
 #endif
 	}
 
+#if FALSE
 	public static int test_0_constrained_vtype () {
 		GenericClass<int> t = new GenericClass<int> ();
 
@@ -189,6 +190,7 @@ class Tests
 
 		return t.toString ("1234") == "1234" ? 0 : 1;
 	}
+#endif
 
 	public struct GenericStruct<T> {
 		public T t;
@@ -261,5 +263,43 @@ class Tests
 
 	static T Unbox <T> (object o) {
 		return (T) o;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static bool constrained_equals<T> (T t1, T t2) {
+		var c = EqualityComparer<T>.Default;
+
+		return c.Equals (t1, t2);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int constrained_gethashcode<T> (T t) {
+		return t.GetHashCode ();
+	}
+
+	enum AnEnum {
+		A,
+		B
+	}
+
+	public static int test_0_constrained_partial_sharing () {
+		if (!constrained_equals<int> (1, 1))
+			return 3;
+		if (constrained_equals<int> (1, 2))
+			return 4;
+#if FALSE
+		if (!constrained_equals<AnEnum> (AnEnum.A, AnEnum.A))
+			return 5;
+		if (constrained_equals<AnEnum> (AnEnum.A, AnEnum.B))
+			return 6;
+
+		int i = constrained_gethashcode<int> (5);
+		if (i != 5)
+			return 7;
+		i = constrained_gethashcode<AnEnum> (AnEnum.B);
+		if (i != 1)
+			return 8;
+#endif
+		return 0;
 	}
 }

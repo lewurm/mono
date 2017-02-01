@@ -464,10 +464,17 @@ load_arg(TransformData *td, int n)
 			WRITE32 (td, &size);
 		}
 	} else {
-		ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
-		ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
-		if (mt == MINT_TYPE_O)
-			klass = mono_class_from_mono_type (type);
+		if (hasthis && n == 0) {
+			mt = MINT_TYPE_P;
+			ADD_CODE (td, MINT_LDARG_P);
+			ADD_CODE (td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			klass = NULL;
+		} else {
+			ADD_CODE(td, MINT_LDARG_I1 + (mt - MINT_TYPE_I1));
+			ADD_CODE(td, td->rtm->arg_offsets [n]); /* FIX for large offset */
+			if (mt == MINT_TYPE_O)
+				klass = mono_class_from_mono_type (type);
+		}
 	}
 	PUSH_TYPE(td, stack_type[mt], klass);
 }
@@ -679,10 +686,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	if (constrained_class) {
+		mono_class_setup_vtable (constrained_class);
 		g_print ("CONSTRAINED.CALLVIRT: %s (%p) ->", mono_signature_full_name (target_method->signature), target_method);
 		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, &error);
 		g_print (" %s (%p)\n", mono_signature_full_name (target_method->signature), target_method);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+		mono_class_setup_vtable (target_method->klass);
 
 		if (constrained_class->valuetype && (target_method->klass == mono_defaults.object_class || target_method->klass == mono_defaults.enum_class->parent || target_method->klass == mono_defaults.enum_class)) {
 			ADD_CODE (td, MINT_BOX);
@@ -697,9 +706,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #endif
 		} else if (!constrained_class->valuetype) {
 			/* managed pointer on the stack, we need to deref that puppy */
-			g_error ("dereference managed pointer to get this pointer");
+			ADD_CODE (td, MINT_LDIND_I);
+			ADD_CODE (td, csignature->param_count);
 		} else {
-			g_error ("other cases?");
+			ADD_CODE (td, MINT_BOX);
+			ADD_CODE (td, get_data_item_index (td, constrained_class));
+			ADD_CODE (td, csignature->param_count);
+			// g_error ("other cases? %s", mono_type_name_full ;
 		}
 	}
 
@@ -1360,6 +1373,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_LDIND_I:
 			CHECK_STACK (&td, 1);
 			SIMPLE_OP (td, MINT_LDIND_I);
+			ADD_CODE (&td, 0);
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I);
 			break;
 		case CEE_LDIND_R4:
@@ -1834,6 +1848,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 			ADD_CODE(&td, MINT_ISINST);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
 			td.ip += 5;
@@ -1863,6 +1878,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			else 
 				klass = mono_class_get_full (image, token, generic_context);
 
+			mono_class_init (klass);
+
 			if (mono_class_is_nullable (klass)) {
 				g_error ("cee_unbox: implement Nullable");
 			}
@@ -1878,6 +1895,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 			g_assert (method->wrapper_type == MONO_WRAPPER_NONE);
 			klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 
 			if (mini_type_is_reference (&klass->byval_arg)) {
 				g_error ("unbox_any: generic class is reference type");
@@ -2026,6 +2044,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 
 			ADD_CODE(&td, td.sp [-1].type == STACK_TYPE_VT ? MINT_STOBJ_VT : MINT_STOBJ);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
@@ -2089,6 +2108,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 			g_assert (klass->valuetype);
 
 			if (mono_class_is_nullable (klass)) {
@@ -2118,6 +2138,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 
 			ADD_CODE(&td, MINT_NEWARR);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
@@ -2138,6 +2159,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 
 			ADD_CODE(&td, MINT_LDELEMA);
 			ADD_CODE(&td, get_data_item_index (&td, klass));
@@ -2226,6 +2248,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			CHECK_STACK (&td, 2);
 			token = read32 (td.ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
+			mono_class_init (klass);
 			switch (mint_type (&klass->byval_arg)) {
 				case MINT_TYPE_I4:
 					ENSURE_I4 (&td, 1);
@@ -2869,6 +2892,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				CHECK_STACK(&td, 1);
 				token = read32 (td.ip + 1);
 				klass = mono_class_get_full (image, token, generic_context);
+				mono_class_init (klass);
 				ADD_CODE(&td, MINT_INITOBJ);
 				i32 = mono_class_value_size (klass, NULL);
 				WRITE32(&td, &i32);
@@ -2885,6 +2909,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			case CEE_CONSTRAINED_:
 				token = read32 (td.ip + 1);
 				constrained_class = mono_class_get_full (image, token, generic_context);
+				mono_class_init (klass);
 				g_print ("CONSTRAINED: %s -> %s\n", constrained_class->name, mono_type_get_name (&constrained_class->byval_arg));
 				td.ip += 5;
 				break;

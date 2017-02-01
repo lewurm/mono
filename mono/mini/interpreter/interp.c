@@ -105,7 +105,7 @@ static char* dump_args (MonoInvocation *inv);
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 1;
+static int global_tracing = 2;
 
 static int debug_indent_level = 0;
 
@@ -303,6 +303,9 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 		}
 		return ret;
 	}
+
+	// FIXME
+	mono_class_setup_vtable (obj->vtable->klass);
 
 	int slot = mono_method_get_vtable_slot (m);
 	if (mono_class_is_interface (m->klass)) {
@@ -2347,10 +2350,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			++ip;
 			sp[-1].data.l = *(gint64*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_I)
-			++ip;
-			sp[-1].data.p = *(gpointer*)sp[-1].data.p;
+		MINT_IN_CASE(MINT_LDIND_I) {
+			guint16 offset = * (guint16 *)(ip + 1);
+			sp[-1 - offset].data.p = *(gpointer*)sp[-1 - offset].data.p;
+			ip += 2;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDIND_R4)
 			++ip;
 			sp[-1].data.f = *(gfloat*)sp[-1].data.p;
