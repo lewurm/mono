@@ -716,6 +716,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
+	mono_class_init (target_method->klass);
+	g_print ("CALL STUFF: initing %s (%p)\n", target_method->klass->name, target_method->klass);
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
 	if (!calli && (!virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
@@ -1996,6 +1998,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_LDSFLD:
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
+			mono_class_init (klass);
 			mt = mint_type(field->type);
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));

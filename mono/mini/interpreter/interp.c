@@ -62,6 +62,7 @@
 #include "hacks.h"
 
 #include <mono/mini/mini.h>
+#include <mono/mini/jit-icalls.h>
 
 
 /* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
@@ -389,6 +390,9 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 			return;
 		} else
 			mono_value_copy (result->data.vt, data, type->data.klass);
+		return;
+	case MONO_TYPE_GENERICINST:
+		stackval_from_data (&type->data.generic_class->container_class->byval_arg, result, data, pinvoke);
 		return;
 	default:
 		g_warning ("got type 0x%02x", type->type);
@@ -3023,42 +3027,17 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			MonoVTable *vt = mono_class_vtable (context->domain, field->parent);
-			gpointer addr;
 
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
+			sp->data.p = mono_class_static_field_address (context->domain, field);
 			ip += 2;
-
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				sp->data.p = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				sp->data.p = (char*)(vt->vtable) + field->offset;
 			++sp;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD) {
-			MonoVTable *vt;
-			MonoClassField *field;
-			gpointer addr;
-
-			field = rtm->data_items[*(guint16 *)(ip + 1)];
-			vt = rtm->data_items [*(guint16 *)(ip + 2)];
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			ip += 3;
-			if (context->domain->special_static_fields && (addr = g_hash_table_lookup (context->domain->special_static_fields, field)))
-				addr = mono_get_special_static_data (GPOINTER_TO_UINT (addr));
-			else
-				addr = (char*)(vt->vtable) + field->offset;
-
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
 			stackval_from_data (field->type, sp, addr, FALSE);
+			ip += 3;
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -3076,17 +3055,12 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD_O) {
-			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
+			g_assert (field->type->type == MONO_TYPE_OBJECT || field->type->type == MONO_TYPE_GENERICINST);
+			stackval_from_data (field->type, sp, addr, FALSE);
 			ip += 3;
-			sp->data.p = * (gpointer *)((char*)(vt->vtable) + field->offset);
 			++sp;
-			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
 			MonoVTable *vt;
