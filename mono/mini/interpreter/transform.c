@@ -2340,6 +2340,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				case MINT_TYPE_I4:
 					SIMPLE_OP (td, MINT_STELEM_I4);
 					break;
+				case MINT_TYPE_O:
+					SIMPLE_OP (td, MINT_STELEM_REF);
+					break;
 				case MINT_TYPE_VT: {
 					int size = mono_class_value_size (klass, NULL);
 					SIMPLE_OP (td, MINT_STELEM_VT);
