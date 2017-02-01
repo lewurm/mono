@@ -1475,6 +1475,7 @@ ves_icall_Mono_RuntimeClassHandle_GetTypeFromClass (MonoClass *klass)
 ICALL_EXPORT void
 ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array)
 {
+	g_print ("LOLWOOT: FREE %p\n", ptr_array);
 	g_ptr_array_free (ptr_array, TRUE);
 }
 
@@ -3969,7 +3970,9 @@ ves_icall_RuntimeType_GetConstructors_native (MonoReflectionTypeHandle ref_type,
 	mono_error_init (error);
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 	if (type->byref) {
-		return g_ptr_array_new ();
+		GPtrArray *ret = g_ptr_array_new ();
+		g_print ("DAFUQ1: NEW: %p\n", ret);
+		return ret;
 	}
 
 	MonoClass *startklass, *klass;
@@ -3978,6 +3981,7 @@ ves_icall_RuntimeType_GetConstructors_native (MonoReflectionTypeHandle ref_type,
 	mono_class_setup_methods (klass);
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_for_class_failure (error, klass);
+		g_print ("DAFUQ2: NEW: %p\n", NULL);
 		return NULL;
 	}
 	
@@ -4013,7 +4017,7 @@ ves_icall_RuntimeType_GetConstructors_native (MonoReflectionTypeHandle ref_type,
 			continue;
 		g_ptr_array_add (res_array, method);
 	}
-
+	g_print ("DAFUQ3: NEW: %p\n", res_array);
 	return res_array;
 }
 

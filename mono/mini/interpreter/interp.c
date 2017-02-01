@@ -987,7 +987,7 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_BOOLEAN:
-		g_string_append_printf (str, "[%d] ", s->data.i);
+		g_string_append_printf (str, "[tmp:%d/%x] ", s->data.l, s->data.l);
 		break;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
@@ -1949,13 +1949,16 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			sp -= child_frame.runtime_method->param_count + 1;
 			child_frame.stack_args = sp;
 			this_arg = sp->data.p;
+			g_print ("MINT_CALLVIRT, WTF: %p/%d\n", this_arg, this_arg);
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
-			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
+#if 0
+			if (child_frame.runtime_method->valuetype) {
 				sp->data.p = (char *) this_arg + sizeof (MonoObject);
 			}
+#endif
 
 			ves_exec_method_with_context (&child_frame, context);
 
@@ -2348,10 +2351,13 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			sp[-1].data.i = *(guint16*)sp[-1].data.p;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_I4) /* Fall through */
-		MINT_IN_CASE(MINT_LDIND_U4)
+		MINT_IN_CASE(MINT_LDIND_U4) {
+			gpointer *ptrlol = sp [-1].data.p;
 			++ip;
-			sp[-1].data.i = *(gint32*)sp[-1].data.p;
+			g_print ("MINT_LDIND_U4: %p, %p\n", ptrlol, (gint32 *) ptrlol);
+			sp[-1].data.i = * (gint32*) ptrlol;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDIND_I8)
 			++ip;
 			sp[-1].data.l = *(gint64*)sp[-1].data.p;
@@ -3806,7 +3812,7 @@ array_constructed:
 #define STINARG(datamem, argtype) \
 	do { \
 		int n = * (guint16 *)(ip + 1); \
-		* (argtype *)(frame->args + rtm->arg_offsets [n]) = frame->stack_args [n].data.datamem; \
+		* (gint64 *)(frame->args + rtm->arg_offsets [n]) = frame->stack_args [n].data.l; \
 		ip += 2; \
 	} while (0)
 	

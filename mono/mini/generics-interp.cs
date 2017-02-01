@@ -27,6 +27,7 @@ class Tests
 	}
 #endif
 
+#if FALSE
 	public static int test_1_no_nullable_unbox ()
 	{
 		return Unbox<int> (1);
@@ -178,7 +179,6 @@ class Tests
 #endif
 	}
 
-#if FALSE
 	public static int test_0_constrained_vtype () {
 		GenericClass<int> t = new GenericClass<int> ();
 
@@ -285,9 +285,9 @@ class Tests
 	public static int test_0_constrained_partial_sharing () {
 		if (!constrained_equals<int> (1, 1))
 			return 3;
+#if FALSE
 		if (constrained_equals<int> (1, 2))
 			return 4;
-#if FALSE
 		if (!constrained_equals<AnEnum> (AnEnum.A, AnEnum.A))
 			return 5;
 		if (constrained_equals<AnEnum> (AnEnum.A, AnEnum.B))
