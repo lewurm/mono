@@ -716,8 +716,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	mono_class_init (target_method->klass);
-	g_print ("CALL STUFF: initing %s (%p)\n", target_method->klass->name, target_method->klass);
+	if (target_method)
+		mono_class_init (target_method->klass);
+
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
 	if (!calli && (!virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
@@ -1022,6 +1023,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			td.ip += 2;
 			break;
 		case CEE_LDARGA_S: {
+			/* NOTE: n includes this */
 			int n = ((guint8 *)td.ip)[1];
 			if (n == 0 && signature->hasthis) {
 				g_error ("LDTHISA: NOPE");
@@ -1029,7 +1031,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			}
 			else {
 				ADD_CODE(&td, MINT_LDARGA);
-				ADD_CODE(&td, td.rtm->arg_offsets [n - signature->hasthis]);
+				ADD_CODE(&td, td.rtm->arg_offsets [n]);
 			}
 			PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 			td.ip += 2;
@@ -2839,7 +2841,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				}
 				else {
 					ADD_CODE(&td, MINT_LDARGA);
-					ADD_CODE(&td, td.rtm->arg_offsets [n - signature->hasthis]); /* FIX for large offsets */
+					ADD_CODE(&td, td.rtm->arg_offsets [n]); /* FIX for large offsets */
 				}
 				PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 				td.ip += 3;
