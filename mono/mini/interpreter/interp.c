@@ -3156,8 +3156,8 @@ array_constructed:
 				size = (size + 7) & ~7;
 				vt_sp -= size;
 			} else {
-				stackval_to_data (&c->byval_arg, sp [-1 - offset].data.p, (char *) sp [-1 - offset].data.p, FALSE);
-				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, sp [-1 - offset].data.p, &error);
+				stackval_to_data (&c->byval_arg, &sp [-1 - offset], (char *) &sp [-1 - offset], FALSE);
+				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, &sp [-1 - offset], &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
