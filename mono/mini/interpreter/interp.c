@@ -3028,7 +3028,6 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-
 			sp->data.p = mono_class_static_field_address (context->domain, field);
 			ip += 2;
 			++sp;
@@ -3038,24 +3037,7 @@ array_constructed:
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (context->domain, field);
 			stackval_from_data (field->type, sp, addr, FALSE);
-			ip += 3;
-			++sp;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDSFLD_I4) {
-			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (context->domain, field);
-			stackval_from_data (field->type, sp, addr, FALSE);
-			g_assert (field->type->type == MONO_TYPE_I4);
-			ip += 3;
-			++sp;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDSFLD_O) {
-			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (context->domain, field);
-			stackval_from_data (field->type, sp, addr, FALSE);
-			ip += 3;
+			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -3091,6 +3073,7 @@ array_constructed:
 			field = rtm->data_items[token];
 			ip += 4;
 						
+			g_assert ("implement stsfld_vt properly");
 			vt = mono_class_vtable (context->domain, field->parent);
 			if (!vt->initialized) {
 				frame->ip = ip - 2;
