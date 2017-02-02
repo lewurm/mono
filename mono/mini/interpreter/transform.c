@@ -523,12 +523,12 @@ store_inarg(TransformData *td, int n)
 		type = mono_method_signature (td->method)->params [n - !!hasthis];
 
 	int mt = mint_type (type);
+	if (hasthis && n == 0) {
+		ADD_CODE (td, MINT_STINARG_P);
+		ADD_CODE (td, n);
+		return;
+	}
 	if (mt == MINT_TYPE_VT) {
-		if (hasthis && n == 0) {
-			ADD_CODE (td, MINT_STINARG_P);
-			ADD_CODE (td, n);
-			return;
-		}
 		MonoClass *klass = mono_class_from_mono_type (type);
 		gint32 size;
 		if (mono_method_signature (td->method)->pinvoke)

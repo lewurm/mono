@@ -1949,16 +1949,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			sp -= child_frame.runtime_method->param_count + 1;
 			child_frame.stack_args = sp;
 			this_arg = sp->data.p;
-			g_print ("MINT_CALLVIRT, WTF: %p/%d\n", this_arg, this_arg);
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
-
-#if 0
-			if (child_frame.runtime_method->valuetype) {
-				sp->data.p = (char *) this_arg + sizeof (MonoObject);
-			}
-#endif
 
 			ves_exec_method_with_context (&child_frame, context);
 
@@ -3812,7 +3805,7 @@ array_constructed:
 #define STINARG(datamem, argtype) \
 	do { \
 		int n = * (guint16 *)(ip + 1); \
-		* (gint64 *)(frame->args + rtm->arg_offsets [n]) = frame->stack_args [n].data.l; \
+		* (argtype *)(frame->args + rtm->arg_offsets [n]) = frame->stack_args [n].data.datamem; \
 		ip += 2; \
 	} while (0)
 	
