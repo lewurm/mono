@@ -3043,15 +3043,11 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD_I4) {
-			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			MonoVTable *vt = rtm->data_items [*(guint16 *)(ip + 2)];
-			if (!vt->initialized) {
-				frame->ip = ip;
-				mono_runtime_class_init_full (vt, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
+			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (context->domain, field);
+			stackval_from_data (field->type, sp, addr, FALSE);
+			g_assert (field->type->type == MONO_TYPE_I4);
 			ip += 3;
-			sp->data.i = * (gint32 *)((char*)(vt->vtable) + field->offset);
 			++sp;
 			MINT_IN_BREAK;
 		}
