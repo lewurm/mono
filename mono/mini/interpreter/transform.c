@@ -2013,8 +2013,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
+				MonoClass *klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
 				PUSH_VT(&td, size);
 				WRITE32(&td, &size);
 				klass = field->type->data.klass;
@@ -2033,10 +2033,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
 			ADD_CODE(&td, get_data_item_index (&td, field));
 			if (mt == MINT_TYPE_VT) {
-				g_error ("data.klass");
-				int size = mono_class_value_size (field->type->data.klass, NULL);
-				POP_VT(&td, size);
-				WRITE32(&td, &size);
+				MonoClass *klass = mono_class_from_mono_type (field->type);
+				int size = mono_class_value_size (klass, NULL);
+				POP_VT (&td, size);
+				WRITE32 (&td, &size);
 			}
 			td.ip += 5;
 			--td.sp;
