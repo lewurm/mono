@@ -1879,7 +1879,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			if (child_frame.runtime_method->hasthis)
 				--sp;
 			child_frame.stack_args = sp;
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
+
+			/* this can be NULL for string:.ctor */
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -2774,6 +2776,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 						mono_thread_interruption_checkpoint ();
 					sp->data.p = o;
 				} else {
+					g_print ("NEWOBJ: retval=%p\n", &retval);
+					sp->data.p = NULL;
 					child_frame.retval = &retval;
 				}
 			}

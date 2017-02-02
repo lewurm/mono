@@ -687,9 +687,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	if (constrained_class) {
 		mono_class_setup_vtable (constrained_class);
-		g_print ("CONSTRAINED.CALLVIRT: %s (%p) ->", mono_signature_full_name (target_method->signature), target_method);
+		g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, &error);
-		g_print (" %s (%p)\n", mono_signature_full_name (target_method->signature), target_method);
+		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		mono_class_setup_vtable (target_method->klass);
 

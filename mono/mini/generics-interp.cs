@@ -178,13 +178,11 @@ class Tests
 #endif
 	}
 
-#if FALSE
 	public static int test_0_constrained_vtype () {
 		GenericClass<int> t = new GenericClass<int> ();
 
 		return t.toString (1234) == "1234" ? 0 : 1;
 	}
-#endif
 
 	public static int test_0_constrained_reftype () {
 		GenericClass<String> t = new GenericClass<String> ();
@@ -295,11 +293,9 @@ class Tests
 		int i = constrained_gethashcode<int> (5);
 		if (i != 5)
 			return 7;
-#if FALSE
 		i = constrained_gethashcode<AnEnum> (AnEnum.B);
 		if (i != 1)
 			return 8;
-#endif
 		return 0;
 	}
 }
