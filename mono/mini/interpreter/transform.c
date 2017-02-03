@@ -686,6 +686,17 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	if (constrained_class) {
+		if (constrained_class->enumtype && !strcmp (target_method->name, "GetHashCode")) {
+			/* Use the corresponding method from the base type to avoid boxing */
+			MonoType *base_type = mono_class_enum_basetype (constrained_class);
+			g_assert (base_type);
+			constrained_class = mono_class_from_mono_type (base_type);
+			target_method = mono_class_get_method_from_name (constrained_class, target_method->name, 0);
+			g_assert (target_method);
+		}
+	}
+
+	if (constrained_class) {
 		mono_class_setup_vtable (constrained_class);
 		// g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, &error);
