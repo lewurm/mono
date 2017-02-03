@@ -1955,6 +1955,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
+			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
+				/* unbox */
+				gpointer *unboxed = mono_object_unbox (this_arg);
+				stackval_from_data (&this_arg->vtable->klass->byval_arg, sp, (char *) unboxed, FALSE);
+			}
+
 			ves_exec_method_with_context (&child_frame, context);
 
 			context->current_frame = frame;
@@ -1997,7 +2003,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
 			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
-				sp->data.p = (char *) this_arg + sizeof (MonoObject);
+				gpointer *unboxed = mono_object_unbox (this_arg);
+				stackval_from_data (&this_arg->vtable->klass->byval_arg, sp, (char *) unboxed, FALSE);
 			}
 
 			ves_exec_method_with_context (&child_frame, context);
