@@ -759,7 +759,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->ilen > 0)
 		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
 
-	if (margs->ilen > 4)
+	if (margs->ilen > 6)
 		g_error ("build_args_from_sig: TODO, more than four iregs: %d\n", margs->ilen);
 
 	if (margs->flen > 0)

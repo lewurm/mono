@@ -982,11 +982,12 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
-	const int gregs_num = 4;
+	const int gregs_num = 6;
 	guint8 *start = NULL, *code, *exits [gregs_num], *leave_tramp;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4};
+	/* TODO: fix for windows?? */
+	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4, AMD64_R8, AMD64_R9};
 	int i;
 
 	start = code = (guint8 *) mono_global_codeman_reserve (256);
@@ -1013,7 +1014,13 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		exits [i] = code;
 		x86_branch8 (code, X86_CC_Z, 0, FALSE);
 
-		amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+		if (i < 6) {
+			amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+		} else {
+			amd64_push_reg (code, AMD64_RAX);
+			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, i * sizeof (gpointer), 8);
+			amd64_pop_reg (code, AMD64_RAX);
+		}
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
 
