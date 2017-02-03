@@ -687,14 +687,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	if (constrained_class) {
 		mono_class_setup_vtable (constrained_class);
-		g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
+		// g_print ("CONSTRAINED.CALLVIRT: %s::%s.  %s (%p) ->\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 		target_method = mono_get_method_constrained_with_method (image, target_method, constrained_class, generic_context, &error);
-		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
+		// g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		mono_class_setup_vtable (target_method->klass);
 
 		if (constrained_class->valuetype && (target_method->klass == mono_defaults.object_class || target_method->klass == mono_defaults.enum_class->parent || target_method->klass == mono_defaults.enum_class)) {
-			g_print ("CONSTRAINED_GUY: base class case, needs boxing\n");
+			// g_print ("CONSTRAINED_GUY: base class case, needs boxing\n");
 			ADD_CODE (td, MINT_BOX);
 			ADD_CODE (td, get_data_item_index (td, constrained_class));
 			ADD_CODE (td, csignature->param_count);
@@ -706,12 +706,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			g_error ("we need to box that puppy");
 #endif
 		} else if (!constrained_class->valuetype) {
-			g_print ("CONSTRAINED_GUY: just deref that puppy\n");
+			// g_print ("CONSTRAINED_GUY: just deref that puppy\n");
 			/* managed pointer on the stack, we need to deref that puppy */
 			ADD_CODE (td, MINT_LDIND_I);
 			ADD_CODE (td, csignature->param_count);
 		} else {
-			g_print ("CONSTRAINED_GUY: not sure, do nothing case?\n");
+			// g_print ("CONSTRAINED_GUY: not sure, do nothing case?\n");
 			g_assert (target_method->klass->valuetype);
 			virtual = FALSE;
 #if 0
@@ -2921,7 +2921,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 				token = read32 (td.ip + 1);
 				constrained_class = mono_class_get_full (image, token, generic_context);
 				mono_class_init (constrained_class);
-				g_print ("CONSTRAINED: %s -> %s\n", constrained_class->name, mono_type_get_name (&constrained_class->byval_arg));
 				td.ip += 5;
 				break;
 			case CEE_INITBLK:

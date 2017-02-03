@@ -101,7 +101,7 @@ static MonoNativeTlsKey thread_context_id;
 
 static char* dump_args (MonoInvocation *inv);
 
-#define DEBUG_INTERP 1
+#define DEBUG_INTERP 0
 #define COUNT_OPS 0
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;
@@ -2347,10 +2347,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_I4) /* Fall through */
 		MINT_IN_CASE(MINT_LDIND_U4) {
-			gpointer *ptrlol = sp [-1].data.p;
 			++ip;
-			g_print ("MINT_LDIND_U4: %p, %p\n", ptrlol, (gint32 *) ptrlol);
-			sp[-1].data.i = * (gint32*) ptrlol;
+			sp[-1].data.i = * (gint32*) sp [-1].data.p;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDIND_I8)
@@ -2776,7 +2774,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 						mono_thread_interruption_checkpoint ();
 					sp->data.p = o;
 				} else {
-					g_print ("NEWOBJ: retval=%p\n", &retval);
 					sp->data.p = NULL;
 					child_frame.retval = &retval;
 				}
@@ -3129,7 +3126,6 @@ array_constructed:
 		MINT_IN_CASE(MINT_BOX) {
 			c = rtm->data_items [* (guint16 *)(ip + 1)];
 			guint16 offset = * (guint16 *)(ip + 2);
-			g_print ("MINT_BOX: %d\n", offset);
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
