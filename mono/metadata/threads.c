@@ -270,6 +270,10 @@ mono_threads_begin_abort_protected_block (void)
 		new_state |= new_val << ABORT_PROT_BLOCK_SHIFT;
 
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+
+	/* We defer also the global thread interruption count */
+	if (old_state & INTERRUPT_REQUESTED_BIT)
+		InterlockedDecrement (&thread_interruption_requested);
 }
 
 gboolean
@@ -277,11 +281,12 @@ mono_threads_end_abort_protected_block (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gsize old_state, new_state;
+	int new_val;
 	do {
 		old_state = thread->thread_state;
 		verify_thread_state (old_state);
 
-		int new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) - 1;
+		new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) - 1;
 		new_state = 0;
 
 		if ((old_state & INTERRUPT_REQUEST_DEFERRED_BIT) && new_val == 0) {
@@ -295,6 +300,10 @@ mono_threads_end_abort_protected_block (void)
 		new_state |= new_val << ABORT_PROT_BLOCK_SHIFT;
 
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+
+	if ((old_state & INTERRUPT_REQUEST_DEFERRED_BIT) && new_val == 0)
+		InterlockedIncrement (&thread_interruption_requested);
+
 	return (new_state & INTERRUPT_REQUESTED_BIT) == INTERRUPT_REQUESTED_BIT;
 }
 
