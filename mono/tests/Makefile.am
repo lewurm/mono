@@ -958,14 +958,7 @@ INTERP_DISABLED_TESTS = \
 	cominterop.exe \
 	context-static.exe \
 	cross-domain.exe \
-	delegate-async-exit.exe \
-	delegate-delegate-exit.exe \
-	delegate-exit.exe \
 	delegate-with-null-target.exe \
-	delegate1.exe \
-	delegate3.exe \
-	delegate5.exe \
-	delegate8.exe \
 	delegate9.exe \
 	dynamic-method-access.2.exe \
 	dynamic-method-finalize.2.exe \
