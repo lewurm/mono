@@ -1903,8 +1903,15 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	MonoMethod *wrapper;
 	RuntimeMethod *rmethod;
 
-	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE)
-		return NULL;
+	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+		/* HACK: method_ptr of delegate should point to a runtime method*/
+		return mono_interp_get_runtime_method (mono_domain_get (), method, error);
+	}
+
+	if (method->wrapper_type)
+		g_assert (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE);
+
+	g_assert (sig->param_count < MAX_INTERP_ENTRY_ARGS);
 
 	rmethod = mono_interp_get_runtime_method (mono_domain_get (), method, error);
 	if (rmethod->jit_entry)

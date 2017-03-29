@@ -956,7 +956,6 @@ INTERP_DISABLED_TESTS = \
 	call_missing_method.exe \
 	calliGenericTest.exe \
 	cominterop.exe \
-	constant-division.exe \
 	context-static.exe \
 	cross-domain.exe \
 	delegate-async-exit.exe \
