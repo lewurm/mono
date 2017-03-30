@@ -811,6 +811,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			int offset;
 			if (mono_interp_traceopt)
 				g_print ("Optimize tail call of %s.%s\n", target_method->klass->name, target_method->name);
+
+			if (csignature->hasthis)
+				store_arg (td, 0);
 			for (i = csignature->param_count - 1; i >= 0; --i)
 				store_arg (td, i + csignature->hasthis);
 
