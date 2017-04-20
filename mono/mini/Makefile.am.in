@@ -46,6 +46,7 @@ CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
 RUNTIME_EXECUTABLE = $(if $(BOEHM),$(top_builddir)/mono/mini/mono-boehm,$(top_builddir)/runtime/mono-wrapper)
 
 MINI_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME_EXECUTABLE)
+INTERP_RUNTIME = $(MINI_RUNTIME) --interpreter
 RUNTIME_AOTCHECK = MONO_PATH="$(CLASS)$(PLATFORM_PATH_SEPARATOR)." $(RUNTIME_EXECUTABLE)
 
 CSC = $(mcs_topdir)/class/lib/build/mcs.exe
@@ -391,6 +392,18 @@ llvm_sources = \
 endif
 endif
 
+if ENABLE_INTERPRETER
+interp_sources =	\
+	interp/hacks.h		\
+	interp/interp.h	\
+	interp/interp-internals.h	\
+	interp/interp.c	\
+	interp/mintops.h	\
+	interp/mintops.def	\
+	interp/mintops.c	\
+	interp/transform.c
+endif
+
 if ENABLE_LLVM
 llvm_runtime_sources = \
 	llvm-runtime.cpp
@@ -591,7 +604,7 @@ os_sources = $(darwin_sources) $(posix_sources)
 monobin_platform_ldflags=-framework CoreFoundation -framework Foundation
 endif
 
-libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
+libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(interp_sources) $(arch_sources) $(os_sources)
 libmini_la_CFLAGS = $(mono_CFLAGS)
 
 libmonoboehm_2_0_la_SOURCES =
@@ -712,6 +725,8 @@ rcheck-nunit: mono $(regtests)
 rcheck: mono $(regtests)
 	$(MINI_RUNTIME) --regression $(regtests)
 
+richeck: mono $(regtests)
+	$(INTERP_RUNTIME) --regression $(regtests)
 if ARM
 check-seq-points:
 else

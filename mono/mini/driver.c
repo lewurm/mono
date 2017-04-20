@@ -57,6 +57,7 @@
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
+#include "interp/interp.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -1893,6 +1894,19 @@ mono_main (int argc, char* argv[])
 #endif
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
+		} else if ((strcmp (argv [i], "--interpreter") == 0) || !strcmp (argv [i], "--interp")) {
+#ifdef ENABLE_INTERPRETER
+			mono_use_interpreter = TRUE;
+#else
+			fprintf (stderr, "Mono Warning: --interpreter not enabled in this runtime.\n");
+#endif
+		} else if (strncmp (argv [i], "--interp=", 9) == 0) {
+#ifdef ENABLE_INTERPRETER
+			mono_use_interpreter = TRUE;
+			mono_interp_parse_options (argv [i] + 9);
+#else
+			fprintf (stderr, "Mono Warning: --interp= not enabled in this runtime.\n");
+#endif
 #ifdef __native_client__
 		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
 			nacl_mono_path = g_strdup(argv[++i]);
@@ -2013,6 +2027,9 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose, opt);
+#ifdef ENABLE_INTERPRETER
+	mono_interp_init ();
+#endif
 	domain = mini_init (argv [i], forced_version);
 
 	mono_gc_set_stack_end (&domain);
@@ -2036,6 +2053,17 @@ mono_main (int argc, char* argv[])
 	case DO_SINGLE_METHOD_REGRESSION:
 		mono_do_single_method_regression = TRUE;
 	case DO_REGRESSION:
+#ifdef ENABLE_INTERPRETER
+		if (mono_use_interpreter) {
+			if (mono_interp_regression_list (2, argc -i, argv + i)) {
+				g_print ("Regression ERRORS!\n");
+				// mini_cleanup (domain);
+				return 1;
+			}
+			// mini_cleanup (domain);
+			return 0;
+		}
+#endif
 		if (mini_regression_list (mini_verbose, argc -i, argv + i)) {
 			g_print ("Regression ERRORS!\n");
 			mini_cleanup (domain);

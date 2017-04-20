@@ -20,6 +20,10 @@
 #include "mini.h"
 #include "lldb.h"
 
+#ifdef ENABLE_INTERPRETER
+#include "interp/interp.h"
+#endif
+
 /*
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
@@ -115,7 +119,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	if (mono_aot_only)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
-		res = mono_arch_get_static_rgctx_trampoline (m, (MonoMethodRuntimeGenericContext *)ctx, addr);
+		res = mono_arch_get_static_rgctx_trampoline (ctx, addr);
 
 	mono_domain_lock (domain);
 	/* Duplicates inserted while we didn't hold the lock are OK */
@@ -1459,6 +1463,15 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 
 	mono_error_init (error);
 
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter) {
+		gpointer ret = mono_interp_create_trampoline (domain, method, error);
+		if (!mono_error_ok (error))
+			return NULL;
+		return ret;
+	}
+#endif
+
 	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
 	/*
 	 * We cannot recover the correct type of a shared generic
@@ -1636,7 +1649,7 @@ no_delegate_trampoline (void)
 gpointer
 mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 {
-	if (mono_llvm_only)
+	if (mono_llvm_only || mono_use_interpreter)
 		return no_delegate_trampoline;
 
 	return mono_create_delegate_trampoline_info (domain, klass, NULL)->invoke_impl;
