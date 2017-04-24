@@ -4898,24 +4898,6 @@ ves_exec_method (MonoInvocation *frame)
 		context->current_frame = frame->parent;
 }
 
-static int 
-ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
-{
-	MonoImage *image = mono_assembly_get_image (assembly);
-	MonoMethod *method;
-	MonoError error;
-	int rval;
-
-	method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, NULL, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	if (!method)
-		g_error ("No entry point method found in %s", mono_image_get_filename (image));
-
-	rval = mono_runtime_run_main (method, argc, argv, NULL);
-	return rval;
-}
-
 static void
 usage (void)
 {
