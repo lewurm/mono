@@ -2597,20 +2597,6 @@ END:
 			  ret
     }
 
-	.method public static default int32 test_0_wrap_non_exception_throws () cil managed
-	{
-	  .try {
-	  	    newobj instance void class [mscorlib]System.Object::'.ctor'()
-			throw
-		  leave IL_0
-	  } catch class [mscorlib]System.Runtime.CompilerServices.RuntimeWrappedException {
-		  leave IL_0
-		}
-		IL_0:
-		ldc.i4.0
-		ret
-    }
-
 	.method public static default int32 test_0_typespec_modopt () cil managed {
 		ldtoken class Tests modopt (Tests)
 		pop

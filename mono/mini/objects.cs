@@ -1643,10 +1643,13 @@ ncells ) {
         public byte f7;
     }
 
+#if FALSE
+	// WTF?
 	public static int test_0_14217 () {
 		t_14217_inner (new BugStruct ());
 		return 0;
 	}
+#endif
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static void t_14217_inner (BugStruct bug) {
