@@ -6,6 +6,20 @@
 #define __MONO_MINI_INTERPRETER_H__
 #include <mono/mini/mini.h>
 
+struct _InterpMethodArguments {
+	size_t ilen;
+	gpointer *iargs;
+	size_t flen;
+	double *fargs;
+	gpointer *retval;
+	size_t is_float_ret;
+};
+
+typedef struct _InterpMethodArguments InterpMethodArguments;
+
+#define INTERP_ICALL_TRAMP_IARGS 12
+#define INTERP_ICALL_TRAMP_FARGS 3
+
 typedef struct _MonoInterpStackIter MonoInterpStackIter;
 
 /* Needed for stack allocation */
