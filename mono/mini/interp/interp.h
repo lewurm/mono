@@ -18,7 +18,7 @@ struct _InterpMethodArguments {
 typedef struct _InterpMethodArguments InterpMethodArguments;
 
 #define INTERP_ICALL_TRAMP_IARGS 12
-#define INTERP_ICALL_TRAMP_FARGS 3
+#define INTERP_ICALL_TRAMP_FARGS 4
 
 typedef struct _MonoInterpStackIter MonoInterpStackIter;
 
