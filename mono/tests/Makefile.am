@@ -692,6 +692,10 @@ if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
 endif
 
+if ARM64
+INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe
+endif
+
 if MIPS
 # monitor.exe is racy
 PLATFORM_DISABLED_TESTS=filter-stack.exe monitor.exe
@@ -1009,6 +1013,7 @@ INTERP_DISABLED_TESTS = \
 	$(CI_PR_DISABLED_TESTS) \
 	$(CI_DISABLED_TESTS) \
 	$(KNOWN_FAILING_TESTS) \
+	$(INTERP_DISABLED_TESTS_PLATFORM) \
 	abort-cctor.exe \
 	appdomain-async-invoke.exe \
 	appdomain-exit.exe \
