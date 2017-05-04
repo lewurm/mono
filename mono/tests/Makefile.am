@@ -690,6 +690,7 @@ endif
 
 if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
+INTERP_DISABLED_TESTS_PLATFORM=main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe
 endif
 
 if ARM64
