@@ -690,7 +690,8 @@ endif
 
 if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
-INTERP_DISABLED_TESTS_PLATFORM=main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe
+INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe \
+	delegate-exit.exe delegate-exit.exe delegate-delegate-exit.exe delegate-async-exit.exe delegate3.exe delegate1.exe
 endif
 
 if ARM64
