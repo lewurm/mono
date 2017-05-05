@@ -565,7 +565,7 @@ ves_array_create (MonoInvocation *frame, MonoDomain *domain, MonoClass *klass, M
 }
 
 static gint32
-ves_array_calculate_index (MonoArray *ao, stackval *sp, MonoInvocation *frame)
+ves_array_calculate_index (MonoArray *ao, stackval *sp, MonoInvocation *frame, gboolean safe)
 {
 	g_assert (!frame->ex);
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
@@ -576,7 +576,7 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, MonoInvocation *frame)
 			guint32 idx = sp [i].data.i;
 			guint32 lower = ao->bounds [i].lower_bound;
 			guint32 len = ao->bounds [i].length;
-			if (idx < lower || (idx - lower) >= len) {
+			if (safe && (idx < lower || (idx - lower) >= len)) {
 				frame->ex = mono_get_exception_index_out_of_range ();
 				FILL_IN_TRACE (frame->ex, frame);
 				return -1;
@@ -585,7 +585,7 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, MonoInvocation *frame)
 		}
 	} else {
 		pos = sp [0].data.i;
-		if (pos >= ao->max_length) {
+		if (safe && pos >= ao->max_length) {
 			frame->ex = mono_get_exception_index_out_of_range ();
 			FILL_IN_TRACE (frame->ex, frame);
 			return -1;
@@ -605,7 +605,7 @@ ves_array_set (MonoInvocation *frame)
 
 	g_assert (ac->rank >= 1);
 
-	gint32 pos = ves_array_calculate_index (ao, sp, frame);
+	gint32 pos = ves_array_calculate_index (ao, sp, frame, TRUE);
 	if (frame->ex)
 		return;
 
@@ -628,7 +628,7 @@ ves_array_set (MonoInvocation *frame)
 }
 
 static void
-ves_array_get (MonoInvocation *frame)
+ves_array_get (MonoInvocation *frame, gboolean safe)
 {
 	stackval *sp = frame->stack_args + 1;
 
@@ -638,7 +638,7 @@ ves_array_get (MonoInvocation *frame)
 
 	g_assert (ac->rank >= 1);
 
-	gint32 pos = ves_array_calculate_index (ao, sp, frame);
+	gint32 pos = ves_array_calculate_index (ao, sp, frame, safe);
 	if (frame->ex)
 		return;
 
@@ -656,7 +656,7 @@ ves_array_element_address (MonoInvocation *frame, MonoClass *required_type, Mono
 
 	g_assert (ac->rank >= 1);
 
-	gint32 pos = ves_array_calculate_index (ao, sp, frame);
+	gint32 pos = ves_array_calculate_index (ao, sp, frame, TRUE);
 	if (frame->ex)
 		return NULL;
 
@@ -983,6 +983,10 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 			stackval_from_data (mt, frame->retval, (char *) frame->stack_args, FALSE);
 			return;
 		}
+		if (!strcmp (method->name, "UnsafeLoad")) {
+			ves_array_get (frame, FALSE);
+			return;
+		}
 	}
 
 	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.array_class, &error);
@@ -993,7 +997,7 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 			return;
 		}
 		if (*name == 'G' && (strcmp (name, "Get") == 0)) {
-			ves_array_get (frame);
+			ves_array_get (frame, TRUE);
 			return;
 		}
 	}
