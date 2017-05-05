@@ -354,6 +354,7 @@ typedef struct MonoCompileArch {
 
 #define MONO_ARCH_HAVE_TLS_GET (mono_arm_have_tls_get ())
 #define MONO_ARCH_HAVE_TLS_GET_REG 1
+#define MONO_ARCH_HAVE_INIT_LMF_EXT 1
 
 #ifdef TARGET_WATCHOS
 #define MONO_ARCH_DISABLE_HW_TRAPS 1
