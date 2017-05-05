@@ -813,8 +813,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->ip += 5;
 			return;
 		} else {
+			gboolean can_inline = !(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING);
 			/* mheader might not exist if this is a delegate invoc, etc */
-			if (mheader && *mheader->code == CEE_RET && called_inited) {
+
+			if (can_inline && mheader && *mheader->code == CEE_RET && called_inited) {
 				if (mono_interp_traceopt)
 					g_print ("Inline (empty) call of %s.%s\n", target_method->klass->name, target_method->name);
 				for (i = 0; i < csignature->param_count; i++)
