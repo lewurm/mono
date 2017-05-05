@@ -4456,8 +4456,12 @@ array_constructed:
 				g_warning ("retobj: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_MONO_TLS) {
+			/* TODO: is really the offset? */
 			MonoTlsKey key = *(gint32 *)(ip + 1);
+			g_assert (0);
+#if 0
 			sp->data.p = ((gpointer (*)()) mono_tls_get_tls_getter (key, FALSE)) ();
+#endif
 			sp++;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -4466,10 +4470,9 @@ array_constructed:
 			++ip;
 
 			context->original_domain = NULL;
-			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
-			gpointer tls_jit = ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
+			MonoDomain *tls_domain = mono_domain_get ();
 
-			if (tls_domain != context->domain || !tls_jit)
+			if (tls_domain != context->domain)
 				context->original_domain = mono_jit_thread_attach (context->domain);
 			MINT_IN_BREAK;
 		}
