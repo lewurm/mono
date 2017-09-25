@@ -243,7 +243,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	guint8 *buf, *code = NULL, *check_exception_label;
 	int i, offset;
 	gconstpointer tramp_handler;
-	int size = MONO_PPC_32_64_CASE (600, 800);
+	int size = MONO_PPC_32_64_CASE (700, 900);
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
 
@@ -372,7 +372,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r3);
 		ppc_ldptr (code, ppc_r3, 0, ppc_r3);
 #endif
-		ppc_mr (code, ppc_r11, pcc_r3);
+		ppc_mr (code, ppc_r11, ppc_r3);
 	}
 
 	/*
@@ -395,7 +395,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		g_error ("implement me");
 	} else {
 		gconstpointer checkpoint = mono_thread_force_interruption_checkpoint_noraise;
-		ppc_load_func (code, PPC_CALL_REG, gconstpointer);
+		ppc_load_func (code, PPC_CALL_REG, checkpoint);
 		ppc_mtlr (code, PPC_CALL_REG);
 	}
 	ppc_blrl (code);
@@ -407,6 +407,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* no exception */
 	ppc_mtctr (code, ppc_r11);
+	ppc_addi (code, ppc_r12, ppc_r1, STACK - sizeof (MonoLMF));
 
 	/* restore iregs */
 	ppc_ldr_multiple (code, ppc_r13, G_STRUCT_OFFSET(MonoLMF, iregs), ppc_r12);
@@ -461,12 +462,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (aot) {
 		g_error ("implement me");
 	} else {
-		tramp_handler = mono_get_throw_exception_addr ();
-		ppc_load_func (code, PPC_CALL_REG, tramp_handler);
+		gconstpointer throw_exc = mono_get_throw_exception_addr ();
+		ppc_load_func (code, PPC_CALL_REG, throw_exc);
+		ppc_ldr (code, PPC_CALL_REG, 0, PPC_CALL_REG);
 		ppc_mtctr (code, PPC_CALL_REG);
 	}
-	/* TODO: maybe needs indirection? */
 	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
+
+	/* never reach */
+	ppc_break (code);
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (buf, code - buf);
