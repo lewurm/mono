@@ -240,7 +240,7 @@ guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
 	char *tramp_name;
-	guint8 *buf, *code = NULL;
+	guint8 *buf, *code = NULL, *check_exception_label;
 	int i, offset;
 	gconstpointer tramp_handler;
 	int size = MONO_PPC_32_64_CASE (600, 800);
@@ -356,13 +356,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
 		ppc_mtlr (code, ppc_r12);
-		ppc_blrl (code);
 	} else {
 		tramp_handler = mono_get_trampoline_func (tramp_type);
 		ppc_load_func (code, PPC_CALL_REG, tramp_handler);
 		ppc_mtlr (code, PPC_CALL_REG);
-		ppc_blrl (code);
 	}
+	ppc_blrl (code);
 		
 	/* OK, code address is now on r3. Move it to the counter reg
 	 * so it will be ready for the final jump: this is safe since we
@@ -373,7 +372,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r3);
 		ppc_ldptr (code, ppc_r3, 0, ppc_r3);
 #endif
-		ppc_mtctr (code, ppc_r3);
+		ppc_mr (code, ppc_r11, pcc_r3);
 	}
 
 	/*
@@ -389,6 +388,26 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	ppc_ldptr (code, ppc_r6, G_STRUCT_OFFSET(MonoLMF, lmf_addr), ppc_r12);
 	/* *(lmf_addr) = previous_lmf */
 	ppc_stptr (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r6);
+
+
+	/* check for thread interruption */
+	if (aot) {
+		g_error ("implement me");
+	} else {
+		gconstpointer checkpoint = mono_thread_force_interruption_checkpoint_noraise;
+		ppc_load_func (code, PPC_CALL_REG, gconstpointer);
+		ppc_mtlr (code, PPC_CALL_REG);
+	}
+	ppc_blrl (code);
+
+	/* check whenever there is an exception to be thrown */
+	ppc_compare_reg_imm (code, 0, ppc_r3, 0);
+	check_exception_label = code;
+	ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
+
+	/* no exception */
+	ppc_mtctr (code, ppc_r11);
+
 	/* restore iregs */
 	ppc_ldr_multiple (code, ppc_r13, G_STRUCT_OFFSET(MonoLMF, iregs), ppc_r12);
 	/* restore fregs */
@@ -421,6 +440,33 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_blr (code);
 	else
 		ppc_bcctr (code, 20, 0);
+
+	/* Exception case */
+	ppc_patch (check_exception_label, code);
+
+	/*
+	 * We have an exception we want to throw in the caller's frame, so pop
+	 * the trampoline frame and throw from the caller.
+	 */
+	/* Restore stack pointer and LR */
+	ppc_ldr  (code, ppc_r1,  0, ppc_r1);
+	ppc_ldr  (code, ppc_r12, PPC_RET_ADDR_OFFSET, ppc_r1);
+	ppc_mtlr (code, ppc_r12);
+	/* We are in the parent frame, the exception is in x0 */
+	/*
+	 * EH is initialized after trampolines, so get the address of the variable
+	 * which contains throw_exception, and load it from there.
+	 */
+
+	if (aot) {
+		g_error ("implement me");
+	} else {
+		tramp_handler = mono_get_throw_exception_addr ();
+		ppc_load_func (code, PPC_CALL_REG, tramp_handler);
+		ppc_mtctr (code, PPC_CALL_REG);
+	}
+	/* TODO: maybe needs indirection? */
+	ppc_bcctr (code, PPC_BR_ALWAYS, 0);
 
 	/* Flush instruction cache, since we've generated code */
 	mono_arch_flush_icache (buf, code - buf);
