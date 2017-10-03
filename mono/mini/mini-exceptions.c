@@ -2145,9 +2145,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 #if defined(TARGET_AMD64)
 						ctx->gregs [AMD64_RIP] ++;
 #elif defined(TARGET_ARM)
-						ctx->pc += 4;
-						if (mono_arm_thumb_supported ())
-							ctx->pc |= 1;
+						ctx->pc += (ctx->pc & 1) ? 2 : 4;
 #elif defined(TARGET_ARM64)
 						ctx->pc += 4;
 #else
