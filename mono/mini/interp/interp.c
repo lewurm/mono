@@ -747,7 +747,6 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 void
 interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
 {
-	MonoError error;
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 
 	if (!context)
@@ -769,13 +768,10 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 			fi.il_offset = -1;
 			fi.type = FRAME_TYPE_MANAGED_TO_NATIVE;
 		} else {
-			MonoMethodHeader *hd = mono_method_get_header_checked (fi.method, &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			fi.type = FRAME_TYPE_MANAGED;
-			fi.il_offset = frame->ip - (const unsigned short *) hd->code;
+			fi.il_offset = frame->ip - frame->imethod->code;
 			if (!fi.method->wrapper_type)
 				fi.managed = TRUE;
-			mono_metadata_free_mh (hd);
 		}
 
 		if (func (&fi, ctx, user_data))
