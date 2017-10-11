@@ -1646,8 +1646,11 @@ resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_a
 			need_unbox_tramp = TRUE;
 	}
 
-	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 		m = mono_marshal_get_synchronized_wrapper (m);
+	} else if (!strcmp (m->name, "Allocate") && !strcmp (m->klass->name, "ObjectPool`1")) {
+		g_error ("woot3");
+	}
 
 	// FIXME: This can throw exceptions
 	addr = compiled_method = mono_compile_method_checked (m, error);
@@ -1770,8 +1773,11 @@ mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMetho
 	if (vt->klass->valuetype)
 		need_unbox_tramp = TRUE;
 
-	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 		m = mono_marshal_get_synchronized_wrapper (m);
+	} else if (!strcmp (m->name, "Allocate") && !strcmp (m->klass->name, "ObjectPool`1")) {
+		g_error ("woot2");
+	}
 
 	addr = compiled_method = mono_compile_method_checked (m, &error);
 	if (!is_ok (&error))

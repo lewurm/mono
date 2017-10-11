@@ -706,6 +706,15 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 		m = mono_marshal_get_synchronized_wrapper (m);
 		need_rgctx_tramp = FALSE;
+	} else if (!strcmp (m->name, "Allocate") && !strcmp (m->klass->name, "ObjectPool`1")) {
+		ji = mini_jit_info_table_find (mono_domain_get (), (char*)code, NULL);
+
+		MonoMethod *caller = ji->d.method;
+		if (strcmp (m->name, caller->name) || strcmp (m->klass->name, caller->klass->name)) {
+			m = mono_marshal_get_synchronized_wrapper (m);
+			need_rgctx_tramp = FALSE;
+			// g_error ("mkay");
+		}
 	}
 
 	/* Calls made through delegates on platforms without delegate trampolines */
