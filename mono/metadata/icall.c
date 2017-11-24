@@ -8568,6 +8568,16 @@ type_from_typename (char *type_name)
 
 	if (!strcmp (type_name, "int"))
 		klass = mono_defaults.int_class;
+	else if (!strcmp (type_name, "ptr&")) {
+		printf ("ZOMGFGASDFJASDKF\n");
+#if 1
+		return mono_class_get_byref_type (mono_defaults.int_class);
+#else
+		MonoType *t = mono_metadata_type_dup (NULL, &mono_defaults.int_class->byref
+		t->byref = 1;
+		return t;
+#endif
+	}
 	else if (!strcmp (type_name, "ptr"))
 		klass = mono_defaults.int_class;
 	else if (!strcmp (type_name, "void"))

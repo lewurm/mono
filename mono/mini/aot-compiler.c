@@ -11389,6 +11389,35 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	acfg->nshared_got_entries = acfg->got_offset;
 }
 
+static const char* interp_in_static_sigs[] = {
+	"object object ptr ptr ptr", /* object object:interp_in_static (object,intptr,intptr,intptr) */
+	"int32 ptr int32 ptr", /* int object:interp_in_static (intptr,int,intptr) */
+	"void object ptr ptr ptr", /* void object:interp_in_static (object,intptr,intptr,intptr) */
+	"void ptr ptr&", /*void object:interp_in_static (intptr,intptr&) */
+	"void ptr", /* void object:interp_in_static (intptr) */
+	"void uint32 ptr&",
+	"bool ptr ptr&",
+	"bool ptr int32 ptr&",
+	"ptr int32 ptr&",
+	"ptr ptr int32 ptr&",
+	"ptr ptr ptr&",
+	"ptr ptr ptr ptr&",
+	"ptr ptr ptr ptr& ptr&",
+	"void ptr ptr int32 ptr ptr&",
+	"void ptr ptr int32 ptr ptr& ptr ptr&",
+	"int32 ptr ptr&",
+	"void ptr ptr ptr&",
+	"ptr ptr int32 ptr ptr&",
+	"ptr uint32 ptr&",
+	"ptr ptr uint32 ptr&",
+	"ptr ptr ptr int32 ptr&",
+	"int32 ptr int32 ptr&",
+	"ptr ptr int32 ptr ptr ptr&",
+	"int32 int32 ptr ptr&",
+	"ptr int32 ptr&",
+	"ptr ptr int32 ptr&",
+};
+
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 {
@@ -11632,20 +11661,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		MonoMethod *wrapper;
 		MonoMethodSignature *sig;
 
-		/* object object:interp_in_static (object,intptr,intptr,intptr) */
-		sig = mono_create_icall_signature ("object object ptr ptr ptr");
-		wrapper = mini_get_interp_in_wrapper (sig);
-		add_method (acfg, wrapper);
-
-		/* int object:interp_in_static (intptr,int,intptr) */
-		sig = mono_create_icall_signature ("int32 ptr int32 ptr");
-		wrapper = mini_get_interp_in_wrapper (sig);
-		add_method (acfg, wrapper);
-
-		/* void object:interp_in_static (object,intptr,intptr,intptr) */
-		sig = mono_create_icall_signature ("void object ptr ptr ptr");
-		wrapper = mini_get_interp_in_wrapper (sig);
-		add_method (acfg, wrapper);
+		for (int i = 0; i < sizeof (interp_in_static_sigs) / sizeof (const char *); i++) {
+			sig = mono_create_icall_signature (interp_in_static_sigs [i]);
+			wrapper = mini_get_interp_in_wrapper (sig);
+			printf ("interp_in_static_sigs [%d]: %s -> \"%s\"\n", i, interp_in_static_sigs [i], mono_method_full_name (wrapper, TRUE));
+			add_method (acfg, wrapper);
+		}
 	}
 
 	TV_GETTIME (atv);
