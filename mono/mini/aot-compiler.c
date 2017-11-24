@@ -11390,32 +11390,31 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 }
 
 static const char* interp_in_static_sigs[] = {
-	"object object ptr ptr ptr", /* object object:interp_in_static (object,intptr,intptr,intptr) */
-	"int32 ptr int32 ptr", /* int object:interp_in_static (intptr,int,intptr) */
-	"void object ptr ptr ptr", /* void object:interp_in_static (object,intptr,intptr,intptr) */
-	"void ptr ptr&", /*void object:interp_in_static (intptr,intptr&) */
-	"void ptr", /* void object:interp_in_static (intptr) */
-	"void uint32 ptr&",
-	"bool ptr ptr&",
 	"bool ptr int32 ptr&",
-	"ptr int32 ptr&",
-	"ptr ptr int32 ptr&",
-	"ptr ptr ptr&",
-	"ptr ptr ptr ptr&",
-	"ptr ptr ptr ptr& ptr&",
-	"void ptr ptr int32 ptr ptr&",
-	"void ptr ptr int32 ptr ptr& ptr ptr&",
-	"int32 ptr ptr&",
-	"void ptr ptr ptr&",
-	"ptr ptr int32 ptr ptr&",
-	"ptr uint32 ptr&",
-	"ptr ptr uint32 ptr&",
-	"ptr ptr ptr int32 ptr&",
-	"int32 ptr int32 ptr&",
-	"ptr ptr int32 ptr ptr ptr&",
+	"bool ptr ptr&",
 	"int32 int32 ptr ptr&",
+	"int32 ptr int32 ptr",
+	"int32 ptr int32 ptr&",
+	"int32 ptr ptr&",
+	"object object ptr ptr ptr",
 	"ptr int32 ptr&",
+	"ptr ptr int32 ptr ptr ptr&",
+	"ptr ptr int32 ptr ptr&",
 	"ptr ptr int32 ptr&",
+	"ptr ptr ptr int32 ptr&",
+	"ptr ptr ptr ptr& ptr&",
+	"ptr ptr ptr ptr&",
+	"ptr ptr ptr&",
+	"ptr ptr uint32 ptr&",
+	"ptr uint32 ptr&",
+	"void object ptr ptr ptr",
+	"void ptr ptr int32 ptr ptr& ptr ptr&",
+	"void ptr ptr int32 ptr ptr&",
+	"void ptr ptr ptr&",
+	"void ptr ptr&",
+	"void ptr",
+	"void int32 ptr&",
+	"void uint32 ptr&",
 };
 
 int
