@@ -486,6 +486,10 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 
 		tmp_var = mono_compile_create_var (cfg, type, OP_LOCAL);
 		EMIT_NEW_TEMPSTORE (cfg, mov, tmp_var->inst_c0, value);
+#if MONO_ARCH_USE_FPSTACK
+		/* needed to keep FP stack logic happy */
+		EMIT_NEW_TEMPLOAD (cfg, value, tmp_var->inst_c0);
+#endif
 		EMIT_NEW_VARLOADA (cfg, addr, tmp_var, tmp_var->inst_vtype);
 		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type (type), 1, FALSE);
 	}
