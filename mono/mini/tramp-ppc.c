@@ -454,11 +454,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	ppc_ldr  (code, ppc_r1,  0, ppc_r1);
 	ppc_ldr  (code, ppc_r12, PPC_RET_ADDR_OFFSET, ppc_r1);
 	ppc_mtlr (code, ppc_r12);
-	/* We are in the parent frame, the exception is in x0 */
-	/*
-	 * EH is initialized after trampolines, so get the address of the variable
-	 * which contains throw_exception, and load it from there.
-	 */
+
+	/* We are in the parent frame now, the exception is on that frame */
 
 	if (aot) {
 		g_error ("implement me");
