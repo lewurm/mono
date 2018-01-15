@@ -414,10 +414,12 @@ mono_trace_leave_method (MonoMethod *method, ...)
 		guint8 *p = (guint8 *)va_arg (ap, gpointer);
 		int j, size, align;
 		size = mono_type_size (type, &align);
+#if 0
 		printf ("[");
 		for (j = 0; p && j < size; j++)
 			printf ("%02x,", p [j]);
 		printf ("]");
+#endif
 		break;
 	}
 	default:
