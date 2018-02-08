@@ -1005,6 +1005,7 @@ mono_gc_cleanup (void)
 					break;
 				}
 
+#if 0
 				elapsed = mono_msec_ticks () - start;
 				if (elapsed >= timeout) {
 					/* timeout */
@@ -1029,6 +1030,7 @@ mono_gc_cleanup (void)
 					mono_threads_add_joinable_thread ((gpointer)(MONO_UINT_TO_NATIVE_THREAD_ID (gc_thread->tid)));
 					break;
 				}
+#endif
 
 				mono_finalizer_lock ();
 				if (!finalizer_thread_exited)

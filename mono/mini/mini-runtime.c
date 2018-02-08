@@ -1574,9 +1574,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_NONE:
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH: {
-		if (!strcmp (method->name, "ToArray"))
-			g_printerr ("LOL\n");
 		int slot = mini_get_rgctx_entry_slot (patch_info->data.rgctx_entry);
+		if (!strcmp (method->name, "ToArray"))
+			g_printerr ("LOL: slot=%d\n", slot);
 
 		target = mono_create_rgctx_lazy_fetch_trampoline (slot);
 		break;

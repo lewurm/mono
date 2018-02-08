@@ -2931,7 +2931,7 @@ ppc_patch_full (guchar *code, const guchar *target, gboolean is_fd)
 	guint32 prim = ins >> 26;
 	guint32 ovf;
 
-	//g_print ("patching 0x%08x (0x%08x) to point to 0x%08x\n", code, ins, target);
+	g_print ("patching %p (0x%08x) to point to %p\n", code, ins, target);
 	if (prim == 18) {
 		// prefer relative branches, they are more position independent (e.g. for AOT compilation).
 		gint diff = target - code;

@@ -277,8 +277,12 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 #define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (31 * sizeof (mgreg_t)))
 	offset = GREGS_OFFSET;
+
+	int r11_offset;
 	for (i = 0; i < 31; i++) {
 		ppc_str (code, i, offset, ppc_r1);
+		if (i == 11)
+			r11_offset = offset;
 		offset += sizeof (mgreg_t);
 	}
 
@@ -364,16 +368,15 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	ppc_blrl (code);
 		
-	/* OK, code address is now on r3. Move it to the counter reg
-	 * so it will be ready for the final jump: this is safe since we
-	 * won't do any more calls.
+	/* OK, code address is now on r3. Move it to r14
+	 * so it will be ready for the final jump.
 	 */
 	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r3);
 		ppc_ldptr (code, ppc_r3, 0, ppc_r3);
 #endif
-		ppc_mr (code, ppc_r11, ppc_r3);
+		ppc_mr (code, ppc_r14, ppc_r3);
 	}
 
 	/*
@@ -382,6 +385,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * the same state as before we executed.
 	 * The pointer to MonoLMF is in ppc_r12.
 	 */
+	ppc_ldr (code, i, r11_offset, ppc_r1);
 	ppc_addi (code, ppc_r12, ppc_r1, STACK - sizeof (MonoLMF));
 	/* r5 = previous_lmf */
 	ppc_ldptr (code, ppc_r5, G_STRUCT_OFFSET(MonoLMF, previous_lmf), ppc_r12);
@@ -407,7 +411,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 
 	/* no exception */
-	ppc_mtctr (code, ppc_r11);
+	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type))
+		ppc_mtctr (code, ppc_r14);
+
 	ppc_addi (code, ppc_r12, ppc_r1, STACK - sizeof (MonoLMF));
 
 	/* restore iregs */
@@ -425,7 +431,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (31 * sizeof (mgreg_t));
 	ppc_ldr (code, ppc_r0, offset, ppc_r1);
 	offset += 2 * sizeof (mgreg_t);
-	for (i = 2; i < 13; i++) {
+	for (i = 2; i < 15; i++) {
 		if (i != PPC_TOC_REG && (i != 3 || tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH))
 			ppc_ldr (code, i, offset, ppc_r1);
 		offset += sizeof (mgreg_t);
@@ -651,8 +657,10 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 
 	char *name = mono_get_rgctx_fetch_trampoline_name (slot);
 	*info = mono_tramp_info_create (name, buf, code - buf, ji, unwind_ops);
-	g_free (name);
 
+	mono_disassemble_code (NULL, buf, code - buf, name);
+
+	g_free (name);
 	return buf;
 }
 
