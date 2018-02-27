@@ -21,22 +21,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _MonoMethodBuilder {
-	MonoMethod *method;
-	char *name;
-	gboolean no_dup_name;
-#ifdef ENABLE_ILGEN
-	GList *locals_list;
-	int locals;
-	gboolean dynamic;
-	gboolean skip_visibility, init_locals;
-	guint32 code_size, pos;
-	unsigned char *code;
-	int num_clauses;
-	MonoExceptionClause *clauses;
-	const char **param_names;
-#endif
-} MonoMethodBuilder;
+typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
 #define MONO_METHOD_BUILDER_CALLBACKS_VERSION 1
 
@@ -44,7 +29,7 @@ typedef struct {
 	int version;
 	MonoMethodBuilder* (*new_base) (MonoClass *klass, MonoWrapperType type);
 	void (*free) (MonoMethodBuilder *mb);
-	MonoMethod (*create_method) (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
+	MonoMethod* (*create_method) (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
 } MonoMethodBuilderCallbacks;
 
 MonoMethodBuilder *
@@ -61,6 +46,9 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data);
+
+void
+mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb);
 
 G_END_DECLS
 

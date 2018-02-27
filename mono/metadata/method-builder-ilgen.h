@@ -14,6 +14,9 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
 
+MONO_API void
+mono_method_builder_ilgen_init (void);
+
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value);
 
