@@ -247,12 +247,25 @@ typedef struct {
 	} d;
 } WrapperInfo;
 
+#define MONO_MARSHAL_CALLBACKS_VERSION 1
+
+typedef struct {
+	int version;
+	int (*emit_marshal_array) (EmitMarshalContext *m, int argnum, MonoType *t, MonoMarshalSpec *spec, int conv_arg, MonoType **conv_arg_type, MarshalAction action);
+	MonoMethodBuilder* (*new_base) (MonoClass *klass, MonoWrapperType type);
+	void (*free) (MonoMethodBuilder *mb);
+	MonoMethod* (*create_method) (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
+} MonoMarshalCallbacks;
+
 G_BEGIN_DECLS
 
 /*type of the function pointer of methods returned by mono_marshal_get_runtime_invoke*/
 typedef MonoObject *(*RuntimeInvokeFunction) (MonoObject *this_obj, void **params, MonoObject **exc, void* compiled_method);
 
 typedef void (*RuntimeInvokeDynamicFunction) (void *args, MonoObject **exc, void* compiled_method);
+
+void
+mono_install_marshal_callbacks (MonoMarshalCallbacks *cb);
 
 /* marshaling helper functions */
 
