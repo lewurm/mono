@@ -7092,6 +7092,12 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 }
 #endif
 
+static void
+emit_virtual_stelemref_noilgen (MonoMethodBuilder *mb, int kind)
+{
+}
+
+
 /*
  * TODO:
  *	- Separate simple interfaces from variant interfaces or mbr types. This way we can avoid the icall for them.
@@ -7107,10 +7113,6 @@ get_virtual_stelemref_wrapper (int kind)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	char *name;
-	const char *param_names [16];
-	guint32 b1, b2, b3, b4;
-	int aklass, vklass, vtable, uiid;
-	int array_slot_addr;
 	WrapperInfo *info;
 
 	if (cached_methods [kind])
@@ -7131,407 +7133,7 @@ get_virtual_stelemref_wrapper (int kind)
 		signature = sig;
 	}
 
-#ifdef ENABLE_ILGEN
-	param_names [0] = "index";
-	param_names [1] = "value";
-	mono_mb_set_param_names (mb, param_names);
-
-	/*For now simply call plain old stelemref*/
-	switch (kind) {
-	case STELEMREF_OBJECT:
-		/* ldelema (implicit bound check) */
-		load_array_element_address (mb);
-		/* do_store */
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		mono_mb_emit_byte (mb, CEE_RET);
-		break;
-
-	case STELEMREF_COMPLEX: {
-		int b_fast;
-		/*
-		<ldelema (bound check)>
-		if (!value)
-			goto store;
-		if (!mono_object_isinst (value, aklass))
-			goto do_exception;
-
-		 do_store:
-			 *array_slot_addr = value;
-
-		do_exception:
-			throw new ArrayTypeMismatchException ();
-		*/
-
-		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-
-#if 0
-		{
-			/*Use this to debug/record stores that are going thru the slow path*/
-			MonoMethodSignature *csig;
-			csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-			csig->ret = &mono_defaults.void_class->byval_arg;
-			csig->params [0] = &mono_defaults.object_class->byval_arg;
-			csig->params [1] = &mono_defaults.int_class->byval_arg; /* this is a natural sized int */
-			csig->params [2] = &mono_defaults.object_class->byval_arg;
-			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_ldarg (mb, 1);
-			mono_mb_emit_ldarg (mb, 2);
-			mono_mb_emit_native_call (mb, csig, record_slot_vstore);
-		}
-#endif
-
-		/* ldelema (implicit bound check) */
-		load_array_element_address (mb);
-		mono_mb_emit_stloc (mb, array_slot_addr);
-
-		/* if (!value) goto do_store */
-		mono_mb_emit_ldarg (mb, 2);
-		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* aklass = array->vtable->klass->element_class */
-		load_array_class (mb, aklass);
-		/* vklass = value->vtable->klass */
-		load_value_class (mb, vklass);
-
-		/* fastpath */
-		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldloc (mb, aklass);
-		b_fast = mono_mb_emit_branch (mb, CEE_BEQ);
-
-		/*if (mono_object_isinst (value, aklass)) */
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_icall (mb, mono_object_isinst_icall);
-		b2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* do_store: */
-		mono_mb_patch_branch (mb, b1);
-		mono_mb_patch_branch (mb, b_fast);
-		mono_mb_emit_ldloc (mb, array_slot_addr);
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		mono_mb_emit_byte (mb, CEE_RET);
-
-		/* do_exception: */
-		mono_mb_patch_branch (mb, b2);
-
-		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
-		break;
-	}
-	case STELEMREF_SEALED_CLASS:
-		/*
-		<ldelema (bound check)>
-		if (!value)
-			goto store;
-
-		aklass = array->vtable->klass->element_class;
-		vklass = value->vtable->klass;
-
-		if (vklass != aklass)
-			goto do_exception;
-
-		do_store:
-			 *array_slot_addr = value;
-
-		do_exception:
-			throw new ArrayTypeMismatchException ();
-		*/
-		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-
-		/* ldelema (implicit bound check) */
-		load_array_element_address (mb);
-		mono_mb_emit_stloc (mb, array_slot_addr);
-
-		/* if (!value) goto do_store */
-		mono_mb_emit_ldarg (mb, 2);
-		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* aklass = array->vtable->klass->element_class */
-		load_array_class (mb, aklass);
-
-		/* vklass = value->vtable->klass */
-		load_value_class (mb, vklass);
-
-		/*if (vklass != aklass) goto do_exception; */
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldloc (mb, vklass);
-		b2 = mono_mb_emit_branch (mb, CEE_BNE_UN);
-
-		/* do_store: */
-		mono_mb_patch_branch (mb, b1);
-		mono_mb_emit_ldloc (mb, array_slot_addr);
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		mono_mb_emit_byte (mb, CEE_RET);
-
-		/* do_exception: */
-		mono_mb_patch_branch (mb, b2);
-		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
-		break;
-
-	case STELEMREF_CLASS: {
-		/*
-		the method:
-		<ldelema (bound check)>
-		if (!value)
-			goto do_store;
-
-		aklass = array->vtable->klass->element_class;
-		vklass = value->vtable->klass;
-
-		if (vklass->idepth < aklass->idepth)
-			goto do_exception;
-
-		if (vklass->supertypes [aklass->idepth - 1] != aklass)
-			goto do_exception;
-
-		do_store:
-			*array_slot_addr = value;
-			return;
-
-		long:
-			throw new ArrayTypeMismatchException ();
-		*/
-		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-
-		/* ldelema (implicit bound check) */
-		load_array_element_address (mb);
-		mono_mb_emit_stloc (mb, array_slot_addr);
-
-		/* if (!value) goto do_store */
-		mono_mb_emit_ldarg (mb, 2);
-		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* aklass = array->vtable->klass->element_class */
-		load_array_class (mb, aklass);
-
-		/* vklass = value->vtable->klass */
-		load_value_class (mb, vklass);
-
-		/* if (vklass->idepth < aklass->idepth) goto failue */
-		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
-
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
-
-		b3 = mono_mb_emit_branch (mb, CEE_BLT_UN);
-
-		/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
-		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, supertypes));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
-		mono_mb_emit_icon (mb, 1);
-		mono_mb_emit_byte (mb, CEE_SUB);
-		mono_mb_emit_icon (mb, sizeof (void*));
-		mono_mb_emit_byte (mb, CEE_MUL);
-		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-		mono_mb_emit_ldloc (mb, aklass);
-		b4 = mono_mb_emit_branch (mb, CEE_BNE_UN);
-
-		/* do_store: */
-		mono_mb_patch_branch (mb, b1);
-		mono_mb_emit_ldloc (mb, array_slot_addr);
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		mono_mb_emit_byte (mb, CEE_RET);
-
-		/* do_exception: */
-		mono_mb_patch_branch (mb, b3);
-		mono_mb_patch_branch (mb, b4);
-
-		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
-		break;
-	}
-
-	case STELEMREF_CLASS_SMALL_IDEPTH:
-		/*
-		the method:
-		<ldelema (bound check)>
-		if (!value)
-			goto do_store;
-
-		aklass = array->vtable->klass->element_class;
-		vklass = value->vtable->klass;
-
-		if (vklass->supertypes [aklass->idepth - 1] != aklass)
-			goto do_exception;
-
-		do_store:
-			*array_slot_addr = value;
-			return;
-
-		long:
-			throw new ArrayTypeMismatchException ();
-		*/
-		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-
-		/* ldelema (implicit bound check) */
-		load_array_element_address (mb);
-		mono_mb_emit_stloc (mb, array_slot_addr);
-
-		/* if (!value) goto do_store */
-		mono_mb_emit_ldarg (mb, 2);
-		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* aklass = array->vtable->klass->element_class */
-		load_array_class (mb, aklass);
-
-		/* vklass = value->vtable->klass */
-		load_value_class (mb, vklass);
-
-		/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
-		mono_mb_emit_ldloc (mb, vklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, supertypes));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-		mono_mb_emit_byte (mb, CEE_LDIND_U2);
-		mono_mb_emit_icon (mb, 1);
-		mono_mb_emit_byte (mb, CEE_SUB);
-		mono_mb_emit_icon (mb, sizeof (void*));
-		mono_mb_emit_byte (mb, CEE_MUL);
-		mono_mb_emit_byte (mb, CEE_ADD);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-		mono_mb_emit_ldloc (mb, aklass);
-		b4 = mono_mb_emit_branch (mb, CEE_BNE_UN);
-
-		/* do_store: */
-		mono_mb_patch_branch (mb, b1);
-		mono_mb_emit_ldloc (mb, array_slot_addr);
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		mono_mb_emit_byte (mb, CEE_RET);
-
-		/* do_exception: */
-		mono_mb_patch_branch (mb, b4);
-
-		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
-		break;
-
-	case STELEMREF_INTERFACE:
-		/*Mono *klass;
-		MonoVTable *vt;
-		unsigned uiid;
-		if (value == NULL)
-			goto store;
-
-		klass = array->obj.vtable->klass->element_class;
-		vt = value->vtable;
-		uiid = klass->interface_id;
-		if (uiid > vt->max_interface_id)
-			goto exception;
-		if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
-			goto exception;
-		store:
-			mono_array_setref (array, index, value);
-			return;
-		exception:
-			mono_raise_exception (mono_get_exception_array_type_mismatch ());*/
-
-		array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-		aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		vtable = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		uiid = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-
-		/* ldelema (implicit bound check) */
-		load_array_element_address (mb);
-		mono_mb_emit_stloc (mb, array_slot_addr);
-
-		/* if (!value) goto do_store */
-		mono_mb_emit_ldarg (mb, 2);
-		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* klass = array->vtable->klass->element_class */
-		load_array_class (mb, aklass);
-
-		/* vt = value->vtable */
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_stloc (mb, vtable);
-
-		/* uiid = klass->interface_id; */
-		mono_mb_emit_ldloc (mb, aklass);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, interface_id));
-		mono_mb_emit_byte (mb, CEE_LDIND_U4);
-		mono_mb_emit_stloc (mb, uiid);
-
-		/*if (uiid > vt->max_interface_id)*/
-		mono_mb_emit_ldloc (mb, uiid);
-		mono_mb_emit_ldloc (mb, vtable);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, max_interface_id));
-		mono_mb_emit_byte (mb, CEE_LDIND_U4);
-		b2 = mono_mb_emit_branch (mb, CEE_BGT_UN);
-
-		/* if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7)))) */
-
-		/*vt->interface_bitmap*/
-		mono_mb_emit_ldloc (mb, vtable);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, interface_bitmap));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-
-		/*uiid >> 3*/
-		mono_mb_emit_ldloc (mb, uiid);
-		mono_mb_emit_icon (mb, 3);
-		mono_mb_emit_byte (mb, CEE_SHR_UN);
-
-		/*vt->interface_bitmap [(uiid) >> 3]*/
-		mono_mb_emit_byte (mb, CEE_ADD); /*interface_bitmap is a guint8 array*/
-		mono_mb_emit_byte (mb, CEE_LDIND_U1);
-
-		/*(1 << ((uiid)&7)))*/
-		mono_mb_emit_icon (mb, 1);
-		mono_mb_emit_ldloc (mb, uiid);
-		mono_mb_emit_icon (mb, 7);
-		mono_mb_emit_byte (mb, CEE_AND);
-		mono_mb_emit_byte (mb, CEE_SHL);
-
-		/*bitwise and the whole thing*/
-		mono_mb_emit_byte (mb, CEE_AND);
-		b3 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* do_store: */
-		mono_mb_patch_branch (mb, b1);
-		mono_mb_emit_ldloc (mb, array_slot_addr);
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_byte (mb, CEE_STIND_REF);
-		mono_mb_emit_byte (mb, CEE_RET);
-
-		/* do_exception: */
-		mono_mb_patch_branch (mb, b2);
-		mono_mb_patch_branch (mb, b3);
-		mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
-		break;
-
-	default:
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ldarg (mb, 1);
-		mono_mb_emit_ldarg (mb, 2);
-		mono_mb_emit_managed_call (mb, mono_marshal_get_stelemref (), NULL);
-		mono_mb_emit_byte (mb, CEE_RET);
-		g_assert (0);
-	}
-#endif /* ENABLE_ILGEN */
+	get_marshal_cb ()->emit_virtual_stelemref (mb, kind);
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_VIRTUAL_STELEMREF);
 	info->d.virtual_stelemref.kind = kind;
 	res = mono_mb_create (mb, signature, 4, info);
@@ -7574,6 +7176,11 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
 	return res;
 }
 
+static void
+emit_stelemref_noilgen (MonoMethodBuilder *mb)
+{
+}
+
 /**
  * mono_marshal_get_stelemref:
  */
@@ -7584,11 +7191,6 @@ mono_marshal_get_stelemref (void)
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
-	
-	guint32 b1, b2, b3, b4;
-	guint32 copy_pos;
-	int aklass, vklass;
-	int array_slot_addr;
 	
 	if (ret)
 		return ret;
@@ -7604,118 +7206,8 @@ mono_marshal_get_stelemref (void)
 	sig->params [1] = &mono_defaults.int_class->byval_arg; /* this is a natural sized int */
 	sig->params [2] = &mono_defaults.object_class->byval_arg;
 
-#ifdef ENABLE_ILGEN
-	aklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	vklass = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-	array_slot_addr = mono_mb_add_local (mb, &mono_defaults.object_class->this_arg);
-	
-	/*
-	the method:
-	<ldelema (bound check)>
-	if (!value)
-		goto store;
-	
-	aklass = array->vtable->klass->element_class;
-	vklass = value->vtable->klass;
-	
-	if (vklass->idepth < aklass->idepth)
-		goto long;
-	
-	if (vklass->supertypes [aklass->idepth - 1] != aklass)
-		goto long;
-	
-	store:
-		*array_slot_addr = value;
-		return;
-	
-	long:
-		if (mono_object_isinst (value, aklass))
-			goto store;
-		
-		throw new ArrayTypeMismatchException ();
-	*/
-	
-	/* ldelema (implicit bound check) */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldarg (mb, 1);
-	mono_mb_emit_op (mb, CEE_LDELEMA, mono_defaults.object_class);
-	mono_mb_emit_stloc (mb, array_slot_addr);
-		
-	/* if (!value) goto do_store */
-	mono_mb_emit_ldarg (mb, 2);
-	b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-	
-	/* aklass = array->vtable->klass->element_class */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, element_class));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, aklass);
-	
-	/* vklass = value->vtable->klass */
-	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	mono_mb_emit_stloc (mb, vklass);
-	
-	/* if (vklass->idepth < aklass->idepth) goto failue */
-	mono_mb_emit_ldloc (mb, vklass);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-	mono_mb_emit_byte (mb, CEE_LDIND_U2);
-	
-	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-	mono_mb_emit_byte (mb, CEE_LDIND_U2);
-	
-	b2 = mono_mb_emit_branch (mb, CEE_BLT_UN);
-	
-	/* if (vklass->supertypes [aklass->idepth - 1] != aklass) goto failure */
-	mono_mb_emit_ldloc (mb, vklass);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, supertypes));
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	
-	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoClass, idepth));
-	mono_mb_emit_byte (mb, CEE_LDIND_U2);
-	mono_mb_emit_icon (mb, 1);
-	mono_mb_emit_byte (mb, CEE_SUB);
-	mono_mb_emit_icon (mb, sizeof (void*));
-	mono_mb_emit_byte (mb, CEE_MUL);
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_byte (mb, CEE_LDIND_I);
-	
-	mono_mb_emit_ldloc (mb, aklass);
-	
-	b3 = mono_mb_emit_branch (mb, CEE_BNE_UN);
-	
-	copy_pos = mono_mb_get_label (mb);
-	/* do_store */
-	mono_mb_patch_branch (mb, b1);
-	mono_mb_emit_ldloc (mb, array_slot_addr);
-	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_byte (mb, CEE_STIND_REF);
-	
-	mono_mb_emit_byte (mb, CEE_RET);
-	
-	/* the hard way */
-	mono_mb_patch_branch (mb, b2);
-	mono_mb_patch_branch (mb, b3);
-	
-	mono_mb_emit_ldarg (mb, 2);
-	mono_mb_emit_ldloc (mb, aklass);
-	mono_mb_emit_icall (mb, mono_object_isinst_icall);
-	
-	b4 = mono_mb_emit_branch (mb, CEE_BRTRUE);
-	mono_mb_patch_addr (mb, b4, copy_pos - (b4 + 4));
-	mono_mb_emit_exception (mb, "ArrayTypeMismatchException", NULL);
-	
-	mono_mb_emit_byte (mb, CEE_RET);
-#endif
+	get_marshal_cb ()->emit_stelemref (mb);
+
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
@@ -9671,4 +9163,6 @@ install_noilgen (void)
 	cb.emit_marshal_ptr = emit_marshal_ptr_noilgen;
 	cb.emit_marshal_char = emit_marshal_char_noilgen;
 	cb.emit_marshal_scalar = emit_marshal_scalar_noilgen;
+	cb.emit_virtual_stelemref = emit_virtual_stelemref_noilgen;
+	cb.emit_stelemref = emit_stelemref_noilgen;
 }
