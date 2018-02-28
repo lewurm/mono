@@ -1489,7 +1489,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 }
 
 /**
- * mono_marshal_emit_native_wrapper:
+ * marshal_emit_native_wrapper_ilgen:
  * \param image the image to use for looking up custom marshallers
  * \param sig The signature of the native function
  * \param piinfo Marshalling information
@@ -1501,8 +1501,8 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
  *
  * generates IL code for the pinvoke wrapper, the generated code calls \p func .
  */
-void
-mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
+static void
+marshal_emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
@@ -3465,5 +3465,213 @@ emit_array_address_ilgen (MonoMethodBuilder *mb)
 	mono_mb_emit_exception (mb, "IndexOutOfRangeException", NULL);
 
 	g_free (branch_positions);
+}
+
+static void
+emit_delegate_begin_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
+{
+	int params_var;
+	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldloc (mb, params_var);
+	mono_mb_emit_icall (mb, mono_delegate_begin_invoke);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
+{
+	int params_var;
+	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
+
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldloc (mb, params_var);
+	mono_mb_emit_icall (mb, mono_delegate_end_invoke);
+
+	if (sig->ret->type == MONO_TYPE_VOID) {
+		mono_mb_emit_byte (mb, CEE_POP);
+		mono_mb_emit_byte (mb, CEE_RET);
+	} else
+		mono_mb_emit_restore_result (mb, sig->ret);
+}
+
+static void
+emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoClass *target_class)
+{
+	int local_i, local_len, local_delegates, local_d, local_target, local_res;
+	int pos0, pos1, pos2;
+	gboolean void_ret;
+
+	void_ret = sig->ret->type == MONO_TYPE_VOID && !method->string_ctor;
+
+	/* allocate local 0 (object) */
+	local_i = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	local_len = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	local_delegates = mono_mb_add_local (mb, &mono_defaults.array_class->byval_arg);
+	local_d = mono_mb_add_local (mb, &mono_defaults.multicastdelegate_class->byval_arg);
+	local_target = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+	if (!void_ret)
+		local_res = mono_mb_add_local (mb, &mono_class_from_mono_type (sig->ret)->byval_arg);
+
+	g_assert (sig->hasthis);
+
+	/*
+	 * {type: sig->ret} res;
+	 * if (delegates == null) {
+	 *     return this.<target> ( args .. );
+	 * } else {
+	 *     int i = 0, len = this.delegates.Length;
+	 *     do {
+	 *         res = this.delegates [i].Invoke ( args .. );
+	 *     } while (++i < len);
+	 *     return res;
+	 * }
+	 */
+
+	/* this wrapper can be used in unmanaged-managed transitions */
+	emit_thread_interrupt_checkpoint (mb);
+
+	/* delegates = this.delegates */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoMulticastDelegate, delegates));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_stloc (mb, local_delegates);
+
+	/* if (delegates == null) */
+	mono_mb_emit_ldloc (mb, local_delegates);
+	pos2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
+
+	/* return target.<target_method|method_ptr> ( args .. ); */
+
+	/* target = d.target; */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, target));
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+	mono_mb_emit_stloc (mb, local_target);
+
+	/*static methods with bound first arg can have null target and still be bound*/
+	if (!static_method_with_first_arg_bound) {
+		/* if target != null */
+		mono_mb_emit_ldloc (mb, local_target);
+		pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+
+		/* then call this->method_ptr nonstatic */
+		if (callvirt) {
+			// FIXME:
+			mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "");
+		} else {
+			mono_mb_emit_ldloc (mb, local_target);
+			for (i = 0; i < sig->param_count; ++i)
+				mono_mb_emit_ldarg (mb, i + 1);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, extra_arg));
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+			mono_mb_emit_byte (mb, CEE_LDIND_I);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_op (mb, CEE_MONO_CALLI_EXTRA_ARG, sig);
+			mono_mb_emit_byte (mb, CEE_RET);
+		}
+	
+		/* else [target == null] call this->method_ptr static */
+		mono_mb_patch_branch (mb, pos0);
+	}
+
+	if (callvirt) {
+		if (!closed_over_null) {
+			if (target_class->valuetype) {
+				mono_mb_emit_ldarg (mb, 1);
+				for (i = 1; i < sig->param_count; ++i)
+					mono_mb_emit_ldarg (mb, i + 1);
+				mono_mb_emit_op (mb, CEE_CALL, target_method);
+			} else {
+				mono_mb_emit_ldarg (mb, 1);
+				mono_mb_emit_op (mb, CEE_CASTCLASS, target_class);
+				for (i = 1; i < sig->param_count; ++i)
+					mono_mb_emit_ldarg (mb, i + 1);
+				mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);
+			}
+		} else {
+			mono_mb_emit_byte (mb, CEE_LDNULL);
+			for (i = 0; i < sig->param_count; ++i)
+				mono_mb_emit_ldarg (mb, i + 1);
+			mono_mb_emit_op (mb, CEE_CALL, target_method);
+		}
+	} else {
+		if (static_method_with_first_arg_bound) {
+			mono_mb_emit_ldloc (mb, local_target);
+			if (!MONO_TYPE_IS_REFERENCE (invoke_sig->params[0]))
+				mono_mb_emit_op (mb, CEE_UNBOX_ANY, mono_class_from_mono_type (invoke_sig->params[0]));
+		}
+		for (i = 0; i < sig->param_count; ++i)
+			mono_mb_emit_ldarg (mb, i + 1);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, extra_arg));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_CALLI_EXTRA_ARG, invoke_sig);
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* else [delegates != null] */
+	mono_mb_patch_branch (mb, pos2);
+
+	/* len = delegates.Length; */
+	mono_mb_emit_ldloc (mb, local_delegates);
+	mono_mb_emit_byte (mb, CEE_LDLEN);
+	mono_mb_emit_byte (mb, CEE_CONV_I4);
+	mono_mb_emit_stloc (mb, local_len);
+
+	/* i = 0; */
+	mono_mb_emit_icon (mb, 0);
+	mono_mb_emit_stloc (mb, local_i);
+
+	pos1 = mono_mb_get_label (mb);
+
+	/* d = delegates [i]; */
+	mono_mb_emit_ldloc (mb, local_delegates);
+	mono_mb_emit_ldloc (mb, local_i);
+	mono_mb_emit_byte (mb, CEE_LDELEM_REF);
+	mono_mb_emit_stloc (mb, local_d);
+
+	/* res = d.Invoke ( args .. ); */
+	mono_mb_emit_ldloc (mb, local_d);
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + 1);
+	if (!ctx) {
+		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	} else {
+		ERROR_DECL (error);
+		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, error));
+		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+	}
+	if (!void_ret)
+		mono_mb_emit_stloc (mb, local_res);
+
+	/* i += 1 */
+	mono_mb_emit_add_to_local (mb, local_i, 1);
+
+	/* i < l */
+	mono_mb_emit_ldloc (mb, local_i);
+	mono_mb_emit_ldloc (mb, local_len);
+	mono_mb_emit_branch_label (mb, CEE_BLT, pos1);
+
+	/* return res */
+	if (!void_ret)
+		mono_mb_emit_ldloc (mb, local_res);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+mb_skip_visibility_ilgen (MonoMethodBuilder *mb)
+{
+	mb->skip_visibility = 1;
 }
 

@@ -1993,6 +1993,11 @@ cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, Mono
 	return res;
 }
 
+static void
+emit_delegate_begin_invoke_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
+{
+}
+
 /**
  * mono_marshal_get_delegate_begin_invoke:
  */
@@ -2003,7 +2008,6 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
-	int params_var;
 	char *name;
 	MonoGenericContext *ctx = NULL;
 	MonoMethod *orig_method = NULL;
@@ -2047,14 +2051,7 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_BEGIN_INVOKE);
 	g_free (name);
 
-#ifdef ENABLE_ILGEN
-	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
-
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldloc (mb, params_var);
-	mono_mb_emit_icall (mb, mono_delegate_begin_invoke);
-	mono_mb_emit_byte (mb, CEE_RET);
-#endif
+	get_marshal_cb ()->emit_delegate_begin_invoke (mb, sig);
 
 	if (ctx) {
 		MonoMethod *def;
@@ -2170,6 +2167,10 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	return res;
 }
 
+static void
+emit_delegate_end_invoke_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
+{
+}
 
 /**
  * mono_marshal_get_delegate_end_invoke:
@@ -2181,7 +2182,6 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
-	int params_var;
 	char *name;
 	MonoGenericContext *ctx = NULL;
 	MonoMethod *orig_method = NULL;
@@ -2225,19 +2225,7 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_END_INVOKE);
 	g_free (name);
 
-#ifdef ENABLE_ILGEN
-	params_var = mono_mb_emit_save_args (mb, sig, FALSE);
-
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldloc (mb, params_var);
-	mono_mb_emit_icall (mb, mono_delegate_end_invoke);
-
-	if (sig->ret->type == MONO_TYPE_VOID) {
-		mono_mb_emit_byte (mb, CEE_POP);
-		mono_mb_emit_byte (mb, CEE_RET);
-	} else
-		mono_mb_emit_restore_result (mb, sig->ret);
-#endif
+	get_marshal_cb ()->emit_delegate_end_invoke (mb, sig);
 
 	if (ctx) {
 		MonoMethod *def;
@@ -2287,6 +2275,16 @@ free_signature_pointer_pair (SignaturePointerPair *pair)
 	g_free (pair);
 }
 
+static void
+mb_skip_visibility_noilgen (MonoMethodBuilder *mb)
+{
+}
+
+static void
+emit_delegate_invoke_internal_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoClass *target_class)
+{
+}
+
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
 {
@@ -2298,8 +2296,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	gpointer cache_key = NULL;
 	SignaturePointerPair key = { NULL, NULL };
 	SignaturePointerPair *new_key;
-	int local_i, local_len, local_delegates, local_d, local_target, local_res;
-	int pos0, pos1, pos2;
 	char *name;
 	MonoClass *target_class = NULL;
 	gboolean closed_over_null = FALSE;
@@ -2309,7 +2305,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
 	gboolean found;
-	gboolean void_ret;
 
 	g_assert (method && method->klass->parent == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
@@ -2427,174 +2422,9 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
 
-#ifdef ENABLE_ILGEN
-	void_ret = sig->ret->type == MONO_TYPE_VOID && !method->string_ctor;
+	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, static_method_with_first_arg_bound, callvirt, closed_over_null, target_class);
 
-	/* allocate local 0 (object) */
-	local_i = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-	local_len = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
-	local_delegates = mono_mb_add_local (mb, &mono_defaults.array_class->byval_arg);
-	local_d = mono_mb_add_local (mb, &mono_defaults.multicastdelegate_class->byval_arg);
-	local_target = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-
-	if (!void_ret)
-		local_res = mono_mb_add_local (mb, &mono_class_from_mono_type (sig->ret)->byval_arg);
-
-	g_assert (sig->hasthis);
-
-	/*
-	 * {type: sig->ret} res;
-	 * if (delegates == null) {
-	 *     return this.<target> ( args .. );
-	 * } else {
-	 *     int i = 0, len = this.delegates.Length;
-	 *     do {
-	 *         res = this.delegates [i].Invoke ( args .. );
-	 *     } while (++i < len);
-	 *     return res;
-	 * }
-	 */
-
-	/* this wrapper can be used in unmanaged-managed transitions */
-	emit_thread_interrupt_checkpoint (mb);
-
-	/* delegates = this.delegates */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoMulticastDelegate, delegates));
-	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_stloc (mb, local_delegates);
-
-	/* if (delegates == null) */
-	mono_mb_emit_ldloc (mb, local_delegates);
-	pos2 = mono_mb_emit_branch (mb, CEE_BRTRUE);
-
-	/* return target.<target_method|method_ptr> ( args .. ); */
-
-	/* target = d.target; */
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, target));
-	mono_mb_emit_byte (mb, CEE_LDIND_REF);
-	mono_mb_emit_stloc (mb, local_target);
-
-	/*static methods with bound first arg can have null target and still be bound*/
-	if (!static_method_with_first_arg_bound) {
-		/* if target != null */
-		mono_mb_emit_ldloc (mb, local_target);
-		pos0 = mono_mb_emit_branch (mb, CEE_BRFALSE);
-
-		/* then call this->method_ptr nonstatic */
-		if (callvirt) {
-			// FIXME:
-			mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "");
-		} else {
-			mono_mb_emit_ldloc (mb, local_target);
-			for (i = 0; i < sig->param_count; ++i)
-				mono_mb_emit_ldarg (mb, i + 1);
-			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, extra_arg));
-			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
-			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_op (mb, CEE_MONO_CALLI_EXTRA_ARG, sig);
-			mono_mb_emit_byte (mb, CEE_RET);
-		}
-	
-		/* else [target == null] call this->method_ptr static */
-		mono_mb_patch_branch (mb, pos0);
-	}
-
-	if (callvirt) {
-		if (!closed_over_null) {
-			if (target_class->valuetype) {
-				mono_mb_emit_ldarg (mb, 1);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALL, target_method);
-			} else {
-				mono_mb_emit_ldarg (mb, 1);
-				mono_mb_emit_op (mb, CEE_CASTCLASS, target_class);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);
-			}
-		} else {
-			mono_mb_emit_byte (mb, CEE_LDNULL);
-			for (i = 0; i < sig->param_count; ++i)
-				mono_mb_emit_ldarg (mb, i + 1);
-			mono_mb_emit_op (mb, CEE_CALL, target_method);
-		}
-	} else {
-		if (static_method_with_first_arg_bound) {
-			mono_mb_emit_ldloc (mb, local_target);
-			if (!MONO_TYPE_IS_REFERENCE (invoke_sig->params[0]))
-				mono_mb_emit_op (mb, CEE_UNBOX_ANY, mono_class_from_mono_type (invoke_sig->params[0]));
-		}
-		for (i = 0; i < sig->param_count; ++i)
-			mono_mb_emit_ldarg (mb, i + 1);
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, extra_arg));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_op (mb, CEE_MONO_CALLI_EXTRA_ARG, invoke_sig);
-	}
-
-	mono_mb_emit_byte (mb, CEE_RET);
-
-	/* else [delegates != null] */
-	mono_mb_patch_branch (mb, pos2);
-
-	/* len = delegates.Length; */
-	mono_mb_emit_ldloc (mb, local_delegates);
-	mono_mb_emit_byte (mb, CEE_LDLEN);
-	mono_mb_emit_byte (mb, CEE_CONV_I4);
-	mono_mb_emit_stloc (mb, local_len);
-
-	/* i = 0; */
-	mono_mb_emit_icon (mb, 0);
-	mono_mb_emit_stloc (mb, local_i);
-
-	pos1 = mono_mb_get_label (mb);
-
-	/* d = delegates [i]; */
-	mono_mb_emit_ldloc (mb, local_delegates);
-	mono_mb_emit_ldloc (mb, local_i);
-	mono_mb_emit_byte (mb, CEE_LDELEM_REF);
-	mono_mb_emit_stloc (mb, local_d);
-
-	/* res = d.Invoke ( args .. ); */
-	mono_mb_emit_ldloc (mb, local_d);
-	for (i = 0; i < sig->param_count; i++)
-		mono_mb_emit_ldarg (mb, i + 1);
-	if (!ctx) {
-		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
-	} else {
-		ERROR_DECL (error);
-		mono_mb_emit_op (mb, CEE_CALLVIRT, mono_class_inflate_generic_method_checked (method, &container->context, error));
-		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
-	}
-	if (!void_ret)
-		mono_mb_emit_stloc (mb, local_res);
-
-	/* i += 1 */
-	mono_mb_emit_add_to_local (mb, local_i, 1);
-
-	/* i < l */
-	mono_mb_emit_ldloc (mb, local_i);
-	mono_mb_emit_ldloc (mb, local_len);
-	mono_mb_emit_branch_label (mb, CEE_BLT, pos1);
-
-	/* return res */
-	if (!void_ret)
-		mono_mb_emit_ldloc (mb, local_res);
-	mono_mb_emit_byte (mb, CEE_RET);
-
-	mb->skip_visibility = 1;
-#endif /* ENABLE_ILGEN */
+	get_marshal_cb ()->mb_skip_visibility (mb);
 
 	info = mono_wrapper_info_create (mb, subtype);
 	info->d.delegate_invoke.method = method;
@@ -2928,9 +2758,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 #endif
 
 	if (need_direct_wrapper) {
-#ifdef ENABLE_ILGEN
-		mb->skip_visibility = 1;
-#endif
+		get_marshal_cb ()->mb_skip_visibility (mb);
 		info = mono_wrapper_info_create (mb, virtual_ ? WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL : WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT);
 		info->d.runtime_invoke.method = method;
 		res = mono_mb_create_and_cache_full (cache, method, mb, csig, sig->param_count + 16, info, NULL);
@@ -5705,9 +5533,7 @@ mono_marshal_get_native_func_wrapper (MonoImage *image, MonoMethodSignature *sig
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-#ifdef ENABLE_ILGEN
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, FALSE, TRUE, FALSE);
-#endif
 
 	csig = mono_metadata_signature_dup_full (image, sig);
 	csig->pinvoke = 0;
@@ -5770,9 +5596,7 @@ mono_marshal_get_native_func_wrapper_aot (MonoClass *klass)
 	mb = mono_mb_new (invoke->klass, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 	mb->method->save_lmf = 1;
 
-#ifdef ENABLE_ILGEN
 	mono_marshal_emit_native_wrapper (image, mb, sig, piinfo, mspecs, NULL, FALSE, TRUE, TRUE);
-#endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NATIVE_FUNC_AOT);
 	info->d.managed_to_native.method = invoke;
@@ -9062,6 +8886,17 @@ mono_icall_handle_new_interior (gpointer rawobj)
 #endif
 }
 
+void
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
+{
+	get_marshal_cb ()->emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, aot, check_exceptions, func_param);
+}
+
+static void
+marshal_emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
+{
+}
+
 static void
 install_noilgen (void)
 {
@@ -9075,4 +8910,10 @@ install_noilgen (void)
 	cb.emit_stelemref = emit_stelemref_noilgen;
 	cb.emit_byte = emit_byte_noilgen;
 	cb.emit_array_address = emit_array_address_noilgen;
+	cb.emit_native_wrapper = marshal_emit_native_wrapper_noilgen;
+	cb.emit_delegate_begin_invoke = emit_delegate_begin_invoke_noilgen;
+	cb.emit_delegate_end_invoke = emit_delegate_end_invoke_noilgen;
+	cb.emit_delegate_invoke_internal = emit_delegate_invoke_internal_noilgen;
+	cb.mb_skip_visibility = mb_skip_visibility_noilgen;
 }
+
