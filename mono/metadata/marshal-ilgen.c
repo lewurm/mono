@@ -3355,3 +3355,115 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 	
 	mono_mb_emit_byte (mb, CEE_RET);
 }
+
+static void
+emit_byte_ilgen (MonoMethodBuilder *mb, guint8 op)
+{
+	mono_mb_emit_byte (mb, op);
+}
+
+static void
+emit_array_address_ilgen (MonoMethodBuilder *mb)
+{
+	int i, bounds, ind, realidx;
+	int branch_pos, *branch_positions;
+
+	branch_positions = g_new0 (int, rank);
+
+	bounds = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+	ind = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+	realidx = mono_mb_add_local (mb, &mono_defaults.int32_class->byval_arg);
+
+	/* bounds = array->bounds; */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, bounds));
+	mono_mb_emit_byte (mb, CEE_LDIND_I);
+	mono_mb_emit_stloc (mb, bounds);
+
+	/* ind is the overall element index, realidx is the partial index in a single dimension */
+	/* ind = idx0 - bounds [0].lower_bound */
+	mono_mb_emit_ldarg (mb, 1);
+	mono_mb_emit_ldloc (mb, bounds);
+	mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	mono_mb_emit_byte (mb, CEE_SUB);
+	mono_mb_emit_stloc (mb, ind);
+	/* if (ind >= bounds [0].length) goto exeception; */
+	mono_mb_emit_ldloc (mb, ind);
+	mono_mb_emit_ldloc (mb, bounds);
+	mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoArrayBounds, length));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	/* note that we use unsigned comparison */
+	branch_pos = mono_mb_emit_branch (mb, CEE_BGE_UN);
+
+ 	/* For large ranks (> 4?) use a loop n IL later to reduce code size.
+	 * We could also decide to ignore the passed elem_size and get it
+	 * from the array object, to reduce the number of methods we generate:
+	 * the additional cost is 3 memory loads and a non-immediate mul.
+	 */
+	for (i = 1; i < rank; ++i) {
+		/* realidx = idxi - bounds [i].lower_bound */
+		mono_mb_emit_ldarg (mb, 1 + i);
+		mono_mb_emit_ldloc (mb, bounds);
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, lower_bound));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		mono_mb_emit_byte (mb, CEE_SUB);
+		mono_mb_emit_stloc (mb, realidx);
+		/* if (realidx >= bounds [i].length) goto exeception; */
+		mono_mb_emit_ldloc (mb, realidx);
+		mono_mb_emit_ldloc (mb, bounds);
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, length));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		branch_positions [i] = mono_mb_emit_branch (mb, CEE_BGE_UN);
+		/* ind = ind * bounds [i].length + realidx */
+		mono_mb_emit_ldloc (mb, ind);
+		mono_mb_emit_ldloc (mb, bounds);
+		mono_mb_emit_icon (mb, (i * sizeof (MonoArrayBounds)) + MONO_STRUCT_OFFSET (MonoArrayBounds, length));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+		mono_mb_emit_byte (mb, CEE_MUL);
+		mono_mb_emit_ldloc (mb, realidx);
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_stloc (mb, ind);
+	}
+
+	/* return array->vector + ind * element_size */
+	mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoArray, vector));
+	mono_mb_emit_ldloc (mb, ind);
+	if (elem_size) {
+		mono_mb_emit_icon (mb, elem_size);
+	} else {
+		/* Load arr->vtable->klass->sizes.element_class */
+		mono_mb_emit_ldarg (mb, 0);
+		mono_mb_emit_byte (mb, CEE_CONV_I);
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoVTable, klass));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		/* sizes is an union, so this reads sizes.element_size */
+		mono_mb_emit_icon (mb, MONO_STRUCT_OFFSET (MonoClass, sizes));
+		mono_mb_emit_byte (mb, CEE_ADD);
+		mono_mb_emit_byte (mb, CEE_LDIND_I4);
+	}
+		mono_mb_emit_byte (mb, CEE_MUL);
+	mono_mb_emit_byte (mb, CEE_ADD);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	/* patch the branches to get here and throw */
+	for (i = 1; i < rank; ++i) {
+		mono_mb_patch_branch (mb, branch_positions [i]);
+	}
+	mono_mb_patch_branch (mb, branch_pos);
+	/* throw exception */
+	mono_mb_emit_exception (mb, "IndexOutOfRangeException", NULL);
+
+	g_free (branch_positions);
+}
+
