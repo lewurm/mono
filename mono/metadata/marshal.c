@@ -3182,124 +3182,14 @@ emit_marshal_object_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
-#ifdef ENABLE_ILGEN
-#ifndef DISABLE_COM
-
 static int
-emit_marshal_variant (EmitMarshalContext *m, int argnum, MonoType *t,
+emit_marshal_variant_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		     MonoMarshalSpec *spec, 
 		     int conv_arg, MonoType **conv_arg_type, 
 		     MarshalAction action)
 {
-	MonoMethodBuilder *mb = m->mb;
-	static MonoMethod *get_object_for_native_variant = NULL;
-	static MonoMethod *get_native_variant_for_object = NULL;
-
-	if (!get_object_for_native_variant)
-		get_object_for_native_variant = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetObjectForNativeVariant", 1);
-	g_assert (get_object_for_native_variant);
-
-	if (!get_native_variant_for_object)
-		get_native_variant_for_object = mono_class_get_method_from_name (mono_defaults.marshal_class, "GetNativeVariantForObject", 2);
-	g_assert (get_native_variant_for_object);
-
-	switch (action) {
-	case MARSHAL_ACTION_CONV_IN: {
-		conv_arg = mono_mb_add_local (mb, &mono_class_get_variant_class ()->byval_arg);
-		
-		if (t->byref)
-			*conv_arg_type = &mono_class_get_variant_class ()->this_arg;
-		else
-			*conv_arg_type = &mono_class_get_variant_class ()->byval_arg;
-
-		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
-			break;
-
-		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
-			mono_mb_emit_byte(mb, CEE_LDIND_REF);
-		mono_mb_emit_ldloc_addr (mb, conv_arg);
-		mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
-		break;
-	}
-
-	case MARSHAL_ACTION_CONV_OUT: {
-		static MonoMethod *variant_clear = NULL;
-
-		if (!variant_clear)
-			variant_clear = mono_class_get_method_from_name (mono_class_get_variant_class (), "Clear", 0);
-		g_assert (variant_clear);
-
-
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_ldloc_addr (mb, conv_arg);
-			mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
-			mono_mb_emit_byte (mb, CEE_STIND_REF);
-		}
-
-		mono_mb_emit_ldloc_addr (mb, conv_arg);
-		mono_mb_emit_managed_call (mb, variant_clear, NULL);
-		break;
-	}
-
-	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
-			mono_mb_emit_ldloc_addr (mb, conv_arg);
-		else
-			mono_mb_emit_ldloc (mb, conv_arg);
-		break;
-
-	case MARSHAL_ACTION_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported as a return type.");
-		mono_mb_emit_exception_marshal_directive (mb, msg);
-		break;
-	}
-
-	case MARSHAL_ACTION_MANAGED_CONV_IN: {
-		conv_arg = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
-
-		if (t->byref)
-			*conv_arg_type = &mono_class_get_variant_class ()->this_arg;
-		else
-			*conv_arg_type = &mono_class_get_variant_class ()->byval_arg;
-
-		if (t->byref && !(t->attrs & PARAM_ATTRIBUTE_IN) && t->attrs & PARAM_ATTRIBUTE_OUT)
-			break;
-
-		if (t->byref)
-			mono_mb_emit_ldarg (mb, argnum);
-		else
-			mono_mb_emit_ldarg_addr (mb, argnum);
-		mono_mb_emit_managed_call (mb, get_object_for_native_variant, NULL);
-		mono_mb_emit_stloc (mb, conv_arg);
-		break;
-	}
-
-	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT || !(t->attrs & PARAM_ATTRIBUTE_IN))) {
-			mono_mb_emit_ldloc (mb, conv_arg);
-			mono_mb_emit_ldarg (mb, argnum);
-			mono_mb_emit_managed_call (mb, get_native_variant_for_object, NULL);
-		}
-		break;
-	}
-
-	case MARSHAL_ACTION_MANAGED_CONV_RESULT: {
-		char *msg = g_strdup ("Marshalling of VARIANT not supported as a return type.");
-		mono_mb_emit_exception_marshal_directive (mb, msg);
-		break;
-	}
-
-	default:
-		g_assert_not_reached ();
-	}
-
-	return conv_arg;
+	g_assert_not_reached ();
 }
-
-#endif /* DISABLE_COM */
-#endif /* ENABLE_ILGEN */
 
 static gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
@@ -3457,9 +3347,9 @@ emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		return get_marshal_cb ()->emit_marshal_string (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-#if !defined(DISABLE_COM) && defined(ENABLE_ILGEN)
+#if !defined(DISABLE_COM)
 		if (spec && spec->native == MONO_NATIVE_STRUCT)
-			return emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			return get_marshal_cb ()->emit_marshal_variant (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 #endif
 
 #if !defined(DISABLE_COM)
@@ -7207,6 +7097,7 @@ install_noilgen (void)
 	cb.emit_marshal_safehandle = emit_marshal_safehandle_noilgen;
 	cb.emit_marshal_handleref = emit_marshal_handleref_noilgen;
 	cb.emit_marshal_object = emit_marshal_object_noilgen;
+	cb.emit_marshal_variant = emit_marshal_variant_noilgen;
 	cb.emit_virtual_stelemref = emit_virtual_stelemref_noilgen;
 	cb.emit_stelemref = emit_stelemref_noilgen;
 	cb.emit_array_address = emit_array_address_noilgen;
