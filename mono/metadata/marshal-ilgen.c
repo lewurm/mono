@@ -3825,3 +3825,105 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+static void
+emit_generic_array_helper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
+{
+	mono_mb_emit_ldarg (mb, 0);
+	for (i = 0; i < csig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + 1);
+	mono_mb_emit_managed_call (mb, method, NULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
+{
+	MonoImage *image = method->klass->image;
+	MonoMethodSignature *sig = mono_method_signature (method);
+	int param_count = sig->param_count + sig->hasthis + 1;
+	int pos_leave;
+	MonoExceptionClause *clause;
+
+	/* local 0 (temp for exception object) */
+	mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+
+	/* local 1 (temp for result) */
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_add_local (mb, sig->ret);
+
+	/* clear exception arg */
+	mono_mb_emit_ldarg (mb, param_count - 1);
+	mono_mb_emit_byte (mb, CEE_LDNULL);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+
+	/* try */
+	clause = (MonoExceptionClause *)mono_image_alloc0 (image, sizeof (MonoExceptionClause));
+	clause->try_offset = mono_mb_get_label (mb);
+
+	/* push method's args */
+	for (i = 0; i < param_count - 1; i++) {
+		MonoType *type;
+		MonoClass *klass;
+
+		mono_mb_emit_ldarg (mb, i);
+
+		/* get the byval type of the param */
+		klass = mono_class_from_mono_type (csig->params [i]);
+		type = &klass->byval_arg;
+
+		/* unbox struct args */
+		if (MONO_TYPE_ISSTRUCT (type)) {
+			mono_mb_emit_op (mb, CEE_UNBOX, klass);
+
+			/* byref args & and the "this" arg must remain a ptr.
+			   Otherwise make a copy of the value type */
+			if (!(csig->params [i]->byref || (i == 0 && sig->hasthis)))
+				mono_mb_emit_op (mb, CEE_LDOBJ, klass);
+
+			csig->params [i] = &mono_defaults.object_class->byval_arg;
+		}
+	}
+
+	/* call */
+	if (method->flags & METHOD_ATTRIBUTE_VIRTUAL)
+		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	else
+		mono_mb_emit_op (mb, CEE_CALL, method);
+
+	/* save result at local 1 */
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_stloc (mb, 1);
+
+	pos_leave = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	/* catch */
+	clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
+	clause->try_len = mono_mb_get_pos (mb) - clause->try_offset;
+	clause->data.catch_class = mono_defaults.object_class;
+
+	clause->handler_offset = mono_mb_get_label (mb);
+
+	/* store exception at local 0 */
+	mono_mb_emit_stloc (mb, 0);
+	mono_mb_emit_ldarg (mb, param_count - 1);
+	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+	mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+	mono_mb_set_clauses (mb, 1, clause);
+
+	mono_mb_patch_branch (mb, pos_leave);
+	/* end-try */
+
+	if (!MONO_TYPE_IS_VOID (sig->ret)) {
+		mono_mb_emit_ldloc (mb, 1);
+
+		/* box the return value */
+		if (MONO_TYPE_ISSTRUCT (sig->ret))
+			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type (sig->ret));
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+}
