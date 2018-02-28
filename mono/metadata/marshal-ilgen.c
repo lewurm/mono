@@ -3675,3 +3675,153 @@ mb_skip_visibility_ilgen (MonoMethodBuilder *mb)
 	mb->skip_visibility = 1;
 }
 
+static void
+emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method)
+{
+	int i, pos, pos2, this_local, taken_local, ret_local = 0;
+	MonoMethodSignature *sig = mono_method_signature (method);
+
+	/* result */
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		ret_local = mono_mb_add_local (mb, sig->ret);
+
+	if (method->klass->valuetype && !(method->flags & MONO_METHOD_ATTR_STATIC)) {
+		/* FIXME Is this really the best way to signal an error here?  Isn't this called much later after class setup? -AK */
+		mono_class_set_type_load_failure (method->klass, "");
+		/* This will throw the type load exception when the wrapper is compiled */
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		mono_mb_emit_op (mb, CEE_ISINST, method->klass);
+		mono_mb_emit_byte (mb, CEE_POP);
+
+		if (!MONO_TYPE_IS_VOID (sig->ret))
+			mono_mb_emit_ldloc (mb, ret_local);
+		mono_mb_emit_byte (mb, CEE_RET);
+
+		return;
+	}
+
+	/* this */
+	this_local = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
+	taken_local = mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
+
+	clause = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
+	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
+
+	mono_marshal_lock ();
+
+	if (!enter_method) {
+		MonoMethodDesc *desc;
+
+		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
+		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (enter_method);
+		mono_method_desc_free (desc);
+
+		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (exit_method);
+		mono_method_desc_free (desc);
+
+		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
+		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
+		g_assert (gettypefromhandle_method);
+		mono_method_desc_free (desc);
+	}
+
+	mono_marshal_unlock ();
+
+	/* Push this or the type object */
+	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
+		/* We have special handling for this in the JIT */
+		int index = mono_mb_add_data (mb, method->klass);
+		mono_mb_add_data (mb, mono_defaults.typehandle_class);
+		mono_mb_emit_byte (mb, CEE_LDTOKEN);
+		mono_mb_emit_i4 (mb, index);
+
+		mono_mb_emit_managed_call (mb, gettypefromhandle_method, NULL);
+	}
+	else
+		mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_stloc (mb, this_local);
+
+	/* Call Monitor::Enter() */
+	mono_mb_emit_ldloc (mb, this_local);
+	mono_mb_emit_ldloc_addr (mb, taken_local);
+	mono_mb_emit_managed_call (mb, enter_method, NULL);
+
+	clause->try_offset = mono_mb_get_label (mb);
+
+	/* Call the method */
+	if (sig->hasthis)
+		mono_mb_emit_ldarg (mb, 0);
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
+
+	if (ctx) {
+		ERROR_DECL (error);
+		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, error), NULL);
+		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+	} else {
+		mono_mb_emit_managed_call (mb, method, NULL);
+	}
+
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_stloc (mb, ret_local);
+
+	pos = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	clause->try_len = mono_mb_get_pos (mb) - clause->try_offset;
+	clause->handler_offset = mono_mb_get_label (mb);
+
+	/* Call Monitor::Exit() if needed */
+	mono_mb_emit_ldloc (mb, taken_local);
+	pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
+	mono_mb_emit_ldloc (mb, this_local);
+	mono_mb_emit_managed_call (mb, exit_method, NULL);
+	mono_mb_patch_branch (mb, pos2);
+	mono_mb_emit_byte (mb, CEE_ENDFINALLY);
+
+	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;
+
+	mono_mb_patch_branch (mb, pos);
+	if (!MONO_TYPE_IS_VOID (sig->ret))
+		mono_mb_emit_ldloc (mb, ret_local);
+	mono_mb_emit_byte (mb, CEE_RET);
+
+	mono_mb_set_clauses (mb, 1, clause);
+}
+
+static void
+emit_unbox_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method)
+{
+	MonoMethodSignature *sig = mono_method_signature (method);
+
+	mono_mb_emit_ldarg (mb, 0); 
+	mono_mb_emit_icon (mb, sizeof (MonoObject));
+	mono_mb_emit_byte (mb, CEE_ADD);
+	for (i = 0; i < sig->param_count; ++i)
+		mono_mb_emit_ldarg (mb, i + 1);
+	mono_mb_emit_managed_call (mb, method, NULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig)
+{
+	MonoGenericContainer *container = NULL;
+	/* Call the method */
+	if (sig->hasthis)
+		mono_mb_emit_ldarg (mb, 0);
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
+
+	if (ctx) {
+		ERROR_DECL (error);
+		mono_mb_emit_managed_call (mb, mono_class_inflate_generic_method_checked (method, &container->context, error), NULL);
+		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
+	} else {
+		mono_mb_emit_managed_call (mb, method, NULL);
+	}
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
