@@ -3895,9 +3895,9 @@ mono_marshal_get_castclass_with_cache (void)
 
 	mb = mono_mb_new (mono_defaults.object_class, "__castclass_with_cache", MONO_WRAPPER_CASTCLASS);
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
-	sig->params [obj_arg_position] = &mono_defaults.object_class->byval_arg;
-	sig->params [class_arg_position] = &mono_defaults.int_class->byval_arg;
-	sig->params [cache_arg_position] = &mono_defaults.int_class->byval_arg;
+	sig->params [TYPECHECK_OBJECT_ARG_POS] = &mono_defaults.object_class->byval_arg;
+	sig->params [TYPECHECK_CLASS_ARG_POS] = &mono_defaults.int_class->byval_arg;
+	sig->params [TYPECHECK_CACHE_ARG_POS] = &mono_defaults.int_class->byval_arg;
 	sig->ret = &mono_defaults.object_class->byval_arg;
 	sig->pinvoke = 0;
 
@@ -3917,7 +3917,7 @@ mono_marshal_get_castclass_with_cache (void)
 }
 
 /* this is an icall */
-static MonoObject *
+MonoObject *
 mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache)
 {
 	ERROR_DECL (error);
@@ -3961,11 +3961,11 @@ mono_marshal_get_isinst_with_cache (void)
 	mb = mono_mb_new (mono_defaults.object_class, "__isinst_with_cache", MONO_WRAPPER_CASTCLASS);
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
 	// The object
-	sig->params [obj_arg_position] = &mono_defaults.object_class->byval_arg;
+	sig->params [TYPECHECK_OBJECT_ARG_POS] = &mono_defaults.object_class->byval_arg;
 	// The class
-	sig->params [class_arg_position] = &mono_defaults.int_class->byval_arg;
+	sig->params [TYPECHECK_CLASS_ARG_POS] = &mono_defaults.int_class->byval_arg;
 	// The cache
-	sig->params [cache_arg_position] = &mono_defaults.int_class->byval_arg;
+	sig->params [TYPECHECK_CACHE_ARG_POS] = &mono_defaults.int_class->byval_arg;
 	sig->ret = &mono_defaults.object_class->byval_arg;
 	sig->pinvoke = 0;
 
@@ -5171,7 +5171,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (MonoString 
 }
 #endif /* !HOST_WIN32 */
 
-static void
+void
 mono_struct_delete_old (MonoClass *klass, char *ptr)
 {
 	MonoMarshalType *info;
@@ -6093,7 +6093,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		csig->ret = &mono_defaults.object_class->byval_arg;
 
-	get_marshal_cb ()->emit_thunk_invoke_wrapper (mb, method, csig)
+	get_marshal_cb ()->emit_thunk_invoke_wrapper (mb, method, csig);
 
 	res = mono_mb_create_and_cache (cache, method, mb, csig, param_count + 16);
 	mono_mb_free (mb);

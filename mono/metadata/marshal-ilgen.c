@@ -2006,9 +2006,9 @@ static void
 emit_castclass_ilgen (MonoMethodBuilder *mb)
 {
 	int return_null_pos, positive_cache_hit_pos, negative_cache_hit_pos, invalid_cast_pos;
-	const int obj_arg_position = 0;
-	const int class_arg_position = 1;
-	const int cache_arg_position = 2;
+	const int obj_arg_position = TYPECHECK_OBJECT_ARG_POS;
+	const int class_arg_position = TYPECHECK_CLASS_ARG_POS;
+	const int cache_arg_position = TYPECHECK_CACHE_ARG_POS;
 
 	generate_check_cache (obj_arg_position, class_arg_position, cache_arg_position, 
 												&return_null_pos, &negative_cache_hit_pos, &positive_cache_hit_pos, mb);
@@ -2034,9 +2034,9 @@ static void
 emit_isinst_ilgen (MonoMethodBuilder *mb)
 {
 	int return_null_pos, positive_cache_hit_pos, negative_cache_hit_pos;
-	const int obj_arg_position = 0;
-	const int class_arg_position = 1;
-	const int cache_arg_position = 2;
+	const int obj_arg_position = TYPECHECK_OBJECT_ARG_POS;
+	const int class_arg_position = TYPECHECK_CLASS_ARG_POS;
+	const int cache_arg_position = TYPECHECK_CACHE_ARG_POS;
 
 	generate_check_cache (obj_arg_position, class_arg_position, cache_arg_position, 
 		&return_null_pos, &negative_cache_hit_pos, &positive_cache_hit_pos, mb);
