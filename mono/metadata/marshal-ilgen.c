@@ -6006,3 +6006,71 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (closed)
 		g_free (sig);
 }
+
+static void
+emit_struct_to_ptr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
+{
+	if (klass->blittable) {
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
+		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_CPBLK);
+	} else {
+
+		/* allocate local 0 (pointer) src_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		/* allocate local 1 (pointer) dst_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		/* allocate local 2 (boolean) delete_old */
+		mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
+		mono_mb_emit_byte (mb, CEE_LDARG_2);
+		mono_mb_emit_stloc (mb, 2);
+
+		/* initialize src_ptr to point to the start of object data */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
+		mono_mb_emit_stloc (mb, 0);
+
+		/* initialize dst_ptr */
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_stloc (mb, 1);
+
+		emit_struct_conv (mb, klass, FALSE);
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_ptr_to_structr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
+{
+	if (klass->blittable) {
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
+		mono_mb_emit_byte (mb, CEE_PREFIX1);
+		mono_mb_emit_byte (mb, CEE_CPBLK);
+	} else {
+
+		/* allocate local 0 (pointer) src_ptr */
+		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		/* allocate local 1 (pointer) dst_ptr */
+		mono_mb_add_local (mb, &klass->this_arg);
+		
+		/* initialize src_ptr to point to the start of object data */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		mono_mb_emit_stloc (mb, 0);
+
+		/* initialize dst_ptr */
+		mono_mb_emit_byte (mb, CEE_LDARG_1);
+		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
+		mono_mb_emit_stloc (mb, 1);
+
+		emit_struct_conv (mb, klass, TRUE);
+	}
+
+	mono_mb_emit_byte (mb, CEE_RET);
+}

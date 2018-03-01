@@ -4384,6 +4384,11 @@ mono_marshal_get_isinst_with_cache (void)
 	return cached;
 }
 
+static void
+emit_struct_to_ptr_noilgen (MonoMethodBuilder *mb, MonoClass *klass)
+{
+}
+
 /**
  * mono_marshal_get_struct_to_ptr:
  * \param klass \c MonoClass
@@ -4412,39 +4417,8 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mb = mono_mb_new (klass, stoptr->name, MONO_WRAPPER_UNKNOWN);
 
-#ifdef ENABLE_ILGEN
-	if (klass->blittable) {
-		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
-		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
-		mono_mb_emit_byte (mb, CEE_PREFIX1);
-		mono_mb_emit_byte (mb, CEE_CPBLK);
-	} else {
+	get_marshal_cb ()->emit_struct_to_ptr (mb, klass);
 
-		/* allocate local 0 (pointer) src_ptr */
-		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		/* allocate local 1 (pointer) dst_ptr */
-		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		/* allocate local 2 (boolean) delete_old */
-		mono_mb_add_local (mb, &mono_defaults.boolean_class->byval_arg);
-		mono_mb_emit_byte (mb, CEE_LDARG_2);
-		mono_mb_emit_stloc (mb, 2);
-
-		/* initialize src_ptr to point to the start of object data */
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
-		mono_mb_emit_stloc (mb, 0);
-
-		/* initialize dst_ptr */
-		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_stloc (mb, 1);
-
-		emit_struct_conv (mb, klass, FALSE);
-	}
-
-	mono_mb_emit_byte (mb, CEE_RET);
-#endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_STRUCTURE_TO_PTR);
 	res = mono_mb_create (mb, mono_signature_no_pinvoke (stoptr), 0, info);
 	mono_mb_free (mb);
@@ -4456,6 +4430,11 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 		res = marshal_info->str_to_ptr;
 	mono_marshal_unlock ();
 	return res;
+}
+
+static void
+emit_ptr_to_structr_noilgen (MonoMethodBuilder *mb, MonoClass *klass)
+{
 }
 
 /**
@@ -4494,35 +4473,8 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 
 	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_UNKNOWN);
 
-#ifdef ENABLE_ILGEN
-	if (klass->blittable) {
-		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_icon (mb, mono_class_value_size (klass, NULL));
-		mono_mb_emit_byte (mb, CEE_PREFIX1);
-		mono_mb_emit_byte (mb, CEE_CPBLK);
-	} else {
+	get_marshal_cb ()->emit_ptr_to_struct (mb, klass);
 
-		/* allocate local 0 (pointer) src_ptr */
-		mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-		/* allocate local 1 (pointer) dst_ptr */
-		mono_mb_add_local (mb, &klass->this_arg);
-		
-		/* initialize src_ptr to point to the start of object data */
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		mono_mb_emit_stloc (mb, 0);
-
-		/* initialize dst_ptr */
-		mono_mb_emit_byte (mb, CEE_LDARG_1);
-		mono_mb_emit_ldflda (mb, sizeof (MonoObject));
-		mono_mb_emit_stloc (mb, 1);
-
-		emit_struct_conv (mb, klass, TRUE);
-	}
-
-	mono_mb_emit_byte (mb, CEE_RET);
-#endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PTR_TO_STRUCTURE);
 	res = mono_mb_create (mb, ptostr, 0, info);
 	mono_mb_free (mb);
@@ -6698,6 +6650,8 @@ install_noilgen (void)
 	cb.emit_marshal_object = emit_marshal_object_noilgen;
 	cb.emit_marshal_variant = emit_marshal_variant_noilgen;
 	cb.emit_castclass = emit_castclass_noilgen;
+	cb.emit_struct_to_ptr = emit_struct_to_ptr_noilgen;
+	cb.emit_ptr_to_struct = emit_ptr_to_struct_noilgen;
 	cb.emit_isinst = emit_isinst_noilgen;
 	cb.emit_virtual_stelemref = emit_virtual_stelemref_noilgen;
 	cb.emit_stelemref = emit_stelemref_noilgen;
