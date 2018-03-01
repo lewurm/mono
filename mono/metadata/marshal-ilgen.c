@@ -15,6 +15,7 @@
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
+#include "metadata/marshal-ilgen.h"
 #include "metadata/tabledefs.h"
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
@@ -6104,7 +6105,7 @@ emit_struct_to_ptr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 }
 
 static void
-emit_ptr_to_structr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
+emit_ptr_to_struct_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 {
 	if (klass->blittable) {
 		mono_mb_emit_byte (mb, CEE_LDARG_1);
@@ -6448,3 +6449,49 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gcons
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+void
+mono_marshal_ilgen_init (void)
+{
+	MonoMarshalCallbacks cb;
+	cb.emit_marshal_array = emit_marshal_array_ilgen;
+	cb.emit_marshal_boolean = emit_marshal_boolean_ilgen;
+	cb.emit_marshal_ptr = emit_marshal_ptr_ilgen;
+	cb.emit_marshal_char = emit_marshal_char_ilgen;
+	cb.emit_marshal_scalar = emit_marshal_scalar_ilgen;
+	cb.emit_marshal_custom = emit_marshal_custom_ilgen;
+	cb.emit_marshal_asany = emit_marshal_asany_ilgen;
+	cb.emit_marshal_vtype = emit_marshal_vtype_ilgen;
+	cb.emit_marshal_string = emit_marshal_string_ilgen;
+	cb.emit_marshal_safehandle = emit_marshal_safehandle_ilgen;
+	cb.emit_marshal_handleref = emit_marshal_handleref_ilgen;
+	cb.emit_marshal_object = emit_marshal_object_ilgen;
+	cb.emit_marshal_variant = emit_marshal_variant_ilgen;
+	cb.emit_castclass = emit_castclass_ilgen;
+	cb.emit_struct_to_ptr = emit_struct_to_ptr_ilgen;
+	cb.emit_ptr_to_struct = emit_ptr_to_struct_ilgen;
+	cb.emit_isinst = emit_isinst_ilgen;
+	cb.emit_virtual_stelemref = emit_virtual_stelemref_ilgen;
+	cb.emit_stelemref = emit_stelemref_ilgen;
+	cb.emit_array_address = emit_array_address_ilgen;
+	cb.emit_native_wrapper = emit_native_wrapper_ilgen;
+	cb.emit_managed_wrapper = emit_managed_wrapper_ilgen;
+	cb.emit_runtime_invoke_body = emit_runtime_invoke_body_ilgen;
+	cb.emit_runtime_invoke_dynamic = emit_runtime_invoke_dynamic_ilgen;
+	cb.emit_delegate_begin_invoke = emit_delegate_begin_invoke_ilgen;
+	cb.emit_delegate_end_invoke = emit_delegate_end_invoke_ilgen;
+	cb.emit_delegate_invoke_internal = emit_delegate_invoke_internal_ilgen;
+	cb.emit_synchronized_wrapper = emit_synchronized_wrapper_ilgen;
+	cb.emit_unbox_wrapper = emit_unbox_wrapper_ilgen;
+	cb.emit_array_accessor_wrapper = emit_array_accessor_wrapper_ilgen;
+	cb.emit_generic_array_helper = emit_generic_array_helper_ilgen;
+	cb.emit_thunk_invoke_wrapper = emit_thunk_invoke_wrapper_ilgen;
+	cb.emit_create_string_hack = emit_create_string_hack_ilgen;
+	cb.emit_native_icall_wrapper = emit_native_icall_wrapper_ilgen;
+	cb.emit_icall_wrapper = emit_icall_wrapper_ilgen;
+	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
+	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
+	cb.mb_set_dynamic = mb_set_dynamic_ilgen;
+	cb.mb_emit_exception = mb_emit_exception_ilgen;
+	cb.mb_emit_byte = mb_emit_byte_ilgen;
+	mono_install_marshal_callbacks (&cb);
+}

@@ -22,6 +22,7 @@
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
+#include "metadata/marshal-ilgen.h"
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
