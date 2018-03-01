@@ -131,7 +131,8 @@ endif
 #
 if !ENABLE_ILGEN
 libmono_ilgen_la_SOURCES = \
-	method-builder-ilgen.c
+	method-builder-ilgen.c \
+	marshal-ilgen.c
 libmono_ilgen_la_CFLAGS = $(SGEN_DEFINES)
 libmono_ilgen_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
@@ -156,7 +157,8 @@ endif
 
 if ENABLE_ILGEN
 ilgen_sources = \
-	method-builder-ilgen.c
+	method-builder-ilgen.c \
+	marshal-ilgen.c
 endif
 
 common_sources = \
