@@ -6074,3 +6074,270 @@ emit_ptr_to_structr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 }
+
+static void
+emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig)
+{
+	int i;
+	mono_mb_emit_byte (mb, CEE_LDARG_0);
+	for (i = 1; i <= csig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+	mono_mb_emit_managed_call (mb, res, NULL);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
+{
+	// FIXME:
+	MonoClass *handle_stack_mark_class;
+	MonoClass *error_class;
+	int thread_info_var = -1, stack_mark_var = -1, error_var = -1;
+	MonoMethodSignature *call_sig = csig;
+	gboolean uses_handles = FALSE;
+	gboolean save_handles_to_locals = FALSE;
+	IcallHandlesLocal *handles_locals = NULL;
+
+	(void) mono_lookup_internal_call_full (method, &uses_handles);
+
+	/* If it uses handles and MonoError, it had better check exceptions */
+	g_assert (!uses_handles || check_exceptions);
+
+	if (uses_handles) {
+		MonoMethodSignature *ret;
+
+		/* Add a MonoError argument and figure out which args need to be wrapped in handles */
+		// FIXME: The stuff from mono_metadata_signature_dup_internal_with_padding ()
+		ret = mono_metadata_signature_alloc (method->klass->image, csig->param_count + 1);
+
+		ret->param_count = csig->param_count + 1;
+		ret->ret = csig->ret;
+
+		handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
+		for (int i = 0; i < csig->param_count; ++i) {
+			IcallHandlesWrap w = signature_param_uses_handles (csig, i);
+			handles_locals [i].wrap = w;
+			switch (w) {
+				case ICALL_HANDLES_WRAP_OBJ:
+				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
+					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type(csig->params[i]));
+					if (w == ICALL_HANDLES_WRAP_OBJ_OUT || w == ICALL_HANDLES_WRAP_OBJ_INOUT)
+						save_handles_to_locals = TRUE;
+					break;
+				case ICALL_HANDLES_WRAP_NONE:
+				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+					ret->params [i] = csig->params [i];
+					break;
+				default:
+					g_assert_not_reached ();
+			}
+		}
+		/* Add MonoError* param */
+		ret->params [csig->param_count] = &mono_get_intptr_class ()->byval_arg;
+		ret->pinvoke = csig->pinvoke;
+
+		call_sig = ret;
+	}
+
+	if (uses_handles) {
+		handle_stack_mark_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/HandleStackMark");
+		error_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
+
+		thread_info_var = mono_mb_add_local (mb, &mono_get_intptr_class ()->byval_arg);
+		stack_mark_var = mono_mb_add_local (mb, &handle_stack_mark_class->byval_arg);
+		error_var = mono_mb_add_local (mb, &error_class->byval_arg);
+
+		if (save_handles_to_locals) {
+			/* add a local var to hold the handles for each out arg */
+			for (int i = 0; i < sig->param_count; ++i) {
+				int j = i + sig->hasthis;
+				switch (handles_locals[j].wrap) {
+					case ICALL_HANDLES_WRAP_NONE:
+					case ICALL_HANDLES_WRAP_OBJ:
+					case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+						handles_locals [j].handle = -1;
+						break;
+					case ICALL_HANDLES_WRAP_OBJ_INOUT:
+					case ICALL_HANDLES_WRAP_OBJ_OUT:
+						handles_locals [j].handle = mono_mb_add_local (mb, sig->params [i]);
+						break;
+					default:
+						g_assert_not_reached ();
+				}
+			}
+		}
+	}
+
+	if (sig->hasthis) {
+		int pos;
+
+		/*
+		 * Add a null check since public icalls can be called with 'call' which
+		 * does no such check.
+		 */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);			
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_exception (mb, "NullReferenceException", NULL);
+		mono_mb_patch_branch (mb, pos);
+	}
+
+	if (uses_handles) {
+		mono_mb_emit_ldloc_addr (mb, stack_mark_var);
+		mono_mb_emit_ldloc_addr (mb, error_var);
+		mono_mb_emit_icall (mb, mono_icall_start);
+		mono_mb_emit_stloc (mb, thread_info_var);
+
+		if (sig->hasthis) {
+			mono_mb_emit_byte (mb, CEE_LDARG_0);
+			/* TODO support adding wrappers to non-static struct methods */
+			g_assert (!mono_class_is_valuetype(mono_method_get_class (method)));
+			mono_mb_emit_icall (mb, mono_icall_handle_new);
+		}
+		for (i = 0; i < sig->param_count; i++) {
+			/* load each argument. references into the managed heap get wrapped in handles */
+			int j = i + sig->hasthis;
+			switch (handles_locals[j].wrap) {
+				case ICALL_HANDLES_WRAP_NONE:
+					mono_mb_emit_ldarg (mb, j);
+					break;
+				case ICALL_HANDLES_WRAP_OBJ:
+					/* argI = mono_handle_new (argI_raw) */
+					mono_mb_emit_ldarg (mb, j);
+					mono_mb_emit_icall (mb, mono_icall_handle_new);
+					break;
+				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
+					/* if inout:
+					 *   handleI = argI = mono_handle_new (*argI_raw)
+					 * otherwise:
+					 *   handleI = argI = mono_handle_new (NULL)
+					 */
+					if (handles_locals[j].wrap == ICALL_HANDLES_WRAP_OBJ_INOUT) {
+						mono_mb_emit_ldarg (mb, j);
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+					} else
+						mono_mb_emit_byte (mb, CEE_LDNULL);
+					mono_mb_emit_icall (mb, mono_icall_handle_new);
+					/* tmp = argI */
+					mono_mb_emit_byte (mb, CEE_DUP);
+					/* handleI = tmp */
+					mono_mb_emit_stloc (mb, handles_locals[j].handle);
+					break;
+				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+					/* (void) mono_handle_new (argI); argI */
+					mono_mb_emit_ldarg (mb, j);
+					mono_mb_emit_byte (mb, CEE_DUP);
+					mono_mb_emit_icall (mb, mono_icall_handle_new_interior);
+					mono_mb_emit_byte (mb, CEE_POP);
+#if 0
+					fprintf (stderr, " Method %s.%s.%s has byref valuetype argument %d\n", method->klass->name_space, method->klass->name, method->name, i);
+#endif
+					break;
+				default:
+					g_assert_not_reached ();
+			}
+		}
+		mono_mb_emit_ldloc_addr (mb, error_var);
+	} else {
+		if (sig->hasthis)
+			mono_mb_emit_byte (mb, CEE_LDARG_0);
+		for (i = 0; i < sig->param_count; i++)
+			mono_mb_emit_ldarg (mb, i + sig->hasthis);
+	}
+
+	if (aot) {
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
+		mono_mb_emit_calli (mb, call_sig);
+	} else {
+		g_assert (piinfo->addr);
+		mono_mb_emit_native_call (mb, call_sig, piinfo->addr);
+	}
+
+	if (uses_handles) {
+		if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
+			// if (ret != NULL_HANDLE) {
+			//   ret = MONO_HANDLE_RAW(ret)
+			// }
+			mono_mb_emit_byte (mb, CEE_DUP);
+			int pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
+			mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
+			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+			mono_mb_patch_branch (mb, pos);
+		}
+		if (save_handles_to_locals) {
+			for (i = 0; i < sig->param_count; i++) {
+				int j = i + sig->hasthis;
+				switch (handles_locals [j].wrap) {
+					case ICALL_HANDLES_WRAP_NONE:
+					case ICALL_HANDLES_WRAP_OBJ:
+					case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+						break;
+					case ICALL_HANDLES_WRAP_OBJ_INOUT:
+					case ICALL_HANDLES_WRAP_OBJ_OUT:
+						/* *argI_raw = MONO_HANDLE_RAW (handleI) */
+
+						/* argI_raw */
+						mono_mb_emit_ldarg (mb, j);
+						/* handleI */
+						mono_mb_emit_ldloc (mb, handles_locals [j].handle);
+						/* MONO_HANDLE_RAW(handleI) */
+						mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+						/* *argI_raw = MONO_HANDLE_RAW(handleI) */
+						mono_mb_emit_byte (mb, CEE_STIND_REF);
+						break;
+					default:
+						g_assert_not_reached ();
+				}
+			}
+		}
+		g_free (handles_locals);
+
+		mono_mb_emit_ldloc (mb, thread_info_var);
+		mono_mb_emit_ldloc_addr (mb, stack_mark_var);
+		mono_mb_emit_ldloc_addr (mb, error_var);
+		mono_mb_emit_icall (mb, mono_icall_end);
+	}
+
+	if (check_exceptions)
+		emit_thread_interrupt_checkpoint (mb);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+mb_emit_exception_ilgen (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
+{
+	mono_mb_emit_exception_full (mb, exc_nspace, exc_name, msg);
+}
+
+static void
+emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count)
+{
+	for (i = 0; i < param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+
+	if (type & VTFIXUP_TYPE_CALL_MOST_DERIVED)
+		mono_mb_emit_op (mb, CEE_CALLVIRT, method);
+	else
+		mono_mb_emit_op (mb, CEE_CALL, method);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2)
+{
+	if (sig->hasthis)
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+
+	for (i = 0; i < sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i + sig->hasthis);
+
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func);
+	mono_mb_emit_calli (mb, csig2);
+	if (check_exceptions)
+		emit_thread_interrupt_checkpoint (mb);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
