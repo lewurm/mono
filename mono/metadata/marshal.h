@@ -247,6 +247,21 @@ typedef struct {
 	} d;
 } WrapperInfo;
 
+enum {
+	STELEMREF_OBJECT, /*no check at all*/
+	STELEMREF_SEALED_CLASS, /*check vtable->klass->element_type */
+	STELEMREF_CLASS, /*only the klass->parents check*/
+	STELEMREF_CLASS_SMALL_IDEPTH, /* like STELEMREF_CLASS bit without the idepth check */
+	STELEMREF_INTERFACE, /*interfaces without variant generic arguments. */
+	STELEMREF_COMPLEX, /*arrays, MBR or types with variant generic args - go straight to icalls*/
+	STELEMREF_KIND_COUNT
+};
+
+static const char *strelemref_wrapper_name[] = {
+	"object", "sealed_class", "class", "class_small_idepth", "interface", "complex"
+};
+
+
 #define MONO_MARSHAL_CALLBACKS_VERSION 1
 
 typedef struct {
@@ -310,6 +325,15 @@ mono_type_to_ldind (MonoType *type);
 
 guint
 mono_type_to_stind (MonoType *type);
+
+void
+mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum);
+
+MonoString *
+mono_string_from_byvalstr (const char *data, int len);
+
+MonoString *
+mono_string_from_byvalwstr (gunichar2 *data, int len);
 
 /* functions to create various architecture independent helper functions */
 
@@ -443,6 +467,115 @@ mono_marshal_free_ccw (MonoObject* obj);
 
 void
 cominterop_release_all_rcws (void); 
+
+MonoString*
+ves_icall_mono_string_from_utf16 (gunichar2 *data);
+
+char*
+ves_icall_mono_string_to_utf8 (MonoString *str);
+
+MonoDelegate*
+mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
+
+MONO_API void *
+mono_marshal_string_to_utf16 (MonoString *s);
+
+#ifndef HOST_WIN32
+gpointer
+mono_string_to_utf8str (MonoString *string_obj);
+#endif
+
+MonoStringBuilder *
+mono_string_utf8_to_builder2 (char *text);
+
+MonoStringBuilder *
+mono_string_utf16_to_builder2 (gunichar2 *text);
+
+gchar*
+mono_string_builder_to_utf8 (MonoStringBuilder *sb);
+
+gunichar2*
+mono_string_builder_to_utf16 (MonoStringBuilder *sb);
+
+void
+mono_string_utf8_to_builder (MonoStringBuilder *sb, char *text);
+
+void
+mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text);
+
+void
+mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
+
+void
+mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
+
+gpointer
+mono_delegate_to_ftnptr (MonoDelegate *delegate);
+
+gpointer
+mono_array_to_savearray (MonoArray *array);
+
+void
+mono_free_lparray (MonoArray *array, gpointer* nativeArray);
+
+void
+mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum);
+
+gpointer
+mono_array_to_lparray (MonoArray *array);
+
+void 
+mono_struct_delete_old (MonoClass *klass, char *ptr);
+
+MonoObject*
+mono_object_isinst_icall (MonoObject *obj, MonoClass *klass);
+
+MonoString*
+ves_icall_string_new_wrapper (const char *text);
+
+int
+mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
+	      MonoMarshalSpec *spec, int conv_arg, 
+	      MonoType **conv_arg_type, MarshalAction action);
+
+MonoObject *
+mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *cache);
+
+MonoAsyncResult *
+mono_delegate_begin_invoke (MonoDelegate *delegate, gpointer *params);
+
+MonoObject *
+mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params);
+
+MonoMarshalNative
+mono_marshal_get_string_encoding (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
+
+MonoMarshalConv
+mono_marshal_get_string_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
+
+MonoMarshalConv
+mono_marshal_get_stringbuilder_to_ptr_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
+
+MonoMarshalConv
+mono_marshal_get_ptr_to_stringbuilder_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec, gboolean *need_free);
+
+MonoMarshalConv
+mono_marshal_get_ptr_to_string_conv (MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec, gboolean *need_free);
+
+MonoType*
+marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/);
+
+MonoClass*
+marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, guint8 *ldop/*out*/);
+
+gboolean
+mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo);
+
+gboolean
+mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
+
+void*
+ves_icall_marshal_alloc (gsize size);
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_copy_to_unmanaged (MonoArray *src, gint32 start_index,
