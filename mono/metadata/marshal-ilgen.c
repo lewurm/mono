@@ -3683,7 +3683,7 @@ emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 }
 
 static void
-emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class)
+emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
 	int local_i, local_len, local_delegates, local_d, local_target, local_res;
 	int pos0, pos1, pos2;
@@ -3869,10 +3869,11 @@ mb_set_dynamic_ilgen (MonoMethodBuilder *mb)
 }
 
 static void
-emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx)
+emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
 {
 	int i, pos, pos2, this_local, taken_local, ret_local = 0;
 	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoExceptionClause *clause;
 
 	/* result */
 	if (!MONO_TYPE_IS_VOID (sig->ret))
@@ -3899,29 +3900,6 @@ emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 	clause = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
 	clause->flags = MONO_EXCEPTION_CLAUSE_FINALLY;
-
-	mono_marshal_lock ();
-
-	if (!enter_method) {
-		MonoMethodDesc *desc;
-
-		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		g_assert (enter_method);
-		mono_method_desc_free (desc);
-
-		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
-		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		g_assert (exit_method);
-		mono_method_desc_free (desc);
-
-		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
-		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
-		g_assert (gettypefromhandle_method);
-		mono_method_desc_free (desc);
-	}
-
-	mono_marshal_unlock ();
 
 	/* Push this or the type object */
 	if (method->flags & METHOD_ATTRIBUTE_STATIC) {
@@ -3992,7 +3970,7 @@ emit_unbox_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method)
 	mono_mb_emit_ldarg (mb, 0); 
 	mono_mb_emit_icon (mb, sizeof (MonoObject));
 	mono_mb_emit_byte (mb, CEE_ADD);
-	for (i = 0; i < sig->param_count; ++i)
+	for (int i = 0; i < sig->param_count; ++i)
 		mono_mb_emit_ldarg (mb, i + 1);
 	mono_mb_emit_managed_call (mb, method, NULL);
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -4005,7 +3983,7 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 	/* Call the method */
 	if (sig->hasthis)
 		mono_mb_emit_ldarg (mb, 0);
-	for (i = 0; i < sig->param_count; i++)
+	for (int i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 
 	if (ctx) {
@@ -4022,7 +4000,7 @@ static void
 emit_generic_array_helper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
 	mono_mb_emit_ldarg (mb, 0);
-	for (i = 0; i < csig->param_count; i++)
+	for (int i = 0; i < csig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + 1);
 	mono_mb_emit_managed_call (mb, method, NULL);
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -4054,7 +4032,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	clause->try_offset = mono_mb_get_label (mb);
 
 	/* push method's args */
-	for (i = 0; i < param_count - 1; i++) {
+	for (int i = 0; i < param_count - 1; i++) {
 		MonoType *type;
 		MonoClass *klass;
 

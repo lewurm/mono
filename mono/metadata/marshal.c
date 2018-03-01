@@ -2204,7 +2204,7 @@ mb_emit_exception_noilgen (MonoMethodBuilder *mb, const char *exc_nspace, const 
 }
 
 static void
-emit_delegate_invoke_internal_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class)
+emit_delegate_invoke_internal_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
 }
 
@@ -2345,7 +2345,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		mb = mono_mb_new (get_wrapper_target_class (method->klass->image), name, MONO_WRAPPER_DELEGATE_INVOKE);
 	g_free (name);
 
-	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class);
+	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
@@ -4224,7 +4224,7 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 }
 
 static void
-emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx)
+emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
 {
 	if (method->klass->valuetype && !(method->flags & MONO_METHOD_ATTR_STATIC)) {
 		/* FIXME Is this really the best way to signal an error here?  Isn't this called much later after class setup? -AK */
@@ -4232,28 +4232,6 @@ emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 		return;
 	}
 
-	mono_marshal_lock ();
-
-	if (!enter_method) {
-		MonoMethodDesc *desc;
-
-		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
-		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		g_assert (enter_method);
-		mono_method_desc_free (desc);
-
-		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
-		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
-		g_assert (exit_method);
-		mono_method_desc_free (desc);
-
-		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
-		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
-		g_assert (gettypefromhandle_method);
-		mono_method_desc_free (desc);
-	}
-
-	mono_marshal_unlock ();
 }
 
 /**
@@ -4266,7 +4244,6 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 {
 	static MonoMethod *enter_method, *exit_method, *gettypefromhandle_method;
 	MonoMethodSignature *sig;
-	MonoExceptionClause *clause;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -4313,8 +4290,31 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 	info->d.synchronized.method = method;
 
+	mono_marshal_lock ();
+
+	if (!enter_method) {
+		MonoMethodDesc *desc;
+
+		desc = mono_method_desc_new ("Monitor:Enter(object,bool&)", FALSE);
+		enter_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (enter_method);
+		mono_method_desc_free (desc);
+
+		desc = mono_method_desc_new ("Monitor:Exit", FALSE);
+		exit_method = mono_method_desc_search_in_class (desc, mono_defaults.monitor_class);
+		g_assert (exit_method);
+		mono_method_desc_free (desc);
+
+		desc = mono_method_desc_new ("Type:GetTypeFromHandle", FALSE);
+		gettypefromhandle_method = mono_method_desc_search_in_class (desc, mono_defaults.systemtype_class);
+		g_assert (gettypefromhandle_method);
+		mono_method_desc_free (desc);
+	}
+
+	mono_marshal_unlock ();
+
 	get_marshal_cb ()->mb_skip_visibility (mb);
-	get_marshal_cb ()->emit_synchronized_wrapper (mb, method, ctx);
+	get_marshal_cb ()->emit_synchronized_wrapper (mb, method, ctx, container, enter_method, exit_method, gettypefromhandle_method);
 
 	if (ctx) {
 		MonoMethod *def;
