@@ -317,6 +317,18 @@ mono_string_to_bstr(MonoString* str);
 
 void mono_delegate_free_ftnptr (MonoDelegate *delegate);
 
+gpointer
+mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int param_attrs);
+
+void
+mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
+
+void
+mono_free_lparray (MonoArray *array, gpointer* nativeArray);
+
+void
+mono_marshal_ftnptr_eh_callback (guint32 gchandle);
+
 void
 mono_marshal_set_last_error (void);
 
@@ -473,6 +485,12 @@ ves_icall_mono_string_from_utf16 (gunichar2 *data);
 
 char*
 ves_icall_mono_string_to_utf8 (MonoString *str);
+
+void *
+mono_marshal_string_to_utf16_copy (MonoString *s);
+
+MonoString*
+mono_string_new_len_wrapper (const char *text, guint length);
 
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);

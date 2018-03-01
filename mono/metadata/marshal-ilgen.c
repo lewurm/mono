@@ -3992,7 +3992,7 @@ emit_unbox_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method)
 }
 
 static void
-emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig)
+emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx)
 {
 	MonoGenericContainer *container = NULL;
 	/* Call the method */
@@ -5751,7 +5751,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	return conv_arg;
 }
 
-void
+static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
 	MonoMethodSignature *sig, *csig;
@@ -6135,7 +6135,7 @@ emit_ptr_to_structr_ilgen (MonoMethodBuilder *mb, MonoClass *klass)
 }
 
 static void
-emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig)
+emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res)
 {
 	int i;
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
@@ -6191,7 +6191,7 @@ signature_param_uses_handles (MonoMethodSignature *sig, int param)
 }
 
 static void
-emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
+emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
 {
 	// FIXME:
 	MonoClass *handle_stack_mark_class;
@@ -6418,7 +6418,7 @@ mb_emit_exception_ilgen (MonoMethodBuilder *mb, const char *exc_nspace, const ch
 }
 
 static void
-emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count)
+emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type)
 {
 	for (int i = 0; i < param_count; i++)
 		mono_mb_emit_ldarg (mb, i);

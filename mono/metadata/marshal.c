@@ -94,12 +94,6 @@ delegate_hash_table_add (MonoDelegateHandle d);
 static void
 delegate_hash_table_remove (MonoDelegate *d);
 
-static void *
-mono_marshal_string_to_utf16_copy (MonoString *s);
-
-static MonoString*
-mono_string_new_len_wrapper (const char *text, guint length);
-
 static void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
 
@@ -114,18 +108,6 @@ mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error);
 
 MonoDelegateHandle
 mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error);
-
-gpointer
-mono_marshal_asany (MonoObject *obj, MonoMarshalNative string_encoding, int param_attrs);
-
-void
-mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_encoding, int param_attrs);
-
-void
-mono_free_lparray (MonoArray *array, gpointer* nativeArray);
-
-static void
-mono_marshal_ftnptr_eh_callback (guint32 gchandle);
 
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (string_builder, "System.Text", "StringBuilder");
@@ -3233,12 +3215,12 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static void
-emit_create_string_hack_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig)
+emit_create_string_hack_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res)
 {
 }
 
 static void
-emit_native_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
+emit_native_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *pinfo)
 {
 }
 
@@ -3339,7 +3321,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				/* create a wrapper to preserve .ctor in stack trace */
 				mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 
-				get_marshal_cb ()->emit_create_string_hack (mb, csig);
+				get_marshal_cb ()->emit_create_string_hack (mb, csig, res);
 
 				info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_STRING_CTOR);
 				info->d.string_ctor.method = method;
@@ -3393,7 +3375,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (method->string_ctor)
 			csig->ret = &mono_defaults.string_class->byval_arg;
 
-		get_marshal_cb ()->emit_native_icall_wrapper (mb, method, csig);
+		get_marshal_cb ()->emit_native_icall_wrapper (mb, method, csig, check_exceptions, aot, piinfo);
 
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 		info->d.managed_to_native.method = method;
@@ -3569,7 +3551,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle);
 }
 
-void
+static void
 emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
 	MonoMethodSignature *sig, *csig;
@@ -3811,7 +3793,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 }
 
 static void
-emit_vtfixup_ftnptr_noilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count)
+emit_vtfixup_ftnptr_noilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type)
 {
 }
 
@@ -3879,7 +3861,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 
 	param_count = sig->param_count + sig->hasthis;
-	get_marshal_cb ()->emit_vtfixup_ftnptr (mb, method, param_count);
+	get_marshal_cb ()->emit_vtfixup_ftnptr (mb, method, param_count, type);
 	get_marshal_cb ()->mb_set_dynamic (mb);
 
 	method = mono_mb_create (mb, sig, param_count, NULL);
@@ -4642,7 +4624,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 }
 
 static void
-emit_array_accessor_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig)
+emit_array_accessor_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx)
 {
 }
 
@@ -4685,7 +4667,7 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
 
-	get_marshal_cb ()->emit_array_accessor_wrapper (mb, method, sig);
+	get_marshal_cb ()->emit_array_accessor_wrapper (mb, method, sig, ctx);
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ARRAY_ACCESSOR);
 	info->d.array_accessor.method = method;
@@ -6148,7 +6130,7 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 		mono_marshal_unlock ();
 }
 
-static void
+void
 mono_marshal_ftnptr_eh_callback (guint32 gchandle)
 {
 	g_assert (ftnptr_eh_callback);
