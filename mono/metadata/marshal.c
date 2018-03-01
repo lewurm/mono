@@ -4331,7 +4331,7 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 #endif
 
 static void
-emit_virtual_stelemref_noilgen (MonoMethodBuilder *mb, int kind)
+emit_virtual_stelemref_noilgen (MonoMethodBuilder *mb, const char **param_names, int kind)
 {
 }
 
@@ -4351,6 +4351,7 @@ get_virtual_stelemref_wrapper (int kind)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	char *name;
+	const char *param_names [16];
 	WrapperInfo *info;
 
 	if (cached_methods [kind])
@@ -4371,7 +4372,9 @@ get_virtual_stelemref_wrapper (int kind)
 		signature = sig;
 	}
 
-	get_marshal_cb ()->emit_virtual_stelemref (mb, kind);
+	param_names [0] = "index";
+	param_names [1] = "value";
+	get_marshal_cb ()->emit_virtual_stelemref (mb, param_names, kind);
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_VIRTUAL_STELEMREF);
 	info->d.virtual_stelemref.kind = kind;
 	res = mono_mb_create (mb, signature, 4, info);

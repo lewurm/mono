@@ -3031,15 +3031,12 @@ emit_marshal_scalar_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 }
 
 static void
-emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, int kind)
+emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, int kind)
 {
-	const char *param_names [16];
 	guint32 b1, b2, b3, b4;
 	int aklass, vklass, vtable, uiid;
 	int array_slot_addr;
 
-	param_names [0] = "index";
-	param_names [1] = "value";
 	mono_mb_set_param_names (mb, param_names);
 
 	/*For now simply call plain old stelemref*/

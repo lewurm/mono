@@ -284,7 +284,7 @@ typedef struct {
 	void (*emit_struct_to_ptr) (MonoMethodBuilder *mb, MonoClass *klass);
 	void (*emit_ptr_to_struct) (MonoMethodBuilder *mb, MonoClass *klass);
 	void (*emit_isinst) (MonoMethodBuilder *mb);
-	void (*emit_virtual_stelemref) (MonoMethodBuilder *mb, int kind);
+	void (*emit_virtual_stelemref) (MonoMethodBuilder *mb, const char **param_names, int kind);
 	void (*emit_stelemref) (MonoMethodBuilder *mb);
 	void (*emit_array_address) (MonoMethodBuilder *mb, int rank, int elem_size);
 	void (*emit_native_wrapper) (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param);
