@@ -603,7 +603,7 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 }
 
 /* This is a JIT icall, it sets the pending exception and returns NULL on error */
-static MonoString *
+MonoString *
 mono_string_from_byvalstr (const char *data, int max_len)
 {
 	ERROR_DECL (error);
@@ -622,7 +622,7 @@ mono_string_from_byvalstr (const char *data, int max_len)
 }
 
 /* This is a JIT icall, it sets the pending exception and return NULL on error */
-static MonoString *
+MonoString *
 mono_string_from_byvalwstr (gunichar2 *data, int max_len)
 {
 	ERROR_DECL (error);
@@ -733,7 +733,7 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 #endif
 }
 
-static void
+void
 mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclass, guint32 elnum)
 {
 	g_assert (arr->obj.vtable->klass->element_class == mono_defaults.char_class);
@@ -756,7 +756,7 @@ mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclas
 		g_assert_not_reached ();
 }
 
-static void
+void
 mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum)
 {
 	mono_byvalarray_to_array (arr, native_arr, mono_defaults.byte_class, elnum);
@@ -786,7 +786,7 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 	}
 }
 
-static void
+void
 mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum)
 {
 	mono_array_to_byvalarray (native_arr, arr, mono_defaults.byte_class, elnum);
@@ -2169,7 +2169,6 @@ MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
 {
 	MonoMethodSignature *sig, *static_sig, *invoke_sig;
-	int i;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -2737,7 +2736,6 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	static MonoMethod *method;
 	MonoMethodSignature *csig;
 	MonoMethodBuilder *mb;
-	int pos;
 	char *name;
 	WrapperInfo *info;
 
@@ -2869,7 +2867,7 @@ mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig)
 }
 
 static void
-emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
+emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 }
 
@@ -2884,7 +2882,6 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	MonoMethodSignature *csig, *csig2;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	int i;
 	WrapperInfo *info;
 	
 	GHashTable *cache = get_cache (&mono_defaults.object_class->image->icall_wrapper_cache, mono_aligned_addr_hash, NULL);
@@ -3575,7 +3572,7 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_BOOLEAN:
-			emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
+			mono_emit_marshal (m, i, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_MANAGED_CONV_IN);
 		}
 	}
 
@@ -4253,7 +4250,6 @@ MonoMethod *
 mono_marshal_get_unbox_wrapper (MonoMethod *method)
 {
 	MonoMethodSignature *sig = mono_method_signature (method);
-	int i;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
@@ -4566,7 +4562,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 
 	ret = NULL;
 	mono_marshal_lock ();
-	for (i = 0; i < elem_addr_cache_next; ++i) {
+	for (int i = 0; i < elem_addr_cache_next; ++i) {
 		if (elem_addr_cache [i].rank == rank && elem_addr_cache [i].elem_size == elem_size) {
 			ret = elem_addr_cache [i].method;
 			break;
@@ -4581,7 +4577,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	/* void* address (void* array, int idx0, int idx1, int idx2, ...) */
 	sig->ret = &mono_defaults.int_class->byval_arg;
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
-	for (i = 0; i < rank; ++i) {
+	for (int i = 0; i < rank; ++i) {
 		sig->params [i + 1] = &mono_defaults.int32_class->byval_arg;
 	}
 
@@ -4600,7 +4596,7 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	/* cache the result */
 	cached = 0;
 	mono_marshal_lock ();
-	for (i = 0; i < elem_addr_cache_next; ++i) {
+	for (int i = 0; i < elem_addr_cache_next; ++i) {
 		if (elem_addr_cache [i].rank == rank && elem_addr_cache [i].elem_size == elem_size) {
 			/* FIXME: free ret */
 			ret = elem_addr_cache [i].method;
@@ -4643,7 +4639,6 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	GHashTable *cache;
-	int i;
 	MonoGenericContext *ctx = NULL;
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
@@ -4773,7 +4768,7 @@ mono_marshal_string_to_utf16 (MonoString *s)
 }
 
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
-static void *
+void *
 mono_marshal_string_to_utf16_copy (MonoString *s)
 {
 	if (s == NULL) {
@@ -5951,7 +5946,6 @@ mono_marshal_get_generic_array_helper (MonoClass *klass, gchar *name, MonoMethod
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	WrapperInfo *info;
-	int i;
 
 	mb = mono_mb_new_no_dup_name (klass, name, MONO_WRAPPER_MANAGED_TO_MANAGED);
 	mb->method->slot = -1;
@@ -6220,7 +6214,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 }
 
 static void
-marshal_emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
+emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
 {
 }
 
@@ -6232,7 +6226,7 @@ mono_install_marshal_callbacks (MonoMarshalCallbacks *cb)
 {
 	g_assert (!cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&masrhal_cb, cb, sizeof (MonoMarshalCallbacks));
+	memcpy (&marshal_cb, cb, sizeof (MonoMarshalCallbacks));
 	cb_inited = TRUE;
 }
 
@@ -6260,7 +6254,7 @@ install_noilgen (void)
 	cb.emit_virtual_stelemref = emit_virtual_stelemref_noilgen;
 	cb.emit_stelemref = emit_stelemref_noilgen;
 	cb.emit_array_address = emit_array_address_noilgen;
-	cb.emit_native_wrapper = marshal_emit_native_wrapper_noilgen;
+	cb.emit_native_wrapper = emit_native_wrapper_noilgen;
 	cb.emit_managed_wrapper = emit_managed_wrapper_noilgen;
 	cb.emit_runtime_invoke_body = emit_runtime_invoke_body_noilgen;
 	cb.emit_runtime_invoke_dynamic = emit_runtime_invoke_dynamic_noilgen;

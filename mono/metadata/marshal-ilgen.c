@@ -1638,7 +1638,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 }
 
 /**
- * marshal_emit_native_wrapper_ilgen:
+ * emit_native_wrapper_ilgen:
  * \param image the image to use for looking up custom marshallers
  * \param sig The signature of the native function
  * \param piinfo Marshalling information
@@ -1651,7 +1651,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
  * generates IL code for the pinvoke wrapper, the generated code calls \p func .
  */
 static void
-marshal_emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
+emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
 {
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
@@ -6432,7 +6432,7 @@ emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_
 }
 
 static void
-emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
+emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 	if (sig->hasthis)
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
