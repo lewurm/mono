@@ -536,6 +536,7 @@ void
 mono_sgen_mono_ilgen_init (void)
 {
 	MonoSgenMonoCallbacks cb;
+	cb.version = MONO_SGEN_MONO_CALLBACKS_VERSION;
 	cb.emit_nursery_check = emit_nursery_check_ilgen;
 	cb.emit_managed_allocater = emit_managed_allocater_ilgen;
 	mono_install_sgen_mono_callbacks (&cb);

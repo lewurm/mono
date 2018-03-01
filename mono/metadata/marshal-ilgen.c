@@ -6453,6 +6453,7 @@ void
 mono_marshal_ilgen_init (void)
 {
 	MonoMarshalCallbacks cb;
+	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;;
 	cb.emit_marshal_array = emit_marshal_array_ilgen;
 	cb.emit_marshal_boolean = emit_marshal_boolean_ilgen;
 	cb.emit_marshal_ptr = emit_marshal_ptr_ilgen;

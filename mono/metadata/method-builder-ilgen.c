@@ -199,6 +199,7 @@ void
 mono_method_builder_ilgen_init (void)
 {
 	MonoMethodBuilderCallbacks cb;
+	cb.version = MONO_METHOD_BUILDER_CALLBACKS_VERSION;
 	cb.new_base = new_base_ilgen;
 	cb.free = free_ilgen;
 	cb.create_method = create_method_ilgen;
