@@ -23,6 +23,7 @@
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
 #include "metadata/method-builder.h"
+#include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
 #include "metadata/exception.h"
 #include "metadata/appdomain.h"
@@ -87,6 +88,9 @@ static int class_marshal_info_count;
 static void ftnptr_eh_callback_default (guint32 gchandle);
 
 static MonoFtnPtrEHCallback ftnptr_eh_callback = ftnptr_eh_callback_default;
+
+static MonoMarshalCallbacks *
+get_marshal_cb (void);
 
 static void
 delegate_hash_table_add (MonoDelegateHandle d);
@@ -6216,6 +6220,18 @@ marshal_emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, Mo
 {
 }
 
+static MonoMarshalCallbacks marshal_cb;
+static gboolean cb_inited = FALSE;
+
+void
+mono_install_marshal_callbacks (MonoMarshalCallbacks *cb)
+{
+	g_assert (!cb_inited);
+	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
+	memcpy (&masrhal_cb, cb, sizeof (MonoMarshalCallbacks));
+	cb_inited = TRUE;
+}
+
 static void
 install_noilgen (void)
 {
@@ -6260,5 +6276,19 @@ install_noilgen (void)
 	cb.mb_set_dynamic = mb_set_dynamic_noilgen;
 	cb.mb_emit_exception = mb_emit_exception_noilgen;
 	cb.emit_byte = emit_byte_noilgen;
+	mono_install_marshal_callbacks (&cb);
+}
+
+static MonoMarshalCallbacks *
+get_marshal_cb (void)
+{
+	if (G_UNLIKELY (!cb_inited)) {
+#ifdef ENABLE_ILGEN
+		mono_marshal_ilgen_init ();
+#else
+		install_noilgen ();
+#endif
+	}
+	return &marshal_cb;
 }
 

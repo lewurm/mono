@@ -9,6 +9,7 @@
 #endif
 
 #include "metadata/method-builder-ilgen.h"
+#include "metadata/method-builder-ilgen-internals.h"
 #include "object.h"
 #include "loader.h"
 #include "cil-coff.h"

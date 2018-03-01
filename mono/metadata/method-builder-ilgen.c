@@ -8,6 +8,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/method-builder.h"
 #include "mono/metadata/method-builder-ilgen.h"
+#include "mono/metadata/method-builder-ilgen-internals.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/appdomain.h"

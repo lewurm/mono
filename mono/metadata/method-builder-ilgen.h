@@ -14,22 +14,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
 
-/* ilgen version */
-struct _MonoMethodBuilder {
-	MonoMethod *method;
-	char *name;
-	gboolean no_dup_name;
-	GList *locals_list;
-	int locals;
-	gboolean dynamic;
-	gboolean skip_visibility, init_locals;
-	guint32 code_size, pos;
-	unsigned char *code;
-	int num_clauses;
-	MonoExceptionClause *clauses;
-	const char **param_names;
-};
-
 MONO_API void
 mono_method_builder_ilgen_init (void);
 

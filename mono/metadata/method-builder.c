@@ -14,6 +14,8 @@
 #include "loader.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/method-builder.h"
+#include "mono/metadata/method-builder-internals.h"
+#include "mono/metadata/method-builder-ilgen.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/appdomain.h"
@@ -50,13 +52,6 @@ static MonoDisHelper marshal_dh = {
 	NULL
 };
 #endif 
-
-/* noilgen version */
-struct _MonoMethodBuilder {
-	MonoMethod *method;
-	char *name;
-	gboolean no_dup_name;
-};
 
 static MonoMethodBuilderCallbacks mb_cb;
 static gboolean cb_inited = FALSE;
@@ -149,6 +144,7 @@ create_method_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 void
 mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb)
 {
+	g_assert (!cb_inited);
 	g_assert (cb->version == MONO_METHOD_BUILDER_CALLBACKS_VERSION);
 	memcpy (&mb_cb, cb, sizeof (MonoMethodBuilderCallbacks));
 	cb_inited = TRUE;
@@ -214,7 +210,7 @@ mono_mb_free (MonoMethodBuilder *mb)
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
 {
-	get_mb_cb ()->create_method (mb, signature, max_stack);
+	return get_mb_cb ()->create_method (mb, signature, max_stack);
 }
 
 /**
