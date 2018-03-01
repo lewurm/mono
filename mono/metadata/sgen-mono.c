@@ -225,45 +225,43 @@ mono_gc_is_critical_method (MonoMethod *method)
 	return sgen_is_critical_method (method);
 }
 
-#ifdef ENABLE_ILGEN
+static MonoSgenMonoCallbacks sgenmono_cb;
+static gboolean cb_inited = FALSE;
+
+void
+mono_install_sgen_mono_callbacks (MonoSgenMonoCallbacks *cb)
+{
+	g_assert (!cb_inited);
+	g_assert (cb->version == MONO_SGEN_MONO_CALLBACKS_VERSION);
+	memcpy (&mb_cb, cb, sizeof (MonoSgenMonoCallbacks));
+	cb_inited = TRUE;
+}
 
 static void
-emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gboolean is_concurrent)
+install_noilgen (void)
 {
-	int shifted_nursery_start = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
-
-	memset (nursery_check_return_labels, 0, sizeof (int) * 2);
-	// if (ptr_in_nursery (ptr)) return;
-	/*
-	 * Masking out the bits might be faster, but we would have to use 64 bit
-	 * immediates, which might be slower.
-	 */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_START);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
-	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_stloc (mb, shifted_nursery_start);
-
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
-	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_ldloc (mb, shifted_nursery_start);
-	nursery_check_return_labels [0] = mono_mb_emit_branch (mb, CEE_BEQ);
-
-	if (!is_concurrent) {
-		// if (!ptr_in_nursery (*ptr)) return;
-		mono_mb_emit_ldarg (mb, 0);
-		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_LDPTR_NURSERY_BITS);
-		mono_mb_emit_byte (mb, CEE_SHR_UN);
-		mono_mb_emit_ldloc (mb, shifted_nursery_start);
-		nursery_check_return_labels [1] = mono_mb_emit_branch (mb, CEE_BNE_UN);
-	}
+	MonoSgenMonoCallbacks cb;
+	cb.emit_nursery_check = emit_nursery_check_noilgen;
+	mono_install_sgen_mono_callbacks (&cb);
 }
+
+static MonoSgenMonoCallbacks *
+get_sgen_mono_cb (void)
+{
+	if (G_UNLIKELY (!cb_inited)) {
+#ifdef ENABLE_ILGEN
+		mono_sgen_mono_ilgen_init ();
+#else
+		install_noilgen ();
 #endif
+	}
+	return &sgenmono_cb;
+}
+
+static void
+emit_nursery_check_noilgen (MonoMethodBuilder *mb)
+{
+}
 
 MonoMethod*
 mono_gc_get_specific_write_barrier (gboolean is_concurrent)
@@ -273,10 +271,6 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 	MonoMethodSignature *sig;
 	MonoMethod **write_barrier_method_addr;
 	WrapperInfo *info;
-#ifdef MANAGED_WBARRIER
-	int i, nursery_check_labels [2];
-#endif
-
 	// FIXME: Maybe create a separate version for ctors (the branch would be
 	// correctly predicted more times)
 	if (is_concurrent)
@@ -297,59 +291,8 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 	else
 		mb = mono_mb_new (mono_defaults.object_class, "wbarrier_noconc", MONO_WRAPPER_WRITE_BARRIER);
 
-#ifdef ENABLE_ILGEN
-#ifdef MANAGED_WBARRIER
-	emit_nursery_check (mb, nursery_check_labels, is_concurrent);
-	/*
-	addr = sgen_cardtable + ((address >> CARD_BITS) & CARD_MASK)
-	*addr = 1;
+	get_sgen_mono_cb ()->emit_nursery_check (mb);
 
-	sgen_cardtable:
-		LDC_PTR sgen_cardtable
-
-	address >> CARD_BITS
-		LDARG_0
-		LDC_I4 CARD_BITS
-		SHR_UN
-	if (SGEN_HAVE_OVERLAPPING_CARDS) {
-		LDC_PTR card_table_mask
-		AND
-	}
-	AND
-	ldc_i4_1
-	stind_i1
-	*/
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDPTR_CARD_TABLE);
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icon (mb, CARD_BITS);
-	mono_mb_emit_byte (mb, CEE_SHR_UN);
-	mono_mb_emit_byte (mb, CEE_CONV_I);
-#ifdef SGEN_HAVE_OVERLAPPING_CARDS
-#if SIZEOF_VOID_P == 8
-	mono_mb_emit_icon8 (mb, CARD_MASK);
-#else
-	mono_mb_emit_icon (mb, CARD_MASK);
-#endif
-	mono_mb_emit_byte (mb, CEE_CONV_I);
-	mono_mb_emit_byte (mb, CEE_AND);
-#endif
-	mono_mb_emit_byte (mb, CEE_ADD);
-	mono_mb_emit_icon (mb, 1);
-	mono_mb_emit_byte (mb, CEE_STIND_I1);
-
-	// return;
-	for (i = 0; i < 2; ++i) {
-		if (nursery_check_labels [i])
-			mono_mb_patch_branch (mb, nursery_check_labels [i]);
-	}
-	mono_mb_emit_byte (mb, CEE_RET);
-#else
-	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
-	mono_mb_emit_byte (mb, CEE_RET);
-#endif
-#endif
 	res = mono_mb_create_method (mb, sig, 16);
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
 	mono_marshal_set_wrapper_info (res, info);
