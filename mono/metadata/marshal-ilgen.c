@@ -54,6 +54,21 @@ enum {
 #undef OPDEF
 
 static GENERATE_GET_CLASS_WITH_CACHE (fixed_buffer_attribute, "System.Runtime.CompilerServices", "FixedBufferAttribute");
+static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, "System.Runtime.InteropServices", "ICustomMarshaler");
+
+/* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
+static MonoMethod *sh_dangerous_add_ref;
+static MonoMethod *sh_dangerous_release;
+
+static void
+init_safe_handle ()
+{
+	sh_dangerous_add_ref = mono_class_get_method_from_name (
+		mono_class_try_get_safehandle_class (), "DangerousAddRef", 1);
+	sh_dangerous_release = mono_class_get_method_from_name (
+		mono_class_try_get_safehandle_class (), "DangerousRelease", 0);
+}
 
 static void
 emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
@@ -6130,6 +6145,51 @@ emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig)
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+/* How the arguments of an icall should be wrapped */
+typedef enum {
+	/* Don't wrap at all, pass the argument as is */
+	ICALL_HANDLES_WRAP_NONE,
+	/* Wrap the argument in an object handle, pass the handle to the icall */
+	ICALL_HANDLES_WRAP_OBJ,
+	/* Wrap the argument in an object handle, pass the handle to the icall,
+	   write the value out from the handle when the icall returns */
+	ICALL_HANDLES_WRAP_OBJ_INOUT,
+	/* Initialized an object handle to null, pass to the icalls,
+	   write the value out from the handle when the icall returns */
+	ICALL_HANDLES_WRAP_OBJ_OUT,
+	/* Wrap the argument (a valuetype reference) in a handle to pin its enclosing object,
+	   but pass the raw reference to the icall */
+	ICALL_HANDLES_WRAP_VALUETYPE_REF,
+} IcallHandlesWrap;
+
+typedef struct {
+	IcallHandlesWrap wrap;
+	/* if wrap is NONE or OBJ or VALUETYPE_REF, this is not meaningful.
+	   if wrap is OBJ_INOUT it's the local var that holds the MonoObjectHandle.
+	*/
+	int handle;
+}  IcallHandlesLocal;
+
+/*
+ * Describes how to wrap the given parameter.
+ *
+ */
+static IcallHandlesWrap
+signature_param_uses_handles (MonoMethodSignature *sig, int param)
+{
+	if (MONO_TYPE_IS_REFERENCE (sig->params [param])) {
+		if (mono_signature_param_is_out (sig, param))
+			return ICALL_HANDLES_WRAP_OBJ_OUT;
+		else if (mono_type_is_byref (sig->params [param]))
+			return ICALL_HANDLES_WRAP_OBJ_INOUT;
+		else
+			return ICALL_HANDLES_WRAP_OBJ;
+	} else if (mono_type_is_byref (sig->params [param]))
+		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
+	else
+		return ICALL_HANDLES_WRAP_NONE;
+}
+
 static void
 emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
@@ -6141,6 +6201,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	gboolean uses_handles = FALSE;
 	gboolean save_handles_to_locals = FALSE;
 	IcallHandlesLocal *handles_locals = NULL;
+	MonoMethodSignature *sig = mono_method_signature (method);
 
 	(void) mono_lookup_internal_call_full (method, &uses_handles);
 
@@ -6238,7 +6299,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			g_assert (!mono_class_is_valuetype(mono_method_get_class (method)));
 			mono_mb_emit_icall (mb, mono_icall_handle_new);
 		}
-		for (i = 0; i < sig->param_count; i++) {
+		for (int i = 0; i < sig->param_count; i++) {
 			/* load each argument. references into the managed heap get wrapped in handles */
 			int j = i + sig->hasthis;
 			switch (handles_locals[j].wrap) {
@@ -6286,7 +6347,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	} else {
 		if (sig->hasthis)
 			mono_mb_emit_byte (mb, CEE_LDARG_0);
-		for (i = 0; i < sig->param_count; i++)
+		for (int i = 0; i < sig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i + sig->hasthis);
 	}
 
@@ -6311,7 +6372,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			mono_mb_patch_branch (mb, pos);
 		}
 		if (save_handles_to_locals) {
-			for (i = 0; i < sig->param_count; i++) {
+			for (int i = 0; i < sig->param_count; i++) {
 				int j = i + sig->hasthis;
 				switch (handles_locals [j].wrap) {
 					case ICALL_HANDLES_WRAP_NONE:
@@ -6359,7 +6420,7 @@ mb_emit_exception_ilgen (MonoMethodBuilder *mb, const char *exc_nspace, const ch
 static void
 emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count)
 {
-	for (i = 0; i < param_count; i++)
+	for (int i = 0; i < param_count; i++)
 		mono_mb_emit_ldarg (mb, i);
 
 	if (type & VTFIXUP_TYPE_CALL_MOST_DERIVED)
@@ -6370,12 +6431,12 @@ emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_
 }
 
 static void
-emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2)
+emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 	if (sig->hasthis)
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 
-	for (i = 0; i < sig->param_count; i++)
+	for (int i = 0; i < sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -6385,3 +6446,4 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const
 		emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
+

@@ -109,8 +109,6 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *eltype
 static void
 mono_marshal_set_last_error_windows (int error);
 
-static void init_safe_handle (void);
-
 gpointer
 mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error);
 
@@ -129,36 +127,9 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray);
 static void
 mono_marshal_ftnptr_eh_callback (guint32 gchandle);
 
-static MonoThreadInfo*
-mono_icall_start (HandleStackMark *stackmark, MonoError *error);
-
-static void
-mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *error);
-
-static MonoObjectHandle
-mono_icall_handle_new (gpointer rawobj);
-
-static MonoObjectHandle
-mono_icall_handle_new_interior (gpointer rawobj);
-
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (string_builder, "System.Text", "StringBuilder");
-static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, "System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute");
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (icustom_marshaler, "System.Runtime.InteropServices", "ICustomMarshaler");
-
-/* MonoMethod pointers to SafeHandle::DangerousAddRef and ::DangerousRelease */
-static MonoMethod *sh_dangerous_add_ref;
-static MonoMethod *sh_dangerous_release;
-
-static void
-init_safe_handle ()
-{
-	sh_dangerous_add_ref = mono_class_get_method_from_name (
-		mono_class_try_get_safehandle_class (), "DangerousAddRef", 1);
-	sh_dangerous_release = mono_class_get_method_from_name (
-		mono_class_try_get_safehandle_class (), "DangerousRelease", 0);
-}
 
 static void
 register_icall (gpointer func, const char *name, const char *sigstr, gboolean no_wrapper)
@@ -2913,7 +2884,7 @@ mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig)
 }
 
 static void
-emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2)
+emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, const gpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 }
 
@@ -2947,7 +2918,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	else
 		csig2 = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 
-	get_marshal_cb ()->emit_icall_wrapper (mb, sig, func, csig2);
+	get_marshal_cb ()->emit_icall_wrapper (mb, sig, func, csig2, check_exceptions);
 
 	csig = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 	csig->pinvoke = 0;
@@ -3259,51 +3230,6 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		return conv_arg;
 	}
-}
-
-/* How the arguments of an icall should be wrapped */
-typedef enum {
-	/* Don't wrap at all, pass the argument as is */
-	ICALL_HANDLES_WRAP_NONE,
-	/* Wrap the argument in an object handle, pass the handle to the icall */
-	ICALL_HANDLES_WRAP_OBJ,
-	/* Wrap the argument in an object handle, pass the handle to the icall,
-	   write the value out from the handle when the icall returns */
-	ICALL_HANDLES_WRAP_OBJ_INOUT,
-	/* Initialized an object handle to null, pass to the icalls,
-	   write the value out from the handle when the icall returns */
-	ICALL_HANDLES_WRAP_OBJ_OUT,
-	/* Wrap the argument (a valuetype reference) in a handle to pin its enclosing object,
-	   but pass the raw reference to the icall */
-	ICALL_HANDLES_WRAP_VALUETYPE_REF,
-} IcallHandlesWrap;
-
-typedef struct {
-	IcallHandlesWrap wrap;
-	/* if wrap is NONE or OBJ or VALUETYPE_REF, this is not meaningful.
-	   if wrap is OBJ_INOUT it's the local var that holds the MonoObjectHandle.
-	*/
-	int handle;
-}  IcallHandlesLocal;
-
-/*
- * Describes how to wrap the given parameter.
- *
- */
-static IcallHandlesWrap
-signature_param_uses_handles (MonoMethodSignature *sig, int param)
-{
-	if (MONO_TYPE_IS_REFERENCE (sig->params [param])) {
-		if (mono_signature_param_is_out (sig, param))
-			return ICALL_HANDLES_WRAP_OBJ_OUT;
-		else if (mono_type_is_byref (sig->params [param]))
-			return ICALL_HANDLES_WRAP_OBJ_INOUT;
-		else
-			return ICALL_HANDLES_WRAP_OBJ;
-	} else if (mono_type_is_byref (sig->params [param]))
-		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
-	else
-		return ICALL_HANDLES_WRAP_NONE;
 }
 
 static void
@@ -6259,7 +6185,7 @@ mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback)
 	ftnptr_eh_callback = callback;
 }
 
-static MonoThreadInfo*
+MonoThreadInfo*
 mono_icall_start (HandleStackMark *stackmark, MonoError *error)
 {
 	MonoThreadInfo *info = mono_thread_info_current ();
@@ -6269,7 +6195,7 @@ mono_icall_start (HandleStackMark *stackmark, MonoError *error)
 	return info;
 }
 
-static void
+void
 mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *error)
 {
 	mono_stack_mark_pop (info, stackmark);
@@ -6277,7 +6203,7 @@ mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *err
 		mono_error_set_pending_exception (error);
 }
 
-static MonoObjectHandle
+MonoObjectHandle
 mono_icall_handle_new (gpointer rawobj)
 {
 #ifdef MONO_HANDLE_TRACK_OWNER
@@ -6287,7 +6213,7 @@ mono_icall_handle_new (gpointer rawobj)
 #endif
 }
 
-static MonoObjectHandle
+MonoObjectHandle
 mono_icall_handle_new_interior (gpointer rawobj)
 {
 #ifdef MONO_HANDLE_TRACK_OWNER
