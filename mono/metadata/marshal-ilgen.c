@@ -3559,7 +3559,7 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 }
 
 static void
-emit_byte_ilgen (MonoMethodBuilder *mb, guint8 op)
+mb_emit_byte_ilgen (MonoMethodBuilder *mb, guint8 op)
 {
 	mono_mb_emit_byte (mb, op);
 }
