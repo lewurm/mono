@@ -3113,7 +3113,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, i
 		mono_mb_emit_ldarg (mb, 2);
 		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		/* aklass = array->vtable->m_class_get_element_class (klass) */
+		/* aklass = array->vtable->klass->element_class */
 		load_array_class (mb, aklass);
 		/* vklass = value->vtable->klass */
 		load_value_class (mb, vklass);
@@ -3173,7 +3173,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, i
 		mono_mb_emit_ldarg (mb, 2);
 		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		/* aklass = array->vtable->m_class_get_element_class (klass) */
+		/* aklass = array->vtable->klass->element_class */
 		load_array_class (mb, aklass);
 
 		/* vklass = value->vtable->klass */
@@ -3231,7 +3231,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, i
 		mono_mb_emit_ldarg (mb, 2);
 		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		/* aklass = array->vtable->m_class_get_element_class (klass) */
+		/* aklass = array->vtable->klass->element_class */
 		load_array_class (mb, aklass);
 
 		/* vklass = value->vtable->klass */
@@ -3313,7 +3313,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, i
 		mono_mb_emit_ldarg (mb, 2);
 		b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		/* aklass = array->vtable->m_class_get_element_class (klass) */
+		/* aklass = array->vtable->klass->element_class */
 		load_array_class (mb, aklass);
 
 		/* vklass = value->vtable->klass */
@@ -3357,7 +3357,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, i
 		if (value == NULL)
 			goto store;
 
-		klass = array->obj.vtable->m_class_get_element_class (klass);
+		klass = array->obj.vtable->klass->element_class;
 		vt = value->vtable;
 		uiid = klass->interface_id;
 		if (uiid > vt->max_interface_id)
@@ -3506,7 +3506,7 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 	mono_mb_emit_ldarg (mb, 2);
 	b1 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 	
-	/* aklass = array->vtable->m_class_get_element_class (klass) */
+	/* aklass = array->vtable->klass->element_class */
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoObject, vtable));
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
