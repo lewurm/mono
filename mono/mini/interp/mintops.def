@@ -412,6 +412,7 @@ OPDEF(MINT_CONV_U2_I8, "conv.u2.i8", 1, MintOpNoArgs)
 OPDEF(MINT_CONV_U2_R8, "conv.u2.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_I4_I8, "conv.i4.i8", 1, MintOpNoArgs)
+OPDEF(MINT_CONV_I4_I8_CLEAR, "conv.i4.i8.clear", 1, MintOpNoArgs)
 OPDEF(MINT_CONV_I4_R8, "conv.i4.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_U4_I8, "conv.u4.i8", 1, MintOpNoArgs)
