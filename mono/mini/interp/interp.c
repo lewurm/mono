@@ -156,6 +156,7 @@ db_match_method (gpointer data, gpointer user_data)
 		break_on_method = 1;
 }
 
+#include <unistd.h>
 static void
 debug_enter (InterpFrame *frame, int *tracing)
 {
@@ -169,11 +170,11 @@ debug_enter (InterpFrame *frame, int *tracing)
 		MonoMethod *method = frame->imethod->method;
 		char *mn, *args = dump_args (frame);
 		debug_indent_level++;
-		output_indent ();
+		// output_indent ();
 		mn = mono_method_full_name (method, FALSE);
-		g_print ("(%p) Entering %s (", mono_thread_internal_current (), mn);
+		g_print ("(%p) v2 Entering %s (%s)\n", mono_thread_internal_current (), mn, args);
+		usleep (20);
 		g_free (mn);
-		g_print  ("%s)\n", args);
 		g_free (args);
 	}
 }
@@ -183,11 +184,10 @@ debug_enter (InterpFrame *frame, int *tracing)
 	if (tracing) {	\
 		char *mn, *args;	\
 		args = dump_retval (frame);	\
-		output_indent ();	\
+		/* output_indent (); */	\
 		mn = mono_method_full_name (frame->imethod->method, FALSE); \
-		g_print  ("(%p) Leaving %s", mono_thread_internal_current (),  mn);	\
+		g_print  ("(%p) Leaving %s => %s\n", mono_thread_internal_current (),  mn, args);	\
 		g_free (mn); \
-		g_print  (" => %s\n", args);	\
 		g_free (args);	\
 		debug_indent_level--;	\
 		if (tracing == 3) global_tracing = 0; \
@@ -1180,8 +1180,9 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	InterpMethodArguments *margs = build_args_from_sig (sig, frame);
 #endif
 
-#if DEBUG_INTERP
+#if DEBUG_INTERP && defined (MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP)
 	g_print ("ICALL: mono_interp_to_native_trampoline = %p, addr = %p\n", mono_interp_to_native_trampoline, addr);
+	g_print ("r0 = %p, r1 = %p, r2 = %p, r3 = %p\nr4 = %p, r5 = %p, r6 = %p, r7 = %p\n", ccontext.gregs [0], ccontext.gregs [1],ccontext.gregs [2],ccontext.gregs [3],ccontext.gregs [4],ccontext.gregs [5],ccontext.gregs [6], ccontext.gregs [7]);
 #endif
 
 	context->current_frame = frame;
@@ -2280,7 +2281,8 @@ static int opcode_counts[512];
 		output_indent (); \
 		char *mn = mono_method_full_name (frame->imethod->method, FALSE); \
 		char *disasm = mono_interp_dis_mintop(rtm->code, ip); \
-		g_print ("(%p) %s -> %s\t%d:%s\n", mono_thread_internal_current (), mn, disasm, vt_sp - vtalloc, ins); \
+		g_print ("SUP (%p) %s -> %s\t%d:%s\n", mono_thread_internal_current (), mn, disasm, vt_sp - vtalloc, ins); \
+		usleep (2); \
 		g_free (mn); \
 		g_free (ins); \
 		g_free (disasm); \
