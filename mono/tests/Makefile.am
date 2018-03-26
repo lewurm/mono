@@ -326,6 +326,7 @@ TESTS_CS_SRC=		\
 	desweak.cs		\
 	exists.cs		\
 	handleref.cs	\
+	install_eh_callback.cs	\
 	dbnull-missing.cs	\
 	test-type-ctor.cs 	\
 	soft-float-tests.cs	\
@@ -966,13 +967,6 @@ CI_DISABLED_TESTS = \
 # so they don't interfere with other people's work
 CI_PR_DISABLED_TESTS = \
 	appdomain-threadpool-unload.exe
-
-if ENABLE_COOP
-CI_PR_DISABLED_TESTS += \
-	abort-cctor.exe \
-	bug-58782-plain-throw.exe \
-	bug-58782-capture-and-throw.exe
-endif
 
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
 LLVM_DISABLED_TESTS = \
@@ -1714,7 +1708,7 @@ test-unhandled-exception: unhandled-exception-test-runner.2.exe
 safehandle.2.exe winx64structs.exe thunks.exe pinvoke3.exe pinvoke2.exe pinvoke-2.2.exe pinvoke17.exe pinvoke13.exe \
 	pinvoke11.exe pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe pinvoke_ppcc.exe pinvoke.exe \
 	marshalbool.exe marshal9.exe marshal5.exe marshal.exe handleref.exe cominterop.exe bug-Xamarin-5278.exe \
-	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe: libtest.la
+	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe install_eh_callback.exe: libtest.la
 
 event-get.2.exe$(PLATFORM_AOT_SUFFIX): event-il.exe$(PLATFORM_AOT_SUFFIX)
 event-get.2.exe: event-il.exe
