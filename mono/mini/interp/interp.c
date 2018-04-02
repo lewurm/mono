@@ -3470,14 +3470,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp [-1].data.i = (gint32)sp [-1].data.l;
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_CONV_I4_I8_CLEAR)
-		{
-			gint32 tmp = (gint32)sp [-1].data.l;
-			sp [-1].data.l = 0;
-			sp [-1].data.i = tmp;
-			++ip;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_CONV_I4_I8_SP)
 			sp [-2].data.i = (gint32)sp [-2].data.l;
 			++ip;

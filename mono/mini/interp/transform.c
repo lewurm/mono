@@ -925,7 +925,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
 					switch (type_index) {
 					case 0: case 1:
-						ADD_CODE (td, MINT_CONV_I4_I8_CLEAR);
+						ADD_CODE (td, MINT_CONV_I4_I8);
 						break;
 					case 2:
 						ADD_CODE (td, MINT_CONV_R4_R8);
@@ -969,7 +969,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
 					switch (type_index) {
 					case 0: case 1:
-						ADD_CODE (td, MINT_CONV_I4_I8_CLEAR);
+						ADD_CODE (td, MINT_CONV_I4_I8);
 						break;
 					case 2:
 						ADD_CODE (td, MINT_CONV_R4_R8);
