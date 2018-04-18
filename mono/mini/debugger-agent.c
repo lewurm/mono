@@ -2498,7 +2498,7 @@ get_top_method_ji (gpointer ip, MonoDomain **domain, gpointer *out_ip)
 		MonoLMF *lmf = mono_get_lmf ();
 		MonoInterpFrameHandle *frame;
 
-		g_assert (((guint64)lmf->previous_lmf) & 2);
+		g_assert (((gsize)lmf->previous_lmf) & 2);
 		MonoLMFExt *ext = (MonoLMFExt*)lmf;
 
 		g_assert (ext->interp_exit);
@@ -4916,7 +4916,7 @@ process_breakpoint (DebuggerTlsData *tls, gboolean from_signal)
 		MonoLMF *lmf = mono_get_lmf ();
 		MonoInterpFrameHandle *frame;
 
-		g_assert (((guint64)lmf->previous_lmf) & 2);
+		g_assert (((gsize)lmf->previous_lmf) & 2);
 		MonoLMFExt *ext = (MonoLMFExt*)lmf;
 
 		g_assert (ext->interp_exit);
