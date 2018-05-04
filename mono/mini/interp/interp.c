@@ -2260,6 +2260,14 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		old_frame = context->current_frame;
 	}
 
+	if (mono_domain_get () == NULL) {
+		/* we can be called from a thread that hasn't run any managed code yet.
+		 * native-managed wrapper takes care of this as well, but we might have
+		 * to transform a method which requires the domain to be set */
+		context->original_domain = mono_jit_thread_attach (rmethod->domain);
+		g_assert (context->original_domain == NULL);
+	}
+
 	args = alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
 
 	init_frame (&frame, NULL, rmethod, args, &result);
