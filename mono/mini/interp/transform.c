@@ -256,6 +256,12 @@ static const MagicIntrinsic int_cmpop[] = {
 	{ "op_LessThanOrEqual", {MINT_CLE_P, MINT_CLE_UN_P, MINT_CLE_FP}}
 };
 
+static const char *builtin_funciton_whitelist[] = {
+	".cctor",
+	"Parse",
+	"IsNaN"
+};
+
 static void
 grow_code (TransformData *td)
 {
@@ -1000,12 +1006,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
 				td->ip += 5;
 				return;
-			} else if (!strcmp (".cctor", tm)) {
-				/* white list */
-				goto no_intrinsic;
-			} else if (!strcmp ("Parse", tm)) {
-				/* white list */
-				goto no_intrinsic;
+			} else {
+				for (i = 0; i < sizeof (builtin_funciton_whitelist) / sizeof (char *); ++i) {
+					if (!strcmp (builtin_funciton_whitelist [i], tm)) {
+						goto no_intrinsic;
+					}
+				}
 			}
 
 			for (i = 0; i < sizeof (int_unnop) / sizeof  (MagicIntrinsic); ++i) {
