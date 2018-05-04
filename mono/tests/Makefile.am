@@ -628,7 +628,8 @@ TESTS_IL_SRC=			\
 	dim-methodimpl.il	\
 	dim-sharedgenerics.il	\
 	dim-simple.il	\
-	dim-valuetypes.il
+	dim-valuetypes.il \
+	ldfldvt.il
 
 TESTS_GSHARED_SRC = \
 	generics-sharing.2.cs	\
