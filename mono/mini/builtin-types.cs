@@ -1,5 +1,5 @@
 // #define ARCH_32
-#define NINT_JIT_OPTIMIZED
+// #define NINT_JIT_OPTIMIZED
 
 using System;
 using System.Diagnostics;
@@ -257,6 +257,14 @@ public class BuiltinTests {
 		if (x.ToString () != "10")
 			return 3;
 		return 0;
+	}
+
+	static int test_0_nint_implicit_decimal ()
+	{
+		nint a = new nint (10);
+		nint b = new nint (9);
+		b++;
+		return decimal_cmp (a, b) ? 0 : 1;
 	}
 
 	public int test_0_nint_unboxed_member_calls ()
@@ -521,6 +529,19 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static bool decimal_cmp (decimal a, decimal b)
+	{
+		return a == b;
+	}
+
+	static int test_0_nuint_implicit_decimal ()
+	{
+		nuint a = new nuint (10);
+		nuint b = new nuint (9);
+		b++;
+		return decimal_cmp (a, b) ? 0 : 1;
+	}
+
 	public int test_0_nuint_unboxed_member_calls ()
 	{
 		var x = (nuint)10;
@@ -772,6 +793,14 @@ public class BuiltinTests {
 		if (x.ToString () != "10")
 			return 3;
 		return 0;
+	}
+
+	static int test_0_nfloat_explicit_decimal ()
+	{
+		nfloat a = new nfloat (10);
+		nfloat b = new nfloat (9);
+		b += 1.0f;
+		return decimal_cmp ((decimal) a, (decimal) b) ? 0 : 1;
 	}
 
 	public int test_0_nfloat_unboxed_member_calls ()

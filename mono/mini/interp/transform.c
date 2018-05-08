@@ -803,6 +803,22 @@ type_size (MonoType *type)
 	return SIZEOF_VOID_P;
 }
 
+static gboolean
+is_int_type (MonoType *t)
+{
+	if (t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
+		return FALSE;
+	return TRUE;
+}
+
+static gboolean
+is_float_type (MonoType *t)
+{
+	if (t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8 && !mono_class_is_magic_float (mono_class_from_mono_type (t)))
+		return FALSE;
+	return TRUE;
+}
+
 static int mono_class_get_magic_index (MonoClass *k)
 {
 	if (mono_class_is_magic_int (k))
@@ -984,6 +1000,28 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				return;
 			} else if (!strcmp ("op_Implicit", tm ) || !strcmp ("op_Explicit", tm)) {
 				int arg_size = type_size (csignature->params [0]);
+
+				/* check if managed implementation is applicable, box value if so */
+				switch (type_index) {
+				case 0: case 1: /* nint, nunit */
+					if (!is_int_type (csignature->params [0]) || !is_int_type (csignature->ret)) {
+						ADD_CODE (td, MINT_BOX);
+						ADD_CODE (td, get_data_item_index (td, magic_class));
+						ADD_CODE (td, 0);
+						goto no_intrinsic;
+					}
+					break;
+				case 2: /* nfloat */
+					if (!is_float_type (csignature->params [0]) || !is_float_type (csignature->ret)) {
+						ADD_CODE (td, MINT_BOX);
+						ADD_CODE (td, get_data_item_index (td, magic_class));
+						ADD_CODE (td, 0);
+						goto no_intrinsic;
+					}
+					break;
+				}
+
+
 				if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
 					switch (type_index) {
 					case 0: case 1:
