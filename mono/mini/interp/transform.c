@@ -788,7 +788,7 @@ type_size (MonoType *type)
 static gboolean
 is_int_type (MonoType *t)
 {
-	if (t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
+	if (t->type != MONO_TYPE_I && t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
 		return FALSE;
 	return TRUE;
 }
@@ -988,6 +988,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 						goto no_intrinsic;
 					}
 					break;
+#if 0
 				case 2: /* nfloat */
 					if (!is_float_type (csignature->params [0]) || !is_float_type (csignature->ret)) {
 						ADD_CODE (td, MINT_BOX);
@@ -996,6 +997,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 						goto no_intrinsic;
 					}
 					break;
+#endif
 				}
 
 
