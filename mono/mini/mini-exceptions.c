@@ -2224,7 +2224,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (mono_arm_thumb_supported ())
 							ctx->pc |= 1;
 #elif defined(TARGET_ARM64)
-						ctx->pc ++;
+						// if (ctx->pc & 3)
+							ctx->pc += 1;
+						g_assert (!(ctx->pc & 3));
 #elif defined (HOST_WASM)
 						//nada?
 #else
