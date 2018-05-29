@@ -1157,6 +1157,28 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 	mono_thread_manage ();
 }
 
+int
+mono_enable_interp (const char *opts)
+{
+	mono_runtime_set_execution_mode (MONO_EE_MODE_INTERP);
+	if (opts)
+		mono_interp_opts_string = opts;
+
+#ifdef DISABLE_INTERPRETER
+	g_error ("Mono IL interpreter support is missing\n");
+#endif
+
+#ifdef MONO_CROSS_COMPILE
+	g_error ("--interpreter on cross-compile runtimes not supported\n");
+#endif
+
+#ifndef MONO_ARCH_INTERPRETER_SUPPORTED
+	g_error ("--interpreter not supported on this architecture.\n");
+#endif
+	return 0;
+}
+
+
 /**
  * mono_jit_exec:
  * \param assembly reference to an assembly
@@ -1171,7 +1193,7 @@ mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[
 	MonoImage *image = mono_assembly_get_image (assembly);
 	MonoMethod *method;
 	guint32 entry = mono_image_get_entry_point (image);
-
+	
 	if (!entry) {
 		g_print ("Assembly '%s' doesn't have an entry point.\n", mono_image_get_filename (image));
 		/* FIXME: remove this silly requirement. */
@@ -1747,26 +1769,6 @@ apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_do
 
 	mono_domain_parse_assembly_bindings (domain, 0, 0, root_domain_configuration_file);
 
-}
-
-static void
-mono_enable_interp (const char *opts)
-{
-	mono_use_interpreter = TRUE;
-	if (opts)
-		mono_interp_opts_string = opts;
-
-#ifdef DISABLE_INTERPRETER
-	g_error ("Mono IL interpreter support is missing\n");
-#endif
-
-#ifdef MONO_CROSS_COMPILE
-	g_error ("--interpreter on cross-compile runtimes not supported\n");
-#endif
-
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
-	g_error ("--interpreter not supported on this architecture.\n");
-#endif
 }
 
 /**

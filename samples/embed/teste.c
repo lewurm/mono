@@ -1,5 +1,8 @@
 #include <mono/jit/jit.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/assembly.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/utils/mono-publib.h>
 #include <stdlib.h>
 
@@ -12,15 +15,25 @@
  * 	./teste test.exe
  */
 
+static MonoAssembly *assembly;
+
+typedef void (*VoidFtn) (void);
+
 static MonoString*
 gimme () {
+	MonoImage *image = mono_assembly_get_image (assembly);
+	MonoClass *klass = mono_class_from_name (image, "", "MonoEmbed");
+	MonoMethodDesc *mdesc = mono_method_desc_new (":ThrowException()", 1 != 0);
+	MonoMethod *throwing = mono_method_desc_search_in_class (mdesc, klass);
+	VoidFtn throwing_ftn = (void (*) (VoidFtn)) (mono_compile_method (throwing));
+	throwing_ftn ();
 	return mono_string_new (mono_domain_get (), "All your monos are belong to us!");
 }
 
+extern int mono_use_interpreter;
+
 static void main_function (MonoDomain *domain, const char *file, int argc, char** argv)
 {
-	MonoAssembly *assembly;
-
 	assembly = mono_domain_assembly_open (domain, file);
 	if (!assembly)
 		exit (2);
@@ -54,6 +67,8 @@ main(int argc, char* argv[]) {
 
 	MonoAllocatorVTable mem_vtable = {custom_malloc};
 	mono_set_allocator_vtable (&mem_vtable);
+
+	int i = mono_enable_interp (NULL);
 
 	/*
 	 * Load the default Mono configuration file, this is needed

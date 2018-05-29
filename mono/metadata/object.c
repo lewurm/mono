@@ -7380,6 +7380,7 @@ mono_get_eh_callbacks (void)
 void
 mono_raise_exception (MonoException *ex) 
 {
+	g_printerr ("mono_raise_exception has been called: %p\n", ex);
 	mono_raise_exception_deprecated (ex);
 }
 
