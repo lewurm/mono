@@ -11,6 +11,12 @@ public class Tests {
 	[DllImport ("libtest")]
 	public static extern void mono_test_setjmp_and_call (VoidVoidDelegate del, out IntPtr handle);
 	
+	[DllImport ("libtest")]
+	public static extern void mono_test_setup_eh_callback (VoidVoidDelegate del);
+
+	[DllImport ("libtest")]
+	public static extern void mono_test_reset_eh_callback ();
+
 	public delegate void VoidVoidDelegate ();
 
 	public class SpecialExn : Exception {
@@ -83,6 +89,29 @@ public class Tests {
 			Console.Error.WriteLine ("o was not a SpecialExn, it is {0}", o);
 			return 6;
 		}
+	}
+
+	public static int test_0_raise_exception_in_eh_callback ()
+	{
+		Caller.Setup ();
+		VoidVoidDelegate f = new VoidVoidDelegate (Caller.M);
+
+		try {
+			mono_test_setup_eh_callback (f);
+		} catch (SpecialExn) {
+			Console.Error.WriteLine ("should not have caught a SpecialExn");
+			return 1;
+		}
+		if (!Caller.called) {
+			Console.Error.WriteLine ("delegate not even called");
+			return 2;
+		}
+		if (!Caller.finally_called) {
+			Console.Error.WriteLine ("finally not reached");
+			return 3;
+		}
+		mono_test_reset_eh_callback ();
+		return 0;
 	}
 		
 

@@ -7541,6 +7541,7 @@ mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFu
 
 typedef void (*VoidVoidCallback) (void);
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);
+typedef void (*MonoRaiseException) (void *ex);
 
 static jmp_buf test_jmp_buf;
 static guint32 test_gchandle;
@@ -7566,5 +7567,31 @@ mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handl
 		mono_install_ftnptr_eh_callback (NULL);
 		*out_handle = test_gchandle;
 	}
+}
+
+static void
+mono_test_raise_exception (guint32 gchandle)
+{
+	void (*mono_raise_exception) (MonoRaiseException) =
+		(void (*) (MonoRaiseException)) (lookup_mono_symbol ("mono_raise_exception"));
+	mono_raise_exception (gchandle);
+}
+
+LIBTEST_API void STDCALL
+mono_test_setup_eh_callback (VoidVoidCallback managedCallback)
+{
+	void (*mono_install_ftnptr_eh_callback) (MonoFtnPtrEHCallback) =
+		(void (*) (MonoFtnPtrEHCallback)) (lookup_mono_symbol ("mono_install_ftnptr_eh_callback"));
+
+	mono_install_ftnptr_eh_callback (mono_test_raise_exception);
+	managedCallback ();
+}
+
+LIBTEST_API void STDCALL
+mono_test_reset_eh_callback (void)
+{
+	void (*mono_install_ftnptr_eh_callback) (MonoFtnPtrEHCallback) =
+		(void (*) (MonoFtnPtrEHCallback)) (lookup_mono_symbol ("mono_install_ftnptr_eh_callback"));
+	mono_install_ftnptr_eh_callback (NULL);
 }
 

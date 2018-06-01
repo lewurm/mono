@@ -1160,7 +1160,7 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 int
 mono_enable_interp (const char *opts)
 {
-	mono_runtime_set_execution_mode (MONO_EE_MODE_INTERP);
+	mono_use_interpreter = TRUE;
 	if (opts)
 		mono_interp_opts_string = opts;
 
@@ -1172,9 +1172,6 @@ mono_enable_interp (const char *opts)
 	g_error ("--interpreter on cross-compile runtimes not supported\n");
 #endif
 
-#ifndef MONO_ARCH_INTERPRETER_SUPPORTED
-	g_error ("--interpreter not supported on this architecture.\n");
-#endif
 	return 0;
 }
 
