@@ -93,21 +93,14 @@ public class Tests {
 	}
 
 	public class Caller2 {
-		public static bool rethrow_called;
-		public static bool exception_caught;
-		public static bool return_from_inner_managed_callback;
+		// public static bool return_from_inner_managed_callback;
 
 		public static void Setup () {
-			rethrow_called = false;
-			exception_caught = false;
-			return_from_inner_managed_callback = false;
 		}
 
 		[MonoPInvokeCallback (typeof (VoidHandleHandleOutDelegate))]
 		public static void Del2 (uint original_exception, out int exception_handle) {
 			exception_handle = (int) original_exception;
-			exception_caught = true;
-			return_from_inner_managed_callback = true;
 		}
 	}
 		
@@ -127,18 +120,6 @@ public class Tests {
 		if (!outer_managed_callback) {
 			Console.Error.WriteLine ("outer managed callback did not throw exception");
 			return 1;
-		}
-		if (!Caller2.rethrow_called) {
-			Console.Error.WriteLine ("exception was not rethrown by eh callback");
-			return 2;
-		}
-		if (!Caller2.exception_caught) {
-			Console.Error.WriteLine ("rethrown exception was not caught");
-			return 3;
-		}
-		if (!Caller2.return_from_inner_managed_callback) {
-			Console.Error.WriteLine ("managed callback called from native eh callback did not return");
-			return 4;
 		}
 
 		mono_test_cleanup_ftptr_eh_callback ();

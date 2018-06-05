@@ -7683,10 +7683,9 @@ mono_test_ftnptr_eh_callback (guint32 gchandle)
 }
 
 LIBTEST_API void STDCALL
-mono_test_setup_ftnptr_eh_callback (VoidVoidCallback managed_entry, void (*capture_throw_callback) (guint32, guint32 *))
+mono_test_setup_ftnptr_eh_callback (VoidVoidCallback managed_entry)
 {
 	mono_test_init_symbols ();
-	mono_test_capture_throw_callback = capture_throw_callback;
 	sym_mono_install_ftnptr_eh_callback (mono_test_ftnptr_eh_callback);
 	managed_entry ();
 }
