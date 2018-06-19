@@ -26,7 +26,8 @@ typedef enum {
 	FRAME_TYPE_INTERP = 4,
 	/* Frame for transitioning from interpreter to managed code */
 	FRAME_TYPE_INTERP_TO_MANAGED = 5,
-	FRAME_TYPE_NUM = 6
+	FRAME_TYPE_NATIVE_TO_MANAGED = 6,
+	FRAME_TYPE_NUM = 7
 } MonoStackFrameType;
 
 typedef enum {

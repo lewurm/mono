@@ -7646,6 +7646,7 @@ static void
 mono_test_longjmp_callback (guint32 gchandle)
 {
 	test_gchandle = gchandle;
+	fprintf (stderr, "libtest.c: seeing eh_callback activated\n");
 	longjmp (test_jmp_buf, 1);
 }
 
@@ -7657,8 +7658,10 @@ mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handl
 		*out_handle = 0;
 		sym_mono_install_ftnptr_eh_callback (mono_test_longjmp_callback);
 		managedCallback ();
+		fprintf (stderr, "libtest.c: hey, I'm returning from managed callback :(\n");
 		*out_handle = 0; /* Do not expect to return here */
 	} else {
+		fprintf (stderr, "libtest.c: hey, I'm returning from longjmp\n");
 		sym_mono_install_ftnptr_eh_callback (NULL);
 		*out_handle = test_gchandle;
 	}

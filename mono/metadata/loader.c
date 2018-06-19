@@ -2239,6 +2239,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	switch (frame->type) {
 	case FRAME_TYPE_DEBUGGER_INVOKE:
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
+	case FRAME_TYPE_NATIVE_TO_MANAGED:
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
 		return FALSE;

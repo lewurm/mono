@@ -414,8 +414,10 @@ arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				frame->type = FRAME_TYPE_DEBUGGER_INVOKE;
 				memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
 			} else if (ext->interp_exit) {
+				fprintf (stderr, "arch_unwind_frame: transfering ctx via interp_to_managed\n");
 				frame->type = FRAME_TYPE_INTERP_TO_MANAGED;
 				frame->interp_exit_data = ext->interp_exit_data;
+				// memcpy (new_ctx, &ext->ctx, sizeof (MonoContext));
 			} else {
 				g_assert_not_reached ();
 			}
@@ -1900,7 +1902,9 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 	unwinder_init (&unwinder);
 
+	int iii = 0;
 	while (1) {
+		iii++;
 		MonoContext new_ctx;
 		guint32 free_stack;
 		int clause_index_start = 0;
@@ -1927,6 +1931,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			continue;
 		case FRAME_TYPE_INTERP:
 		case FRAME_TYPE_MANAGED:
+		case FRAME_TYPE_NATIVE_TO_MANAGED:
 			break;
 		default:
 			g_assert_not_reached ();
@@ -2154,6 +2159,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	Unwinder unwinder;
 	gboolean in_interp;
 
+	g_printerr ("EH: start with exception handling\n");
 	g_assert (ctx != NULL);
 	if (!obj) {
 		MonoException *ex = mono_get_exception_null_reference ();
@@ -2329,8 +2335,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	initial_ctx = *ctx;
 
 	unwinder_init (&unwinder);
+	fprintf (stderr, "EH: start 2nd pass\n");
 
+	int iiii = 0;
 	while (1) {
+		iiii++;
 		MonoContext new_ctx;
 		guint32 free_stack;
 		int clause_index_start = 0;
@@ -2355,16 +2364,25 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			}
+			fprintf (stderr, "EH (2nd): frame: %d with type=%d\n", iiii, frame.type);
+
 			switch (frame.type) {
 			case FRAME_TYPE_DEBUGGER_INVOKE:
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
 			case FRAME_TYPE_TRAMPOLINE:
+				fprintf (stderr, "EH (2nd): ctx: managed to native: %d\n", frame.type);
 				*ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:
+				fprintf (stderr, "EH (2nd): ctx: interp to managed\n");
+				// *ctx = new_ctx;
 				continue;
 			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
+				break;
+			case FRAME_TYPE_NATIVE_TO_MANAGED:
+				fprintf (stderr, "EH (2nd): ctx: native to managed frame\n");
+				*ctx = new_ctx;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -2381,7 +2399,9 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 		method = jinfo_get_method (ji);
 		frame_count ++;
-		//printf ("M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
+		fprintf (stderr, "EH (2nd): M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
+		if (!strcmp (method->name, "test_0_throw_and_raise_exception"))
+			fprintf (stderr, "\t\twoot\n");
 
 		if (stack_overflow) {
 			free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
@@ -2390,11 +2410,24 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		}
 
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
+			MonoLMFExt ext;
 			guint32 handle = mono_gchandle_new (obj, FALSE);
 			MONO_STACKDATA (stackptr);
 
 			mono_threads_enter_gc_safe_region_unbalanced_internal (&stackptr);
+#if 0
+			if (in_interp) {
+				memset (&ext, 0, sizeof (ext));
+				ext.interp_exit = TRUE;
+				ext.interp_exit_data = frame.interp_frame;
+				mono_push_lmf (&ext);
+			}
+#endif
 			ftnptr_eh_callback (handle);
+#if 0
+			if (in_interp)
+				mono_pop_lmf ((MonoLMF *) &ext);
+#endif
 			g_error ("Did not expect ftnptr_eh_callback to return.");
 		}
 
@@ -2518,8 +2551,12 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						mini_get_interp_callbacks ()->set_resume_state (jit_tls, mono_ex, ei, frame.interp_frame, ei->handler_start);
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
 						/* ip == 0 means an interpreter frame */
-						if (MONO_CONTEXT_GET_IP (ctx) != 0)
+						if (MONO_CONTEXT_GET_IP (ctx) != 0) {
 							mono_arch_undo_ip_adjustment (ctx);
+							fprintf (stderr, "EH (2nd): adjusted IP\n");
+						} else {
+							fprintf (stderr, "EH (2nd): no ip adjust\n");
+						}
 					} else {
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					}
@@ -3305,6 +3342,7 @@ static void
 mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx)
 {
 	mono_handle_exception (ctx, (MonoObject *)exc);
+
 	mono_restore_context (ctx);
 }
 
@@ -3331,6 +3369,10 @@ void
 mono_restore_context (MonoContext *ctx)
 {
 	static void (*restore_context) (MonoContext *);
+
+	fprintf (stderr, "restore context: ip: %p\n", MONO_CONTEXT_GET_IP (ctx));
+	fprintf (stderr, "restore context: bp: %p\n", MONO_CONTEXT_GET_BP (ctx));
+	fprintf (stderr, "restore context: sp: %p\n", MONO_CONTEXT_GET_SP (ctx));
 
 	if (!restore_context)
 		restore_context = (void (*)(MonoContext *))mono_get_restore_context ();

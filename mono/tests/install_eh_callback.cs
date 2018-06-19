@@ -53,6 +53,7 @@ public class Tests {
 		}
 	}
 
+#if FALSE
 	public static int test_0_setjmp_exn_handler ()
 	{
 		IntPtr res;
@@ -91,6 +92,7 @@ public class Tests {
 			return 6;
 		}
 	}
+#endif
 
 	public class Caller2 {
 		// public static bool return_from_inner_managed_callback;

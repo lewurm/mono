@@ -7773,6 +7773,7 @@ mono_raise_exception (MonoException *ex)
 	MONO_ENTER_GC_UNSAFE;
 	mono_raise_exception_deprecated (ex);
 	MONO_EXIT_GC_UNSAFE;
+	g_assert (0);
 }
 
 /*

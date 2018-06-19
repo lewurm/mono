@@ -207,6 +207,7 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 static void
 set_resume_state (ThreadContext *context, InterpFrame *frame)
 {
+	fprintf (stderr, "set resume_state: context=%p, frame=%p, method=%s\n", context, frame, mono_method_full_name (frame->imethod->method, 1));
 	frame->ex = NULL;
 	context->has_resume_state = 0;
 	context->handler_frame = NULL;
@@ -345,9 +346,18 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 static void
 interp_push_lmf (MonoLMFExt *ext, InterpFrame *frame)
 {
+	MonoContext ctx;
+	memset (&ctx, 0, sizeof (MonoContext));
 	memset (ext, 0, sizeof (MonoLMFExt));
 	ext->interp_exit = TRUE;
 	ext->interp_exit_data = frame;
+#ifdef MONO_INIT_CONTEXT_FROM_CURRENT
+#error "never?"
+	MONO_INIT_CONTEXT_FROM_CURRENT (&ctx);
+#else
+	// FIXME
+	MONO_INIT_CONTEXT_FROM_FUNC (&ctx, interp_exec_method_full);
+#endif
 
 	mono_push_lmf (ext);
 }
@@ -704,12 +714,16 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 	 * Since ctx.ip is 0, this will start unwinding from the LMF frame
 	 * pushed above, which points to our frames.
 	 */
+	fprintf (stderr, "interp_throw: throwing ZEH exception in ZEH interp\n");
 	mono_handle_exception (&ctx, (MonoObject*)ex);
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */
+		fprintf (stderr, "interp_throw: wtf undwind from interp into non-interp code\n");
 		mono_restore_context (&ctx);
 		g_assert_not_reached ();
 	}
+
+	fprintf (stderr, "interp_throw: evertyhing is good here, at interp unwind\n");
 
 	interp_pop_lmf (&ext);
 
@@ -5766,8 +5780,24 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 
 	memset (frame, 0, sizeof (StackFrameInfo));
 	/* pinvoke frames doesn't have imethod set */
-	while (iframe && !(iframe->imethod && iframe->imethod->code && iframe->imethod->jinfo))
+#if 0
+	if (iframe && !(iframe->imethod && iframe->imethod->code && iframe->imethod->jinfo)) {
+		fprintf (stderr, "returning managed_to_native via interp #1\n");
+		frame->interp_frame = iframe;
+		frame->native_offset = -1;
+		// frame->type = FRAME_TYPE_NATIVE_TO_MANAGED;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
+		frame->frame_addr = iframe;
+
+		stack_iter->current = iframe->parent;
+		return FALSE;
+	}
+#else
+	while (iframe && !(iframe->imethod && iframe->imethod->code && iframe->imethod->jinfo)) {
+		fprintf (stderr, "skipping frame, wtf: frame->imethod=%p\n", iframe->imethod);
 		iframe = iframe->parent;
+	}
+#endif
 	if (!iframe)
 		return FALSE;
 
@@ -5779,6 +5809,13 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 	if (method && ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))) {
 		frame->native_offset = -1;
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
+		fprintf (stderr, "returning managed_to_native via interp #2\n");
+#if 0
+	} else if (method && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->imethod->code;
+		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE; // FRAME_TYPE_NATIVE_TO_MANAGED;
+		frame->managed = TRUE;
+#endif
 	} else {
 		frame->type = FRAME_TYPE_INTERP;
 		/* This is the offset in the interpreter IR */

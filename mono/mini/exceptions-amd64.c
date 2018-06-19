@@ -685,6 +685,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			return FALSE;
 
 		frame->ji = ji;
+		fprintf (stderr, "amd64eh: setting to managed_to_native FRAME\n");
 		frame->type = FRAME_TYPE_MANAGED_TO_NATIVE;
 
 		if (((guint64)(*lmf)->previous_lmf) & 4) {
@@ -1979,5 +1980,6 @@ mono_tasklets_arch_restore (void)
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)
 {
+	fprintf (stderr, "AMD64: undo ip: %p\n", ctx->gregs [AMD64_RIP]);
 	ctx->gregs [AMD64_RIP]++;
 }
