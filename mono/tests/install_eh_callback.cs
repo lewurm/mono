@@ -12,7 +12,7 @@ public class Tests {
 	public static extern void mono_test_setjmp_and_call (VoidVoidDelegate del, out IntPtr handle);
 
 	[DllImport ("libtest")]
-	public static extern void mono_test_setup_ftnptr_eh_callback (VoidVoidDelegate del, VoidHandleHandleOutDelegate inside_eh_callback);
+	public static extern void mono_test_setup_ftnptr_eh_callback (VoidVoidDelegate del);
 
 	[DllImport ("libtest")]
 	public static extern void mono_test_cleanup_ftptr_eh_callback ();
@@ -109,10 +109,9 @@ public class Tests {
 		Caller.Setup ();
 		Caller2.Setup ();
 		VoidVoidDelegate f = new VoidVoidDelegate (Caller.M);
-		VoidHandleHandleOutDelegate del2 = new VoidHandleHandleOutDelegate (Caller2.Del2);
 		bool outer_managed_callback = false;
 		try {
-			mono_test_setup_ftnptr_eh_callback (f, del2);
+			mono_test_setup_ftnptr_eh_callback (f);
 		} catch (Exception e) {
 			outer_managed_callback = true;
 		}
