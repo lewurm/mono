@@ -28,7 +28,7 @@ install:
 	xcrun simctl install booted  build/Debug-iphonesimulator/MonoTestRunner.app
 
 launch:
-	xcrun simctl  launch booted runtime.MonoTestRunner
+	xcrun simctl  launch booted com.xamarin.runtime.MonoTestRunner
 
 boot:
 	nohup /Applications/Xcode.app/Contents/Developer/Applications/Simulator.app/Contents/MacOS/Simulator -CurrentDeviceUDID B0326406-244C-4E12-9B3A-2752B336053D &
@@ -37,5 +37,5 @@ shutdown:
 	xcrun simctl shutdown all
 
 kill:
-	xcrun simctl  terminate booted runtime.MonoTestRunner
+	xcrun simctl  terminate booted com.xamarin.runtime.MonoTestRunner
 

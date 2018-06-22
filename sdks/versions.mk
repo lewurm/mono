@@ -23,7 +23,7 @@ ANDROID_SDK_VERSION_x86_64?=21
 
 # iOS
 
-XCODE_DIR?=/Applications/Xcode.app/Contents/Developer
+XCODE_DIR?=/Applications/Xcode94.app/Contents/Developer
 
 #MACOS_VERSION?=10.13
 MACOS_VERSION_MIN?=10.7

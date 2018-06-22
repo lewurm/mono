@@ -151,7 +151,7 @@
 				TargetAttributes = {
 					5DC3BA891E8D8F53006C8330 = {
 						CreatedOnToolsVersion = 8.2;
-						DevelopmentTeam = C9D4426WFH;
+						DevelopmentTeam = 58LM7J37Q8;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -316,7 +316,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = C9D4426WFH;
+				DEVELOPMENT_TEAM = 58LM7J37Q8;
 				ENABLE_BITCODE = YES;
 				INFOPLIST_FILE = MonoTestRunner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -324,7 +324,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = runtime.MonoTestRunner;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xamarin.runtime.MonoTestRunner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -333,7 +333,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = C9D4426WFH;
+				DEVELOPMENT_TEAM = 58LM7J37Q8;
 				ENABLE_BITCODE = YES;
 				INFOPLIST_FILE = MonoTestRunner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -341,7 +341,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = runtime.MonoTestRunner;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xamarin.runtime.MonoTestRunner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
