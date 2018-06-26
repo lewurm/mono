@@ -2393,6 +2393,7 @@ static void mono_bb_ordering (MonoCompile *cfg)
 	cfg->max_block_num = cfg->num_bblocks;
 
 	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
+	g_assertf (cfg->num_bblocks >= dfn, "cfg->num_bblocks=%d/0x%x, dfn=%d/0x%x\n", cfg->num_bblocks, cfg->num_bblocks, dfn, dfn);
 	if (cfg->num_bblocks != dfn + 1) {
 		MonoBasicBlock *bb;
 
