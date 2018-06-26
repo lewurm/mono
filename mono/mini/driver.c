@@ -2318,10 +2318,13 @@ mono_main (int argc, char* argv[])
 	case DO_BENCH:
 		if (argc - i != 1 || mname == NULL) {
 			g_print ("Usage: mini --ncompile num --compile method assembly\n");
-			mini_cleanup (domain);
-			return 1;
+			// mini_cleanup (domain);
+			// return 1;
+			// aname = "/home/bernhard/mono/mcs/class/lib/build-linux/mscorlib.dll";
+			aname = "/home/bernhard/mono/mcs/class/lib/build-linux/System.dll";
+		} else {
+			aname = argv [i];
 		}
-		aname = argv [i];
 		break;
 	case DO_COMPILE:
 		if (argc - i != 1) {

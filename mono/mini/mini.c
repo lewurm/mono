@@ -99,6 +99,8 @@ static guint32 jinfo_try_holes_size;
 static mono_mutex_t jit_mutex;
 
 static MonoBackend *current_backend;
+static void mono_bb_ordering (MonoCompile *cfg);
+void call_something_else (MonoCompile *cfg, int dfn);
 
 #ifndef DISABLE_JIT
 
@@ -271,8 +273,8 @@ mono_find_spvar_for_region (MonoCompile *cfg, int region)
 	return (MonoInst *)g_hash_table_lookup (cfg->spvars, GINT_TO_POINTER (region));
 }
 
-static void
-df_visit (MonoBasicBlock *start, int *dfn, MonoBasicBlock **array)
+static void __attribute__ ((noinline))
+df_visit (MonoBasicBlock *start /* %rdi */, int *dfn /* %rsi */, MonoBasicBlock **array /* %rdx */)
 {
 	int i;
 
@@ -2384,40 +2386,65 @@ compute_reachable (MonoBasicBlock *bb)
 	}
 }
 
-static void mono_bb_ordering (MonoCompile *cfg)
+void call_something_else (MonoCompile *cfg, int dfn)
+{
+	MonoBasicBlock *bb;
+
+	cfg->num_bblocks = dfn + 1;
+
+	/* remove unreachable code, because the code in them may be 
+	 * inconsistent  (access to dead variables for example) */
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+		bb->flags &= ~BB_VISITED;
+	compute_reachable (cfg->bb_entry);
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+		if (bb->flags & BB_EXCEPTION_HANDLER)
+			compute_reachable (bb);
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		if (!(bb->flags & BB_VISITED)) {
+			if (cfg->verbose_level > 1)
+				g_print ("found unreachable code in BB%d\n", bb->block_num);
+			bb->code = bb->last_ins = NULL;
+			while (bb->out_count)
+				mono_unlink_bblock (cfg, bb, bb->out_bb [0]);
+		}
+	}
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
+		bb->flags &= ~BB_VISITED;
+}
+
+static void __attribute__ ((noinline))
+clear_bb_stuff (MonoCompile *cfg)
+{
+	MonoBasicBlock *bb;
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		bb->dfn = 0;
+		bb->df_parent = NULL;
+	}
+}
+
+static void
+mono_bb_ordering (MonoCompile *cfg)
 {
 	int dfn = 0;
+	const char *s = cfg->method->name;
+	int traceme = !strcmp (s, "CheckCanonical") || !strcmp (s, "PrivateParseMinimal") || !strcmp (s, "GetLocalPath") || !strcmp (s, "LastIndexOf") || !strcmp (s, "ReCreateParts");
 	/* Depth-first ordering on basic blocks */
 	cfg->bblocks = (MonoBasicBlock **)mono_mempool_alloc (cfg->mempool, sizeof (MonoBasicBlock*) * (cfg->num_bblocks + 1));
 
 	cfg->max_block_num = cfg->num_bblocks;
 
-	df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
-	g_assertf (cfg->num_bblocks >= dfn, "cfg->num_bblocks=%d/0x%x, dfn=%d/0x%x\n", cfg->num_bblocks, cfg->num_bblocks, dfn, dfn);
+	int maxloop = traceme ? 0x30000000 : 1;
+
+	for (int i = 0; i < maxloop; i++) {
+		clear_bb_stuff (cfg);
+		dfn = 0;
+		df_visit (cfg->bb_entry, &dfn, cfg->bblocks);
+		g_assertf (cfg->num_bblocks >= dfn, "at iteration=%d via \"%s\": cfg->num_bblocks=%d/0x%x,  dfn=%d/0x%x, *(guint64 *) &dfn=%p\n", i, mono_method_full_name (cfg->method, 1), cfg->num_bblocks, cfg->num_bblocks, dfn, dfn, *(guint64 *) &dfn);
+	}
+	mono_memory_barrier ();
 	if (cfg->num_bblocks != dfn + 1) {
-		MonoBasicBlock *bb;
-
-		cfg->num_bblocks = dfn + 1;
-
-		/* remove unreachable code, because the code in them may be 
-		 * inconsistent  (access to dead variables for example) */
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			bb->flags &= ~BB_VISITED;
-		compute_reachable (cfg->bb_entry);
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			if (bb->flags & BB_EXCEPTION_HANDLER)
-				compute_reachable (bb);
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-			if (!(bb->flags & BB_VISITED)) {
-				if (cfg->verbose_level > 1)
-					g_print ("found unreachable code in BB%d\n", bb->block_num);
-				bb->code = bb->last_ins = NULL;
-				while (bb->out_count)
-					mono_unlink_bblock (cfg, bb, bb->out_bb [0]);
-			}
-		}
-		for (bb = cfg->bb_entry; bb; bb = bb->next_bb)
-			bb->flags &= ~BB_VISITED;
+		call_something_else (cfg, dfn);
 	}
 }
 
