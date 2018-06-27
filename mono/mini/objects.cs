@@ -1947,6 +1947,22 @@ ncells ) {
 		var e2 = (IList<AClass1> []) d;
 		return 0;
 	}
+
+	class SimpleContainer {
+		public Simple simple1;
+		public Simple simple2;
+
+		public static Simple constsimple;
+
+		public void SetFields () {
+			simple1 = simple2 = constsimple;
+		}
+	}
+
+	public static int test_0_dup_vtype () {
+		new SimpleContainer ().SetFields ();
+		return 0;
+	}
 }
 
 #if __MOBILE__
