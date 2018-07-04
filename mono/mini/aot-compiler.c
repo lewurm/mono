@@ -289,6 +289,7 @@ typedef struct MonoAotCompile {
 
 	MonoAotOptions aot_opts;
 	guint32 nmethods;
+	guint32 nextra_methods;
 	guint32 opts;
 	guint32 simd_opts;
 	MonoMemPool *mempool;
@@ -3688,8 +3689,10 @@ add_method_with_index (MonoAotCompile *acfg, MonoMethod *method, int index, gboo
 		acfg->nmethods = acfg->methods->len + 1;
 	}
 
-	if (method->wrapper_type || extra)
+	if (method->wrapper_type || extra) {
+		acfg->nextra_methods++;
 		g_ptr_array_add (acfg->extra_methods, method);
+	}
 }
 
 static gboolean
@@ -10299,6 +10302,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->got_size = acfg->got_offset * sizeof (gpointer);
 	info->plt_size = acfg->plt_offset;
 	info->nmethods = acfg->nmethods;
+	info->nextra_methods = acfg->nextra_methods;
 	info->flags = acfg->flags;
 	info->opts = acfg->opts;
 	info->simd_opts = acfg->simd_opts;
@@ -10435,6 +10439,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->got_size);
 	emit_int32 (acfg, info->plt_size);
 	emit_int32 (acfg, info->nmethods);
+	emit_int32 (acfg, info->nextra_methods);
 	emit_int32 (acfg, info->flags);
 	emit_int32 (acfg, info->opts);
 	emit_int32 (acfg, info->simd_opts);
