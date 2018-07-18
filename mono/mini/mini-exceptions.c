@@ -3059,6 +3059,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 	print_process_map ();
 
 	dump_memory_around_ip (ctx);
+	return;
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
  {
