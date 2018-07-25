@@ -5,10 +5,10 @@ using System.Runtime.CompilerServices;
 namespace Mono.Compiler {
 	public class RuntimeInformation : IRuntimeInformation {
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		extern static InstalledRuntimeCode mono_install_compilation_result (int compilationResult, NativeCodeHandle codeHandle);
+		extern static InstalledRuntimeCode mono_install_compilation_result (int compilationResult, MethodInfo methodInfo, NativeCodeHandle codeHandle);
 
-		public InstalledRuntimeCode InstallCompilationResult (CompilationResult compilationResult, NativeCodeHandle codeHandle) {
-			return mono_install_compilation_result ((int) compilationResult, codeHandle);
+		public InstalledRuntimeCode InstallCompilationResult (CompilationResult compilationResult, MethodInfo methodInfo, NativeCodeHandle codeHandle) {
+			return mono_install_compilation_result ((int) compilationResult, methodInfo, codeHandle);
 		}
 
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]

@@ -99,7 +99,7 @@ namespace Mono.Compiler.BigStep
 				}
 				IntPtr fnptr = LLVM.GetPointerToGlobal (engine, Function);
 				unsafe {
-					result = new NativeCodeHandle ((byte*)fnptr, -1, methodInfo);
+					result = new NativeCodeHandle ((byte*)fnptr, -1);
 				}
 
 				//FIXME: cleanup in a Dispose method?

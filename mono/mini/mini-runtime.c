@@ -4575,7 +4575,6 @@ ves_icall_Mono_Compiler_MiniCompiler_CompileMethod (MonoMethod *method, gint32 o
 struct _NativeCodeHandle {
 	gpointer blob;
 	gint64 length;
-	MonoObject *method_handle; /* Mono.Compiler.MethodInfo */
 };
 typedef struct _NativeCodeHandle NativeCodeHandle;
 
@@ -4585,10 +4584,10 @@ struct _InstalledRuntimeCode {
 typedef struct _InstalledRuntimeCode InstalledRuntimeCode;
 
 static InstalledRuntimeCode*
-ves_icall_mjit_install_compilation_result (int compilation_result, NativeCodeHandle native_code)
+ves_icall_mjit_install_compilation_result (int compilation_result, MonoObject *method_info, NativeCodeHandle native_code)
 {
 	ERROR_DECL (error);
-	gpointer params [0] = {0};
+	gpointer params [0];
 
 	if (compilation_result != 0) {
 		g_printerr ("mjit_install: failed with %d\n", compilation_result);
@@ -4605,7 +4604,7 @@ ves_icall_mjit_install_compilation_result (int compilation_result, NativeCodeHan
 	MonoJitInfo *jinfo = mono_domain_alloc0 (domain, MONO_SIZEOF_JIT_INFO);
 	jinfo->d.installed_runtime_code = key;
 
-	MonoReflectionMethod *method_handle = (MonoReflectionMethod *) mono_runtime_invoke_checked (MethodInfo_get_RuntimeMethodHandle_method, native_code.method_handle, params, error);
+	MonoReflectionMethod *method_handle = (MonoReflectionMethod *) mono_runtime_invoke_checked (MethodInfo_get_RuntimeMethodHandle_method, method_info, params, error);
 	jinfo->mjit_method = method_handle->method;
 	return_val_if_nok (error, NULL);
 
