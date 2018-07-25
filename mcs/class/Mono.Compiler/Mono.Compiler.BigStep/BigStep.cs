@@ -37,7 +37,7 @@ namespace Mono.Compiler.BigStep
 			var r = TranslateBody (env, builder, methodInfo.Body);
 			if (r != Ok)
 				return r;
-			r = builder.Finish (methodInfo, out result);
+			r = builder.Finish (out result);
 			return r;
 		}
 
@@ -79,7 +79,7 @@ namespace Mono.Compiler.BigStep
 			}
 
 
-			internal CompilationResult Finish (MethodInfo methodInfo, out NativeCodeHandle result) {
+			internal CompilationResult Finish (out NativeCodeHandle result) {
 
 				// FIXME: get rid of this printf
 				LLVM.DumpModule (Module);
