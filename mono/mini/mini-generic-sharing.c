@@ -1574,7 +1574,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	 * When we are called from native code we can't unwind and we might also not
 	 * be attached.
 	 */
+#if 0
 	if (!sig->pinvoke)
+#endif
 		mb->method->save_lmf = 1;
 
 #ifndef DISABLE_JIT

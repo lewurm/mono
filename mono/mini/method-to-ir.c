@@ -1739,11 +1739,14 @@ emit_push_lmf (MonoCompile *cfg)
 	/*
 	 * Emit IR to push the LMF:
 	 * lmf_addr = <lmf_addr from tls>
-	 * lmf->lmf_addr = lmf_addr
-	 * lmf->prev_lmf = *lmf_addr
-	 * *lmf_addr = lmf
+	 * if (lmf_addr != NULL) {
+	 *   lmf->lmf_addr = lmf_addr
+	 *   lmf->prev_lmf = *lmf_addr
+	 *   *lmf_addr = lmf
+	 * }
 	 */
 	MonoInst *ins, *lmf_ins;
+	MonoBasicBlock *is_null_bb;
 
 	if (!cfg->lmf_ir)
 		return;
@@ -1771,12 +1774,41 @@ emit_push_lmf (MonoCompile *cfg)
 	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
 	lmf_reg = ins->dreg;
 
+#if 1
+#define WTF 1
+#endif
+#ifdef WTF
+	g_assert (cfg->cbb->out_count == 1);
+	MonoBasicBlock *bb_target = cfg->cbb->out_bb [0];
+	MonoBasicBlock *old_next_bb = cfg->cbb->next_bb;
+	cfg->cbb->out_count--;
+	NEW_BBLOCK (cfg, is_null_bb);
+
+	cfg->cbb->next_bb = is_null_bb;
+	bb_target->in_bb [0] = is_null_bb;
+	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, cfg->lmf_addr_var->dreg, 0);
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, is_null_bb);
+#endif
+
 	prev_lmf_reg = alloc_preg (cfg);
 	/* Save previous_lmf */
 	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, cfg->lmf_addr_var->dreg, 0);
 	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
 	/* Set new lmf */
 	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, cfg->lmf_addr_var->dreg, 0, lmf_reg);
+
+#ifdef WTF
+	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
+
+	MONO_START_BB (cfg, is_null_bb);
+	is_null_bb->next_bb = bb_target;
+	is_null_bb->out_bb = (MonoBasicBlock **) mono_mempool_alloc (cfg->mempool, sizeof (gpointer) * 2);
+	is_null_bb->out_bb [0] = bb_target;
+	is_null_bb->out_count++;
+	if (cfg->verbose_level)
+		g_print ("is_null_bb: BB%d, next_bb=BB%d\n", is_null_bb->block_num, is_null_bb->next_bb->block_num);
+	g_assert (cfg->cbb == is_null_bb);
+#endif
 }
 
 /*
@@ -11930,6 +11962,9 @@ mono_ldptr:
 	if (cfg->lmf_var && cfg->method == method && !cfg->llvm_only) {
 		cfg->cbb = init_localsbb;
 		emit_push_lmf (cfg);
+#ifdef WTF
+		init_localsbb = cfg->cbb;
+#endif
 	}
 
 	cfg->cbb = init_localsbb;
