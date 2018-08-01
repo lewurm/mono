@@ -7677,9 +7677,19 @@ static void (*mono_test_capture_throw_callback) (guint32 gchandle, guint32 *exce
 static void
 mono_test_ftnptr_eh_callback (guint32 gchandle)
 {
+	guint32 exception_handle = 0;
+
 	g_assert (gchandle != 0);
 	MonoObject *exc = sym_mono_gchandle_get_target (gchandle);
 	sym_mono_gchandle_free (gchandle);
+
+	guint32 handle = sym_mono_gchandle_new (exc, FALSE);
+	mono_test_capture_throw_callback (handle, &exception_handle);
+	sym_mono_gchandle_free (handle);
+
+	g_assert (exception_handle != 0);
+	exc = sym_mono_gchandle_get_target (exception_handle);
+	sym_mono_gchandle_free (exception_handle);
 
 	sym_mono_raise_exception (exc);
 	g_error ("mono_raise_exception should not return");
