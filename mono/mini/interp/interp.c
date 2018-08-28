@@ -335,14 +335,15 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 }
 
 #if defined (MONO_CROSS_COMPILE) || defined (HOST_WASM) || defined (_MSC_VER)
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) /* do nothing */
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, context, exit_label) /* do nothing */
 #elif defined (MONO_ARCH_HAS_MONO_CONTEXT)
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, context, exit_label) \
 	MONO_CONTEXT_GET_CURRENT ((ext).ctx); \
-	MONO_CONTEXT_SET_IP (&(ext).ctx, (exit_addr)); \
+	if (context->has_resume_state) \
+		goto exit_label; \
 	mono_arch_do_ip_adjustment (&(ext).ctx);
 #else
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) g_error ("requires working mono-context");
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, context, exit_label) g_error ("requires working mono-context");
 #endif
 
 /* INTERP_PUSH_LMF_WITH_CTX:
@@ -354,11 +355,11 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
  * This must be a macro in order to retrieve the right register values for
  * MonoContext.
  */
-#define INTERP_PUSH_LMF_WITH_CTX(frame, ext, exit_addr) \
+#define INTERP_PUSH_LMF_WITH_CTX(frame, ext, context, exit_label) \
 	memset (&(ext), 0, sizeof (MonoLMFExt)); \
 	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
 	(ext).interp_exit_data = (frame); \
-	INTERP_PUSH_LMF_WITH_CTX_BODY ((ext), (exit_addr)); \
+	INTERP_PUSH_LMF_WITH_CTX_BODY ((ext), (context), exit_label); \
 	mono_push_lmf (&(ext));
 
 /*
@@ -1205,7 +1206,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 #endif
 
 	context->current_frame = frame;
-	INTERP_PUSH_LMF_WITH_CTX (context->current_frame, ext, &&exit_pinvoke);
+	INTERP_PUSH_LMF_WITH_CTX (context->current_frame, ext, context, exit_pinvoke);
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	mono_interp_to_native_trampoline (addr, &ccontext);
 #else
@@ -1781,7 +1782,7 @@ static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE stackval *
 do_icall (ThreadContext *context, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
 {
 	MonoLMFExt ext;
-	INTERP_PUSH_LMF_WITH_CTX (context->current_frame, ext, &&exit_icall);
+	INTERP_PUSH_LMF_WITH_CTX (context->current_frame, ext, context, exit_icall);
 
 	switch (op) {
 	case MINT_ICALL_V_V: {
