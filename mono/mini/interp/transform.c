@@ -813,20 +813,6 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	return FALSE;
 }
 
-static inline gboolean
-type_size (MonoType *type)
-{
-	if (type->type == MONO_TYPE_I4 || type->type == MONO_TYPE_U4)
-		return 4;
-	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
-		return 8;
-	else if (type->type == MONO_TYPE_R4 && !type->byref)
-		return 4;
-	else if (type->type == MONO_TYPE_R8 && !type->byref)
-		return 8;
-	return SIZEOF_VOID_P;
-}
-
 static int mono_class_get_magic_index (MonoClass *k)
 {
 	if (mono_class_is_magic_int (k))
@@ -858,6 +844,25 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	td->sp -= 2;
 }
 
+/*
+ * These are additional locals that can be allocated as we transform the code.
+ * They are allocated past the method locals so they are accessed in the same
+ * way, with an offset relative to the frame->locals.
+ */
+static int
+create_interp_local (TransformData *td, MonoType *type)
+{
+	int align, size;
+	int offset = td->total_locals_size;
+
+	size = mono_type_size (type, &align);
+	offset = ALIGN_TO (offset, align);
+
+	td->total_locals_size = offset + size;
+
+	return offset;
+}
+
 static MonoMethodHeader*
 interp_method_get_header (MonoMethod* method, MonoError *error)
 {
@@ -873,7 +878,7 @@ interp_method_get_header (MonoMethod* method, MonoError *error)
 
 /* Return TRUE if call transformation is finished */
 static gboolean
-interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean readonly, int *op)
+interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean readonly, int *op, guint32 *vt_stack_used)
 {
 	const char *tm = target_method->name;
 	int i;
@@ -896,7 +901,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		if (!strcmp (".ctor", tm)) {
 			MonoType *arg = csignature->params [0];
 			/* depending on SIZEOF_VOID_P and the type of the value passed to the .ctor we either have to CONV it, or do nothing */
-			int arg_size = type_size (arg);
+			int arg_size = mini_magic_type_size (NULL, arg);
 
 			if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
 				switch (type_index) {
@@ -941,8 +946,83 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			td->ip += 5;
 			return TRUE;
 		} else if (!strcmp ("op_Implicit", tm ) || !strcmp ("op_Explicit", tm)) {
-			int arg_size = type_size (csignature->params [0]);
-			if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
+			MonoType *src = csignature->params [0];
+			MonoType *dst = csignature->ret;
+			int src_size = mini_magic_type_size (NULL, src);
+			int dst_size = mini_magic_type_size (NULL, dst);
+
+			gboolean override_ld = FALSE;
+
+			switch (type_index) {
+			case 0: case 1:
+				if (!mini_magic_is_int_type (src) || !mini_magic_is_int_type (dst)) {
+					if (mini_magic_is_int_type (src))
+						override_ld = TRUE;
+					else
+						return FALSE;
+				}
+				break;
+			case 2:
+				if (!mini_magic_is_float_type (src) || !mini_magic_is_float_type (dst)) {
+					if (mini_magic_is_float_type (src))
+						override_ld = TRUE;
+					else
+						return FALSE;
+				}
+				break;
+			}
+
+			if (override_ld) {
+				unsigned short current_op = *((td)->new_ip - 2);
+				if (current_op == MINT_LDLOC_I4 || current_op == MINT_LDLOC_I8 || current_op == MINT_LDLOC_R4 || current_op == MINT_LDLOC_R8) {
+					td->new_ip -= 2;
+					gint32 size = src_size; // TODO
+					g_assert (src_size == SIZEOF_VOID_P);
+					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+					PUSH_VT (td, size);
+					ADD_CODE (td, MINT_LDLOC_VT);
+					td->new_ip++; // Skip offset; it was already set correctly by LDLOC_{I{4,8},R{4,8}}
+					WRITE32 (td, &size);
+					*vt_stack_used += size;
+					return FALSE;
+				}
+
+				current_op = *((td)->new_ip - 6);
+				if (current_op == MINT_LDFLD_I4 || current_op == MINT_LDFLD_I8 || current_op == MINT_LDFLD_R4 || current_op == MINT_LDFLD_R8) {
+					td->new_ip -= 6;
+					ADD_CODE (td, MINT_LDFLDA);
+					td->new_ip++; // Skip offset; it was already set correctly by LDFLD_{I{4,8},R{4,8}}
+					return FALSE;
+				}
+
+				current_op = *((td)->new_ip - 2);
+				if (current_op == MINT_LDSFLD) {
+					td->new_ip -= 2;
+					ADD_CODE (td, MINT_LDSFLDA);
+					td->new_ip++; // Skip offset; it was already set correctly by LDFLD_{I{4,8},R{4,8}}
+					return FALSE;
+				}
+
+				current_op = *((td)->new_ip - 6);
+				if (current_op == MINT_CALL) {
+					gint32 size = 8; //src_size; // TODO
+					// td->new_ip -= 1;
+					int local_offset = create_interp_local (td, mini_native_type_replace_type (src));
+					store_local_general (td, local_offset, src);
+					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+					PUSH_VT (td, size);
+					ADD_CODE (td, MINT_LDLOC_VT);
+					ADD_CODE (td, local_offset);
+					WRITE32 (td, &size);
+					// *vt_stack_used += size;
+					PUSH_TYPE (td, STACK_TYPE_VT, NULL);
+					return FALSE;
+				}
+
+				g_error ("unsupported pattern: %s\n", mono_interp_dis_mintop (td->new_code, td->new_ip-1));
+			}
+
+			if (src_size > dst_size) { // 8 -> 4
 				switch (type_index) {
 				case 0: case 1:
 					ADD_CODE (td, MINT_CONV_I4_I8);
@@ -953,7 +1033,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 				}
 			}
 
-			if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
+			if (src_size < dst_size) { // 4 -> 8
 				switch (type_index) {
 				case 0: case 1:
 					ADD_CODE (td, MINT_CONV_I8_I4);
@@ -1299,7 +1379,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	/* Intrinsics */
-	if (target_method && interp_handle_intrinsics (td, target_method, csignature, readonly, &op))
+	if (target_method && interp_handle_intrinsics (td, target_method, csignature, readonly, &op, &vt_stack_used))
 		return;
 
 	if (constrained_class) {
@@ -1696,25 +1776,6 @@ get_basic_blocks (TransformData *td)
 		if (i == CEE_THROW)
 			cbb = get_bb (td, NULL, ip);
 	}
-}
-
-/*
- * These are additional locals that can be allocated as we transform the code.
- * They are allocated past the method locals so they are accessed in the same
- * way, with an offset relative to the frame->locals.
- */
-static int
-create_interp_local (TransformData *td, MonoType *type)
-{
-	int align, size;
-	int offset = td->total_locals_size;
-
-	size = mono_type_size (type, &align);
-	offset = ALIGN_TO (offset, align);
-
-	td->total_locals_size = offset + size;
-
-	return offset;
 }
 
 static void
@@ -4776,6 +4837,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			p = mono_interp_dis_mintop_len (p);
 		}
 	}
+
 	/* Check if we use excessive stack space */
 	if (td->max_stack_height > header->max_stack * 3)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);

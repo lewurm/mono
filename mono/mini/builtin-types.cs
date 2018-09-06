@@ -1,5 +1,10 @@
 // #define ARCH_32
-#define NINT_JIT_OPTIMIZED
+
+/* This is _NOT_ set by Xamarin.iOS. We can enable it in order to make sure
+ * methods are intrisified (by throwing NotImplementedException), but some
+ * aren't implemented, e.g. conversion to decimal, and that's okay.
+ */
+// #define NINT_JIT_OPTIMIZED
 
 using System;
 using System.Diagnostics;
@@ -27,6 +32,7 @@ public class BuiltinTests {
 	{
 		var x = (nint)10;
 		var y = (nint)20L;
+		int z = 30;
 
 		if ((int)x != 10)
 			return 1;
@@ -36,6 +42,8 @@ public class BuiltinTests {
 			return 3;
 		if ((long)y != 20L)
 			return 4;
+		if ((nint)z != 30)
+			return 5;
 		return 0;
 	}
 
@@ -259,6 +267,16 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nint_implicit_decimal ()
+	{
+		nint a = new nint (10);
+		nint b = new nint (9);
+		if (decimal_cmp (a, b))
+			return 2;
+		b++;
+		return decimal_cmp (a, b) ? 0 : 1;
+	}
+
 	public int test_0_nint_unboxed_member_calls ()
 	{
 		var x = (nint)10;
@@ -268,6 +286,47 @@ public class BuiltinTests {
 #endif
 		if (x != nint.Parse ("10"))
 			return 2;
+		return 0;
+	}
+
+	struct SomeNativeStructWithNint {
+		public nint a;
+		public static nint b;
+
+		public SomeNativeStructWithNint (nint a)
+		{
+			this.a = a;
+			b = a + 1;
+		}
+
+		public static nint GetA (SomeNativeStructWithNint x)
+		{
+			return x.a;
+		}
+	}
+
+	public int test_0_nint_fieldload ()
+	{
+		var x = new SomeNativeStructWithNint ((nint) 20);
+
+		if ((float) x.a != 20f)
+			return 1;
+
+		if ((int) x.a != 20)
+			return 2;
+
+		if ((float) SomeNativeStructWithNint.GetA (x) != 20f)
+			return 3;
+
+		if ((int) SomeNativeStructWithNint.GetA (x) != 20)
+			return 4;
+
+		if ((float) SomeNativeStructWithNint.b != 21f)
+			return 5;
+
+		if ((int) SomeNativeStructWithNint.b != 21)
+			return 6;
+
 		return 0;
 	}
 
@@ -289,6 +348,7 @@ public class BuiltinTests {
 	{
 		var x = (nuint)10;
 		var y = (nuint)20L;
+		int z = 30;
 
 		if ((uint)x != 10)
 			return 1;
@@ -298,6 +358,8 @@ public class BuiltinTests {
 			return 3;
 		if ((ulong)y != 20L)
 			return 4;
+		if ((nuint)z != 30)
+			return 5;
 		return 0;
 	}
 
@@ -521,6 +583,22 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool decimal_cmp (decimal a, decimal b)
+	{
+		return a == b;
+	}
+
+	static int test_0_nuint_implicit_decimal ()
+	{
+		nuint a = new nuint (10);
+		nuint b = new nuint (9);
+		if (decimal_cmp (a, b))
+			return 2;
+		b++;
+		return decimal_cmp (a, b) ? 0 : 1;
+	}
+
 	public int test_0_nuint_unboxed_member_calls ()
 	{
 		var x = (nuint)10;
@@ -530,6 +608,47 @@ public class BuiltinTests {
 #endif
 		if (x != nuint.Parse ("10"))
 			return 2;
+		return 0;
+	}
+
+	struct SomeNativeStructWithNuint {
+		public nuint a;
+		public static nuint b;
+
+		public SomeNativeStructWithNuint (nuint a)
+		{
+			this.a = a;
+			b = a + 1;
+		}
+
+		public static nuint GetA (SomeNativeStructWithNuint x)
+		{
+			return x.a;
+		}
+	}
+
+	public int test_0_nuint_fieldload ()
+	{
+		var x = new SomeNativeStructWithNuint ((nuint) 20);
+
+		if ((float) x.a != 20f)
+			return 1;
+
+		if ((int) x.a != 20)
+			return 2;
+
+		if ((float) SomeNativeStructWithNuint.GetA (x) != 20f)
+			return 3;
+
+		if ((int) SomeNativeStructWithNuint.GetA (x) != 20)
+			return 4;
+
+		if ((float) SomeNativeStructWithNuint.b != 21f)
+			return 5;
+
+		if ((int) SomeNativeStructWithNuint.b != 21)
+			return 6;
+
 		return 0;
 	}
 
@@ -562,6 +681,12 @@ public class BuiltinTests {
 		if ((double)y != 20)
 			return 4;
 #endif
+		int z = 30;
+		if ((nfloat) z != 30f)
+			return 5;
+
+		if ((int) x != 10)
+			return 6;
 		return 0;
 	}
 
@@ -780,6 +905,16 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nfloat_explicit_decimal ()
+	{
+		nfloat a = new nfloat (10);
+		nfloat b = new nfloat (9);
+		if (decimal_cmp ((decimal) a, (decimal) b))
+			return 2;
+		b += 1.0f;
+		return decimal_cmp ((decimal) a, (decimal) b) ? 0 : 1;
+	}
+
 	public int test_0_nfloat_unboxed_member_calls ()
 	{
 		var x = (nfloat)10f;
@@ -789,6 +924,47 @@ public class BuiltinTests {
 #endif
 		if (x != nfloat.Parse ("10"))
 			return 2;
+		return 0;
+	}
+
+	struct SomeNativeStructWithNfloat {
+		public nfloat a;
+		public static nfloat b;
+
+		public SomeNativeStructWithNfloat (nfloat a)
+		{
+			this.a = a;
+			b = a + 1;
+		}
+
+		public static nfloat GetA (SomeNativeStructWithNfloat x)
+		{
+			return x.a;
+		}
+	}
+
+	public int test_0_nfloat_fieldload ()
+	{
+		var x = new SomeNativeStructWithNfloat ((nfloat) 20f);
+
+		if ((float) x.a != 20f)
+			return 1;
+
+		if ((int) x.a != 20)
+			return 2;
+
+		if ((float) SomeNativeStructWithNfloat.GetA (x) != 20f)
+			return 3;
+
+		if ((int) SomeNativeStructWithNfloat.GetA (x) != 20)
+			return 4;
+
+		if ((float) SomeNativeStructWithNfloat.b != 21f)
+			return 5;
+
+		if ((int) SomeNativeStructWithNfloat.b != 21)
+			return 6;
+
 		return 0;
 	}
 
