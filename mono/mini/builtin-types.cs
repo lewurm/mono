@@ -948,6 +948,28 @@ public class BuiltinTests {
 		}
 	}
 
+	class SomeClassWithNfloat {
+		public nfloat a;
+
+		public SomeClassWithNfloat (nfloat a)
+		{
+			this.a = a;
+		}
+
+		public virtual nfloat GetAVirtual ()
+		{
+			return a;
+		}
+	}
+
+	/*
+	class SomeClassWithNfloatSub : SomeClassWithNfloat {
+		public nfloat GetAVirtual ()
+		{
+			return a + 1;
+		}
+	}*/
+
 	public int test_0_nfloat_fieldload ()
 	{
 		var x = new SomeNativeStructWithNfloat ((nfloat) 20f);
@@ -975,6 +997,14 @@ public class BuiltinTests {
 
 		if ((int) SomeNativeStructWithNfloat.b != 21)
 			return 6;
+
+		SomeClassWithNfloat y = new SomeClassWithNfloat ((nfloat) 30f);
+
+		if ((int) y.GetAVirtual () != 30)
+			return 10;
+
+		if ((float) y.GetAVirtual () != 30f)
+			return 11;
 
 		return 0;
 	}

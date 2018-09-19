@@ -1016,7 +1016,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 				}
 
 				current_op = *((td)->new_ip - 6);
-				if (current_op == MINT_CALL || *((td)->new_ip - 2) == MINT_CALL) {
+				if (current_op == MINT_CALL || *((td)->new_ip - 2) == MINT_CALL || *((td)->new_ip - 2) == MINT_CALLVIRT) {
 					gint32 size = 8; //src_size; // TODO
 					// td->new_ip -= 1;
 					int local_offset = create_interp_local (td, mini_native_type_replace_type (src));
