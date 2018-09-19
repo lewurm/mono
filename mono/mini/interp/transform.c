@@ -985,6 +985,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			}
 
 			if (override_ld) {
+#if 0
 				unsigned short current_op = *((td)->new_ip - 2);
 				if (current_op == MINT_LDLOC_I4 || current_op == MINT_LDLOC_I8 || current_op == MINT_LDLOC_R4 || current_op == MINT_LDLOC_R8) {
 					td->new_ip -= 2;
@@ -1014,9 +1015,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 					td->new_ip++; // Skip offset; it was already set correctly by LDFLD_{I{4,8},R{4,8}}
 					return FALSE;
 				}
+#endif
 
-				current_op = *((td)->new_ip - 6);
-				if (current_op == MINT_CALL || *((td)->new_ip - 2) == MINT_CALL || *((td)->new_ip - 2) == MINT_CALLVIRT) {
+				gboolean store_local_hack = TRUE;
+
+				store_local_hack |= *((td)->new_ip - 6) == MINT_CALL;
+				store_local_hack |= *((td)->new_ip - 2) == MINT_CALL;
+				store_local_hack |= *((td)->new_ip - 2) == MINT_CALLVIRT;
+				store_local_hack |= *((td)->new_ip - 1) == MINT_CONV_I8_I4;
+
+				if (store_local_hack) {
 					gint32 size = 8; //src_size; // TODO
 					// td->new_ip -= 1;
 					int local_offset = create_interp_local (td, mini_native_type_replace_type (src));

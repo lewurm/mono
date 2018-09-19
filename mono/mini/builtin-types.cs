@@ -272,9 +272,13 @@ public class BuiltinTests {
 		nint a = new nint (10);
 		nint b = new nint (9);
 		if (decimal_cmp (a, b))
-			return 2;
+			return 1;
 		b++;
-		return decimal_cmp (a, b) ? 0 : 1;
+		if (!decimal_cmp (a, b))
+			return 2;
+		if (!decimal_cmp ((nint) 10, b))
+			return 3;
+		return 0;
 	}
 
 	public int test_0_nint_unboxed_member_calls ()
