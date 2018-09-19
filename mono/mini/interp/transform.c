@@ -963,13 +963,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			int src_size = mini_magic_type_size (NULL, src);
 			int dst_size = mini_magic_type_size (NULL, dst);
 
-			gboolean override_ld = FALSE;
+			gboolean store_value_as_local = FALSE;
 
 			switch (type_index) {
 			case 0: case 1:
 				if (!mini_magic_is_int_type (src) || !mini_magic_is_int_type (dst)) {
 					if (mini_magic_is_int_type (src))
-						override_ld = TRUE;
+						store_value_as_local = TRUE;
 					else
 						return FALSE;
 				}
@@ -977,71 +977,36 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			case 2:
 				if (!mini_magic_is_float_type (src) || !mini_magic_is_float_type (dst)) {
 					if (mini_magic_is_float_type (src))
-						override_ld = TRUE;
+						store_value_as_local = TRUE;
 					else
 						return FALSE;
 				}
 				break;
 			}
 
-			if (override_ld) {
+			if (store_value_as_local) {
+				/* store value as local and push addr of it on stack */
+				gint32 size = src_size;
+
+				int local_offset = create_interp_local (td, mini_native_type_replace_type (src));
+				store_local_general (td, local_offset, src);
+
+				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+
+				ADD_CODE (td, MINT_LDLOC_VT);
+				ADD_CODE (td, local_offset);
+				WRITE32 (td, &size);
+
+				PUSH_VT (td, size);
+				PUSH_TYPE (td, STACK_TYPE_VT, NULL);
+
+				/* emit call to managed conversion method */
+				return FALSE;
 #if 0
-				unsigned short current_op = *((td)->new_ip - 2);
-				if (current_op == MINT_LDLOC_I4 || current_op == MINT_LDLOC_I8 || current_op == MINT_LDLOC_R4 || current_op == MINT_LDLOC_R8) {
-					td->new_ip -= 2;
-					gint32 size = src_size; // TODO
-					g_assert (src_size == SIZEOF_VOID_P);
-					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-					PUSH_VT (td, size);
-					ADD_CODE (td, MINT_LDLOC_VT);
-					td->new_ip++; // Skip offset; it was already set correctly by LDLOC_{I{4,8},R{4,8}}
-					WRITE32 (td, &size);
-					*vt_stack_used += size;
-					return FALSE;
-				}
-
-				current_op = *((td)->new_ip - 6);
-				if (current_op == MINT_LDFLD_I4 || current_op == MINT_LDFLD_I8 || current_op == MINT_LDFLD_R4 || current_op == MINT_LDFLD_R8) {
-					td->new_ip -= 6;
-					ADD_CODE (td, MINT_LDFLDA);
-					td->new_ip++; // Skip offset; it was already set correctly by LDFLD_{I{4,8},R{4,8}}
-					return FALSE;
-				}
-
-				current_op = *((td)->new_ip - 2);
-				if (current_op == MINT_LDSFLD) {
-					td->new_ip -= 2;
-					ADD_CODE (td, MINT_LDSFLDA);
-					td->new_ip++; // Skip offset; it was already set correctly by LDFLD_{I{4,8},R{4,8}}
-					return FALSE;
-				}
-#endif
-
-				gboolean store_local_hack = TRUE;
-
-				store_local_hack |= *((td)->new_ip - 6) == MINT_CALL;
-				store_local_hack |= *((td)->new_ip - 2) == MINT_CALL;
-				store_local_hack |= *((td)->new_ip - 2) == MINT_CALLVIRT;
-				store_local_hack |= *((td)->new_ip - 1) == MINT_CONV_I8_I4;
-
-				if (store_local_hack) {
-					gint32 size = 8; //src_size; // TODO
-					// td->new_ip -= 1;
-					int local_offset = create_interp_local (td, mini_native_type_replace_type (src));
-					store_local_general (td, local_offset, src);
-					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-					PUSH_VT (td, size);
-					ADD_CODE (td, MINT_LDLOC_VT);
-					ADD_CODE (td, local_offset);
-					WRITE32 (td, &size);
-					// *vt_stack_used += size;
-					PUSH_TYPE (td, STACK_TYPE_VT, NULL);
-					return FALSE;
-				}
-
 				g_print ("generated code so far; trying to intrinsify \"%s\". current ip = 0x%02x\n", mono_method_full_name (target_method, TRUE), td->new_ip - td->new_code);
 				dump_mint_code (td);
 				g_error ("unsupported pattern");
+#endif
 			}
 
 			if (src_size > dst_size) { // 8 -> 4
