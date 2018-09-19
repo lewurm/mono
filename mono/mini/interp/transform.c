@@ -863,6 +863,18 @@ create_interp_local (TransformData *td, MonoType *type)
 	return offset;
 }
 
+static void
+dump_mint_code (TransformData *td)
+{
+	const guint16 *p = td->new_code;
+	while (p < td->new_ip) {
+		char *ins = mono_interp_dis_mintop (td->new_code, p);
+		g_print ("%s\n", ins);
+		g_free (ins);
+		p = mono_interp_dis_mintop_len (p);
+	}
+}
+
 static MonoMethodHeader*
 interp_method_get_header (MonoMethod* method, MonoError *error)
 {
@@ -1004,7 +1016,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 				}
 
 				current_op = *((td)->new_ip - 6);
-				if (current_op == MINT_CALL) {
+				if (current_op == MINT_CALL || *((td)->new_ip - 2) == MINT_CALL) {
 					gint32 size = 8; //src_size; // TODO
 					// td->new_ip -= 1;
 					int local_offset = create_interp_local (td, mini_native_type_replace_type (src));
@@ -1019,7 +1031,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 					return FALSE;
 				}
 
-				g_error ("unsupported pattern: %s\n", mono_interp_dis_mintop (td->new_code, td->new_ip-1));
+				g_print ("generated code so far; trying to intrinsify \"%s\". current ip = 0x%02x\n", mono_method_full_name (target_method, TRUE), td->new_ip - td->new_code);
+				dump_mint_code (td);
+				g_error ("unsupported pattern");
 			}
 
 			if (src_size > dst_size) { // 8 -> 4
@@ -4827,15 +4841,9 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	}
 
 	if (td->verbose_level) {
-		const guint16 *p = td->new_code;
 		g_print ("Runtime method: %s %p, VT stack size: %d\n", mono_method_full_name (method, TRUE), rtm, td->max_vt_sp);
 		g_print ("Calculated stack size: %d, stated size: %d\n", td->max_stack_height, header->max_stack);
-		while (p < td->new_ip) {
-			char *ins = mono_interp_dis_mintop (td->new_code, p);
-			g_print ("%s\n", ins);
-			g_free (ins);
-			p = mono_interp_dis_mintop_len (p);
-		}
+		dump_mint_code (td);
 	}
 
 	/* Check if we use excessive stack space */

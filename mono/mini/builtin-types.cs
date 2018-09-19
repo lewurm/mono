@@ -941,6 +941,11 @@ public class BuiltinTests {
 		{
 			return x.a;
 		}
+
+		public nfloat GetAVirtual ()
+		{
+			return a;
+		}
 	}
 
 	public int test_0_nfloat_fieldload ()
@@ -956,8 +961,14 @@ public class BuiltinTests {
 		if ((float) SomeNativeStructWithNfloat.GetA (x) != 20f)
 			return 3;
 
+		if ((float) x.GetAVirtual () != 20f)
+			return 7;
+
 		if ((int) SomeNativeStructWithNfloat.GetA (x) != 20)
 			return 4;
+
+		if ((int) x.GetAVirtual () != 20)
+			return 8;
 
 		if ((float) SomeNativeStructWithNfloat.b != 21f)
 			return 5;
