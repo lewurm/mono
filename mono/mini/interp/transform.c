@@ -863,6 +863,25 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	td->sp -= 2;
 }
 
+/*
+ * These are additional locals that can be allocated as we transform the code.
+ * They are allocated past the method locals so they are accessed in the same
+ * way, with an offset relative to the frame->locals.
+ */
+static int
+create_interp_local (TransformData *td, MonoType *type)
+{
+	int align, size;
+	int offset = td->total_locals_size;
+
+	size = mono_type_size (type, &align);
+	offset = ALIGN_TO (offset, align);
+
+	td->total_locals_size = offset + size;
+
+	return offset;
+}
+
 static MonoMethodHeader*
 interp_method_get_header (MonoMethod* method, MonoError *error)
 {
@@ -1002,7 +1021,41 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			g_assert (type_index == 2); // nfloat only
 			/* white list */
 			return FALSE;
+		} else if (!strcmp ("CompareTo", tm)) {
+			MonoType *arg = csignature->params [0];
+
+			/* on 'System.n*::CompareTo (System.n*)' variant we need to push managed
+			 * pointer instead of value */
+			if (arg->type == MONO_TYPE_VALUETYPE) {
+				int arg_size = type_size (arg);
+				int local_offset = create_interp_local (td, mini_native_type_replace_type (arg));
+				store_local_general (td, local_offset, arg);
+
+				arg_size = ALIGN_TO (arg_size, MINT_VT_ALIGNMENT);
+
+				ADD_CODE (td, MINT_LDLOC_VT);
+				ADD_CODE (td, local_offset);
+				WRITE32 (td, &arg_size);
+				PUSH_VT (td, arg_size);
+
+				PUSH_TYPE (td, STACK_TYPE_VT, NULL);
+			}
+			/* emit call to managed conversion method */
+			return FALSE;
+#if 0
+		} else if (!strcmp ("IsInfinity", tm) || !strcmp ("IsNegativeInfinity", tm) || !strcmp ("IsPositiveInfinity", tm) || !strcmp ("IsNaN", tm)) {
+			g_assert (type_index == 2); // nfloat only
+			/* white list */
+			return FALSE;
+		} else if (!strcmp ("Equals", tm)) {
+			/* white list */
+			return FALSE;
+		} else if (!strcmp ("ToString", tm)) {
+			/* white list */
+			return FALSE;
+#endif
 		}
+
 
 		for (i = 0; i < sizeof (int_unnop) / sizeof  (MagicIntrinsic); ++i) {
 			if (!strcmp (int_unnop [i].op_name, tm)) {
@@ -1701,25 +1754,6 @@ get_basic_blocks (TransformData *td)
 		if (i == CEE_THROW)
 			cbb = get_bb (td, NULL, ip);
 	}
-}
-
-/*
- * These are additional locals that can be allocated as we transform the code.
- * They are allocated past the method locals so they are accessed in the same
- * way, with an offset relative to the frame->locals.
- */
-static int
-create_interp_local (TransformData *td, MonoType *type)
-{
-	int align, size;
-	int offset = td->total_locals_size;
-
-	size = mono_type_size (type, &align);
-	offset = ALIGN_TO (offset, align);
-
-	td->total_locals_size = offset + size;
-
-	return offset;
 }
 
 static void

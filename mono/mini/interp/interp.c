@@ -125,7 +125,7 @@ static MonoNativeTlsKey thread_context_id;
 
 static char* dump_args (InterpFrame *inv);
 
-#define DEBUG_INTERP 0
+#define DEBUG_INTERP 1
 #define COUNT_OPS 0
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;

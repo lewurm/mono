@@ -239,6 +239,28 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nint_compareto ()
+	{
+		if (((nint) 0).CompareTo ((nint) 0) != 0)
+			return 1;
+		if (((nint) 0).CompareTo ((nint) 1) != -1)
+			return 2;
+		if (((nint) 1).CompareTo ((nint) 0) != 1)
+			return 3;
+		
+		if (((nint) 0).CompareTo ((object)(nint) 0) != 0)
+			return 4;
+		if (((nint) 0).CompareTo ((object)(nint) 1) != -1)
+			return 5;
+		if (((nint) 1).CompareTo ((object)(nint) 0) != 1)
+			return 6;
+
+		if (((nint) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
+	}
+
 	// static int test_0_nint_call_boxed_equals ()
 	// {
 	// 	object x = new nint (10);
