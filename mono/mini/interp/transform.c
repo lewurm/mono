@@ -184,7 +184,7 @@ static int stack_type [] = {
 #define MINT_NEG_P MINT_NEG_I4
 #define MINT_NOT_P MINT_NOT_I4
 
-#define MINT_NEG_FP MINT_NEG_R8
+#define MINT_NEG_FP MINT_NEG_R4
 
 #define MINT_ADD_P MINT_ADD_I4
 #define MINT_SUB_P MINT_SUB_I4
@@ -211,18 +211,18 @@ static int stack_type [] = {
 #define MINT_CGE_P MINT_CGE_I4
 #define MINT_CGE_UN_P MINT_CGE_UN_I4
 
-#define MINT_ADD_FP MINT_ADD_R8
-#define MINT_SUB_FP MINT_SUB_R8
-#define MINT_MUL_FP MINT_MUL_R8
-#define MINT_DIV_FP MINT_DIV_R8
-#define MINT_REM_FP MINT_REM_R8
+#define MINT_ADD_FP MINT_ADD_R4
+#define MINT_SUB_FP MINT_SUB_R4
+#define MINT_MUL_FP MINT_MUL_R4
+#define MINT_DIV_FP MINT_DIV_R4
+#define MINT_REM_FP MINT_REM_R4
 
-#define MINT_CNE_FP MINT_CNE_R8
-#define MINT_CEQ_FP MINT_CEQ_R8
-#define MINT_CGT_FP MINT_CGT_R8
-#define MINT_CGE_FP MINT_CGE_R8
-#define MINT_CLT_FP MINT_CLT_R8
-#define MINT_CLE_FP MINT_CLE_R8
+#define MINT_CNE_FP MINT_CNE_R4
+#define MINT_CEQ_FP MINT_CEQ_R4
+#define MINT_CGT_FP MINT_CGT_R4
+#define MINT_CGE_FP MINT_CGE_R4
+#define MINT_CLT_FP MINT_CLT_R4
+#define MINT_CLE_FP MINT_CLE_R4
 
 #endif
 
@@ -1030,17 +1030,20 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 				return FALSE;
 			}
 
+#if SIZEOF_VOID_P == 4
 			if (src_size > dst_size) { // 8 -> 4
 				switch (type_index) {
 				case 0: case 1:
 					ADD_CODE (td, MINT_CONV_I4_I8);
 					break;
 				case 2:
-					// ADD_CODE (td, MINT_CONV_R4_R8);
+					ADD_CODE (td, MINT_CONV_R4_R8);
 					break;
 				}
 			}
+#endif
 
+#if SIZEOF_VOID_P == 8
 			if (src_size < dst_size) { // 4 -> 8
 				switch (type_index) {
 				case 0: case 1:
@@ -1051,6 +1054,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 					break;
 				}
 			}
+#endif
 
 			SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
 			td->ip += 5;
