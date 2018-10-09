@@ -5881,6 +5881,10 @@ exit_frame:
 		MONO_PROFILER_RAISE (method_exception_leave, (frame->imethod->method, &frame->ex->object));
 
 	DEBUG_LEAVE ();
+
+	/* prevent false pinning due to stale references on evaluation stack */
+	if (!base_frame)
+		memset (frame->args, 0, rtm->alloca_size);
 }
 
 static void
