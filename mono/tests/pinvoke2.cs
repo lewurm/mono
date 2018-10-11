@@ -1762,6 +1762,63 @@ public unsafe class Tests {
 		return 0;
 	}
 
+	delegate int Calli2Del (IntPtr a, int dummy1, UnsafeStruct target2, int dummy3, UnsafeStruct target4, int dummy5, int dummy6, ref UnsafeStruct target7);
+
+	public unsafe struct UnsafeStruct {
+		public long l;
+	}
+
+	public static int test_0_marshal_ptr_struct () {
+		IntPtr func = mono_test_marshal_lookup_symbol ("mono_test_nomarshal_ptr_struct");
+
+		DynamicMethod dm = new DynamicMethod ("calli2", typeof (int),
+				new Type [] { typeof (IntPtr), /* func */
+							  typeof (int), /* dummy1 */
+							  typeof (UnsafeStruct), /* target2 */
+							  typeof (int), /* dummy3 */
+							  typeof (UnsafeStruct), /* target4 */
+							  typeof (int), /* dummy5 */
+							  typeof (int), /* dummy6 */
+							  typeof (UnsafeStruct).MakeByRefType () /* target7 */
+							}
+				);
+
+		var il = dm.GetILGenerator ();
+		var signature = SignatureHelper.GetMethodSigHelper (CallingConvention.StdCall, typeof (int));
+
+		il.Emit (OpCodes.Ldarg, 1); /* dummy1 */
+		signature.AddArgument (typeof (int));
+
+		il.Emit (OpCodes.Ldarg, 2); /* target2 */
+		signature.AddArgument (typeof (UnsafeStruct));
+
+		il.Emit (OpCodes.Ldarg, 3); /* dummy3 */
+		signature.AddArgument (typeof (int));
+
+		il.Emit (OpCodes.Ldarg, 4); /* target4 */
+		signature.AddArgument (typeof (UnsafeStruct));
+
+		il.Emit (OpCodes.Ldarg, 5); /* dummy5 */
+		signature.AddArgument (typeof (int));
+
+		il.Emit (OpCodes.Ldarg, 6); /* dummy6 */
+		signature.AddArgument (typeof (int));
+
+		il.Emit (OpCodes.Ldarg, 7); /* target7 */
+		signature.AddArgument (typeof (UnsafeStruct).MakeByRefType ());
+
+		il.Emit (OpCodes.Ldarg_0);
+
+		il.Emit (OpCodes.Calli, signature);
+		il.Emit (OpCodes.Ret);
+
+		var f = (Calli2Del) dm.CreateDelegate (typeof (Calli2Del));
+
+		UnsafeStruct target2 = new UnsafeStruct () { l = 0x2222 };
+		UnsafeStruct target4 = new UnsafeStruct () { l = 0x4444 };
+		UnsafeStruct target7 = new UnsafeStruct () { l = 0x7777 };
+		return f (func, 0xd1, target2, 0xd3, target4, 0xd5, 0xd6, ref target7);
+	}
 
 	/*char array marshaling */
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_ansi_char_array", CharSet=CharSet.Ansi)]

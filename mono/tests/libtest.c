@@ -676,6 +676,32 @@ mono_test_marshal_in_struct (int a, simplestruct *ss, int b, InVTypeDelegate fun
 		return 1;
 }
 
+struct ss_long
+{
+	long l;
+};
+
+LIBTEST_API int STDCALL
+mono_test_nomarshal_ptr_struct (int d1, struct ss_long target2, int d3, struct ss_long target4, int d5, int d6, struct ss_long *target7)
+{
+	if (d1 != 0xd1)
+		return 1;
+	if (target2.l != 0x2222)
+		return 2;
+	if (d3 != 0xd3)
+		return 3;
+	if (target4.l != 0x4444)
+		return 4;
+	if (d5 != 0xd5)
+		return 5;
+	if (d6 != 0xd6)
+		return 6;
+	if (target7->l != 0x7777)
+		return 7;
+
+	return 0;
+}
+
 typedef struct {
 	int a;
 	SimpleDelegate func, func2, func3;
