@@ -215,6 +215,7 @@ typedef struct MonoAotOptions {
 	int ngsharedvt_arg_trampolines;
 	int nftnptr_arg_trampolines;
 	int nrgctx_fetch_trampolines;
+	int nunbox_arbitrary_trampolines;
 	gboolean print_skipped_methods;
 	gboolean stats;
 	gboolean verbose;
@@ -2695,6 +2696,31 @@ arch_emit_ftnptr_arg_trampoline (MonoAotCompile *acfg, int offset, int *tramp_si
 	emit_symbol_diff (acfg, acfg->got_symbol, ".", (offset * sizeof (target_mgreg_t)) + 4); // offset from ldr pc to arg
 #else
 	g_assert_not_reached ();
+#endif
+}
+
+static void
+arch_emit_unbox_arbitrary_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
+{
+#if defined(TARGET_ARM64)
+	g_error ("TODO");
+	arm64_emit_gsharedvt_arg_trampoline (acfg, offset, tramp_size);
+#elif defined (TARGET_AMD64)
+	guint8 buf [32];
+	guint8 *code;
+	int this_reg;
+
+	this_reg = mono_arch_get_this_arg_reg (NULL);
+	code = buf;
+	amd64_alu_reg_imm (code, X86_ADD, this_reg, MONO_ABI_SIZEOF (MonoObject));
+	emit_bytes (acfg, buf, code - buf);
+
+	amd64_emit_load_got_slot (acfg, AMD64_RAX, offset);
+	fprintf (acfg->fp, "jmp *%%rax\n");
+
+	*tramp_size = 13;
+#else
+	g_error ("NOT IMPLEMENTED: needed for AOT<>interp mixed mode transition");
 #endif
 }
 
@@ -7179,6 +7205,9 @@ emit_trampolines (MonoAotCompile *acfg)
 			case MONO_AOT_TRAMP_FTNPTR_ARG:
 				sprintf (symbol, "ftnptr_arg_trampolines");
 				break;
+			case MONO_AOT_TRAMP_UNBOX_ARBITRARY:
+				sprintf (symbol, "unbox_arbitrary_trampolines");
+				break;
 			default:
 				g_assert_not_reached ();
 			}
@@ -7216,6 +7245,10 @@ emit_trampolines (MonoAotCompile *acfg)
 				case MONO_AOT_TRAMP_FTNPTR_ARG:
 					arch_emit_ftnptr_arg_trampoline (acfg, tramp_got_offset, &tramp_size);
 					tramp_got_offset += 2;
+					break;
+				case MONO_AOT_TRAMP_UNBOX_ARBITRARY:
+					arch_emit_unbox_arbitrary_trampoline (acfg, tramp_got_offset, &tramp_size);
+					tramp_got_offset += 1;
 					break;
 				default:
 					g_assert_not_reached ();
@@ -7499,6 +7532,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->nrgctx_trampolines = atoi (arg + strlen ("nrgctx-trampolines="));
 		} else if (str_begins_with (arg, "nrgctx-fetch-trampolines=")) {
 			opts->nrgctx_fetch_trampolines = atoi (arg + strlen ("nrgctx-fetch-trampolines="));
+		} else if (str_begins_with (arg, "nunbox-arbitrary-trampolines=")) {
+			opts->nunbox_arbitrary_trampolines = atoi (arg + strlen ("unbox-arbitrary-trampolines="));
 		} else if (str_begins_with (arg, "nimt-trampolines=")) {
 			opts->nimt_trampolines = atoi (arg + strlen ("nimt-trampolines="));
 		} else if (str_begins_with (arg, "ngsharedvt-trampolines=")) {
@@ -7653,6 +7688,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		opts->nimt_trampolines = 0;
 		opts->ngsharedvt_arg_trampolines = 0;
 		opts->nftnptr_arg_trampolines = 0;
+		opts->nunbox_arbitrary_trampolines = 0;
 	}
 
 	g_ptr_array_free (args, /*free_seg=*/TRUE);
@@ -10477,6 +10513,7 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = "imt_trampolines";
 		symbols [sindex ++] = "gsharedvt_arg_trampolines";
 		symbols [sindex ++] = "ftnptr_arg_trampolines";
+		symbols [sindex ++] = "unbox_arbitrary_trampolines";
 	} else {
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
@@ -12610,6 +12647,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	acfg->aot_opts.nftnptr_arg_trampolines = 128;
 #endif
+	acfg->aot_opts.nunbox_arbitrary_trampolines = 256;
 	acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
 #ifdef MONOTOUCH
@@ -12779,6 +12817,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	acfg->num_trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = mono_aot_mode_is_interp (&acfg->aot_opts) ? acfg->aot_opts.nftnptr_arg_trampolines : 0;
 #endif
+	acfg->num_trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = mono_aot_mode_is_interp (&acfg->aot_opts) && mono_aot_mode_is_full (&acfg->aot_opts) ? acfg->aot_opts.nunbox_arbitrary_trampolines : 0;
 
 	acfg->temp_prefix = mono_img_writer_get_temp_label_prefix (NULL);
 
