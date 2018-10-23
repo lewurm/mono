@@ -2703,8 +2703,11 @@ static void
 arch_emit_unbox_arbitrary_trampoline (MonoAotCompile *acfg, int offset, int *tramp_size)
 {
 #if defined(TARGET_ARM64)
-	g_error ("TODO");
-	arm64_emit_gsharedvt_arg_trampoline (acfg, offset, tramp_size);
+	emit_unset_mode (acfg);
+	fprintf (acfg->fp, "add x0, x0, %d\n", (int)(MONO_ABI_SIZEOF (MonoObject)));
+	arm64_emit_load_got_slot (acfg, ARMREG_R17, offset);
+	fprintf (acfg->fp, "br x17\n");
+	*tramp_size = 5 * 4;
 #elif defined (TARGET_AMD64)
 	guint8 buf [32];
 	guint8 *code;

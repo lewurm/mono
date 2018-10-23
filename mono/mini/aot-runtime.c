@@ -5675,6 +5675,16 @@ get_new_gsharedvt_arg_trampoline_from_page (gpointer tramp, gpointer arg)
 	return code;
 }
 
+static gpointer
+get_new_unbox_arbitrary_trampoline_frome_page (gpointer addr)
+{
+	void *code;
+
+	code = get_new_trampoline_from_page (MONO_AOT_TRAMP_UNBOX_ARBITRARY);
+	data [0] = addr;
+	return code;
+}
+
 /* Return a given kind of trampoline */
 /* FIXME set unwind info for these trampolines */
 static gpointer
@@ -5806,8 +5816,7 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 	guint32 got_offset;
 
 	if (USE_PAGE_TRAMPOLINES) {
-		g_error ("TODO");
-		// code = (guint8 *) get_new_rgctx_trampoline_from_page (addr, ctx);
+		code = (guint8 *) get_new_unbox_arbitrary_trampoline_frome_page (addr);
 	} else {
 		code = (guint8 *)get_numerous_trampoline (MONO_AOT_TRAMP_UNBOX_ARBITRARY, 1, &amodule, &got_offset, NULL);
 		amodule->got [got_offset] = addr;
