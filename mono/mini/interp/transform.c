@@ -4948,7 +4948,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 					 * FIXME Resolve other calls in interp_transform_call instead of here
 					 * since changing the called method on the spot might trigger issues
 					 */
-					g_assert_not_reached ();
+					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
