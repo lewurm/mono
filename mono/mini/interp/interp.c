@@ -2442,6 +2442,13 @@ interp_no_native_to_managed (void)
 	g_error ("interpreter: native-to-managed transition not available on this platform");
 }
 #endif
+#ifdef MONO_ARCH_HAVE_INTERP_C_FALLBACK_NATIVE_TO_MANAGED
+static gpointer
+interp_fake_ftnptr_entry (MonoFtnDesc *ftndesc, gpointer entery_wrapper_)
+{
+	
+}
+#endif
 
 /*
  * interp_create_method_pointer:
@@ -2452,7 +2459,7 @@ interp_no_native_to_managed (void)
 static gpointer
 interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
-#ifndef MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED
+#if !defined(MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED) && !defined(MONO_ARCH_HAVE_INTERP_C_FALLBACK_NATIVE_TO_MANAGED)
 	return (gpointer)interp_no_native_to_managed;
 #else
 	gpointer addr, entry_func, entry_wrapper;
@@ -2525,7 +2532,12 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	 * rgctx register using a trampoline.
 	 */
 
+#ifdef MONO_ARCH_HAVE_INTERP_C_FALLBACK_NATIVE_TO_MANAGED
+	g_error ("nice");
+	addr = interp_fake_ftnptr_entry (ftndesc, entry_wrapper);
+#else
 	addr = mono_create_ftnptr_arg_trampoline (ftndesc, entry_wrapper);
+#endif
 
 	info = domain_jit_info (domain);
 	mono_domain_lock (domain);
