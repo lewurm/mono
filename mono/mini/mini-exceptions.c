@@ -3603,6 +3603,7 @@ mono_restore_context (MonoContext *ctx)
 
 	if (!restore_context)
 		restore_context = (void (*)(MonoContext *))mono_get_restore_context ();
+	g_assert (MONO_CONTEXT_GET_IP (ctx) > 0x100);
 	restore_context (ctx);
 	g_assert_not_reached ();
 }

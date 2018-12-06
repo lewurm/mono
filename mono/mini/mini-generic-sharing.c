@@ -1793,8 +1793,8 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
  * needed so EH can resume directly into jitted code from interp, or into interp
  * when it needs to jump over native frames.
  */
-static MonoMethod*
-mini_create_interp_lmf_wrapper (gpointer target)
+MonoMethod*
+mini_get_interp_lmf_wrapper (gpointer target)
 {
 	MonoMethod* ret;
 	MonoMethodSignature *sig;
@@ -1822,23 +1822,11 @@ mini_create_interp_lmf_wrapper (gpointer target)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
+	info->d.icall.func = (gpointer) target;
 	ret = mono_mb_create (mb, sig, 4, info);
 	mono_mb_free (mb);
 
 	return ret;
-}
-
-MonoMethod*
-mini_get_interp_lmf_wrapper (void)
-{
-	static MonoMethod *wrapper = NULL;
-
-	if (wrapper)
-		return wrapper;
-
-	wrapper = (MonoMethod*)mini_create_interp_lmf_wrapper ((gpointer)mono_interp_entry_from_trampoline);
-
-	return wrapper;
 }
 
 MonoMethodSignature*
