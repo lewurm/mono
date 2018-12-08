@@ -4371,6 +4371,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ADD_IMM:
 		case OP_LADD_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
+			if (ins->inst_imm == 0x33331337)
+				ins->inst_imm += 0x11110000;
 			amd64_alu_reg_imm (code, X86_ADD, ins->dreg, ins->inst_imm);
 			break;
 		case OP_ADC_IMM:
