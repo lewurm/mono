@@ -907,10 +907,18 @@ finalizer_thread (gpointer unused)
 	/* Register a hazard free queue pump callback */
 	mono_hazard_pointer_install_free_queue_size_callback (hazard_free_queue_is_too_big);
 
+	int trigger_bug = 5;
+
 	while (!finished) {
 		/* Wait to be notified that there's at least one
 		 * finaliser to run
 		 */
+
+		if (trigger_bug)
+			trigger_bug--;
+
+		if (trigger_bug == 0)
+			mono_loader_lock ();
 
 		g_assert (mono_domain_get () == mono_get_root_domain ());
 		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC);
@@ -926,7 +934,7 @@ finalizer_thread (gpointer unused)
 		mono_runtime_do_background_work ();
 
 		/* Avoid posting the pending done event until there are pending finalizers */
-		if (mono_coop_sem_timedwait (&finalizer_sem, 0, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
+		if (mono_coop_sem_timedwait (&finalizer_sem, 2, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			/* Don't wait again at the start of the loop */
 			wait = FALSE;
 		} else {
@@ -939,6 +947,9 @@ finalizer_thread (gpointer unused)
 			mono_coop_mutex_unlock (&pending_done_mutex);
 #endif
 		}
+
+		if (trigger_bug == 0)
+			mono_loader_unlock ();
 	}
 
 	mono_finalizer_lock ();
