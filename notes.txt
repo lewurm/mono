@@ -1,0 +1,5 @@
+* attach via `lldb -p`
+* walk stack of main thread
+* print string arg passed to lowest frame
+* pthread lock
+* find bug
