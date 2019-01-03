@@ -1181,8 +1181,8 @@ interp_frame_arg_set_storage (MonoInterpFrameHandle frame, MonoMethodSignature *
 	}
 }
 
-static void
-interp_to_native_trampoline (gpointer addr, gpointer ccontext)
+static MonoPIFunc
+get_interp_to_native_trampoline (void)
 {
 	static MonoPIFunc trampoline = NULL;
 
@@ -1196,7 +1196,13 @@ interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 			// mono_tramp_info_register (info, NULL);
 		}
 	}
-	trampoline (addr, ccontext);
+	return trampoline;
+}
+
+static void
+interp_to_native_trampoline (gpointer addr, gpointer ccontext)
+{
+	get_interp_to_native_trampoline () (addr, ccontext);
 }
 
 
@@ -1211,12 +1217,16 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 
 	g_assert (!frame->imethod);
 
-	MonoPIFunc entry_func = &interp_to_native_trampoline;
+	static MonoPIFunc entry_func = NULL;
+	if (!entry_func) {
 #ifdef MONO_ARCH_HAVE_NO_PROPER_MONOCTX
-	ERROR_DECL (error);
-	entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ((gpointer) mono_interp_to_native_trampoline), error);
-	mono_error_assert_ok (error);
+		ERROR_DECL (error);
+		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ((gpointer) mono_interp_to_native_trampoline), error);
+		mono_error_assert_ok (error);
+#else
+		entry_func = get_interp_to_native_trampoline ();
 #endif
+	}
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
