@@ -107,6 +107,8 @@ typedef struct {
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-p:32:32-i64:64-v128:32:128-n32-S128"
 #define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-unknown-wasm"
 
+#define MONO_ARCH_HAVE_NO_PROPER_MONOCTX 1
+
 void mono_wasm_debugger_init (void);
 
 // sdks/wasm/driver.c is C and uses this

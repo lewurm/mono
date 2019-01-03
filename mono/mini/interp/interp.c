@@ -344,13 +344,18 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 	return rtm;
 }
 
-#ifdef MONO_ARCH_HAVE_LABELS_AS_VALUES
+/* some platforms (e.g. appleTV) don't provide us a precise MonoContext, thus
+ * the label-as-value trick does not work (e.g. MonoContext on appleTV doesn't
+ * give us callee-save registers) */
+#ifndef MONO_ARCH_HAVE_NO_PROPER_MONOCTX
 #define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
 	MONO_CONTEXT_GET_CURRENT ((ext).ctx); \
 	MONO_CONTEXT_SET_IP (&(ext).ctx, (exit_addr)); \
 	mono_arch_do_ip_adjustment (&(ext).ctx);
 #else
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) /* do nothing */
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+	(ext).kind = MONO_LMFEXT_INTERP_EXIT;
 #endif
 
 /* INTERP_PUSH_LMF_WITH_CTX:
@@ -364,7 +369,6 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
  */
 #define INTERP_PUSH_LMF_WITH_CTX(frame, ext, exit_addr) \
 	memset (&(ext), 0, sizeof (MonoLMFExt)); \
-	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
 	(ext).interp_exit_data = (frame); \
 	INTERP_PUSH_LMF_WITH_CTX_BODY ((ext), (exit_addr)); \
 	mono_push_lmf (&(ext));
@@ -1197,7 +1201,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 			// TODO:
 			// mono_tramp_info_register (info, NULL);
 		}
-#ifndef MONO_ARCH_HAVE_LABELS_AS_VALUES
+#ifdef MONO_ARCH_HAVE_NO_PROPER_MONOCTX
 		ERROR_DECL (error);
 		mono_register_jit_icall (mono_interp_to_native_trampoline, "interp_to_native_trampoline", mono_create_icall_signature ("void ptr ptr"), TRUE);
 		mono_interp_to_native_trampoline = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ((gpointer)mono_interp_to_native_trampoline), error);
@@ -1215,11 +1219,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	g_print ("ICALL: mono_interp_to_native_trampoline = %p, addr = %p\n", mono_interp_to_native_trampoline, addr);
 #endif
 
-#ifdef MONO_ARCH_HAVE_LABELS_AS_VALUES
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_pinvoke);
-#else
-	interp_push_lmf (&ext, frame);
-#endif
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	mono_interp_to_native_trampoline (addr, &ccontext);
