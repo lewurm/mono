@@ -1817,7 +1817,8 @@ mini_get_interp_lmf_wrapper (gpointer target)
 	mono_mb_emit_byte (mb, CEE_LDARG_1);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, target);
+	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, target);
+	mono_mb_emit_calli (mb, sig);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif

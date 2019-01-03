@@ -2345,7 +2345,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	 */
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		winfo = mono_marshal_get_wrapper_info (method);
-	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+	if (winfo && (winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER || winfo->subtype == WRAPPER_SUBTYPE_INTERP_LMF)) {
 		callinfo = mono_find_jit_icall_by_addr (winfo->d.icall.func);
 		g_assert (callinfo);
 

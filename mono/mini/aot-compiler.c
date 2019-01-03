@@ -3540,6 +3540,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				callinfo = mono_find_jit_icall_by_addr (info->d.icall.func);
 				g_assert (callinfo);
 				strcpy ((char*)p, callinfo->name);
+				g_print ("encode method ref: %s\n", callinfo->name);
 				p += strlen (callinfo->name) + 1;
 			}
 			break;
