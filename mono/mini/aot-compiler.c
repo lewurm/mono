@@ -7299,9 +7299,6 @@ emit_trampolines (MonoAotCompile *acfg)
 			gpointer interp_m2n = mono_arch_get_interp_to_native_trampoline (&info);
 			emit_trampoline (acfg, info);
 
-			MonoMethod *wrapper = mini_get_interp_lmf_wrapper (interp_m2n);
-			add_method (acfg, wrapper);
-
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 			mono_arch_get_native_to_interp_trampoline (&info);
 			emit_trampoline (acfg, info);
@@ -13149,6 +13146,9 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 
 	if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
 		MonoMethod *wrapper = mini_get_interp_lmf_wrapper ((gpointer) mono_interp_entry_from_trampoline);
+		add_method (acfg, wrapper);
+
+		wrapper = mini_get_interp_lmf_wrapper ((gpointer) mono_interp_to_native_trampoline);
 		add_method (acfg, wrapper);
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE

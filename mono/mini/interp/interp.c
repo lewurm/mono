@@ -923,8 +923,6 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 	return mono_array_addr_with_size_fast (ao, esize, pos);
 }
 
-static MonoPIFunc mono_interp_to_native_trampoline = NULL;
-
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 static MonoFuncV mono_native_to_interp_trampoline = NULL;
 #endif
@@ -1183,50 +1181,54 @@ interp_frame_arg_set_storage (MonoInterpFrameHandle frame, MonoMethodSignature *
 	}
 }
 
+static void
+interp_to_native_trampoline (gpointer addr, gpointer ccontext)
+{
+	static MonoPIFunc trampoline = NULL;
+
+	if (!trampoline) {
+		if (mono_ee_features.use_aot_trampolines) {
+			trampoline = (MonoPIFunc) mono_aot_get_trampoline ("interp_to_native_trampoline");
+		} else {
+			MonoTrampInfo *info;
+			trampoline = (MonoPIFunc) mono_arch_get_interp_to_native_trampoline (&info);
+			// TODO:
+			// mono_tramp_info_register (info, NULL);
+		}
+	}
+	trampoline (addr, ccontext);
+}
+
+
 /* MONO_NO_OPTIMIATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
 ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
 	MonoLMFExt ext;
+	gpointer args;
 
 	frame->ex = NULL;
 
 	g_assert (!frame->imethod);
-	if (!mono_interp_to_native_trampoline) {
-		if (mono_ee_features.use_aot_trampolines) {
-			mono_interp_to_native_trampoline = (MonoPIFunc)mono_aot_get_trampoline ("interp_to_native_trampoline");
-		} else {
-			MonoTrampInfo *info;
-			mono_interp_to_native_trampoline = (MonoPIFunc)mono_arch_get_interp_to_native_trampoline (&info);
-			// TODO:
-			// mono_tramp_info_register (info, NULL);
-		}
+
+	MonoPIFunc entry_func = &interp_to_native_trampoline;
 #ifdef MONO_ARCH_HAVE_NO_PROPER_MONOCTX
-		ERROR_DECL (error);
-		mono_register_jit_icall (mono_interp_to_native_trampoline, "interp_to_native_trampoline", mono_create_icall_signature ("void ptr ptr"), TRUE);
-		mono_interp_to_native_trampoline = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ((gpointer)mono_interp_to_native_trampoline), error);
-		mono_error_assert_ok (error);
+	ERROR_DECL (error);
+	entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper ((gpointer) mono_interp_to_native_trampoline), error);
+	mono_error_assert_ok (error);
 #endif
-	}
+
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
 	mono_arch_set_native_call_context_args (&ccontext, frame, sig);
+	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, frame);
-#endif
-
-#if DEBUG_INTERP
-	g_print ("ICALL: mono_interp_to_native_trampoline = %p, addr = %p\n", mono_interp_to_native_trampoline, addr);
+	args = margs;
 #endif
 
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_pinvoke);
-
-#ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-	mono_interp_to_native_trampoline (addr, &ccontext);
-#else
-	mono_interp_to_native_trampoline (addr, margs);
-#endif
-
+	entry_func (addr, args);
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
@@ -6212,6 +6214,7 @@ mono_ee_interp_init (const char *opts)
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 	c.entry_from_trampoline = interp_entry_from_trampoline;
 #endif
+	c.to_native_trampoline = interp_to_native_trampoline;
 	c.create_method_pointer = interp_create_method_pointer;
 	c.runtime_invoke = interp_runtime_invoke;
 	c.init_delegate = interp_init_delegate;
