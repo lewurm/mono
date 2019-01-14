@@ -145,11 +145,11 @@ _cross-runtime_$(1)_CONFIGURE_FLAGS= \
 
 .stamp-$(1)-$$(CONFIGURATION)-configure: | $$(if $$(IGNORE_PROVISION_LLVM),,provision-$(5))
 
-$$(TOP)/sdks/builds/$(1)-$$(CONFIGURATION)/$(3).h: .stamp-$(1)-$$(CONFIGURATION)-configure $$(TOP)/tools/offsets-tool/MonoAotOffsetsDumper.exe | configure-$(4)
+$$(TOP)/sdks/builds/$(1)-$$(CONFIGURATION)/$(3).h: .stamp-$(1)-$$(CONFIGURATION)-configure $$(TOP)/tools/offsets-tool/MonoAotOffsetsDumper.exe | configure-$(1)
 	cd $$(TOP)/sdks/builds/$(1)-$$(CONFIGURATION) && \
 		MONO_PATH=$$(TOP)/tools/offsets-tool/CppSharp/$$(if $$(filter $$(UNAME),Darwin),osx_32,$$(if $$(filter $$(UNAME),Linux),linux_64,$$(error "Unknown UNAME='$$(UNAME)'"))) \
 			mono $$(if $$(filter $$(UNAME),Darwin),--arch=32) --debug "$$(TOP)/tools/offsets-tool/MonoAotOffsetsDumper.exe" \
-				--abi $(6) --outfile "$$@" --mono "$$(TOP)" --targetdir "$$(TOP)/sdks/builds/$(4)-$$(CONFIGURATION)" \
+				--abi $(6) --outfile "$$@" --mono "$$(TOP)" --targetdir "$$(TOP)/sdks/builds/$(1)-$$(CONFIGURATION)" \
 					$$(_$(1)_OFFSETS_DUMPER_ARGS)
 
 build-$(1): $$(TOP)/sdks/builds/$(1)-$$(CONFIGURATION)/$(3).h
