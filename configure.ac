@@ -4338,8 +4338,10 @@ if test "x$host" != "x$target"; then
 		CPPFLAGS="$CPPFLAGS"
 		target_win32=no
 		;;
-   aarch64*-linux-*)
+	aarch64*darwin*_ilp32)
 		TARGET=ARM64;
+		AC_DEFINE(MONO_ARCH_ILP32, 1, [64 bit mode with 4 byte longs and pointers])
+		AC_DEFINE(TARGET_WATCHOS, 1, [...])
 		;;
 	aarch64-*)
 		TARGET=ARM64
