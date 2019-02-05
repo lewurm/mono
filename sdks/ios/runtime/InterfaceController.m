@@ -7,7 +7,7 @@
 //
 
 #import "InterfaceController.h"
-void *mono_jit_init_version      (const char *root_domain_name, const char *runtime_version);
+#import "runtime.h"
 
 @interface InterfaceController ()
 
@@ -25,7 +25,13 @@ void *mono_jit_init_version      (const char *root_domain_name, const char *runt
 - (void)willActivate {
     // This method is called when watch view controller is about to be visible to user
     [super willActivate];
-    mono_jit_init_version ("Mono.ios", "mobile");
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+			[self startRuntime];
+		});
+}
+
+- (void)startRuntime {
+	mono_ios_runtime_init ();
 }
 
 - (void)didDeactivate {
