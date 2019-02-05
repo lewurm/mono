@@ -3,10 +3,12 @@ all: harness.exe appbuilder.exe test-runner.exe
 
 BCL_DIR = ../out/ios-bcl/monotouch
 XCODE_ROOT=$(shell xcode-select -p)
-SYSROOT=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+SYSROOT_IOS=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+SYSROOT_WATCH=$(XCODE_ROOT)/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk
 
 NINJA_PATH:=$(or $(shell which ninja),$(error "ninja not found, install it using 'brew install ninja'."))
 IOS_DEPLOY_PATH:=$(or $(shell which ios-deploy),$(error "ios-deploy not found, install it using 'brew install ios-deploy'."))
+MLAUNCH_PATH:=$(or $(shell which mlaunch),$(error "mlaunch not found, install it using 'git clone git@github.com/xamarin/macios-binaries'."))
 
 # Default to add-hoc signing
 IOS_SIGNING_IDENTITY ?= -
