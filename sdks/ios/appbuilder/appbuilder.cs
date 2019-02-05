@@ -96,6 +96,9 @@ public class AppBuilder
 		string exe = null;
 		string signing_identity = null;
 		string profile = null;
+		string clang_arch = null;
+		string version_min = null;
+		string linker_args = null;
 		bool isdev = false;
 		bool iswatch = false;
 		bool isrelease = false;
@@ -134,15 +137,22 @@ public class AppBuilder
 
 		switch (target) {
 		case "ios-dev64":
+			clang_arch = "arm64";
 			isdev = true;
+			version_min = "iphoneos-version-min=10.1";
+			linker_args = "-framework UIKit";
 			break;
 		case "ios-sim64":
+			version_min = "iphoneos-version-min=10.1";
 			break;
 		case "watch-dev6432":
+			clang_arch = "arm64_32";
 			iswatch = true;
+			version_min = "watchos-version-min=5.1";
+			linker_args = "-framework WatchKit -lc++"; // NOT SURE: "-fapplication-extension";
 			break;
 		default:
-			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', got {target}.");
+			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', 'watch-dev6432', got {target}.");
 			Environment.Exit (1);
 			break;
 		}
@@ -201,7 +211,10 @@ public class AppBuilder
 		ninja.WriteLine ($"monoios_dir = {runtimedir}");
 		ninja.WriteLine ($"appdir = {appdir}");
 		ninja.WriteLine ($"sysroot = {sysroot}");
-		ninja.WriteLine ("cross = $mono_sdkdir/ios-cross64-release/bin/aarch64-darwin-mono-sgen");
+		if (iswatch)
+			ninja.WriteLine ("cross = $mono_sdkdir/ios-crosswatch64_32-release/bin/aarch64-apple-darwin10_ilp32-mono-sgen");
+		else
+			ninja.WriteLine ("cross = $mono_sdkdir/ios-cross64-release/bin/aarch64-darwin-mono-sgen");
 		ninja.WriteLine ($"builddir = .");
 		if (aotdir != null)
 			ninja.WriteLine ($"aotdir = {aotdir}");
@@ -215,10 +228,10 @@ public class AppBuilder
 		ninja.WriteLine ($"  command = if ! test -f $outfile; then MONO_PATH=$mono_path $cross -O=gsharedvt,float32 --debug {cross_runtime_args} --aot=mtriple=arm64-ios,static,asmonly,direct-icalls,no-direct-calls,dwarfdebug,{aot_args},outfile=$outfile,data-outfile=$data_outfile $src_file; fi");
 		ninja.WriteLine ("  description = [AOT] $src_file -> $outfile");
 		ninja.WriteLine ("rule assemble");
-		ninja.WriteLine ("  command = clang -isysroot $sysroot -miphoneos-version-min=10.1 -arch arm64 -c -o $out $in");
+		ninja.WriteLine ($"  command = clang -isysroot $sysroot -m{version_min} -arch {clang_arch} -c -o $out $in");
 		ninja.WriteLine ("  description = [ASM] $in -> $out");
 		ninja.WriteLine ("rule assemble-cached");
-		ninja.WriteLine ("  command = if ! test -f $out; then clang -isysroot $sysroot -miphoneos-version-min=10.1 -arch arm64 -c -o $out $in; fi");
+		ninja.WriteLine ($"  command = if ! test -f $out; then clang -isysroot $sysroot -m{version_min} -arch {clang_arch} -c -o $out $in; fi");
 		ninja.WriteLine ("  description = [ASM] $in -> $out");
 		ninja.WriteLine ("rule cp");
 		ninja.WriteLine ("  command = cp $in $out");
@@ -237,10 +250,10 @@ public class AppBuilder
 		ninja.WriteLine ("rule mkdir");
 		ninja.WriteLine ("  command = mkdir -p $out");
 		ninja.WriteLine ("rule compile-objc");
-		ninja.WriteLine ("  command = clang -isysroot $sysroot -miphoneos-version-min=10.1 -arch arm64 -c -o $out $in");
+		ninja.WriteLine ($"  command = clang -isysroot $sysroot -m{version_min} -arch {clang_arch} -c -o $out $in");
 		ninja.WriteLine ("rule gen-exe");
 		ninja.WriteLine ("  command = mkdir $appdir");
-		ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -miphoneos-version-min=10.1 -arch arm64 -framework Foundation -framework UIKit -o $appdir/{bundle_executable} $in -liconv -lz");
+		ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable} $in -liconv -lz");
 	
 		var ofiles = "";
 		var assembly_names = new List<string> ();
@@ -270,7 +283,7 @@ public class AppBuilder
 			if (isinterpany && filename_noext != "mscorlib")
 				continue;
 
-			if (isdev) {
+			if (isdev || iswatch) {
 				string destdir = null;
 				string srcfile = null;
 				string assemble_rule = null;
@@ -311,15 +324,28 @@ public class AppBuilder
 
 		ninja.WriteLine ("build $appdir: mkdir");
 
-		if (isdev) {
-			string libs = "$mono_sdkdir/ios-target64-release/lib/libmonosgen-2.0.a";
+		if (isdev || iswatch) {
+			string libprefix = null;
+			if (isdev)
+				libprefix = "$mono_sdkdir/ios-target64-release/lib/";
+			else if (iswatch)
+				libprefix = "$mono_sdkdir/ios-targetwatch64_32-release/lib/";
+
+			string libs = libprefix + "libmonosgen-2.0.a";
 			if (isinterpany) {
-				libs += " $mono_sdkdir/ios-target64-release/lib/libmono-ee-interp.a";
-				libs += " $mono_sdkdir/ios-target64-release/lib/libmono-icall-table.a";
-				libs += " $mono_sdkdir/ios-target64-release/lib/libmono-ilgen.a";
+				libs += " " + libprefix + "libmono-ee-interp.a";
+				libs += " " + libprefix + "libmono-icall-table.a";
+				libs += " " + libprefix + "libmono-ilgen.a";
 			}
-			libs += " $mono_sdkdir/ios-target64-release/lib/libmono-native-unified.dylib";
-			ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonoios.a");
+
+			// not needed for watch
+			if (isdev)
+				libs += " " + libprefix + "libmono-native-unified.dylib";
+			
+			if (isdev)
+				ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonoios.a");
+			else if (iswatch)
+				ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonowatch.a");
 			ninja.WriteLine ("build $builddir/main.o: compile-objc $builddir/main.m");
 		} else {
 			ninja.WriteLine ($"build $appdir/{bundle_executable}: cp $monoios_dir/runtime");
@@ -332,7 +358,7 @@ public class AppBuilder
 			ninja.WriteLine ($"build $builddir/embedded.mobileprovision: cp {profile}");
 			ninja.WriteLine ($"build $appdir/embedded.mobileprovision: cp $builddir/embedded.mobileprovision");
 		}
-		if (isdev)
+		if (isdev || iswatch)
 			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign $appdir/{bundle_executable} | $builddir/Entitlements.xcent");
 		else
 			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign-sim $appdir/{bundle_executable} | $builddir/Entitlements.xcent");
