@@ -75,5 +75,25 @@ dev-%.o: %.m
 libmonoios.a: dev-main.o dev-runtime.o dev-AppDelegate.o dev-ViewController.o
 	libtool -static -o $@ $^
 
+WATCH_ARCH = arm64_32
+WATCH_SDK_DIR = ../../out/ios-targetwatch64_32-$(CONFIGURATION)
+WATCH_SYSROOT = $(XCODE_ROOT)/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk
+WATCH_CFLAGS = \
+	-isysroot $(WATCH_SYSROOT) \
+	-std=gnu11 \
+	-fobjc-arc \
+	-g \
+	-fPIC \
+	-DWATCHDEVICE=1 \
+	-I$(WATCH_SDK_DIR)/included/mono-2.0
+
+watch: libmonowatch.a
+
+watch-%.o: %.m
+	$(ENV) $(CC) -arch $(WATCH_ARCH) $(WATCH_CFLAGS) -c -o $@ $^
+
+libmonowatch.a: watch-main.o watch-runtime.o watch-AppDelegate.o watch-ViewController.o
+	libtool -static -o $@ $^
+
 clean:
 	$(RM) -rf runtime *.o *.a
