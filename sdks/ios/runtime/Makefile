@@ -82,17 +82,18 @@ WATCH_CFLAGS = \
 	-isysroot $(WATCH_SYSROOT) \
 	-std=gnu11 \
 	-fobjc-arc \
+	-mwatchos-version-min=5.1 \
 	-g \
 	-fPIC \
 	-DWATCHDEVICE=1 \
-	-I$(WATCH_SDK_DIR)/included/mono-2.0
+	-I$(WATCH_SDK_DIR)/include/mono-2.0
 
 watch: libmonowatch.a
 
 watch-%.o: %.m
 	$(ENV) $(CC) -arch $(WATCH_ARCH) $(WATCH_CFLAGS) -c -o $@ $^
 
-libmonowatch.a: watch-main.o watch-runtime.o watch-AppDelegate.o watch-ViewController.o
+libmonowatch.a: watch-runtime.o watch-InterfaceController.o watch-ExtensionDelegate.o watch-NotificationController.o
 	libtool -static -o $@ $^
 
 clean:

@@ -97,6 +97,7 @@ public class AppBuilder
 		string signing_identity = null;
 		string profile = null;
 		bool isdev = false;
+		bool iswatch = false;
 		bool isrelease = false;
 		bool isllvm = false;
 		bool isinterponly = false;
@@ -137,6 +138,9 @@ public class AppBuilder
 			break;
 		case "ios-sim64":
 			break;
+		case "watch-dev6432":
+			iswatch = true;
+			break;
 		default:
 			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', got {target}.");
 			Environment.Exit (1);
@@ -175,7 +179,13 @@ public class AppBuilder
 			line = line.Replace ("BUNDLE_IDENTIFIER", bundle_identifier);
 			line = line.Replace ("BUNDLE_EXECUTABLE", bundle_executable);
 			line = line.Replace ("BUNDLE_NAME", bundle_name);
-			line = line.Replace ("PLATFORM", isdev ? "iPhoneOS" : "iPhoneSimulator");
+			if (iswatch)
+				line = line.Replace ("PLATFORM", "watchOS");
+			else if (isdev)
+				line = line.Replace ("PLATFORM", "iPhoneOS");
+			else
+				line = line.Replace ("PLATFORM", "iPhoneSimulator");
+
 			lines [i] = line;
 		}
 		File.WriteAllLines (Path.Combine (builddir, "Info.plist"), lines);
