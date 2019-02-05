@@ -3,10 +3,12 @@ all: harness.exe appbuilder.exe test-runner.exe
 
 BCL_DIR = ../out/ios-bcl/monotouch
 XCODE_ROOT=$(shell xcode-select -p)
-SYSROOT=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+SYSROOT_IOS=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+SYSROOT_WATCH=$(XCODE_ROOT)/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk
 
 NINJA_PATH:=$(or $(shell which ninja),$(error "ninja not found, install it using 'brew install ninja'."))
 IOS_DEPLOY_PATH:=$(or $(shell which ios-deploy),$(error "ios-deploy not found, install it using 'brew install ios-deploy'."))
+MLAUNCH_PATH:=$(or $(shell which mlaunch),$(error "mlaunch not found, install it using 'git clone git@github.com/xamarin/macios-binaries'."))
 
 # Default to add-hoc signing
 IOS_SIGNING_IDENTITY ?= -
@@ -60,6 +62,9 @@ runtime/runtime:
 runtime/libmonoios.a:
 	make -C runtime
 
+runtime/libmonowatch.a:
+	make -C runtime watch
+
 # Build % from assemblies %_ASSEMBLIES
 # The end result is in bin/ios-sim/test-%.app
 
@@ -77,7 +82,7 @@ TEST_ASSEMBLIES = $(BCL_DIR)/mscorlib.dll \
 	test-runner.exe
 
 build-ios-sim-%: appbuilder.exe test-runner.exe runtime/runtime $($*_ASSEMBLIES)
-	mono appbuilder.exe --target ios-sim64 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/ios-sim/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/ios-sim/test-$*.app --sysroot $(SYSROOT) --signing-identity - --bundle-executable test-$* --bundle-identifier com.xamarin.mono.ios.test-$* --bundle-name test-$* $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
+	mono appbuilder.exe --target ios-sim64 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/ios-sim/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/ios-sim/test-$*.app --sysroot $(SYSROOT_IOS) --signing-identity - --bundle-executable test-$* --bundle-identifier com.xamarin.mono.ios.test-$* --bundle-name test-$* $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
 	mkdir -p $(PWD)/bin/ios-sim/test-$*.app
 	ninja -C obj/ios-sim/test-$*.app -v
 
@@ -109,9 +114,15 @@ endif
 
 build-ios-dev-%: appbuilder.exe test-runner.exe runtime/libmonoios.a $($*_ASSEMBLIES)
 	mkdir -p $(PWD)/aot-cache
-	mono appbuilder.exe $(APPBUILDER_ARGS) --target ios-dev64 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/ios-dev/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/ios-dev/test-$*.app --sysroot $(SYSROOT) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.ios.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
+	mono appbuilder.exe $(APPBUILDER_ARGS) --target ios-dev64 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/ios-dev/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/ios-dev/test-$*.app --sysroot $(SYSROOT_IOS) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.ios.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
 	mkdir -p $(PWD)/bin/ios-dev/test-$*.app
 	ninja -C obj/ios-dev/test-$*.app -v
+
+build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_ASSEMBLIES)
+	mkdir -p $(PWD)/aot-cache
+	mono appbuilder.exe $(APPBUILDER_ARGS) --target watch-dev6432 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/watcho-dev/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/watch-dev/test-$*.app --sysroot $(SYSROOT_WATCH) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.watch.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
+	mkdir -p $(PWD)/bin/watch-dev/test-$*.app
+	ninja -C obj/watch-dev/test-$*.app -v
 
 # Clean %
 clean-ios-sim-%:
@@ -119,6 +130,9 @@ clean-ios-sim-%:
 
 clean-ios-dev-%:
 	$(RM) -rf obj/ios-dev/test-$*.app bin/ios-dev/test-$*.app
+
+clean-watch-dev-%:
+	$(RM) -rf obj/watch-dev/test-$*.app bin/watch-dev/test-$*.app
 
 # Install and run % on the simulator with args $(ARGS) %_ARGS
 run-ios-sim-%: harness.exe
