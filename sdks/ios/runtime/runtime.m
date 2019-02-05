@@ -209,6 +209,7 @@ register_dllmap (void)
 {
 	mono_dllmap_insert (NULL, "System.Native", NULL, "__Internal", NULL);
 	mono_dllmap_insert (NULL, "System.Security.Cryptography.Native.Apple", NULL, "__Internal", NULL);
+	// maybe? mono_dllmap_insert (NULL, "System.Net.Security.Native", NULL, "__Internal", NULL);
 }
 
 /* Implemented by generated code */
@@ -293,7 +294,7 @@ mono_ios_runtime_init (void)
 
 	register_dllmap ();
 
-#ifdef DEVICE
+#if defined(DEVICE) || defined(WATCHDEVICE)
 	mono_ios_register_modules ();
 	mono_ios_setup_execution_mode ();
 #endif
