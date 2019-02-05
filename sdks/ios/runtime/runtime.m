@@ -293,7 +293,7 @@ mono_ios_runtime_init (void)
 
 	register_dllmap ();
 
-#ifdef DEVICE
+#if defined(DEVICE) || defined(WATCHDEVICE)
 	mono_ios_register_modules ();
 	mono_ios_setup_execution_mode ();
 #endif
