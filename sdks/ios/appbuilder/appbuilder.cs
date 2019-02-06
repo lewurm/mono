@@ -340,8 +340,8 @@ public class AppBuilder
 
 			// not needed for watch
 			if (isdev)
-				libs += " " + libprefix + "libmono-native-unified.dylib";
-			
+				libs += " " + libprefix + "libmono-native-unified.a";
+
 			if (isdev)
 				ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonoios.a");
 			else if (iswatch)
