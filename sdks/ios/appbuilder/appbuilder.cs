@@ -140,7 +140,7 @@ public class AppBuilder
 			clang_arch = "arm64";
 			isdev = true;
 			version_min = "iphoneos-version-min=10.1";
-			linker_args = "-framework UIKit";
+			linker_args = "-framework UIKit -framework GSS";
 			break;
 		case "ios-sim64":
 			version_min = "iphoneos-version-min=10.1";
@@ -253,7 +253,7 @@ public class AppBuilder
 		ninja.WriteLine ($"  command = clang -isysroot $sysroot -m{version_min} -arch {clang_arch} -c -o $out $in");
 		ninja.WriteLine ("rule gen-exe");
 		ninja.WriteLine ("  command = mkdir $appdir");
-		ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable} $in -liconv -lz");
+		ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable} $in -liconv -lz $forcelibs");
 	
 		var ofiles = "";
 		var assembly_names = new List<string> ();
@@ -338,13 +338,10 @@ public class AppBuilder
 				libs += " " + libprefix + "libmono-ilgen.a";
 			}
 
-			// not needed for watch
-			if (isdev)
-				libs += " " + libprefix + "libmono-native-unified.a";
-
-			if (isdev)
+			if (isdev) {
 				ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonoios.a");
-			else if (iswatch)
+				ninja.WriteLine ($"    forcelibs = -force_load {libprefix}libmono-native-unified.a");
+			} else if (iswatch)
 				ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonowatch.a");
 			ninja.WriteLine ("build $builddir/main.o: compile-objc $builddir/main.m");
 		} else {
