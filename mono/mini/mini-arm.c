@@ -1533,11 +1533,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				}
 				break;
 			}
-			if (sig->pinvoke && size <= 4) {
-				ainfo->size = 4;
-				add_general (&gr, &stack_size, ainfo, FALSE);
-				break;
-			}
 #endif
 
 			align_size = size;

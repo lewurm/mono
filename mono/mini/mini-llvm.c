@@ -442,29 +442,19 @@ create_llvm_type_for_type (MonoLLVMModule *module, MonoClass *klass)
 		eltypes = g_new (LLVMTypeRef, size);
 		for (i = 0; i < size; ++i)
 			eltypes [i] = esize == 4 ? LLVMFloatType () : LLVMDoubleType ();
-
-		name = mono_type_full_name (m_class_get_byval_arg (klass));
-		ltype = LLVMStructCreateNamed (module->context, name);
-		LLVMStructSetBody (ltype, eltypes, size, FALSE);
-		g_free (eltypes);
-		g_free (name);
 	} else {
 		size = get_vtype_size (t);
-
-		/* structs <=4 bytes are passed in integer regs */
-		if (size <= 4)
-			return LLVMIntType (size * 8);
 
 		eltypes = g_new (LLVMTypeRef, size);
 		for (i = 0; i < size; ++i)
 			eltypes [i] = LLVMInt8Type ();
-
-		name = mono_type_full_name (m_class_get_byval_arg (klass));
-		ltype = LLVMStructCreateNamed (module->context, name);
-		LLVMStructSetBody (ltype, eltypes, size, FALSE);
-		g_free (eltypes);
-		g_free (name);
 	}
+
+	name = mono_type_full_name (m_class_get_byval_arg (klass));
+	ltype = LLVMStructCreateNamed (module->context, name);
+	LLVMStructSetBody (ltype, eltypes, size, FALSE);
+	g_free (eltypes);
+	g_free (name);
 
 	return ltype;
 }
@@ -1179,26 +1169,6 @@ convert_full (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype, gboolean is_u
 
 		if (LLVMGetTypeKind (stype) == LLVMVectorTypeKind && LLVMGetTypeKind (dtype) == LLVMVectorTypeKind)
 			return LLVMBuildBitCast (ctx->builder, v, dtype, "");
-
-		if (LLVMGetTypeKind (stype) == LLVMArrayTypeKind && LLVMGetTypeKind (dtype) == LLVMIntegerTypeKind) {
-			int size = LLVMGetIntTypeWidth (dtype) / 8;
-			g_assert (size <= 4);
-
-			/* TODO: assert element type is i32 */
-			if (size <= 4) {
-				LLVMValueRef val = LLVMBuildExtractValue (ctx->builder, v, 0, "");
-				return LLVMBuildTrunc (ctx->builder, val, dtype, "");
-			} else {
-				g_assert_not_reached ();
-				LLVMValueRef val1 = LLVMBuildExtractValue (ctx->builder, v, 0, "");
-				LLVMValueRef val1_64 = LLVMBuildZExt (ctx->builder, val1, LLVMInt64Type (), "");
-				LLVMValueRef val1_shifted = LLVMBuildShl (ctx->builder, val1_64, LLVMConstInt (LLVMInt64Type (), 32, FALSE), "");
-				LLVMValueRef val2 = LLVMBuildExtractValue (ctx->builder, v, 1, "");
-				LLVMValueRef val2_64 = LLVMBuildZExt (ctx->builder, val2, LLVMInt64Type (), "");
-				LLVMValueRef res = LLVMBuildOr (ctx->builder, val1_shifted, val2_64, "");
-				return LLVMBuildTrunc (ctx->builder, res, dtype, "");
-			}
-		}
 
 		LLVMDumpValue (v);
 		LLVMDumpValue (LLVMConstNull (dtype));
