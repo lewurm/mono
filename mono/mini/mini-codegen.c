@@ -1269,9 +1269,11 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (sreg_spec) {
 				bank = sreg_bank (j, spec);
 				g_assert (sreg != -1);
+#if 0
 				if (is_soft_reg (sreg, bank))
 					/* This means the vreg is not local to this bb */
 					g_assert (reginfo [sreg].born_in > 0);
+#endif
 				rs->vassign [sreg] = -1;
 				//reginfo [ins->sreg2].prev_use = reginfo [ins->sreg2].last_use;
 				//reginfo [ins->sreg2].last_use = i;
