@@ -253,7 +253,7 @@ public class AppBuilder
 		ninja.WriteLine ($"  command = clang -isysroot $sysroot -m{version_min} -arch {clang_arch} -c -o $out $in");
 		ninja.WriteLine ("rule gen-exe");
 		ninja.WriteLine ("  command = mkdir $appdir");
-		ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -miphoneos-version-min=10.1 -arch arm64 -framework Foundation -framework UIKit -framework GSS -o $appdir/{bundle_executable} $in -liconv -lz $forcelibs");
+		ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable} $in -liconv -lz $forcelibs");
 	
 		var ofiles = "";
 		var assembly_names = new List<string> ();
