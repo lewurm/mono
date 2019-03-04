@@ -195,6 +195,13 @@ typedef struct {
 #define MONO_R_ARM64_BL_SHORT 5
 #define MONO_R_ARM64_CBZ 6
 
+#ifdef MONO_ARCH_ILP32
+#define arm_str_ arm_strw
+#define arm_ldr_ arm_ldrw
+#else
+#define arm_str_ arm_strx
+#define arm_ldr_ arm_ldrx
+#endif
 
 typedef enum {
 	ArgInIReg,
