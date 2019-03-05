@@ -2,6 +2,7 @@
 all: harness.exe appbuilder.exe test-runner.exe
 
 BCL_DIR = ../out/ios-bcl/monotouch
+BCL_WATCH_DIR = ../out/ios-bcl/monotouch_watch
 XCODE_ROOT=$(shell xcode-select -p)
 SYSROOT_IOS=$(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
 SYSROOT_WATCH=$(XCODE_ROOT)/Platforms/WatchOS.platform/Developer/SDKs/WatchOS.sdk
@@ -81,6 +82,8 @@ TEST_ASSEMBLIES = $(BCL_DIR)/mscorlib.dll \
 	$(BCL_DIR)/nunitlite.dll \
 	test-runner.exe
 
+TEST_WATCH_ASSEMBLIES = $(BCL_WATCH_DIR)/mscorlib.dll
+
 build-ios-sim-%: appbuilder.exe test-runner.exe runtime/runtime $($*_ASSEMBLIES)
 	mono appbuilder.exe --target ios-sim64 --mono-sdkdir $(abspath ../out) --appdir $(abspath bin/ios-sim/test-$*.app) --runtimedir $(abspath runtime) --builddir $(abspath obj/ios-sim/test-$*.app) --sysroot $(SYSROOT_IOS) --signing-identity - --bundle-executable test-$* --bundle-identifier com.xamarin.mono.ios.test-$* --bundle-name test-$* $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
 	mkdir -p bin/ios-sim/test-$*.app
@@ -121,9 +124,9 @@ build-ios-dev-%: appbuilder.exe test-runner.exe runtime/libmonoios.a $($*_ASSEMB
 # interp-only for now
 build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_ASSEMBLIES)
 	mkdir -p $(PWD)/aot-cache
-	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/watch-dev/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/watch-dev/test-$*.app --sysroot $(SYSROOT_WATCH) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.watch.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))
+	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 --mono-sdkdir $(PWD)/../out --appdir $(PWD)/bin/watch-dev/test-$*.app --runtimedir $(PWD)/runtime --builddir obj/watch-dev/test-$*.app --sysroot $(SYSROOT_WATCH) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.watch.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_WATCH_ASSEMBLIES) $($*_WATCH_ASSEMBLIES))
 	mkdir -p $(PWD)/bin/watch-dev/test-$*.app
-	ninja -C obj/watch-dev/test-$*.app -v
+	ninja -C obj/watch-dev/test-$*.app/PlugIns/ext/ -v
 
 # Clean %
 clean-ios-sim-%:
@@ -194,9 +197,11 @@ stop-sim:
 # CONNSTR will be replace by the harness with the real connection string
 NUNIT = test-runner.exe CONNSTR -exclude:MobileNotWorking,NotOnMac,NotWorking,ValueAdd,CAS,InetAccess,NotWorkingLinqInterpreter -labels
 TESTDIR = $(BCL_DIR)/tests
+TESTWATCHDIR = $(BCL_WATCH_DIR)/tests
 
 # Options for each test
 Mono.Runtime.Tests_ASSEMBLIES = $(TESTDIR)/monotouch_Mono.Runtime.Tests_test.dll
+Mono.Runtime.Tests_WATCH_ASSEMBLIES = $(TESTWATCHDIR)/monotouch_watch_Mono.Runtime.Tests_test.dll
 Mono.Runtime.Tests_ARGS = $(NUNIT) monotouch_Mono.Runtime.Tests_test.dll
 corlib_ASSEMBLIES = $(TESTDIR)/monotouch_corlib_test.dll
 corlib_ARGS = $(NUNIT) monotouch_corlib_test.dll

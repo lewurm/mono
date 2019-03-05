@@ -82,13 +82,14 @@ public class AppBuilder
 		}
 	}
 
-	static void TemplateInfoPlist (string template_path, string result_path, string identifier, string executable, string name, string platform) {
+	static void TemplateInfoPlist (string template_path, string result_path, string identifier, string executable, string name, string container_identifier, string platform) {
 		var lines = File.ReadAllLines (template_path);
 		for (int i = 0; i < lines.Length; ++i) {
 			string line = lines [i];
 			line = line.Replace ("BUNDLE_IDENTIFIER", identifier);
 			line = line.Replace ("BUNDLE_EXECUTABLE", executable);
 			line = line.Replace ("BUNDLE_NAME", name);
+			line = line.Replace ("BUNDLE_CONTAINER", container_identifier);
 			line = line.Replace ("PLATFORM", platform);
 
 			lines [i] = line;
@@ -99,6 +100,7 @@ public class AppBuilder
 	void Run (String[] args) {
 		string target = null;
 		string appdir = null;
+		string appdir_container = null;
 		string builddir = null;
 		string builddir_container = null;
 		string runtimedir = null;
@@ -167,6 +169,8 @@ public class AppBuilder
 			linker_args = "-framework WatchKit -lc++"; // NOT SURE: "-fapplication-extension";
 			builddir_container = builddir;
 			builddir = Path.Combine (builddir, "PlugIns", "ext"); // location of actual app
+			appdir_container = appdir;
+			appdir = Path.Combine (appdir, "Plugins", "ext"); // location of actual app
 			break;
 		default:
 			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', 'watch-dev6432', got {target}.");
@@ -204,15 +208,15 @@ public class AppBuilder
 		string plist_dst = Path.Combine (builddir, "Info.plist");
 		if (iswatch) {
 			plist_src = Path.Combine (runtimedir, "Info.watch.ext.plist.in");
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier + ".ext", bundle_executable, bundle_name, "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier + ".ext", bundle_executable, bundle_name + " Ext", bundle_identifier, "watchOS");
 
 			plist_src = Path.Combine (runtimedir, "Info.watch.plist.in");
 			plist_dst = Path.Combine (builddir_container, "Info.plist");
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "", "watchOS");
 		} else if (isdev) {
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "iPhoneOS");
+			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "", "iPhoneOS");
 		} else {
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "iPhoneSimulator");
+			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "", "iPhoneSimulator");
 		}
 
 		// Create config.json file
