@@ -126,7 +126,7 @@ build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_AS
 	mkdir -p $(PWD)/aot-cache
 	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 --mono-sdkdir $(abspath ../out) --appdir $(abspath bin/watch-dev/test-$*.app) --runtimedir $(abspath runtime) --builddir $(abspath obj/watch-dev/test-$*.app) --sysroot $(SYSROOT_WATCH) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.watch.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_WATCH_ASSEMBLIES) $($*_WATCH_ASSEMBLIES))
 	mkdir -p $(PWD)/bin/watch-dev/test-$*.app
-	ninja -C obj/watch-dev/test-$*.app/PlugIns/ext/ -v
+	ninja -C obj/watch-dev/test-$*.app/PlugIns/test-$*.appex/ -v
 
 # Clean %
 clean-ios-sim-%:
