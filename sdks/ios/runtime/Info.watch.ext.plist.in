@@ -62,9 +62,6 @@
 		<integer>4</integer>
 	</array>
 
-	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.xamarin.watch4</string>
-
 	<key>WKExtensionDelegateClassName</key>
 	<string>ExtensionDelegate</string>
 </dict>
