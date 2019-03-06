@@ -208,7 +208,7 @@ public class AppBuilder
 		string plist_dst = Path.Combine (builddir, "Info.plist");
 		if (iswatch) {
 			plist_src = Path.Combine (runtimedir, "Info.watch.ext.plist.in");
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier + ".appex", bundle_executable + " WatchKit Extension", bundle_name + " Ext", bundle_identifier, "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier + ".watchkitextension", bundle_executable + " WatchKit Extension", bundle_name + " Ext", bundle_identifier, "watchOS");
 
 			plist_src = Path.Combine (runtimedir, "Info.watch.plist.in");
 			plist_dst = Path.Combine (builddir_container, "Info.plist");
