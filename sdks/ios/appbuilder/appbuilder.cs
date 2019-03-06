@@ -235,6 +235,10 @@ public class AppBuilder
 		else
 			ninja.WriteLine ("cross = $mono_sdkdir/ios-cross64-release/bin/aarch64-darwin-mono-sgen");
 		ninja.WriteLine ($"builddir = .");
+		if (iswatch) {
+			ninja.WriteLine ($"appdir_container = {appdir_container}");
+			ninja.WriteLine ($"builddir_container = {builddir_container}");
+		}
 		if (aotdir != null)
 			ninja.WriteLine ($"aotdir = {aotdir}");
 		ninja.WriteLine ($"signing_identity = {signing_identity}");
@@ -382,6 +386,22 @@ public class AppBuilder
 			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign-sim $appdir/{bundle_executable} | $builddir/Entitlements.xcent");
 		ninja.WriteLine ("  entitlements=$builddir/Entitlements.xcent");
 		ninja.WriteLine ("build $appdir/Base.lproj: cp-recursive $monoios_dir/Base.lproj");
+
+		if (iswatch) {
+			/* handle container part */
+			ninja.WriteLine ($"build $appdir_container/_WatchKitStub: mkdir");
+			ninja.WriteLine ($"build $appdir_container/_WatchKitStub/WK: cp $sysroot/Library/Application$ Support/WatchKit/WK");
+			ninja.WriteLine ($"build $appdir_container/{bundle_executable}: cp $sysroot/Library/Application$ Support/WatchKit/WK");
+
+			if (profile != null)
+				ninja.WriteLine ($"build $appdir_container/embedded.mobileprovision: cp $appdir/embedded.mobileprovision");
+
+			ninja.WriteLine ("build $builddir_container/Info.plist.binary: plutil $builddir_container/Info.plist");
+			ninja.WriteLine ("build $appdir_container/Info.plist: cpifdiff $builddir_container/Info.plist.binary");
+
+			ninja.WriteLine ($"build $appdir_container/_CodeSignature: codesign $appdir_container/{bundle_executable} | $builddir/Entitlements.xcent");
+			ninja.WriteLine ("  entitlements=$builddir/Entitlements.xcent");
+		}
 
 		ninja.Close ();
 
