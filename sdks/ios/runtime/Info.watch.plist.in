@@ -54,7 +54,7 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.xamarin.mono.watch.test-Mono.Runtime</string>
+	<string>com.xamarin.mono.watch.test-Mono.Runtime.Tests</string>
 	<key>WKWatchKitApp</key>
 	<true/>
 </dict>

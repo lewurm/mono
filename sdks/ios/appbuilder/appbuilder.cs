@@ -207,12 +207,13 @@ public class AppBuilder
 		string plist_src = Path.Combine (runtimedir, "Info.plist.in");
 		string plist_dst = Path.Combine (builddir, "Info.plist");
 		if (iswatch) {
+			string base_identifier = bundle_identifier + ".watchkitapp";
 			plist_src = Path.Combine (runtimedir, "Info.watch.ext.plist.in");
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier + ".watchkitextension", bundle_executable + " WatchKit Extension", bundle_name + " Ext", bundle_identifier, "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, base_identifier + ".watchkitextension", bundle_executable + " WatchKit Extension", bundle_name + " Ext", base_identifier, "watchOS");
 
 			plist_src = Path.Combine (runtimedir, "Info.watch.plist.in");
 			plist_dst = Path.Combine (builddir_container, "Info.plist");
-			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable + " WatchKit App", bundle_name, "", "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, base_identifier, bundle_executable + " WatchKit App", bundle_name, "", "watchOS");
 		} else if (isdev) {
 			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "", "iPhoneOS");
 		} else {
