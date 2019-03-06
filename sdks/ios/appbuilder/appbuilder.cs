@@ -166,7 +166,7 @@ public class AppBuilder
 			clang_arch = "arm64_32";
 			iswatch = true;
 			version_min = "watchos-version-min=5.1";
-			linker_args = "-framework WatchKit -lc++"; // NOT SURE: "-fapplication-extension";
+			linker_args = "-framework WatchKit -lc++ -fapplication-extension";
 			builddir_container = builddir;
 			builddir = Path.Combine (builddir, "PlugIns", "ext"); // location of actual app
 			appdir_container = appdir;
