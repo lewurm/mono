@@ -113,6 +113,8 @@ public class AppBuilder
 		string exe = null;
 		string signing_identity = null;
 		string profile = null;
+		string profile_watchos_container = null;
+		string profile_watchos_appex = null;
 		string clang_arch = null;
 		string version_min = null;
 		string linker_args = null;
@@ -136,6 +138,8 @@ public class AppBuilder
 				{ "bundle-executable=", s => bundle_executable = s },
 				{ "signing-identity=", s => signing_identity = s },
 				{ "profile=", s => profile = s },
+				{ "profile-appex=", s => profile_watchos_appex = s },
+				{ "profile-container=", s => profile_watchos_container = s },
 				{ "llvm", s => isllvm = true },
 				{ "interp-only", s => isinterponly = true },
 				{ "interp-mixed", s => isinterpmixed = true },
@@ -176,6 +180,11 @@ public class AppBuilder
 			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', 'watch-dev6432', got {target}.");
 			Environment.Exit (1);
 			break;
+		}
+
+		if (iswatch) {
+			check_mandatory (profile_watchos_appex, "--profile-appex");
+			check_mandatory (profile_watchos_container, "--profile-container");
 		}
 
 		if (isllvm)
@@ -294,7 +303,9 @@ public class AppBuilder
 				/* Don't overwrite to avoid changing the timestamp */
 				File.Copy (assembly, Path.Combine (aotdir, filename), false);
 
-			ninja.WriteLine ($"build $appdir/{filename}: cpifdiff $builddir/{filename}");
+			if (!iswatch)
+				/* FIXME!!!! */
+				ninja.WriteLine ($"build $appdir/{filename}: cpifdiff $builddir/{filename}");
 
 			var assembly_dir = Path.GetDirectoryName (assembly);
 			var resource_filename = filename.Replace (".dll", ".resources.dll");
@@ -380,9 +391,14 @@ public class AppBuilder
 		ninja.WriteLine ("build $appdir/Info.plist: cpifdiff $builddir/Info.plist.binary");
 		ninja.WriteLine ("build $appdir/config.json: cpifdiff $builddir/config.json");
 		ninja.WriteLine ("build $builddir/Entitlements.xcent: cpifdiff $monoios_dir/Entitlements.xcent");
-		if (profile != null) {
-			ninja.WriteLine ($"build $builddir/embedded.mobileprovision: cp {profile}");
+		if (iswatch) {
+			ninja.WriteLine ($"build $builddir/embedded.mobileprovision: cp {profile_watchos_appex}");
 			ninja.WriteLine ($"build $appdir/embedded.mobileprovision: cp $builddir/embedded.mobileprovision");
+		} else {
+			if (profile != null) {
+				ninja.WriteLine ($"build $builddir/embedded.mobileprovision: cp {profile}");
+				ninja.WriteLine ($"build $appdir/embedded.mobileprovision: cp $builddir/embedded.mobileprovision");
+			}
 		}
 		if (isdev)
 			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign $appdir/{bundle_executable} | $builddir/Entitlements.xcent");
@@ -398,8 +414,8 @@ public class AppBuilder
 			ninja.WriteLine ($"build $appdir_container/_WatchKitStub/WK: cp $sysroot/Library/Application$ Support/WatchKit/WK");
 			ninja.WriteLine ($"build $appdir_container/{bundle_executable + "$ WatchKit$ App"}: cp $sysroot/Library/Application$ Support/WatchKit/WK");
 
-			if (profile != null)
-				ninja.WriteLine ($"build $appdir_container/embedded.mobileprovision: cp $appdir/embedded.mobileprovision");
+			ninja.WriteLine ($"build $builddir_container/embedded.mobileprovision: cp {profile_watchos_container}");
+			ninja.WriteLine ($"build $appdir_container/embedded.mobileprovision: cp $builddir_container/embedded.mobileprovision");
 
 			ninja.WriteLine ("build $builddir_container/Info.plist.binary: plutil $builddir_container/Info.plist");
 			ninja.WriteLine ("build $appdir_container/Info.plist: cpifdiff $builddir_container/Info.plist.binary");

@@ -105,6 +105,14 @@ ifdef IOS_PROVISIONING_PROFILE
 APPBUILDER_ARGS += --profile $(abspath $(IOS_PROVISIONING_PROFILE))
 endif
 
+ifdef WATCHOS_APPEX_PROVISIONING_PROFILE
+APPBUILDER_ARGS += --profile-appex $(abspath $(WATCHOS_APPEX_PROVISIONING_PROFILE))
+endif
+
+ifdef WATCHOS_CONTAINER_PROVISIONING_PROFILE
+APPBUILDER_ARGS += --profile-container $(abspath $(WATCHOS_CONTAINER_PROVISIONING_PROFILE))
+endif
+
 #
 # This enables caching of aot outputs between different apps.
 # Changes to the assemblies/runtimes etc. are not detected, so this should only
@@ -124,7 +132,18 @@ build-ios-dev-%: appbuilder.exe test-runner.exe runtime/libmonoios.a $($*_ASSEMB
 # interp-only for now
 build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_ASSEMBLIES)
 	mkdir -p $(PWD)/aot-cache
-	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 --mono-sdkdir $(abspath ../out) --appdir $(abspath bin/watch-dev/test-$*.app) --runtimedir $(abspath runtime) --builddir $(abspath obj/watch-dev/test-$*.app) --sysroot $(SYSROOT_WATCH) --signing-identity "$(IOS_SIGNING_IDENTITY)" --bundle-executable test-$* --bundle-identifier com.xamarin.mono.watch.test-$* --bundle-name test-$* --exe test-runner.exe $(patsubst %,-r %,$(TEST_WATCH_ASSEMBLIES) $($*_WATCH_ASSEMBLIES))
+	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 \
+		--mono-sdkdir $(abspath ../out) \
+		--runtimedir $(abspath runtime) \
+		--appdir $(abspath bin/watch-dev/test-$*.app) \
+		--builddir $(abspath obj/watch-dev/test-$*.app) \
+		--sysroot $(SYSROOT_WATCH) \
+		--signing-identity "$(IOS_SIGNING_IDENTITY)" \
+		--bundle-executable test-$* \
+		--bundle-identifier com.xamarin.mono.watch.test-$* \
+		--bundle-name test-$* \
+		--exe test-runner.exe \
+		$(patsubst %,-r %,$(TEST_WATCH_ASSEMBLIES) $($*_WATCH_ASSEMBLIES))
 	mkdir -p $(PWD)/bin/watch-dev/test-$*.app
 	ninja -C obj/watch-dev/test-$*.app/PlugIns/test-$*.appex/ -v
 
