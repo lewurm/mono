@@ -174,7 +174,7 @@ public class AppBuilder
 			builddir_container = builddir;
 			builddir = Path.Combine (builddir, "PlugIns", bundle_executable + "Extension.appex"); // location of actual app
 			appdir_container = appdir;
-			appdir = Path.Combine (appdir, "Plugins", bundle_executable + "Extension.appex"); // location of actual app
+			appdir = Path.Combine (appdir, "PlugIns", bundle_executable + "Extension.appex"); // location of actual app
 			break;
 		default:
 			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', 'watch-dev6432', got {target}.");
