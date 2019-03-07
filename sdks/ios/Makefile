@@ -145,7 +145,7 @@ build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_AS
 		--exe test-runner.exe \
 		$(patsubst %,-r %,$(TEST_WATCH_ASSEMBLIES) $($*_WATCH_ASSEMBLIES))
 	mkdir -p $(PWD)/bin/watch-dev/test-$*.app
-	ninja -C obj/watch-dev/test-$*.app/PlugIns/test-$*.appex/ -v
+	ninja -C obj/watch-dev/test-$*.app/PlugIns/test-$*Extension.appex/ -v
 
 # Clean %
 clean-ios-sim-%:

@@ -5,12 +5,14 @@
 	<key>get-task-allow</key>
 	<true/>
 	<key>application-identifier</key>
-	<string>58LM7J37Q8.com.xamarin.runtime.MonoTestRunner</string>
+		<!--- <string>58LM7J37Q8.com.xamarin.runtime.MonoTestRunner</string> -->
+	<string>58LM7J37Q8.com.xamarin.mono.watch.test-Mono.Runtime.Tests.watchkitapp</string>
 	<key>com.apple.developer.team-identifier</key>
 	<string>58LM7J37Q8</string>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>58LM7J37Q8.com.xamarin.runtime.MonoTestRunner</string>
+		<!-- <string>58LM7J37Q8.com.xamarin.runtime.MonoTestRunner</string> -->
+		<string>58LM7J37Q8.com.xamarin.mono.watch.test-Mono.Runtime.Tests.watchkitapp</string>
 	</array>
 </dict>
 </plist>

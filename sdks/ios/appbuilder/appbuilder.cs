@@ -172,9 +172,9 @@ public class AppBuilder
 			version_min = "watchos-version-min=5.1";
 			linker_args = "-framework WatchKit -lc++ -fapplication-extension";
 			builddir_container = builddir;
-			builddir = Path.Combine (builddir, "PlugIns", bundle_executable + ".appex"); // location of actual app
+			builddir = Path.Combine (builddir, "PlugIns", bundle_executable + "Extension.appex"); // location of actual app
 			appdir_container = appdir;
-			appdir = Path.Combine (appdir, "Plugins", bundle_executable + ".appex"); // location of actual app
+			appdir = Path.Combine (appdir, "Plugins", bundle_executable + "Extension.appex"); // location of actual app
 			break;
 		default:
 			Console.WriteLine ($"Possible values for the '--target=' argument are 'ios-dev64', 'ios-sim64', 'watch-dev6432', got {target}.");
@@ -218,11 +218,11 @@ public class AppBuilder
 		if (iswatch) {
 			string base_identifier = bundle_identifier + ".watchkitapp";
 			plist_src = Path.Combine (runtimedir, "Info.watch.ext.plist.in");
-			TemplateInfoPlist (plist_src, plist_dst, base_identifier + ".watchkitextension", bundle_executable + " WatchKit Extension", bundle_name + " Ext", base_identifier, "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, base_identifier + ".watchkitextension", bundle_executable + "Extension", bundle_name + " Extension", base_identifier, "watchOS");
 
 			plist_src = Path.Combine (runtimedir, "Info.watch.plist.in");
 			plist_dst = Path.Combine (builddir_container, "Info.plist");
-			TemplateInfoPlist (plist_src, plist_dst, base_identifier, bundle_executable + " WatchKit App", bundle_name, "", "watchOS");
+			TemplateInfoPlist (plist_src, plist_dst, base_identifier, bundle_executable, bundle_name, "", "watchOS");
 		} else if (isdev) {
 			TemplateInfoPlist (plist_src, plist_dst, bundle_identifier, bundle_executable, bundle_name, "", "iPhoneOS");
 		} else {
@@ -287,7 +287,7 @@ public class AppBuilder
 		ninja.WriteLine ("rule gen-exe");
 		ninja.WriteLine ("  command = mkdir $appdir");
 		if (iswatch)
-			ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable + "\\ WatchKit\\ Extension"} $in -liconv -lz $forcelibs");
+			ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable + "Extension"} $in -liconv -lz $forcelibs");
 		else
 			ninja.WriteLine ($"  command = clang -ObjC -isysroot $sysroot -m{version_min} -arch {clang_arch} -framework Foundation {linker_args} -o $appdir/{bundle_executable} $in -liconv -lz $forcelibs");
 	
@@ -380,7 +380,7 @@ public class AppBuilder
 				ninja.WriteLine ($"build $appdir/{bundle_executable}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonoios.a");
 				ninja.WriteLine ($"    forcelibs = -force_load {libprefix}libmono-native-unified.a");
 			} else if (iswatch) {
-				ninja.WriteLine ($"build $appdir/{bundle_executable + "$ WatchKit$ Extension"}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonowatch.a");
+				ninja.WriteLine ($"build $appdir/{bundle_executable + "Extension"}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonowatch.a");
 			}
 
 			ninja.WriteLine ("build $builddir/main.o: compile-objc $builddir/main.m");
@@ -403,7 +403,7 @@ public class AppBuilder
 		if (isdev)
 			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign $appdir/{bundle_executable} | $builddir/Entitlements.xcent");
 		else if (iswatch)
-			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign $appdir/{bundle_executable + "$ WatchKit$ Extension"} | $builddir/Entitlements.xcent");
+			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign $appdir/{bundle_executable + "Extension"} | $builddir/Entitlements.xcent");
 		else
 			ninja.WriteLine ($"build $appdir/_CodeSignature: codesign-sim $appdir/{bundle_executable} | $builddir/Entitlements.xcent");
 		ninja.WriteLine ("  entitlements=$builddir/Entitlements.xcent");
@@ -412,7 +412,7 @@ public class AppBuilder
 			/* handle container part */
 			ninja.WriteLine ($"build $appdir_container/_WatchKitStub: mkdir");
 			ninja.WriteLine ($"build $appdir_container/_WatchKitStub/WK: cp $sysroot/Library/Application$ Support/WatchKit/WK");
-			ninja.WriteLine ($"build $appdir_container/{bundle_executable + "$ WatchKit$ App"}: cp $sysroot/Library/Application$ Support/WatchKit/WK");
+			ninja.WriteLine ($"build $appdir_container/{bundle_executable}: cp $sysroot/Library/Application$ Support/WatchKit/WK");
 
 			ninja.WriteLine ($"build $builddir_container/embedded.mobileprovision: cp {profile_watchos_container}");
 			ninja.WriteLine ($"build $appdir_container/embedded.mobileprovision: cp $builddir_container/embedded.mobileprovision");
@@ -420,10 +420,12 @@ public class AppBuilder
 			ninja.WriteLine ("build $builddir_container/Info.plist.binary: plutil $builddir_container/Info.plist");
 			ninja.WriteLine ("build $appdir_container/Info.plist: cpifdiff $builddir_container/Info.plist.binary");
 
-			ninja.WriteLine ($"build $appdir_container/_CodeSignature: codesign $appdir_container/{bundle_executable + "$ WatchKit$ App"} | $builddir/Entitlements.xcent");
+			ninja.WriteLine ($"build $appdir_container/_CodeSignature: codesign $appdir_container/{bundle_executable} | $appdir/_CodeSignature $builddir/Entitlements.xcent");
 			ninja.WriteLine ("  entitlements=$builddir/Entitlements.xcent");
 
 			ninja.WriteLine ("build $appdir_container/Base.lproj: cp-recursive $monoios_dir/Base.watch.lproj");
+
+			ninja.WriteLine ($"build $appdir_container/PkgInfo: cp $monoios_dir/PkgInfoWatch");
 		} else {
 			ninja.WriteLine ("build $appdir/Base.lproj: cp-recursive $monoios_dir/Base.lproj");
 		}
