@@ -131,21 +131,23 @@ build-ios-dev-%: appbuilder.exe test-runner.exe runtime/libmonoios.a $($*_ASSEMB
 
 # interp-only for now
 build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_ASSEMBLIES)
+	# we need a dummy container app with same bundle id etc.
+	$(MAKE) build-ios-dev-$*
 	mkdir -p $(PWD)/aot-cache
 	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 \
 		--mono-sdkdir $(abspath ../out) \
 		--runtimedir $(abspath runtime) \
-		--appdir $(abspath bin/watch-dev/test-$*.app) \
-		--builddir $(abspath obj/watch-dev/test-$*.app) \
+		--appdir $(abspath bin/ios-dev/test-$*.app/Watch/test-watch-$*.app/) \
+		--builddir $(abspath obj/ios-dev/test-$*.app/Watch/test-watch-$*.app/) \
 		--sysroot $(SYSROOT_WATCH) \
 		--signing-identity "$(IOS_SIGNING_IDENTITY)" \
 		--bundle-executable test-$* \
-		--bundle-identifier com.xamarin.mono.watch.test-$* \
+		--bundle-identifier com.xamarin.mono.ios.test-$* \
 		--bundle-name test-$* \
 		--exe test-runner.exe \
 		$(patsubst %,-r %,$(TEST_WATCH_ASSEMBLIES) $($*_WATCH_ASSEMBLIES))
-	mkdir -p $(PWD)/bin/watch-dev/test-$*.app
-	ninja -C obj/watch-dev/test-$*.app/PlugIns/test-$*Extension.appex/ -v
+	mkdir -p $(PWD)/bin/ios-dev/test-$*.app/Watch/test-watch-$*.app/
+	ninja -C obj/ios-dev/test-$*.app/Watch/test-watch-$*.app/PlugIns/test-$*Extension.appex/ -v
 
 # Clean %
 clean-ios-sim-%:
@@ -155,7 +157,7 @@ clean-ios-dev-%:
 	$(RM) -rf obj/ios-dev/test-$*.app bin/ios-dev/test-$*.app
 
 clean-watch-dev-%:
-	$(RM) -rf obj/watch-dev/test-$*.app bin/watch-dev/test-$*.app
+	$(RM) -rf obj/ios-dev/test-$*.app/Watch bin/ios-dev/test-$*.app/Watch
 
 # Install and run % on the simulator with args $(ARGS) %_ARGS
 run-ios-sim-%: harness.exe
