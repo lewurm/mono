@@ -72,3 +72,20 @@ the test harness.
 ## Notes
 
 Bernhard needed this patch to make it work on his machine: https://gist.github.com/lewurm/7711187deadb57bae97a4d4be4df563b
+
+
+## Notes for watchOS deploy via mlaunch
+
+* receive system log (profile must be installed from https://developer.apple.com/bug-reporting/profiles-and-logs/?name=sysdiagnose ):
+```console
+$ mlaunch --devname=watch4 --logdev
+```
+
+* install bundle
+```console
+$ mlaunch -v -v --device watchos --installdev /Users/lewurm/work/mono-watch4-ios-sdk/sdks/ios/bin/watch-dev/test-Mono.Runtime.Tests.app
+```
+
+* launch bundle
+
+???
