@@ -303,9 +303,7 @@ public class AppBuilder
 				/* Don't overwrite to avoid changing the timestamp */
 				File.Copy (assembly, Path.Combine (aotdir, filename), false);
 
-			if (!iswatch)
-				/* FIXME!!!! */
-				ninja.WriteLine ($"build $appdir/{filename}: cpifdiff $builddir/{filename}");
+			ninja.WriteLine ($"build $appdir/{filename}: cpifdiff $builddir/{filename}");
 
 			var assembly_dir = Path.GetDirectoryName (assembly);
 			var resource_filename = filename.Replace (".dll", ".resources.dll");

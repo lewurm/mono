@@ -132,7 +132,7 @@ build-ios-dev-%: appbuilder.exe test-runner.exe runtime/libmonoios.a $($*_ASSEMB
 # interp-only for now
 build-watch-dev-%: appbuilder.exe test-runner.exe runtime/libmonowatch.a $($*_ASSEMBLIES)
 	# we need a dummy container app with same bundle id etc.
-	$(MAKE) build-ios-dev-$*
+	$(MAKE) build-ios-dev-$* INTERP_ONLY=1
 	mkdir -p $(PWD)/aot-cache
 	mono appbuilder.exe $(APPBUILDER_ARGS) --interp-only --target watch-dev6432 \
 		--mono-sdkdir $(abspath ../out) \
