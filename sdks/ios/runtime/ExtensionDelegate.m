@@ -7,11 +7,19 @@
 //
 
 #import "ExtensionDelegate.h"
+#import "runtime.h"
 
 @implementation ExtensionDelegate
 
 - (void)applicationDidFinishLaunching {
     // Perform any final initialization of your application.
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+			[self startRuntime];
+		});
+}
+
+- (void)startRuntime {
+	mono_ios_runtime_init ();
 }
 
 - (void)applicationDidBecomeActive {

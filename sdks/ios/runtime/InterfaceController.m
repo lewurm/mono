@@ -7,7 +7,6 @@
 //
 
 #import "InterfaceController.h"
-#import "runtime.h"
 
 @interface InterfaceController ()
 
@@ -25,13 +24,6 @@
 - (void)willActivate {
     // This method is called when watch view controller is about to be visible to user
     [super willActivate];
-	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-			[self startRuntime];
-		});
-}
-
-- (void)startRuntime {
-	mono_ios_runtime_init ();
 }
 
 - (void)didDeactivate {

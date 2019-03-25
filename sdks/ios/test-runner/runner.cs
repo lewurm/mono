@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Net.Sockets;
 using NUnitLite.Runner;
 using NUnit.Framework.Internal;
@@ -57,6 +58,21 @@ public class TestRunner
 		// `xamarin-macios/src/ObjcRuntime/Runtime.cs`.
 		MonoTlsProviderFactory.Initialize ();
 
+#if false
+		if (args.Length <= 0) {
+			Console.WriteLine ("sup, no args dude");
+			for (int i = 0; i < 0x10000; i++)
+				Thread.Sleep (400);
+			return 2;
+		}
+#endif
+
+		args = new string [] {
+			"-exclude:MobileNotWorking,NotOnMac,NotWorking,ValueAdd,CAS,InetAccess,NotWorkingLinqInterpreter",
+			"-labels",
+			"monotouch_watch_Mono.Runtime.Tests_test.dll"
+		};
+
 		// First argument is the connection string
 		if (args [0].StartsWith ("tcp:")) {
 			var parts = args [0].Split (':');
@@ -73,6 +89,7 @@ public class TestRunner
 		}
 		runner.Execute (args);
             
+		Console.WriteLine ("runner.cs: I'm done with it!: " + runner.Failure);
 		return (runner.Failure ? 1 : 0);
     }
 }

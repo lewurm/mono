@@ -82,7 +82,13 @@ TEST_ASSEMBLIES = $(BCL_DIR)/mscorlib.dll \
 	$(BCL_DIR)/nunitlite.dll \
 	test-runner.exe
 
-TEST_WATCH_ASSEMBLIES = $(BCL_WATCH_DIR)/mscorlib.dll
+TEST_WATCH_ASSEMBLIES = $(BCL_WATCH_DIR)/mscorlib.dll \
+	$(BCL_DIR)/System.dll \
+	$(BCL_DIR)/System.Xml.dll \
+	$(BCL_DIR)/System.Core.dll \
+	$(BCL_DIR)/Mono.Security.dll \
+	$(BCL_DIR)/nunitlite.dll \
+	test-runner.exe
 
 build-ios-sim-%: appbuilder.exe test-runner.exe runtime/runtime $($*_ASSEMBLIES)
 	mono appbuilder.exe --target ios-sim64 --mono-sdkdir $(abspath ../out) --appdir $(abspath bin/ios-sim/test-$*.app) --runtimedir $(abspath runtime) --builddir $(abspath obj/ios-sim/test-$*.app) --sysroot $(SYSROOT_IOS) --signing-identity - --bundle-executable test-$* --bundle-identifier com.xamarin.mono.ios.test-$* --bundle-name test-$* $(patsubst %,-r %,$(TEST_ASSEMBLIES) $($*_ASSEMBLIES))

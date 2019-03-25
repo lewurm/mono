@@ -90,7 +90,7 @@ $ mlaunch -v -v --device watchos --installdev /Users/lewurm/work/mono-watch4-ios
 ```console
 $ mlaunch -v -v --killdev com.xamarin.mono.ios.test-Mono.Runtime.Tests.watchkitapp \
     --launchdev ./bin/ios-dev/test-Mono.Runtime.Tests.app/Watch/test-watch-Mono.Runtime.Tests.app \
-	--devname=watch4
+	--devname=watch4 --argument
 ```
 
 
