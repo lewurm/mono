@@ -86,7 +86,12 @@ TEST_WATCH_ASSEMBLIES = $(BCL_WATCH_DIR)/mscorlib.dll \
 	$(BCL_DIR)/System.dll \
 	$(BCL_DIR)/System.Xml.dll \
 	$(BCL_DIR)/System.Core.dll \
+	$(BCL_DIR)/I18N.dll \
+	$(BCL_DIR)/I18N.West.dll \
+	$(BCL_DIR)/Mono.Simd.dll \
 	$(BCL_DIR)/Mono.Security.dll \
+	$(BCL_DIR)/System.Numerics.dll \
+	$(BCL_DIR)/System.Numerics.Vectors.dll \
 	$(BCL_DIR)/nunitlite.dll \
 	test-runner.exe
 

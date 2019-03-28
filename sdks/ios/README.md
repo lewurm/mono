@@ -84,6 +84,7 @@ $ mlaunch --devname=watch4 --logdev
 * install bundle
 ```console
 $ mlaunch -v -v --device watchos --installdev /Users/lewurm/work/mono-watch4-ios-sdk/sdks/ios/bin/watch-dev/test-Mono.Runtime.Tests.app
+$ mlaunch -v -v -v -v -v -v -v -sdkroot /Applications/Xcode101.app/Contents/Developer --device watchos --installdev ./bin/ios-dev/test-Mono.Runtime.Tests.app/Watch/test-watch-Mono.Runtime.Tests.app
 ```
 
 * launch bundle
@@ -91,6 +92,7 @@ $ mlaunch -v -v --device watchos --installdev /Users/lewurm/work/mono-watch4-ios
 $ mlaunch -v -v --killdev com.xamarin.mono.ios.test-Mono.Runtime.Tests.watchkitapp \
     --launchdev ./bin/ios-dev/test-Mono.Runtime.Tests.app/Watch/test-watch-Mono.Runtime.Tests.app \
 	--devname=watch4 --argument
+$ mlaunch -v -v -v -v -v -v -v -sdkroot /Applications/Xcode101.app/Contents/Developer --killdev com.xamarin.mono.ios.test-Mono.Runtime.Tests.watchkitapp --launchdev ./bin/ios-dev/test-Mono.Runtime.Tests.app/Watch/test-watch-Mono.Runtime.Tests.app --devname=watch4 --argument=-exclude:MobileNotWorking,NotOnMac,NotWorking,ValueAdd,CAS,InetAccess,NotWorkingLinqInterpreter --argument=-labels --argument=monotouch_Mono.Runtime.Tests_test.dll
 ```
 
 

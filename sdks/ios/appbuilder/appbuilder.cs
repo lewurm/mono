@@ -379,6 +379,7 @@ public class AppBuilder
 				ninja.WriteLine ($"    forcelibs = -force_load {libprefix}libmono-native-unified.a");
 			} else if (iswatch) {
 				ninja.WriteLine ($"build $appdir/{bundle_executable + "Extension"}: gen-exe {ofiles} $builddir/main.o " + libs + " $monoios_dir/libmonowatch.a");
+				ninja.WriteLine ($"    forcelibs = -force_load {libprefix}libmono-native.a");
 			}
 
 			ninja.WriteLine ("build $builddir/main.o: compile-objc $builddir/main.m");
