@@ -29,6 +29,13 @@ android {
         main {
             assets.srcDirs = ['assets']
         }
+		debug {
+			resources {
+				srcDir {
+					"wrapsh"
+				}
+			}
+		}
     }
     externalNativeBuild {
         cmake {
