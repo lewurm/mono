@@ -118,8 +118,14 @@ app/src/main/jniLibs/$(1):
 $$(patsubst %,app/src/main/jniLibs/$(1)/%,$$(MONO_LIBS)): app/src/main/jniLibs/$(1)/%: $$(TOP)/sdks/out/android-$(1)-$$(CONFIGURATION)/lib/% | app/src/main/jniLibs/$(1)
 	cp $$< $$@
 
+app/wrapsh/lib/$(1):
+	mkdir -p $$@
+
+app/wrapsh/lib/$(1)/wrap.sh: wrap.sh | app/wrapsh/lib/$(1)
+	cp $$< $$@
+
 .PHONY: package
-package: $$(patsubst %,app/src/main/jniLibs/$(1)/%,$$(MONO_LIBS))
+package: $$(patsubst %,app/src/main/jniLibs/$(1)/%,$$(MONO_LIBS)) app/wrapsh/lib/$(1)/wrap.sh
 endef
 
 $(eval $(call RuntimeTemplate,armeabi-v7a))
