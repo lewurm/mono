@@ -31,7 +31,8 @@ fi
 echo "Device: $DEVICE"
 
 SOCK="platform-${NOW}.sock"
-ARCH=$(shell "getprop ro.product.cpu.abi" | tr -d '\r')
+# ARCH=$(shell "getprop ro.product.cpu.abi" | tr -d '\r')
+ARCH=armeabi-v7a
 
 LLDB_SERVER_ARCH=$ARCH
 if [ "$ARCH" = "armeabi-v7a" ]; then
@@ -94,8 +95,9 @@ platform connect unix-abstract-connect://[$DEVICE]$LLDB/tmp/$SOCK
 settings set auto-confirm true
 settings set plugin.symbol-file.dwarf.comp-dir-symlink-paths /proc/self/cwd
 process attach -p $PID
-p (void)monodroid_clear_lldb_wait()
+p wait_for_lldb=0
 $COMMANDS" > $START_FILE
+# p (void)monodroid_clear_lldb_wait()
 
 echo -n "Starting lldb server in the background"
 shell "run-as org.mono.android.AndroidTestRunner $START_SERVER $LLDB unix-abstract $LLDB/tmp $SOCK \"lldb process:gdb-remote packets\""&

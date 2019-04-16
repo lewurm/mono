@@ -129,7 +129,7 @@ package: $$(patsubst %,app/src/main/jniLibs/$(1)/%,$$(MONO_LIBS)) app/wrapsh/lib
 endef
 
 $(eval $(call RuntimeTemplate,armeabi-v7a))
-$(eval $(call RuntimeTemplate,arm64-v8a))
+# $(eval $(call RuntimeTemplate,arm64-v8a))
 $(eval $(call RuntimeTemplate,x86))
 $(eval $(call RuntimeTemplate,x86_64))
 
@@ -210,8 +210,11 @@ package: app/assets/asm/dtest-app.exe app/assets/asm/dtest-app.pdb
 
 ## LLDB support
 
-lldb-mono-0.1/xa-lldb: xa-lldb
+
+lldb-mono-0.1/lldb:
 	wget --no-verbose -O - 'https://github.com/mono/lldb-binaries/releases/download/v0.1/lldb-mono-0.1.tar.gz' | tar xvf -
+
+lldb-mono-0.1/xa-lldb: xa-lldb lldb-mono-0.1/lldb
 	cp xa-lldb lldb-mono-0.1/xa-lldb
 
 ## Run Mono.Debugger.Soft and BCL tests
