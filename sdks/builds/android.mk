@@ -284,7 +284,7 @@ $$(eval $$(call CrossRuntimeTemplate,android,$(1),$$(if $$(filter $$(UNAME),Darw
 
 endef
 
-# $(eval $(call AndroidCrossTemplate,cross-arm,i686,armv7,armeabi-v7a,llvm-llvm32,armv7-none-linux-androideabi))
+$(eval $(call AndroidCrossTemplate,cross-arm,i686,armv7,armeabi-v7a,llvm-llvm32,armv7-none-linux-androideabi))
 $(eval $(call AndroidCrossTemplate,cross-arm64,x86_64,aarch64-v8a,arm64-v8a,llvm-llvm64,aarch64-v8a-linux-android))
 # $(eval $(call AndroidCrossTemplate,cross-x86,i686,i686,x86,llvm-llvm32,i686-none-linux-android))
 $(eval $(call AndroidCrossTemplate,cross-x86_64,x86_64,x86_64,x86_64,llvm-llvm64,x86_64-none-linux-android))
