@@ -6000,12 +6000,18 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					}
 				}
 
+#if defined(TARGET_ARM) && defined(TARGET_ANDROID)
+				if (direct_call && acfg->method_order->len > 50000) {
+					/* large assembly, disable direct calls because they could
+					 * exceed the range that can be encoded in a bl instruction
+					 * */
+					direct_call = FALSE;
+				} else
+#endif
 				if (direct_call) {
 					patch_info->type = MONO_PATCH_INFO_NONE;
 					acfg->stats.direct_calls ++;
-				}
-
-				if (!got_only && !direct_call) {
+				} else if (!got_only && !direct_call) {
 					MonoPltEntry *plt_entry = get_plt_entry (acfg, patch_info);
 					if (plt_entry) {
 						/* This patch has a PLT entry, so we must emit a call to the PLT entry */
@@ -6021,7 +6027,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				if (direct_call) {
 					int call_size;
 
-					arch_emit_label_address (acfg, direct_call_target, external_call, FALSE, patch_info, &call_size);
+					arch_emit_direct_call (acfg, direct_call_target, external_call, FALSE, patch_info, &call_size);
 					i += call_size - INST_LEN;
 				} else {
 					int code_size;
