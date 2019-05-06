@@ -2329,13 +2329,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	case RegTypeIRegPair:
 		break;
 	case RegTypeStructByAddr:
-		if (sig->pinvoke) {
-			linfo->ret.storage = LLVMArgVtypeByRef;
-		} else {
-			/* Vtype returned using a hidden argument */
-			linfo->ret.storage = LLVMArgVtypeRetAddr;
-			linfo->vret_arg_index = cinfo->vret_arg_index;
-		}
+		/* Vtype returned using a hidden argument */
+		linfo->ret.storage = LLVMArgVtypeRetAddr;
+		linfo->vret_arg_index = cinfo->vret_arg_index;
 		break;
 #if TARGET_WATCHOS
 	case RegTypeStructByVal:
