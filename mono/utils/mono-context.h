@@ -311,6 +311,8 @@ G_EXTERN_C void mono_context_get_current (void *);
 
 #else
 
+#define MONO_CONTEXT_GET_CURRENT_GREGS(ctx)
+#if 0
 #define MONO_CONTEXT_GET_CURRENT_GREGS(ctx) \
 	do { \
 		__asm__ __volatile__(	\
@@ -354,6 +356,7 @@ G_EXTERN_C void mono_context_get_current (void *);
 				[rip] MONO_CONTEXT_OFFSET (gregs, AMD64_RIP, host_mgreg_t)	\
 			: "rdx", "memory");	\
 	} while (0)
+#endif
 
 #ifdef UCONTEXT_REG_XMM
 #define MONO_CONTEXT_GET_CURRENT_FREGS(ctx) \

@@ -140,8 +140,8 @@ host_linux=no
 
 case "$host" in
 	wasm32*)
-		CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE -s WASM=1"
-		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP -s WASM=1"
+		CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE"
+		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP"
 		libdl="-ldl"
 		libgc_threads=pthreads
 		platform_wasm=yes

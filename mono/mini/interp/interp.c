@@ -261,10 +261,11 @@ set_resume_state (ThreadContext *context, InterpFrame *frame)
 		} \
 	} while (0);
 
+static ThreadContext *global_context = NULL;
 static void
 set_context (ThreadContext *context)
 {
-	mono_native_tls_set_value (thread_context_id, context);
+	global_context = context;
 
 	if (!context)
 		return;
@@ -279,7 +280,8 @@ set_context (ThreadContext *context)
 static ThreadContext *
 get_context (void)
 {
-	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context = global_context;
+	
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
 		set_context (context);
@@ -1865,6 +1867,8 @@ interp_entry (InterpEntryData *data)
 static stackval *
 do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
 {
+	fprintf (stderr, "icall ptr: %p\n", ptr);
+	fprintf (stderr, "frame->imethod: %s\n", mono_method_full_name (frame->imethod->method, 1));
 	switch (op) {
 	case MINT_ICALL_V_V: {
 		typedef void (*T)(void);
@@ -1970,6 +1974,7 @@ do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gp
 	if (sig)
 		stackval_from_data (sig->ret, &sp [-1], (char*) &sp [-1].data.p, sig->pinvoke);
 
+	fprintf (stderr, "return from icall\n");
 	return sp;
 }
 
@@ -6660,7 +6665,7 @@ mono_ee_interp_init (const char *opts)
 	g_assert (!interp_init_done);
 	interp_init_done = TRUE;
 
-	mono_native_tls_alloc (&thread_context_id, NULL);
+	// mono_native_tls_alloc (&thread_context_id, NULL);
 	set_context (NULL);
 
 	interp_parse_options (opts);

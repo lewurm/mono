@@ -1413,6 +1413,7 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 void
 mono_arch_cpu_init (void)
 {
+#if 0
 #ifndef _MSC_VER
 	guint16 fpcw;
 
@@ -1426,6 +1427,7 @@ mono_arch_cpu_init (void)
 	/* TODO: This is crashing on Win64 right now.
 	* _control87 (_PC_53, MCW_PC);
 	*/
+#endif
 #endif
 }
 

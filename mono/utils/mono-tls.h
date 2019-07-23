@@ -58,24 +58,37 @@ typedef enum {
 #include <pthread.h>
 
 #define MonoNativeTlsKey pthread_key_t
-#define mono_native_tls_get_value pthread_getspecific
+
+static GHashTable *local_map = NULL;
+
+static inline gpointer
+mono_native_tls_get_value (MonoNativeTlsKey *key)
+{
+	g_assert (local_map);
+	return g_hash_table_lookup (local_map, key);
+}
 
 static inline int
 mono_native_tls_alloc (MonoNativeTlsKey *key, void *destructor)
 {
-	return pthread_key_create (key, (void (*)(void*)) destructor) == 0;
+	if (!local_map) {
+		local_map = g_hash_table_new (NULL, NULL);
+	}
+	return 0 == 0;
 }
 
 static inline void
 mono_native_tls_free (MonoNativeTlsKey key)
 {
-	pthread_key_delete (key);
+	// pthread_key_delete (key);
 }
 
 static inline int
 mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 {
-	return !pthread_setspecific (key, value);
+	g_assert (local_map);
+	g_hash_table_insert (local_map, key, value);
+	return !0;
 }
 
 #endif /* HOST_WIN32 */

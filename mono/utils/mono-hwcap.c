@@ -40,8 +40,10 @@ mono_hwcap_init (void)
 	if (hwcap_inited)
 		return;
 
+#if 0
 	if (!conservative || strncmp (conservative, "1", 1))
 		mono_hwcap_arch_init ();
+#endif
 
 	if (verbose && !strncmp (verbose, "1", 1))
 		mono_hwcap_print ();

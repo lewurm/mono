@@ -1450,6 +1450,7 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 
 	error_init (error);
 
+	return NULL;
 	internal = create_internal_thread_object ();
 
 	thread = create_thread_object (domain, internal);

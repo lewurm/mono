@@ -12,6 +12,11 @@
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+	int dummy = 1337;
+	*staddr = (guint8 *) &dummy;
+	*stsize = 0x100;
+	return;
+#if 0
 	pthread_attr_t attr;
 	gint res;
 
@@ -33,6 +38,7 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	res = pthread_attr_destroy (&attr);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 
 }
 

@@ -46,6 +46,7 @@ typedef pthread_cond_t mono_cond_t;
 static inline void
 mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
 {
+#if 0
 	int res;
 	pthread_mutexattr_t attr;
 
@@ -71,6 +72,7 @@ mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
 	res = pthread_mutexattr_destroy (&attr);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutexattr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline void
@@ -88,26 +90,31 @@ mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 static inline void
 mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
+#if 0
 	int res;
 
 	res = pthread_mutex_destroy (mutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline void
 mono_os_mutex_lock (mono_mutex_t *mutex)
 {
+#if 0
 	int res;
 
 	res = pthread_mutex_lock (mutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_lock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline int
 mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
+#if 0
 	int res;
 
 	res = pthread_mutex_trylock (mutex);
@@ -115,21 +122,27 @@ mono_os_mutex_trylock (mono_mutex_t *mutex)
 		g_error ("%s: pthread_mutex_trylock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
 	return res != 0 ? -1 : 0;
+#else
+	return 0;
+#endif
 }
 
 static inline void
 mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
+#if 0
 	int res;
 
 	res = pthread_mutex_unlock (mutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_unlock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline void
 mono_os_cond_init (mono_cond_t *cond)
 {
+#if 0
 	int res;
 
 #ifdef BROKEN_CLOCK_SOURCE
@@ -157,26 +170,31 @@ mono_os_cond_init (mono_cond_t *cond)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_condattr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 #endif
+#endif
 }
 
 static inline void
 mono_os_cond_destroy (mono_cond_t *cond)
 {
+#if 0
 	int res;
 
 	res = pthread_cond_destroy (cond);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline void
 mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
+#if 0
 	int res;
 
 	res = pthread_cond_wait (cond, mutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_wait failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 int
@@ -185,21 +203,25 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 static inline void
 mono_os_cond_signal (mono_cond_t *cond)
 {
+#if 0
 	int res;
 
 	res = pthread_cond_signal (cond);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_signal failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 static inline void
 mono_os_cond_broadcast (mono_cond_t *cond)
 {
+#if 0
 	int res;
 
 	res = pthread_cond_broadcast (cond);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_broadcast failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif
 }
 
 #else

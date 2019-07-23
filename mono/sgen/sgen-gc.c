@@ -2618,6 +2618,7 @@ gc_pump_callback (void)
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
+	return;
 #ifdef HOST_WASM
 	g_assert (stw); //can't handle non-stw mode (IE, domain unload)
 	//we ignore forced_serial

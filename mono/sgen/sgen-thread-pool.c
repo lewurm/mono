@@ -261,6 +261,10 @@ sgen_thread_pool_create_context (int num_threads, SgenThreadPoolThreadInitFunc i
 
 	contexts_num++;
 
+
+	/* HACK to avoid pthread_create call */
+	contexts_num = 0;
+
 	return context_id;
 }
 

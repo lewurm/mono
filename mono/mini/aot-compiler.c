@@ -9663,7 +9663,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	 */
 	if (acfg->aot_opts.llvm_only) {
 		// FIXME: This doesn't work yet
-		opts = g_strdup ("");
+		opts = g_strdup ("-O2");
 	} else {
 #if LLVM_API_VERSION > 100
 		opts = g_strdup ("-O2 -disable-tail-calls -place-safepoints -spp-all-backedges");

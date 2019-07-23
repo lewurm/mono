@@ -3042,6 +3042,8 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	size_t stsize = 0;
 	stack_t sa;
 	guint8 *staddr = NULL;
+	/* HACK */
+	return;
 #ifdef TARGET_OSX
 	/*
 	 * On macOS Mojave we are encountering a bug when changing mapping for main thread

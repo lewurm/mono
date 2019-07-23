@@ -217,13 +217,15 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 MonoNativeThreadId
 mono_native_thread_id_get (void)
 {
-	return pthread_self ();
+	return 1;
+	
+	// return pthread_self ();
 }
 
 gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
-	return pthread_equal (id1, id2);
+	return 1 == 1; // return pthread_equal (id1, id2);
 }
 
 /*

@@ -1056,7 +1056,7 @@ mono_gc_cleanup (void)
 	g_message ("%s: cleaning up finalizer", __func__);
 #endif
 
-	if (mono_gc_is_null ())
+	if (1 || mono_gc_is_null ())
 		return;
 
 	if (!gc_disabled) {

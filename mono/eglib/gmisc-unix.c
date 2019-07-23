@@ -39,7 +39,7 @@
 #include <unistd.h>
 #endif
 
-static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
+// static pthread_mutex_t env_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* MONO Comment
  * 
@@ -60,11 +60,11 @@ gchar *
 g_getenv (const gchar *variable)
 {
 	gchar *ret = NULL;
-	pthread_mutex_lock (&env_lock);
+	// pthread_mutex_lock (&env_lock);
 	gchar *res = getenv(variable);
 	if (res)
 		ret = g_strdup(res);
-	pthread_mutex_unlock (&env_lock);
+	// pthread_mutex_unlock (&env_lock);
 
 	return ret;
 }
@@ -78,10 +78,10 @@ g_getenv (const gchar *variable)
 gboolean
 g_hasenv (const gchar *variable)
 {
-	pthread_mutex_lock (&env_lock);
+	// pthread_mutex_lock (&env_lock);
 	gchar *res = getenv(variable);
 	gboolean not_null = (res != NULL);
-	pthread_mutex_unlock (&env_lock);
+	// pthread_mutex_unlock (&env_lock);
 
 	return not_null;
 }
@@ -90,18 +90,18 @@ gboolean
 g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 {
 	gboolean res;
-	pthread_mutex_lock (&env_lock);
+	// pthread_mutex_lock (&env_lock);
 	res = (setenv(variable, value, overwrite) == 0);
-	pthread_mutex_unlock (&env_lock);
+	// pthread_mutex_unlock (&env_lock);
 	return res;
 }
 
 void
 g_unsetenv(const gchar *variable)
 {
-	pthread_mutex_lock (&env_lock);
+	// pthread_mutex_lock (&env_lock);
 	unsetenv(variable);
-	pthread_mutex_unlock (&env_lock);
+	// pthread_mutex_unlock (&env_lock);
 }
 
 gchar*
@@ -118,7 +118,7 @@ g_path_is_absolute (const char *filename)
 	return (*filename == '/');
 }
 
-static pthread_mutex_t pw_lock = PTHREAD_MUTEX_INITIALIZER;
+// static pthread_mutex_t pw_lock = PTHREAD_MUTEX_INITIALIZER;
 static const gchar *home_dir;
 static const gchar *user_name;
 
@@ -134,9 +134,9 @@ get_pw_data (void)
 	if (user_name != NULL)
 		return;
 
-	pthread_mutex_lock (&pw_lock);
+	// pthread_mutex_lock (&pw_lock);
 	if (user_name != NULL) {
-		pthread_mutex_unlock (&pw_lock);
+		// pthread_mutex_unlock (&pw_lock);
 		return;
 	}
 
@@ -159,7 +159,7 @@ get_pw_data (void)
 	if (home_dir == NULL)
 		home_dir = "/";
 
-	pthread_mutex_unlock (&pw_lock);
+	// pthread_mutex_unlock (&pw_lock);
 }
 
 const gchar *
@@ -178,13 +178,13 @@ g_get_user_name (void)
 
 static const char *tmp_dir;
 
-static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
+// static pthread_mutex_t tmp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 const gchar *
 g_get_tmp_dir (void)
 {
 	if (tmp_dir == NULL){
-		pthread_mutex_lock (&tmp_lock);
+		// pthread_mutex_lock (&tmp_lock);
 		if (tmp_dir == NULL){
 			tmp_dir = g_getenv ("TMPDIR");
 			if (tmp_dir == NULL){
@@ -196,7 +196,7 @@ g_get_tmp_dir (void)
 				}
 			}
 		}
-		pthread_mutex_unlock (&tmp_lock);
+		// pthread_mutex_unlock (&tmp_lock);
 	}
 	return tmp_dir;
 }

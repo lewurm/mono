@@ -38,11 +38,9 @@
 // __builtin_unwind_init not available under MSVC but equivalent implementation is done using
 // copy_stack_data_internal_win32_wrapper.
 #define SAVE_REGS_ON_STACK do {} while (0)
-#elif defined (HOST_WASM)
+#else
 //TODO: figure out wasm stack scanning
 #define SAVE_REGS_ON_STACK do {} while (0)
-#else 
-#define SAVE_REGS_ON_STACK __builtin_unwind_init ();
 #endif
 
 volatile size_t mono_polling_required;

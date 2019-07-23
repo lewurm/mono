@@ -4,6 +4,7 @@
 #include <mono/utils/mono-mmap.h>
 
 
+#if 0
 #if defined (USE_WASM_BACKEND)
 
 #include <mono/utils/mono-threads.h>
@@ -192,4 +193,5 @@ mono_memory_barrier_process_wide (void)
 {
 }
 
+#endif
 #endif

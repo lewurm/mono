@@ -44,7 +44,7 @@ typedef struct _MonoImageWriter MonoImageWriter;
 #endif
 
 #if defined(USE_ELF_WRITER) || defined(USE_MACH_WRITER)
-#define USE_BIN_WRITER 1
+// #define USE_BIN_WRITER 1
 #endif
 
 /* Relocation types */

@@ -40,7 +40,7 @@ using namespace llvm;
 using namespace llvm::orc;
 
 extern cl::opt<bool> EnableMonoEH;
-extern cl::opt<std::string> MonoEHFrameSymbol;
+// extern cl::opt<std::string> MonoEHFrameSymbol;
 
 void
 mono_llvm_set_unhandled_exception_handler (void)
@@ -227,7 +227,7 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	InitializeNativeTargetAsmPrinter();
 
 	EnableMonoEH = true;
-	MonoEHFrameSymbol = "mono_eh_frame";
+	// MonoEHFrameSymbol = "mono_eh_frame";
 
 	EngineBuilder EB;
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
