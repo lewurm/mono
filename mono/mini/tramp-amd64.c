@@ -146,7 +146,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			if (can_write) {
 				g_assert ((guint64)(orig_code - 11) % 8 == 0);
 				mono_atomic_xchg_ptr ((gpointer*)(orig_code - 11), addr);
-				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
+				// VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
 			}
 		} else {
 			gboolean disp_32bit = ((((gint64)addr - (gint64)orig_code)) < (1 << 30)) && ((((gint64)addr - (gint64)orig_code)) > -(1 << 30));
@@ -167,7 +167,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			}
 			if (can_write) {
 				mono_atomic_xchg_i32 ((gint32*)(orig_code - 4), ((gint64)addr - (gint64)orig_code));
-				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, 4);
+				// VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, 4);
 			}
 		}
 	}
@@ -176,7 +176,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 		gpointer *got_entry = (gpointer*)((guint8*)orig_code + (*(guint32*)(orig_code - 4)));
 		if (can_write) {
 			mono_atomic_xchg_ptr (got_entry, addr);
-			VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, sizeof (gpointer));
+			// VALGRIND_DISCARD_TRANSLATIONS (orig_code - 5, sizeof (gpointer));
 		}
 	}
 }

@@ -146,6 +146,8 @@ ves_icall_System_ConsoleDriver_SetBreak (MonoBoolean want_break, MonoError* erro
 gint32
 ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout, MonoError* error)
 {
+	return FALSE;
+#if 0
 	fd_set rfds;
 	struct timeval tv;
 	struct timeval *tvptr;
@@ -174,6 +176,7 @@ ves_icall_System_ConsoleDriver_InternalKeyAvailable (gint32 timeout, MonoError* 
 	}
 
 	return (ret > 0) ? ret : 0;
+#endif
 }
 
 static gint32 cols_and_lines;

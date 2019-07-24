@@ -110,6 +110,9 @@ safe_read (int fd, gchar *buffer, gint count, GError **gerror)
 static int
 read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **gerror)
 {
+	g_warning ("fix read_pipes\n");
+	return -1;
+#if 0
 	fd_set rfds;
 	int res;
 	gboolean out_closed;
@@ -192,6 +195,7 @@ read_pipes (int outfd, gchar **out_str, int errfd, gchar **err_str, GError **ger
 		*err_str = g_string_free (err, FALSE);
 
 	return 0;
+#endif
 }
 
 static gboolean

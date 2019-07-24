@@ -69,7 +69,7 @@ create_socket (const char *hostname, const int port)
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons (port);
+    serv_addr.sin_port = port; // wtf inline asm: htons (port);
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
     if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -89,14 +89,14 @@ write_byte (MonoCompile *cfg, unsigned char b)
 static void
 write_short (MonoCompile *cfg, short s)
 {
-	short swap = htons (s);
+	short swap = s; // wtf inline asm: htons (s);
 	write (cfg->gdump_ctx->fd, &swap, 2);
 }
 
 static void
 write_int (MonoCompile *cfg, int v)
 {
-	int swap = htonl (v);
+	int swap = v; // wtf inline asm: htonl (v);
 	write (cfg->gdump_ctx->fd, &swap, 4);
 }
 

@@ -133,9 +133,11 @@ void MONO_NEVER_INLINE __mono_jit_debug_register_code (void);
 void MONO_NEVER_INLINE
 __mono_jit_debug_register_code (void)
 {
+#if 0
 	/* Make sure that even compilers that ignore __noinline__ don't inline this */
 #if defined(__GNUC__)
 	asm ("");
+#endif
 #endif
 }
 

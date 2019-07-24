@@ -278,49 +278,18 @@ my_g_bit_nth_lsf (gsize mask, gint nth_bit)
 	if ((mask == 0) || (nth_bit == BITS_PER_CHUNK))
 		return -1;
 
-#if (defined(__i386__) && defined(__GNUC__))
- {
-	 int r;
-	 /* This depends on mask != 0 */
-	 __asm__("bsfl %1,%0\n\t"
-			 : "=r" (r) : "g" (mask)); 
-	 return nth_bit + r;
- }
-#elif defined(__x86_64) && defined(__GNUC__)
- {
-	guint64 r;
-
-	__asm__("bsfq %1,%0\n\t"
-			: "=r" (r) : "rm" (mask));
-	return nth_bit + r;
- }
-#else
 	while (! (mask & 0x1)) {
 		mask >>= 1;
 		nth_bit ++;
 	}
 
 	return nth_bit;
-#endif
 }
 
 static inline gint
 my_g_bit_nth_lsf_nomask (gsize mask)
 {
 	/* Mask is expected to be != 0 */
-#if (defined(__i386__) && defined(__GNUC__))
-	int r;
-
-	__asm__("bsfl %1,%0\n\t"
-			: "=r" (r) : "rm" (mask));
-	return r;
-#elif defined(__x86_64) && defined(__GNUC__)
-	guint64 r;
-
-	__asm__("bsfq %1,%0\n\t"
-			: "=r" (r) : "rm" (mask));
-	return r;
-#else
 	int nth_bit = 0;
 
 	while (! (mask & 0x1)) {
@@ -329,7 +298,6 @@ my_g_bit_nth_lsf_nomask (gsize mask)
 	}
 
 	return nth_bit;
-#endif
 }
 
 #endif

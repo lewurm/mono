@@ -1148,14 +1148,8 @@ sgen_check_canary_for_object (gpointer addr);
 static inline void
 sgen_dummy_use (gpointer v)
 {
-#if defined(_MSC_VER) || defined(HOST_WASM)
 	static volatile gpointer ptr;
 	ptr = v;
-#elif defined(__GNUC__)
-	__asm__ volatile ("" : "=r"(v) : "r"(v));
-#else
-#error "Implement sgen_dummy_use for your compiler"
-#endif
 }
 
 #endif /* HAVE_SGEN_GC */

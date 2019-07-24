@@ -887,6 +887,9 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 	MonoAddressFamily family;
 
 	error_init (error);
+	*werror = WSAEAFNOSUPPORT;
+	return MONO_HANDLE_NEW (MonoObject, NULL);
+#if 0
 
 	/* Build a System.Net.SocketAddress object instance */
 	if (!domain->sockaddr_class)
@@ -1010,6 +1013,7 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 		*werror = WSAEAFNOSUPPORT;
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 	}
+#endif
 }
 
 static int
@@ -1141,8 +1145,8 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		address = (buf[4] << 24) + (buf[5] << 16) + (buf[6] << 8) + buf[7];
 
 		sa->sin_family = family;
-		sa->sin_addr.s_addr = htonl (address);
-		sa->sin_port = htons (port);
+		sa->sin_addr.s_addr = address; // htonl (address);
+		sa->sin_port = port; // htons (port);
 
 		*sa_size = sizeof (struct sockaddr_in);
 		mono_gchandle_free_internal (gchandle);
@@ -1166,7 +1170,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		scopeid = buf[24] + (buf[25] << 8) + (buf[26] << 16) + (buf[27] << 24);
 
 		sa->sin6_family = family;
-		sa->sin6_port = htons (port);
+		sa->sin6_port = port; // htons (port);
 		sa->sin6_scope_id = scopeid;
 
 		for (i = 0; i < 16; i++)

@@ -1213,6 +1213,8 @@ socket_transport_send (void *data, int len)
 static void
 socket_transport_connect (const char *address)
 {
+	return;
+#if 0
 	MonoAddressInfo *result;
 	MonoAddressEntry *rp;
 	int sfd = -1, s, res;
@@ -1269,7 +1271,7 @@ socket_transport_connect (const char *address)
 			g_assert (res == 0);
 
 			host = (char*)"127.0.0.1";
-			port = ntohs (addr.sin_port);
+			port = addr.sin_port; // wtf inline asm: ntohs (addr.sin_port);
 
 			/* Emit the address to stdout */
 			/* FIXME: Should print another interface, not localhost */
@@ -1376,6 +1378,7 @@ socket_transport_connect (const char *address)
 	
 	if (!transport_handshake ())
 		exit (1);
+#endif
 }
 
 static void
