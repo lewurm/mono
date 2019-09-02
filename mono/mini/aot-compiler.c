@@ -13275,15 +13275,15 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 
 	memset (&acfg->aot_opts, 0, sizeof (acfg->aot_opts));
 	acfg->aot_opts.write_symbols = TRUE;
-	acfg->aot_opts.ntrampolines = 4096;
-	acfg->aot_opts.nrgctx_trampolines = 4096;
-	acfg->aot_opts.nimt_trampolines = 512;
-	acfg->aot_opts.nrgctx_fetch_trampolines = 128;
-	acfg->aot_opts.ngsharedvt_arg_trampolines = 512;
+	acfg->aot_opts.ntrampolines = 4096 / 16;
+	acfg->aot_opts.nrgctx_trampolines = 4096 / 16;
+	acfg->aot_opts.nimt_trampolines = 512 / 16;
+	acfg->aot_opts.nrgctx_fetch_trampolines = 128 / 16;
+	acfg->aot_opts.ngsharedvt_arg_trampolines = 512 / 16;
 #ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
 	acfg->aot_opts.nftnptr_arg_trampolines = 128;
 #endif
-	acfg->aot_opts.nunbox_arbitrary_trampolines = 256;
+	acfg->aot_opts.nunbox_arbitrary_trampolines = 256 / 16;
 	if (!acfg->aot_opts.llvm_path)
 		acfg->aot_opts.llvm_path = g_strdup ("");
 	acfg->aot_opts.temp_path = g_strdup ("");
