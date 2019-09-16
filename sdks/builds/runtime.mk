@@ -30,10 +30,10 @@ define RuntimeTemplate
 
 _runtime_$(1)-$(2)_BITNESS=$$(if $$(or $$(findstring i686,$(3)),$$(findstring i386,$(3))),-m32,$$(if $$(findstring x86_64,$(3)),-m64))
 
-_runtime_$(1)-$(2)_CFLAGS=$(if $(RELEASE),-O2 -g,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CFLAGS) $$($(1)-$(2)_CFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
-_runtime_$(1)-$(2)_CXXFLAGS=$(if $(RELEASE),-O2 -g,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CXXFLAGS) $$($(1)-$(2)_CXXFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
-_runtime_$(1)-$(2)_CPPFLAGS=$(if $(RELEASE),-O2 -g,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CPPFLAGS) $$($(1)-$(2)_CPPFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
-_runtime_$(1)-$(2)_CXXCPPFLAGS=$(if $(RELEASE),-O2 -g,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CXXCPPFLAGS) $$($(1)-$(2)_CXXCPPFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
+_runtime_$(1)-$(2)_CFLAGS=$(if $(RELEASE),-O0 -ggdb3,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CFLAGS) $$($(1)-$(2)_CFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
+_runtime_$(1)-$(2)_CXXFLAGS=$(if $(RELEASE),-O0 -ggdb3,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CXXFLAGS) $$($(1)-$(2)_CXXFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
+_runtime_$(1)-$(2)_CPPFLAGS=$(if $(RELEASE),-O0 -ggdb3,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CPPFLAGS) $$($(1)-$(2)_CPPFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
+_runtime_$(1)-$(2)_CXXCPPFLAGS=$(if $(RELEASE),-O0 -ggdb3,-O0 -ggdb3 -fno-omit-frame-pointer) $$(_$(1)-$(2)_CXXCPPFLAGS) $$($(1)-$(2)_CXXCPPFLAGS) $$(_runtime_$(1)-$(2)_BITNESS)
 _runtime_$(1)-$(2)_LDFLAGS=$$(_$(1)-$(2)_LDFLAGS) $$($(1)-$(2)_LDFLAGS)
 
 _runtime_$(1)-$(2)_AC_VARS=$$(_$(1)-$(2)_AC_VARS) $$($(1)-$(2)_AC_VARS)
