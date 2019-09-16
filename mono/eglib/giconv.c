@@ -1017,6 +1017,12 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 	return outbuf;
 }
 
+void
+break_on_me (void)
+{
+	return;
+}
+
 gchar *
 g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
@@ -1026,6 +1032,8 @@ g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	gunichar c;
 	int n;
 	
+	if (str == NULL)
+		break_on_me ();
 	g_return_val_if_fail (str != NULL, NULL);
 	
 	if (len < 0) {
