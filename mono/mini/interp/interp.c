@@ -211,8 +211,10 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 
 #endif
 
+#if 0
 #if defined(__GNUC__) && !defined(TARGET_WASM)
 #define USE_COMPUTED_GOTO 1
+#endif
 #endif
 #if USE_COMPUTED_GOTO
 #define MINT_IN_SWITCH(op) COUNT_OP(op); goto *in_labels[op];
@@ -228,7 +230,7 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 #define MINT_IN_SWITCH(op) switch (op)
 #define MINT_IN_CASE(x) case x:
 #define MINT_IN_DISPATCH(op) goto main_loop;
-#define MINT_IN_BREAK break
+#define MINT_IN_BREAK goto main_loop;
 #define MINT_IN_DEFAULT default:
 #endif
 
@@ -2941,6 +2943,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	0 };
 #endif
 
+	if (frame->imethod->method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
+		MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoMethodPInvoke* piinfo = NULL;
 
 	frame->ex = NULL;
@@ -3003,6 +3008,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= imethod->vt_stack_size); */
 		DUMP_INSTR();
+
+		if (frame->imethod->method->wrapper_type != MONO_WRAPPER_MANAGED_TO_NATIVE)
+			MONO_REQ_GC_UNSAFE_MODE;
+
 		MINT_IN_SWITCH (*ip) {
 		MINT_IN_CASE(MINT_INITLOCALS)
 			memset (locals, 0, imethod->locals_size);
