@@ -892,6 +892,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 	mono_restore_context (&mctx);
 }
 
+static MonoContext meh = {0};
 void
 mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *siginfo, gpointer fault_addr, gboolean stack_ovf)
 {
@@ -920,9 +921,13 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (gpointer *)(UCONTEXT_REG_RSP (sigctx) & ~15);
+#if 1
+	copied_ctx = &meh;
+#else
 	sp = (gpointer *)((char*)sp - frame_size);
 	copied_ctx = (MonoContext*)(sp + 4);
 	/* the arguments must be aligned */
+#endif
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
 	mono_sigctx_to_monoctx (sigctx, copied_ctx);
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
