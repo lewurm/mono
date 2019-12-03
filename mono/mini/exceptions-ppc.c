@@ -833,3 +833,16 @@ mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 	MONO_CONTEXT_SET_IP(ctx, (unsigned long) func);
 #endif
 }
+
+void
+mono_arch_undo_ip_adjustment (MonoContext *ctx)
+{
+	ctx->sc_ir++;
+}
+
+void
+mono_arch_do_ip_adjustment (MonoContext *ctx)
+{
+	ctx->sc_ir--;
+}
+

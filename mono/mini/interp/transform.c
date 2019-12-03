@@ -2487,7 +2487,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (csignature->call_convention == MONO_CALL_VARARG)
 			interp_add_ins (td, MINT_CALL_VARARG);
 		else if (calli)
+#ifdef __powerpc__
+			/* XXX: _FAST messes up order on BE */
+			interp_add_ins (td, native ? MINT_CALLI_NAT : MINT_CALLI);
+#else
 			interp_add_ins (td, native ? ((op != -1) ? MINT_CALLI_NAT_FAST : MINT_CALLI_NAT) : MINT_CALLI);
+#endif
 		else if (is_virtual && !mono_class_is_marshalbyref (target_method->klass))
 			interp_add_ins (td, is_void ? MINT_VCALLVIRT_FAST : MINT_CALLVIRT_FAST);
 		else if (is_virtual)

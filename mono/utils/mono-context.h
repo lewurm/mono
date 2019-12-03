@@ -577,7 +577,7 @@ typedef struct {
 #define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)(gsize)sp; } while (0);
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->regs [ppc_r31]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->sc_sp))
 #define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->sc_sp))
 
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\

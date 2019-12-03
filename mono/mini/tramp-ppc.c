@@ -690,3 +690,10 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *co
 	return ((guint32*)plt_entry) [6];
 #endif
 }
+
+gpointer
+mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
+{
+	NOT_IMPLEMENTED;
+	return NULL;
+}
