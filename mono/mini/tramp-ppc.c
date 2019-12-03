@@ -22,6 +22,7 @@
 #include <mono/arch/ppc/ppc-codegen.h>
 
 #include "mini.h"
+#include "interp/interp.h"
 #include "mini-ppc.h"
 #include "mini-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
@@ -691,9 +692,11 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *co
 #endif
 }
 
+void mono_interp_to_native_no_tramp (void *target_func, InterpMethodArguments *margs);
 gpointer
 mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
-	NOT_IMPLEMENTED;
-	return NULL;
+	if (info)
+		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)mono_interp_to_native_no_tramp, 1, NULL, NULL);
+	return (gpointer)mono_interp_to_native_no_tramp;
 }

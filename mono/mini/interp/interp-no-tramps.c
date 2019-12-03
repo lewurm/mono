@@ -1,8 +1,3 @@
-/**
- * \file
- * WASM AOT runtime
- */
-
 #include "config.h"
 
 #include <sys/types.h>
@@ -10,7 +5,7 @@
 #include "mini.h"
 #include "interp/interp.h"
 
-#ifdef TARGET_WASM
+#ifndef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 
 static char
 type_to_c (MonoType *t)
@@ -82,16 +77,20 @@ typedef union {
 static gint64
 get_long_arg (InterpMethodArguments *margs, int idx)
 {
+#if SIZEOF_VOID_P == 4
 	interp_pair p;
 	p.pair.lo = (gint32)(gssize)margs->iargs [idx];
 	p.pair.hi = (gint32)(gssize)margs->iargs [idx + 1];
 	return p.l;
+#else
+	return (gint64)(gssize)margs->iargs [idx];
+#endif
 }
 
-#include "wasm_m2n_invoke.g.h"
+#include "m2n_invoke.g.h"
 
 void
-mono_wasm_interp_to_native_trampoline (void *target_func, InterpMethodArguments *margs)
+mono_interp_to_native_no_tramp (void *target_func, InterpMethodArguments *margs)
 {
 	char cookie [32];
 	int c_count;
@@ -112,8 +111,8 @@ mono_wasm_interp_to_native_trampoline (void *target_func, InterpMethodArguments 
 	icall_trampoline_dispatch (cookie, target_func, margs);
 }
 
-#else /* TARGET_WASM */
+#else /* MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP */
 
-MONO_EMPTY_SOURCE_FILE (aot_runtime_wasm);
+MONO_EMPTY_SOURCE_FILE (interp-no-tramps);
 
-#endif /* TARGET_WASM */
+#endif /* MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP */

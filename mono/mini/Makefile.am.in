@@ -443,6 +443,8 @@ interp_sources =	\
 	interp/interp.h	\
 	interp/interp-internals.h	\
 	interp/interp.c	\
+	interp/interp-no-tramps.c \
+	interp/m2n_invoke.g.h \
 	interp/mintops.h	\
 	interp/mintops.def	\
 	interp/mintops.c	\
@@ -504,8 +506,6 @@ common_sources = \
 	aot-compiler.h		\
 	aot-compiler.c		\
 	aot-runtime.c		\
-	aot-runtime-wasm.c	\
-	wasm_m2n_invoke.g.h	\
 	graph.c			\
 	mini-codegen.c		\
 	mini-exceptions.c	\

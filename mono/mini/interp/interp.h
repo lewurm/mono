@@ -21,7 +21,7 @@ struct _InterpMethodArguments {
 	double *fargs;
 	gpointer *retval;
 	size_t is_float_ret;
-#ifdef TARGET_WASM
+#ifndef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	MonoMethodSignature *sig;
 #endif
 };
