@@ -2712,15 +2712,11 @@ debugger_interrupt_critical (MonoThreadInfo *info, gpointer user_data)
 	data->valid_info = TRUE;
 	MonoDomain *domain = (MonoDomain *) mono_thread_info_get_suspend_state (info)->unwind_data [MONO_UNWIND_DATA_DOMAIN];
 	if (!domain) {
-		/* can happen when thread is in dtor */
-		return MonoResumeThread;
+		/* not attached */
+		ji = NULL;
+	} else {
+		ji = mono_jit_info_table_find_internal ( domain, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx), TRUE, TRUE);
 	}
-
-	ji = mono_jit_info_table_find_internal (
-			domain,
-			MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx),
-			TRUE,
-			TRUE);
 
 	/* This is signal safe */
 	thread_interrupt (data->tls, info, ji);
