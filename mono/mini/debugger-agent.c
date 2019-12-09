@@ -2533,13 +2533,6 @@ save_thread_context (MonoContext *ctx)
 		mono_thread_state_init_from_current (&tls->context);
 }
 
-/* Number of threads suspended */
-/* 
- * If this is equal to the size of thread_to_tls, the runtime is considered
- * suspended.
- */
-static gint32 threads_suspend_count;
-
 static MonoCoopMutex suspend_mutex;
 
 /* Cond variable used to wait for suspend_count becoming 0 */
@@ -3024,8 +3017,6 @@ suspend_current (void)
 
 		tls->suspended = FALSE;
 		tls->really_suspended = FALSE;
-
-		threads_suspend_count --;
 
 		mono_coop_mutex_unlock (&suspend_mutex);
 
