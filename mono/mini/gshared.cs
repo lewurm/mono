@@ -4,6 +4,11 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters;
+using System.Runtime.Serialization.Formatters.Binary;
+
 public struct Foo {
 	public int i, j, k, l, m, n;
 }
@@ -2138,6 +2143,23 @@ public class Tests
 		gsharedvt_vphi (0);
 		return 0;
 	}
+    
+	static int test_0_valuetuple_binaryformatter () {
+		return VerifySerializatin (ValueTuple.Create (1));
+	}
+
+	static private int VerifySerializatin<T>(T tuple) {
+		T clone = BinaryFormatterHelpers.Clone(tuple);
+		if (!tuple.Equals(clone)) {
+			Console.WriteLine("check failed");
+			Console.WriteLine("clone: " + clone);
+			Console.WriteLine("tuple: " + tuple);
+			return 1;
+		} else {
+			Console.WriteLine("everything seems good");
+			return 0;
+		}
+	}
 
 	struct AStruct3<T1, T2, T3> {
 		T1 t1;
@@ -2249,6 +2271,42 @@ public class Tests
 		return (c.Foo () == "abcd") ? 0 : 1;
 	}
 #endif
+}
+
+public static class BinaryFormatterHelpers {
+	internal static T Clone<T>(T obj,
+		ISerializationSurrogate surrogate = null,
+		FormatterAssemblyStyle assemblyFormat = FormatterAssemblyStyle.Full,
+		TypeFilterLevel filterLevel = TypeFilterLevel.Full,
+		FormatterTypeStyle typeFormat = FormatterTypeStyle.TypesAlways)
+	{
+		BinaryFormatter f;
+		if (surrogate == null)
+		{
+			f = new BinaryFormatter();
+		}
+		else
+		{
+			var c = new StreamingContext();
+			var s = new SurrogateSelector();
+			s.AddSurrogate(obj.GetType(), c, surrogate);
+			f = new BinaryFormatter(s, c);
+		}
+		f.AssemblyFormat = assemblyFormat;
+		f.FilterLevel = filterLevel;
+		f.TypeFormat = typeFormat;
+
+		using (var s = new MemoryStream())
+		{
+			f.Serialize(s, obj);
+			if (s.Position == 0)
+			{
+				throw new System.Exception("s.Position is 0 :(");
+			}
+			s.Position = 0;
+			return (T)f.Deserialize(s);
+		}
+	}
 }
 
 // #13191
