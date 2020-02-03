@@ -1,1 +1,4 @@
 #include mobile_System.dll.sources
+System.Configuration/ConfigurationException.cs
+System.Configuration/IConfigurationSectionHandler.cs
+System.Configuration/IConfigXmlNode.cs

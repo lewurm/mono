@@ -55,7 +55,7 @@ using System.Runtime.InteropServices;
 
 	[assembly: CLSCompliant (true)]
 	[assembly: AssemblyDelaySign (true)]
-#if MOBILE
+#if MOBILE && !FULL_AOT_DESKTOP
 	[assembly: AssemblyKeyFile ("../silverlight.pub")]
 #else
 	[assembly: AssemblyKeyFile ("../ecma.pub")]

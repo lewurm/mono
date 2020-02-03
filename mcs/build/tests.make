@@ -22,7 +22,7 @@ ifndef NO_TEST
 test_lib_dir = $(topdir)/class/lib/$(PROFILE)/tests
 
 test_nunit_lib = nunitlite.dll
-xunit_core := xunit.core xunit.execution.dotnet xunit.abstractions xunit.assert Xunit.NetCore.Extensions
+xunit_core := xunit.core xunit.execution.dotnet xunit.abstractions xunit.assert Xunit.NetCore.Extensions xunit.runner.utility.net452
 xunit_deps := netstandard System.Runtime
 xunit_src  := $(patsubst %,$(topdir)/../external/xunit-binaries/%,BenchmarkAttribute.cs BenchmarkDiscover.cs) $(topdir)/../mcs/class/test-helpers/PlatformDetection.cs
 
@@ -60,6 +60,8 @@ xunit_libs_ref += $(patsubst %,-r:$(topdir)/class/lib/$(PROFILE)/Facades/%.dll,$
 
 xunit_libs_dep = $(xunit_class_deps:%=$(topdir)/class/lib/$(PROFILE)/%.dll)
 xunit_libs_ref += $(xunit_libs_dep:%=-r:%)
+
+xunit_assemblies = $(patsubst %,$(topdir)/../external/xunit-binaries/%.dll,$(xunit_core)) $(topdir)/../external/xunit-binaries/xunit.console.exe
 
 TEST_LIB_REFS_ALL = $(TEST_LIB_REFS) $(DEFAULT_REFERENCES)
 
@@ -179,9 +181,13 @@ ifdef ALWAYS_AOT_TESTS
 test-local-aot-compile: $(topdir)/build/deps/nunit-$(PROFILE).stamp $(test_assemblies)
 	PATH="$(TEST_RUNTIME_WRAPPERS_PATH):$(PATH)" MONO_REGISTRY_PATH="$(HOME)/.mono/registry" MONO_TESTS_IN_PROGRESS="yes" $(TEST_RUNTIME) $(TEST_RUNTIME_FLAGS) $(AOT_BUILD_FLAGS) $(test_assemblies)
 
+xunit-local-aot-compile:
+	PATH="$(TEST_RUNTIME_WRAPPERS_PATH):$(PATH)" MONO_REGISTRY_PATH="$(HOME)/.mono/registry" MONO_TESTS_IN_PROGRESS="yes" $(TEST_RUNTIME) $(TEST_RUNTIME_FLAGS) $(AOT_BUILD_FLAGS) $(xunit_assemblies)
+
 else
 test-local-aot-compile: $(topdir)/build/deps/nunit-$(PROFILE).stamp $(test_assemblies)
 
+xunit-local-aot-compile:
 endif # ALWAYS_AOT_TESTS
 
 ifdef COVERAGE
@@ -352,7 +358,7 @@ endif
 
 
 check: run-xunit-test-local
-xunit-test-local: $(xtest_assemblies) $(test_lib_dir)/xunit-excludes.txt $(test_lib_dir)/Xunit.NetCore.Extensions.dll $(test_lib_dir)/xunit.execution.dotnet.dll
+xunit-test-local: xunit-local-aot-compile $(xtest_assemblies) $(test_lib_dir)/xunit-excludes.txt $(test_lib_dir)/Xunit.NetCore.Extensions.dll $(test_lib_dir)/xunit.execution.dotnet.dll
 run-xunit-test-local: run-xunit-test-lib
 
 $(test_lib_dir)/xunit-excludes.txt: $(topdir)/build/tests.make | $(test_lib_dir)

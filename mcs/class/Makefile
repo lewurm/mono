@@ -95,6 +95,9 @@ mobile_common_dirs_parallel := \
 
 testing_aot_full_dirs_parallel := \
 	$(mobile_common_dirs_parallel)	\
+	System.Xml \
+	System.Configuration	\
+	System.Web \
 	Mono.Simd \
 	Mono.CSharp
 
