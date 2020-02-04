@@ -36,6 +36,8 @@ typedef enum {
 
 int mono_abi_alignment (CoreTypeAlign type);
 
+#define USE_CROSS_COMPILE_OFFSETS
+
 #define MONO_ABI_ALIGNOF(type) mono_abi_alignment (MONO_ALIGN_ ## type)
 #define MONO_ABI_SIZEOF(type) (MONO_STRUCT_SIZE (type))
 #define MONO_CURRENT_ABI_SIZEOF(type) ((int)sizeof(type))
@@ -57,6 +59,7 @@ enum {
 #define MONO_STRUCT_SIZE(struct) MONO_SIZEOF_ ## struct
 #else
 #if defined(HAS_CROSS_COMPILER_OFFSETS) || defined(MONO_CROSS_COMPILE)
+#error "this case looks wrong and should never be reached anyway?"
 #define MONO_STRUCT_OFFSET(struct,field) (MONO_OFFSET_ ## struct ## _ ## field == -1, G_STRUCT_OFFSET (struct,field))
 #define MONO_STRUCT_SIZE(struct) (MONO_SIZEOF_ ## struct == -1, (int)sizeof(struct))
 #else

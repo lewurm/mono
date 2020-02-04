@@ -14,13 +14,15 @@ const static AbiDetails mono_abi_details = {	\
 	{ I8, I16, I32, I64, F32, F64, PTR }	\
 };	\
 
-#ifdef MONO_CROSS_COMPILE
+#ifdef HAS_CROSS_COMPILER_OFFSETS
 
 #if TARGET_WASM
 
 DECLARE_ABI_DETAILS (1, 2, 4, 8, 4, 8, 4)
 
 #else
+
+#define USE_CROSS_COMPILE_OFFSETS
 
 #define DECL_OFFSET(struct,field)
 #define DECL_OFFSET2(struct,field,offset)

@@ -711,6 +711,10 @@ case "$host" in
 		have_sys_zlib=no
 		zlib_msg="bundled zlib"
 		;;
+	arm-linux-gnueabihf*)
+		have_sys_zlib=no
+		zlib_msg="bundled zlib"
+		;;
 	*)
 		AC_CHECK_HEADER(zlib.h, [have_sys_zlib=yes], [have_sys_zlib=no])
 		if test x$have_sys_zlib = xyes; then
@@ -1362,7 +1366,9 @@ MONO_LLVM_PATH_OPTION=llvm-path="`pwd`/llvm/usr/bin"
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
-elif test x$with_runtime_preset = xnetcore; then
+fi
+
+if test x$with_runtime_preset = xnetcore; then
    # Keep in sync with winconfig.h netcore configuration.
    DISABLE_MCS_DOCS_default=yes
    BTLS_SUPPORTED=no
@@ -4587,6 +4593,8 @@ esac
 
 HOST=$TARGET
 
+BTLS_SUPPORTED=NO
+
 if test "x$host" != "x$target"; then
    AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
    enable_mcs_build=no
@@ -4900,6 +4908,8 @@ if test "x$target_mach" = "xyes"; then
 	fi
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
 fi
+
+AC_DEFINE(TARGET_LINUX,1,[The JIT/AOT targets Linux])
 
 AM_CONDITIONAL(TARGET_OSX, test x$target_osx = xyes)
 

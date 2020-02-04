@@ -112,7 +112,7 @@ mono_dump_metadata_offsets (void)
 #endif
 
 	g_print ("#define HAS_CROSS_COMPILER_OFFSETS\n");
-	g_print ("#if defined (USE_CROSS_COMPILE_OFFSETS) || defined (MONO_CROSS_COMPILE)\n");
+	g_print ("#if defined (USE_CROSS_COMPILE_OFFSETS)\n");
 	g_print ("#if !defined (DISABLE_METADATA_OFFSETS)\n");
 	g_print ("#define USED_CROSS_COMPILER_OFFSETS\n");
 
@@ -157,7 +157,7 @@ mono_metadata_cross_helpers_run (void)
 	}
 #define DECL_ALIGN(type) this_should_not_happen_for_cross_align
 #define DECL_ALIGN2(name,size) \
-	 if (MONO_ALIGN_ ## name != size) { \
+	 if (mono_abi_alignment (MONO_ALIGN_ ## name) != size) { \
 		g_print (#name ": invalid alignment %d (expected %d)\n",	\
 		size,	\
 		MONO_ALIGN_ ## name);	\

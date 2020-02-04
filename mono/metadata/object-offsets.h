@@ -37,10 +37,14 @@ MONO_OFFSETS_FILE - Name of the header file containing the offsets to be used.
 #undef USED_CROSS_COMPILER_OFFSETS
 
 #if !defined (MONO_GENERATING_OFFSETS) && defined (MONO_OFFSETS_FILE)
+#ifndef USE_CROSS_COMPILE_OFFSETS
+#error "WTF"
+#endif
 #include MONO_OFFSETS_FILE
 #endif
 
 #ifndef USED_CROSS_COMPILER_OFFSETS
+#error "this should not happen"
 
 DECL_SIZE(gint8)
 DECL_SIZE(gint16)
