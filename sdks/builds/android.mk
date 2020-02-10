@@ -139,6 +139,7 @@ _android-$(1)_CONFIGURE_FLAGS= \
 	--disable-iconv \
 	--disable-mcs-build \
 	--disable-nls \
+	--disable-visibility-hidden \
 	--enable-dynamic-btls \
 	--enable-maintainer-mode \
 	--enable-minimal=ssa,portability,attach,verifier,full_messages,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,security,shared_handles,interpreter,gac,cfgdir_config \
