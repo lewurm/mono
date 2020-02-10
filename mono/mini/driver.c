@@ -2989,7 +2989,7 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 		break;
 
 	case MONO_EE_MODE_INTERP:
-		mono_check_interp_supported ();
+		// mono_check_interp_supported ();
 		mono_use_interpreter = TRUE;
 
 		mono_ee_features.force_use_interpreter = TRUE;

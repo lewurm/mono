@@ -22,9 +22,7 @@
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/metadata/abi-details.h>
 
-#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
-#endif
 #include "mono/utils/mono-tls-inline.h"
 
 void
@@ -631,7 +629,6 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 gpointer
 mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
-#ifndef DISABLE_INTERPRETER
 	guint8 *start = NULL, *code;
 	guint8 *label_start_copy, *label_exit_copy;
 	MonoJumpInfo *ji = NULL;
@@ -727,16 +724,11 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 		*info = mono_tramp_info_create ("interp_to_native_trampoline", start, code - start, ji, unwind_ops);
 
 	return start;
-#else
-	g_assert_not_reached ();
-	return NULL;
-#endif /* DISABLE_INTERPRETER */
 }
 
 gpointer
 mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 {
-#ifndef DISABLE_INTERPRETER
 	guint8 *start = NULL, *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
@@ -803,10 +795,6 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 		*info = mono_tramp_info_create ("native_to_interp_trampoline", start, code - start, ji, unwind_ops);
 
 	return start;
-#else
-	g_assert_not_reached ();
-	return NULL;
-#endif /* DISABLE_INTERPRETER */
 }
 
 #else /* DISABLE_JIT */
