@@ -73,6 +73,7 @@ app/assets/asm app/src/main/jniLibs/armeabi-v7a app/src/main/jniLibs/arm64-v8a a
 
 MONO_LIBS= \
 	libmonosgen-2.0.so \
+	libmono-ee-interp.so \
 	libMonoPosixHelper.so \
 	libmono-btls-shared.so \
 	libmono-native.so
