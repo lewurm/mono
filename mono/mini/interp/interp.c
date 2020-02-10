@@ -149,12 +149,14 @@ frame_stack_alloc_ovf (FrameStack *stack, int size, StackFragment **out_frag)
 	StackFragment *current = stack->current;
 	gpointer res;
 
+	mono_interp_stats.stack_waste += (gint64) (current->end - current->pos);
 	if (current->next && current->next->pos + size <= current->next->end) {
 		current = stack->current = current->next;
 		current->pos = (guint8*)&current->data;
 	} else {
 		current = add_frag (stack, size);
 	}
+	mono_interp_stats.stack_alloc += size;
 	g_assert (current->pos + size <= current->end);
 	res = (gpointer)current->pos;
 	current->pos += size;
@@ -7623,6 +7625,9 @@ register_interp_stats (void)
 	mono_counters_register ("Emitted instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.emitted_instructions);
 	mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
 	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
+
+	mono_counters_register ("Stack alloc", MONO_COUNTER_INTERP | MONO_COUNTER_LONG, &mono_interp_stats.stack_alloc);
+	mono_counters_register ("Stack alloc waste", MONO_COUNTER_INTERP | MONO_COUNTER_LONG, &mono_interp_stats.stack_waste);
 }
 
 #undef MONO_EE_CALLBACK

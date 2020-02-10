@@ -254,6 +254,8 @@ typedef struct {
 	gint32 added_pop_count;
 	gint32 inlined_methods;
 	gint32 inline_failures;
+	gint64 stack_alloc;
+	gint64 stack_waste;
 } MonoInterpStats;
 
 extern MonoInterpStats mono_interp_stats;
