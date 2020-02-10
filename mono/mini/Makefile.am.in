@@ -733,9 +733,9 @@ libmono_ee_interp_la_SOURCES = $(interp_sources)
 libmono_ee_interp_la_CFLAGS = $(AM_CFLAGS) @CXX_ADD_CFLAGS@ $(INTERP_CFLAGS)
 if BITCODE
 libmono_ee_interp_la_LDFLAGS = $(libmonoldflags)
+endif
 if DISABLE_INTERPRETER
 libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
-endif
 endif
 
 if !WASM
