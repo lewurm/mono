@@ -14,7 +14,7 @@ ILDASM=../../../artifacts/bin/coreclr/Linux.x64.Debug/ildasm
 CSC=csc
 MONODOTNET=../../../.dotnet-mono/dotnet
 
-NAME=Sample
+: "${NAME:=Sample1}"
 OUT=here
 
 if [[ ! -f $ILASM ]]; then
