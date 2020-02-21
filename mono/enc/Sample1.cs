@@ -9,6 +9,10 @@ public class Sample {
 		ApplyMagicMethodBodyReplacement ();
 
 		Calculate ();
+
+		ApplyMagicMethodBodyReplacement ();
+
+		Calculate ();
 	}
 
 	private static void Calculate () {

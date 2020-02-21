@@ -5,7 +5,6 @@ echo '   > $ ./mono.sh'
 echo '   > $ make -C src/mono/netcore patch-mono-dotnet'
 echo 'in the repository root'
 
-
 set -e
 set -x
 
@@ -25,11 +24,13 @@ fi
 
 $CSC $NAME.cs
 
-$ILDASM $NAME.exe > $NAME.il
-rm $NAME.exe
+ILASM_ARGS=""
+for arg in ${NAME}_v?.il; do
+	ILASM_ARGS="$ILASM_ARGS -ENC=$arg"
+done
 
-$ILASM -DEBUG -OUT=$OUT.exe $NAME.il -ENC="${NAME}_v1.il"
+$ILASM -DEBUG -OUT=$OUT.exe $NAME.il $ILASM_ARGS
 
 cp template.runtimeconfig.json $OUT.runtimeconfig.json
 
-MONO_LOG_LEVEL=debug MONO_LOG_MASK=asm MONO_ENV_OPTIONS='--debug --interpreter' lldb -- $MONODOTNET $OUT.exe
+MONO_VERBOSE_METHOD=Do MONO_ENV_OPTIONS='--debug --interpreter' lldb -- $MONODOTNET $OUT.exe
