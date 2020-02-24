@@ -24,6 +24,9 @@ fi
 
 $CSC $NAME.cs
 
+$ILDASM $NAME.exe > $NAME.il
+rm $NAME.exe
+
 ILASM_ARGS=""
 for arg in ${NAME}_v?.il; do
 	ILASM_ARGS="$ILASM_ARGS -ENC=$arg"
