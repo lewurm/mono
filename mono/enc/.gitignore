@@ -1,3 +1,5 @@
 here.*
 *.exe
 Sample?.il
+ilasm
+ildasm

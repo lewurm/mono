@@ -8,17 +8,29 @@ echo 'in the repository root'
 set -e
 set -x
 
-ILASM=../../../artifacts/bin/coreclr/Linux.x64.Debug/ilasm
-ILDASM=../../../artifacts/bin/coreclr/Linux.x64.Debug/ildasm
+if [ x`uname -s` = xDarwin ]; then
+    PLAT=OSX
+else
+    PLAT=Linux
+fi
+DNILASM=artifacts/bin/coreclr/${PLAT}.x64.Debug/ilasm
+DNILDASM=artifacts/bin/coreclr/${PLAT}.x64.Debug/ildasm
+
+d=`pwd`
+m=${d}/../..
+ILASM=${d}/ilasm
+ILDASM=${d}/ildasm
 CSC=csc
 MONODOTNET=../../../.dotnet-mono/dotnet
+MONOMONO=${m}/mono/mini/mono
 
 : "${NAME:=Sample1}"
 OUT=here
 
 if [[ ! -f $ILASM ]]; then
-	echo "please build everything by calling ./build.sh. we need ilasm which is part of CoreCLR";
-	exit 1;
+    echo "please build everything in dotnet/runtime by calling ./build.sh. we need ilasm which is part of CoreCLR";
+    echo "and copy ${DNILASM} and ${DNILDASM} to the current directory"
+    exit 1;
 fi
 
 
@@ -36,4 +48,5 @@ $ILASM -DEBUG -OUT=$OUT.exe $NAME.il $ILASM_ARGS
 
 cp template.runtimeconfig.json $OUT.runtimeconfig.json
 
-MONO_VERBOSE_METHOD=Do MONO_ENV_OPTIONS='--debug --interpreter' lldb -- $MONODOTNET $OUT.exe
+#MONO_VERBOSE_METHOD=Do MONO_ENV_OPTIONS='--debug --interpreter' lldb -- $MONODOTNET $OUT.exe
+MONO_VERBOSE_METHOD=Do MONO_ENV_OPTIONS='--debug --interpreter' MONO_PATH=${m}/mcs/class/lib/net_4_x MONO_CONFIG=${m}/runtime/etc/mono/config lldb -- $MONOMONO $OUT.exe
