@@ -2961,7 +2961,7 @@ gboolean    mini_magic_is_int_type (MonoType *t);
 gboolean    mini_magic_is_float_type (MonoType *t);
 MonoType* mini_native_type_replace_type (MonoType *type);
 
-void mini_invalidate_transformed_interp_methods (MonoDomain *domain);
+void mini_invalidate_transformed_interp_methods (MonoDomain *domain, MonoAssemblyLoadContext *alc, uint32_t generation);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared

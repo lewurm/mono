@@ -266,5 +266,13 @@ namespace Mono {
 				AnnotateMicrosoftTelemetry_internal (key_chars.Value, val_chars.Value);
 			}
 		}
+
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		private static extern void LoadMetadataUpdate_internal ();
+
+		public static void LoadMetadataUpdate () {
+			LoadMetadataUpdate_internal ();
+		}
+		
 	}
 }
