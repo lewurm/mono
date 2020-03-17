@@ -22,7 +22,12 @@ public class Sample {
 	}
 
 	private static void ApplyMagicMethodBodyReplacement () {
-		var monoType = Type.GetType ("System.Runtime.CompilerServices.RuntimeFeature", false);
+#if false
+		var name = "System.Runtime.CompilerServices.RuntimeFeature";
+#else
+		var name = "Mono.Runtime";
+#endif
+		var monoType = Type.GetType (name, false);
 		try {
 			var update = monoType.GetMethod("LoadMetadataUpdate");
 			update.Invoke (null, null);
