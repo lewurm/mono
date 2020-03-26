@@ -283,17 +283,30 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, uint32_t str
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 }
 
-static MONO_NEVER_INLINE void
-compute_unaligned_sizes (MonoImage *image, uint32_t *string_size)
+/* In a "minimal delta", only the additional stream data is included and it is
+ * meant to be appended to the strema of the previous generation.  But in a PE
+ * image, the data is padded with zero bytes so that the size is a multiple of
+ * 4.  We have to find the unaligned sizes in order to append.
+ *
+ * Not every heap is included: only the String, Blob and User String heaps.
+ * The GUID heap is always included in full in the deltas.  (And #- is
+ * processed as table update, not a whole heap append).
+ */
+typedef struct _unaligned_heap_sizes {
+	guint32 string_size;
+	guint32 blob_size;
+	guint32 us_size;
+} unaligned_heap_sizes;
+
+static void
+compute_unaligned_stream_size (MonoStreamHeader *heap, guint32 *unaligned_size)
 {
-	g_assert (string_size);
-	if (image->heap_strings.size == 0) {
-		*string_size = 0;
-		printf ("wob\n");
+	if (heap->size == 0) {
+		*unaligned_size = 0;
 		return;
 	}
-	const char *start = image->heap_strings.data;
-	const char *end = start + (image->heap_strings.size - 1);
+	const char *start = heap->data;
+	const char *end = start + (heap->size - 1);
 	const char *ptr = end;
 	/* walk back while the pointer is on a nul, and the previous character is also nul. */
 	while (ptr > start && end - ptr < 4) {
@@ -303,8 +316,22 @@ compute_unaligned_sizes (MonoImage *image, uint32_t *string_size)
 		--ptr;
 		printf ("abcd\n");
 	}
-        *string_size = 1 + (uint32_t)(ptr - start);
-	printf ("efgh\n");
+        *unaligned_size = 1 + (uint32_t)(ptr - start);
+}
+
+static MONO_NEVER_INLINE void
+compute_unaligned_sizes (MonoImage *image, unaligned_heap_sizes *unaligned)
+{
+	g_assert (unaligned);
+	compute_unaligned_stream_size (&image->heap_strings, &unaligned->string_size);
+	/* FIXME: also for the string and blob heaps? how to find their unaligned size? */
+#if 0
+	compute_unaligned_stream_size (&image->heap_blob, &unaligned->blob_size);
+	compute_unaligned_stream_size (&image->heap_us, &unaligned->us_size);
+#else
+	unaligned->blob_size = image->heap_blob.size;
+	unaligned->us_size = image->heap_us.size;
+#endif
 }
 
 typedef struct _EncRecs {
@@ -389,12 +416,11 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "LOADING basename=%s, dmeta=%s, dil=%s", basename, dmeta_name, dil_path);
 
-	/* TODO: needs some kind of STW or lock */
 	uint32_t generation = mono_metadata_update_prepare (domain);
 
-	uint32_t string_size;
-	compute_unaligned_sizes (image_base, &string_size);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: aligned: 0x%08x, unaligned: 0x%08x", image_base->heap_strings.size, string_size);
+	unaligned_heap_sizes unaligned_sizes;
+	compute_unaligned_sizes (image_base, &unaligned_sizes);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: aligned: 0x%08x, unaligned: 0x%08x", image_base->heap_strings.size, unaligned_sizes.string_size);
 
 
 	MonoImageOpenStatus status;
@@ -406,10 +432,16 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE],
 							    0, MONO_MODULE_NAME);
 
-		const char *module_name = mono_metadata_string_heap (image_dmeta, idx - string_size);
+		const char *module_name = mono_metadata_string_heap (image_dmeta, idx - unaligned_sizes.string_size);
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta name: '%s'\n", module_name);
 	}
+
+	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
+
+	/* if there are updates, start tracking the tables of the base image, if we weren't already. */
+	if (table_enclog->rows)
+		table_to_image_add (image_base);
 
 	EncRecs enc_recs;
 	start_encmap (image_dmeta, &enc_recs);
@@ -418,15 +450,14 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
-		dump_update_summary (image_base, image_dmeta, image_dmeta->minimal_delta ? string_size : 0);
+		dump_update_summary (image_base, image_dmeta, image_dmeta->minimal_delta ? unaligned_sizes.string_size : 0);
 	}
 
 	MonoDilFile *dil = mono_dil_file_open (dil_path);
 	image_dmeta->delta_il = dil;
 	/* TODO: extend existing heaps of base image */
 
-	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
-	if (!table_enclog->base) {
+	if (!table_enclog->rows) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "No enclog in delta image %s, nothing to do", dmeta_name);
 		mono_metadata_update_cancel (generation);
 		return;
