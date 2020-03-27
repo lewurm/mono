@@ -558,6 +558,20 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			ptr += 4 - (pad % 4);
 	}
 
+	{
+		const char *p;
+
+		/* Compute the precise size of the heaps */
+		/* ENC minimal delta images require the base image precise size to be known. */
+		p = image->heap_strings.data + image->heap_strings.size - 1;
+		pad = 0;
+		while (p [0] == '\0' && p [-1] == '\0') {
+			p --;
+			pad ++;
+		}
+		image->heap_strings.size -= pad;
+	}
+
 	i = ((MonoImageLoader*)image->loader)->load_tables (image);
 
 	if (!image->metadata_only) {

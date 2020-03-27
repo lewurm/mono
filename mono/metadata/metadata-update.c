@@ -283,57 +283,6 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, uint32_t str
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 }
 
-/* In a "minimal delta", only the additional stream data is included and it is
- * meant to be appended to the strema of the previous generation.  But in a PE
- * image, the data is padded with zero bytes so that the size is a multiple of
- * 4.  We have to find the unaligned sizes in order to append.
- *
- * Not every heap is included: only the String, Blob and User String heaps.
- * The GUID heap is always included in full in the deltas.  (And #- is
- * processed as table update, not a whole heap append).
- */
-typedef struct _unaligned_heap_sizes {
-	guint32 string_size;
-	guint32 blob_size;
-	guint32 us_size;
-} unaligned_heap_sizes;
-
-static void
-compute_unaligned_stream_size (MonoStreamHeader *heap, guint32 *unaligned_size)
-{
-	if (heap->size == 0) {
-		*unaligned_size = 0;
-		return;
-	}
-	const char *start = heap->data;
-	const char *end = start + (heap->size - 1);
-	const char *ptr = end;
-	/* walk back while the pointer is on a nul, and the previous character is also nul. */
-	while (ptr > start && end - ptr < 4) {
-		g_assert (*ptr == '\0');
-		if (*(ptr - 1) != '\0')
-			break;
-		--ptr;
-		printf ("abcd\n");
-	}
-        *unaligned_size = 1 + (uint32_t)(ptr - start);
-}
-
-static MONO_NEVER_INLINE void
-compute_unaligned_sizes (MonoImage *image, unaligned_heap_sizes *unaligned)
-{
-	g_assert (unaligned);
-	compute_unaligned_stream_size (&image->heap_strings, &unaligned->string_size);
-	/* FIXME: also for the string and blob heaps? how to find their unaligned size? */
-#if 0
-	compute_unaligned_stream_size (&image->heap_blob, &unaligned->blob_size);
-	compute_unaligned_stream_size (&image->heap_us, &unaligned->us_size);
-#else
-	unaligned->blob_size = image->heap_blob.size;
-	unaligned->us_size = image->heap_us.size;
-#endif
-}
-
 typedef struct _EncRecs {
 	// for each table, the row in the EncMap table that has the first token for remapping it?
 	uint32_t enc_recs [MONO_TABLE_NUM];
@@ -418,9 +367,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 
 	uint32_t generation = mono_metadata_update_prepare (domain);
 
-	unaligned_heap_sizes unaligned_sizes;
-	compute_unaligned_sizes (image_base, &unaligned_sizes);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: aligned: 0x%08x, unaligned: 0x%08x", image_base->heap_strings.size, unaligned_sizes.string_size);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image string size: 0x%08x", image_base->heap_strings.size);
 
 
 	MonoImageOpenStatus status;
@@ -432,7 +379,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE],
 							    0, MONO_MODULE_NAME);
 
-		const char *module_name = mono_metadata_string_heap (image_dmeta, idx - unaligned_sizes.string_size);
+		const char *module_name = mono_metadata_string_heap (image_dmeta, idx - image_base->heap_strings.size);
 
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta name: '%s'\n", module_name);
 	}
@@ -450,7 +397,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
-		dump_update_summary (image_base, image_dmeta, image_dmeta->minimal_delta ? unaligned_sizes.string_size : 0);
+		dump_update_summary (image_base, image_dmeta, image_dmeta->minimal_delta ? image_base->heap_strings.size : 0);
 	}
 
 	MonoDilFile *dil = mono_dil_file_open (dil_path);
