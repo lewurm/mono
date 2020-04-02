@@ -30,7 +30,7 @@ public class Sample {
 		var monoType = Type.GetType (name, false);
 		try {
 			var update = monoType.GetMethod("LoadMetadataUpdate");
-			update.Invoke (null, null);
+			update.Invoke (null, new object[] { typeof(Sample).Assembly });
 		} catch (Exception e) {
 			Console.WriteLine ("the impossible happen: " + e);
 		}
