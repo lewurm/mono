@@ -1218,13 +1218,18 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 			// FIXME: that's not always `MONO_TABLE_MEMBERREF`. with the help of the base_image->tables we should be able to compute the table_index
 			// TODO: make sure that funky trick makes sure that we alwas pass the `MonoTableInfo` of a base image.  (pointer arithmetic sanity check)
 			static int counter = 0;
-			int tbl_index = 0;
+			int tbl_index_bkp = 0;
 			switch (counter) {
-				case 0: tbl_index = MONO_TABLE_MEMBERREF; break;
-				case 1: tbl_index = MONO_TABLE_TYPESPEC; break;
+				case 0: tbl_index_bkp = MONO_TABLE_MEMBERREF; break;
+				case 1: tbl_index_bkp = MONO_TABLE_TYPESPEC; break;
 				default: g_assert_not_reached (); break;
 			}
 			counter++;
+
+			g_assert (base->tables < t && t < &base->tables [MONO_TABLE_LAST]);
+			/* TODO: wtf, why (2 * sizeof (gpointer)) */
+			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / (2 * sizeof (gpointer));
+			g_assert (tbl_index_bkp == tbl_index);
 
 			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
 			while (idx >= table_memberref->rows) {
