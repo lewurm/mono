@@ -87,6 +87,13 @@ table_to_image_add (MonoImage *base_image)
 	table_to_image_unlock ();
 }
 
+MonoImage *
+mono_table_info_get_base_image (const MonoTableInfo *t)
+{
+	MonoImage *image = (MonoImage *) g_hash_table_lookup (table_to_image, t);
+	return image;
+}
+
 MonoImage*
 mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, const char *dmeta_name, gconstpointer dmeta_bytes, uint32_t dmeta_len, MonoImageOpenStatus *status);
 

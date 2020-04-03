@@ -1111,6 +1111,17 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+		/* EnC: iterate through existing delta images associated with the base image. */
+		GSList *list = meta->delta_image;
+		MonoImage *dmeta = list->data;
+		while (index >= dmeta->heap_blob.size) {
+			list = list->next;
+			g_assertf (!!list, "Could not find token=0x%08x in blob heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
+			dmeta = list->data;
+		}
+		meta = dmeta;
+	}
 	/* Some tools can produce assemblies with a size 0 Blob stream. If a
 	 * blob value is optional, if the index == 0 and heap_blob.size == 0
 	 * assertion is hit, consider updating caller to use
@@ -1194,6 +1205,40 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
 	const char *data;
+
+	if (G_UNLIKELY (idx >= t->rows)) {
+		/* EnC case */
+		MonoImage *base = mono_table_info_get_base_image (t);
+		printf ("found base=%p\n", base);
+		printf ("found base->delta_image=%p\n", base->delta_image);
+		if (base && base->delta_image) {
+			GSList *list = base->delta_image;
+			MonoImage *dmeta = list->data;
+
+			// FIXME: that's not always `MONO_TABLE_MEMBERREF`. with the help of the base_image->tables we should be able to compute the table_index
+			// TODO: make sure that funky trick makes sure that we alwas pass the `MonoTableInfo` of a base image.  (pointer arithmetic sanity check)
+			static int counter = 0;
+			int tbl_index = 0;
+			switch (counter) {
+				case 0: tbl_index = MONO_TABLE_MEMBERREF; break;
+				case 1: tbl_index = MONO_TABLE_TYPESPEC; break;
+				default: g_assert_not_reached (); break;
+			}
+			counter++;
+
+			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
+			while (idx >= table_memberref->rows) {
+				list = list->next;
+				g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
+				dmeta = list->data;
+				table_memberref = &dmeta->tables [idx];
+			}
+			t = table_memberref;
+			/* update those fields */
+			bitfield = t->size_bitfield;
+			count = mono_metadata_table_count (bitfield);
+		}
+	}
 
 	g_assert (idx < t->rows);
 	g_assert (idx >= 0);
