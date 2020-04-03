@@ -330,11 +330,8 @@ start_encmap (MonoImage *image_dmeta, EncRecs *enc_recs)
 		enc_recs->enc_recs [prev_table] = idx;
 	}
 
-
-	/* FIXME: want MONO_TABLE_NUM for the upper bound, but mono_meta_table_name is only defined upto GENERICPARAMCONSTRAINT */
-	for (int i = 0 ; i <= MONO_TABLE_GENERICPARAMCONSTRAINT; ++i) {
+	for (int i = 0 ; i < MONO_TABLE_NUM; ++i)
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enc_recs [%02x] / %s = 0x%02x", i, mono_meta_table_name (i), enc_recs->enc_recs[i]);
-	}
 }
 
 static gboolean
