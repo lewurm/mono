@@ -1351,7 +1351,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 
 			/* Invariant: `t` must be a `MonoTableInfo` of the base image. */
 			g_assert (base->tables < t && t < &base->tables [MONO_TABLE_LAST]);
-			/* TODO: wtf, why (2 * sizeof (gpointer)) */
+			/* TODO: wtf, why `(2 * sizeof (gpointer))`? */
 			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / (2 * sizeof (gpointer));
 
 			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
