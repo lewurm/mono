@@ -44,6 +44,7 @@ for arg in ${NAME}_v?.il; do
 	ILASM_ARGS="$ILASM_ARGS -ENC=$arg"
 done
 
+rm $OUT.*
 $ILASM -DEBUG -OUT=$OUT.exe $NAME.il $ILASM_ARGS
 
 cp template.runtimeconfig.json $OUT.runtimeconfig.json

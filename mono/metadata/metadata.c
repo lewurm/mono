@@ -1053,6 +1053,17 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+		/* EnC: iterate through existing delta images associated with the base image. */
+		GSList *list = meta->delta_image;
+		MonoImage *dmeta = list->data;
+		while (index >= dmeta->heap_strings.size) {
+			list = list->next;
+			g_assertf (!!list, "Could not find token=0x%08x in strings heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
+			dmeta = list->data;
+		}
+		meta = dmeta;
+	}
 	g_assert (index < meta->heap_strings.size);
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
 	return meta->heap_strings.data + index;
@@ -1208,6 +1219,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 
 	if (G_UNLIKELY (idx >= t->rows)) {
 		/* EnC case */
+
 		MonoImage *base = mono_table_info_get_base_image (t);
 		printf ("found base=%p\n", base);
 		printf ("found base->delta_image=%p\n", base->delta_image);
@@ -1215,21 +1227,10 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 			GSList *list = base->delta_image;
 			MonoImage *dmeta = list->data;
 
-			// FIXME: that's not always `MONO_TABLE_MEMBERREF`. with the help of the base_image->tables we should be able to compute the table_index
-			// TODO: make sure that funky trick makes sure that we alwas pass the `MonoTableInfo` of a base image.  (pointer arithmetic sanity check)
-			static int counter = 0;
-			int tbl_index_bkp = 0;
-			switch (counter) {
-				case 0: tbl_index_bkp = MONO_TABLE_MEMBERREF; break;
-				case 1: tbl_index_bkp = MONO_TABLE_TYPESPEC; break;
-				default: g_assert_not_reached (); break;
-			}
-			counter++;
-
+			/* Invariant: `t` must be a `MonoTableInfo` of the base image. */
 			g_assert (base->tables < t && t < &base->tables [MONO_TABLE_LAST]);
 			/* TODO: wtf, why (2 * sizeof (gpointer)) */
 			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / (2 * sizeof (gpointer));
-			g_assert (tbl_index_bkp == tbl_index);
 
 			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
 			while (idx >= table_memberref->rows) {
@@ -1337,6 +1338,34 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 	int i;
 	const char *data;
 	int n;
+
+	if (G_UNLIKELY (idx >= t->rows)) {
+		/* EnC case */
+
+		MonoImage *base = mono_table_info_get_base_image (t);
+		printf ("found base=%p\n", base);
+		printf ("found base->delta_image=%p\n", base->delta_image);
+		if (base && base->delta_image) {
+			GSList *list = base->delta_image;
+			MonoImage *dmeta = list->data;
+
+			/* Invariant: `t` must be a `MonoTableInfo` of the base image. */
+			g_assert (base->tables < t && t < &base->tables [MONO_TABLE_LAST]);
+			/* TODO: wtf, why (2 * sizeof (gpointer)) */
+			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / (2 * sizeof (gpointer));
+
+			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
+			while (idx >= table_memberref->rows) {
+				list = list->next;
+				g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
+				dmeta = list->data;
+				table_memberref = &dmeta->tables [idx];
+			}
+			t = table_memberref;
+			/* update those fields */
+			bitfield = t->size_bitfield;
+		}
+	}
 	
 	g_assert (idx < t->rows);
 	g_assert (col < mono_metadata_table_count (bitfield));

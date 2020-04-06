@@ -1074,8 +1074,14 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	if (used_context) *used_context = FALSE;
 
 	if (idx > image->tables [MONO_TABLE_METHOD].rows) {
-		mono_error_set_bad_image (error, image, "Bad method token 0x%08x (out of bounds).", token);
-		return NULL;
+		// TODO: add helper for overflow dmeta check.
+
+		if (!image->delta_image) {
+			mono_error_set_bad_image (error, image, "Bad method token 0x%08x (out of bounds).", token);
+			return NULL;
+		} else {
+			/* likely it's fine, but need more precise check */
+		}
 	}
 
 	if (!klass) {

@@ -343,7 +343,7 @@ apply_enclog (MonoTableInfo *table_enclog, MonoImage *image_base, MonoImage *ima
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
 		int log_token = cols [MONO_ENCLOG_TOKEN];
 		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
-		g_assertf (func_code == 0, "EnC: FuncCode Default (0) is supported only, but provided: %d (token=0x%08x)", func_code, log_token);
+		g_assertf (func_code <= 3, "EnC: FuncCode Default (0) is supported only, but provided: %d (token=0x%08x)", func_code, log_token);
 		int table_index = mono_metadata_token_table (log_token);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d", i, log_token, mono_meta_table_name (table_index), func_code);
 
