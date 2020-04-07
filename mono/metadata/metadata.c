@@ -1122,16 +1122,19 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
-	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+	if (G_UNLIKELY (meta->delta_image)) {
 		/* EnC: iterate through existing delta images associated with the base image. */
-		GSList *list = meta->delta_image;
+		GSList *list = g_slist_copy (meta->delta_image);
+		list = g_slist_prepend (list, meta);
+		list = g_slist_reverse (list);
 		MonoImage *dmeta = list->data;
-		while (index >= dmeta->heap_blob.size) {
+		while (index > dmeta->heap_blob.size) {
 			list = list->next;
 			g_assertf (!!list, "Could not find token=0x%08x in blob heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
 			dmeta = list->data;
 		}
 		meta = dmeta;
+		g_slist_free (list);
 	}
 	/* Some tools can produce assemblies with a size 0 Blob stream. If a
 	 * blob value is optional, if the index == 0 and heap_blob.size == 0
@@ -1216,15 +1219,17 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 	guint32 bitfield = t->size_bitfield;
 	int i, count = mono_metadata_table_count (bitfield);
 	const char *data;
+	MonoImage *base = NULL; 
 
-	if (G_UNLIKELY (idx >= t->rows)) {
+	if (G_UNLIKELY (base = mono_table_info_get_base_image (t))) {
 		/* EnC case */
 
-		MonoImage *base = mono_table_info_get_base_image (t);
 		printf ("found base=%p\n", base);
 		printf ("found base->delta_image=%p\n", base->delta_image);
 		if (base && base->delta_image) {
-			GSList *list = base->delta_image;
+			GSList *list = g_slist_copy (base->delta_image);
+			list = g_slist_prepend (list, base);
+			list = g_slist_reverse (list);
 			MonoImage *dmeta = list->data;
 
 			/* Invariant: `t` must be a `MonoTableInfo` of the base image. */
@@ -1233,9 +1238,9 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / (2 * sizeof (gpointer));
 
 			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
-			while (idx >= table_memberref->rows) {
+			while (idx > table_memberref->rows) {
 				list = list->next;
-				g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
+				// g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
 				dmeta = list->data;
 				table_memberref = &dmeta->tables [idx];
 			}
@@ -1243,10 +1248,12 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 			/* update those fields */
 			bitfield = t->size_bitfield;
 			count = mono_metadata_table_count (bitfield);
+
+			g_slist_free (list);
 		}
 	}
 
-	g_assert (idx < t->rows);
+	g_assert (idx <= t->rows);
 	g_assert (idx >= 0);
 	data = t->base + idx * t->row_size;
 	
@@ -4504,8 +4511,14 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	if (local_var_sig_tok) {
 		int idx = (local_var_sig_tok & 0xffffff)-1;
 		if (idx >= t->rows || idx < 0) {
-			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%8x", idx);
-			goto fail;
+			// TODO: add helper for overflow dmeta check.
+
+			if (!m->delta_image) {
+				mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%8x", idx);
+				goto fail;
+			} else {
+				/* likely it's fine, but need more precise check */
+			}
 		}
 		mono_metadata_decode_row (t, idx, cols, 1);
 

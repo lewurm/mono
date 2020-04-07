@@ -12,7 +12,7 @@ public class Sample {
 
 		Assembly assm = Assembly.LoadFrom (Path.GetFullPath (args[0]));
 
-		var calc = Calculator.Make (assm, "RoslynILDiff.Program", "DiffTestMethod1");
+		var calc = Calculator.Make (assm, "RoslynILDiff", "DiffTestMethod1");
 
 		var replacer = Replacer.Make ();
 		Calculate (calc);
@@ -29,7 +29,7 @@ public class Sample {
 	}
 
 	private static void Calculate (Calculator calc) {
-#if false
+#if true 
 		for (int i = 1; i < 5; i++)
 			for (int j = 1; j < 4; j++)
 				Console.WriteLine ("Do (" + i + ", " + j + "): " + calc.Do (i, j));

@@ -1381,14 +1381,15 @@ static void
 dump_encmap (MonoImage *image)
 {
 	MonoTableInfo *encmap = &image->tables [MONO_TABLE_ENCMAP];
-	if (encmap && encmap->rows) {
-		g_print ("ENCMAP:\n");
-		for (int i = 0; i < encmap->rows; ++i) {
-			guint32 cols [MONO_ENCMAP_SIZE];
-			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
-			int token = cols [MONO_ENCMAP_TOKEN];
-			g_print ("\t0x%08x: 0x%08x table: %s \n", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
-		}
+	if (!encmap || !encmap->rows)
+		return;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
+	for (int i = 0; i < encmap->rows; ++i) {
+		guint32 cols [MONO_ENCMAP_SIZE];
+		mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
+		int token = cols [MONO_ENCMAP_TOKEN];
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "\t0x%08x: 0x%08x table: %s", i+1, token, mono_meta_table_name (mono_metadata_token_table (token)));
 	}
 }
 
