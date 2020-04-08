@@ -199,6 +199,8 @@ typedef struct {
 
 MONO_API void         mono_metadata_init (void);
 
+void mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, uint32_t *res, int res_size);
+
 MONO_API void         mono_metadata_decode_row (const MonoTableInfo   *t,
 				       int                    idx,
 				       uint32_t               *res,
@@ -225,6 +227,7 @@ MONO_API int mono_metadata_compute_size (MonoImage   *meta,
 MONO_API const char    *mono_metadata_locate        (MonoImage *meta, int table, int idx);
 MONO_API const char    *mono_metadata_locate_token  (MonoImage *meta, uint32_t token);
 					   
+const char *mono_metadata_string_heap_raw (MonoImage *meta, uint32_t table_index);
 MONO_API const char    *mono_metadata_string_heap   (MonoImage *meta, uint32_t table_index);
 MONO_API const char    *mono_metadata_blob_heap     (MonoImage *meta, uint32_t table_index);
 MONO_API const char    *mono_metadata_user_string   (MonoImage *meta, uint32_t table_index);

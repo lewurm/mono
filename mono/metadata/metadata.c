@@ -1045,6 +1045,17 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 }
 
 /**
+ * same as mono_metadata_string_heap, but ignores potential detla images
+ */
+const char *
+mono_metadata_string_heap_raw (MonoImage *meta, guint32 index)
+{
+	g_assert (index < meta->heap_strings.size);
+	g_return_val_if_fail (index < meta->heap_strings.size, "");
+	return meta->heap_strings.data + index;
+}
+
+/**
  * mono_metadata_string_heap:
  * \param meta metadata context
  * \param index index into the string heap.
@@ -1064,9 +1075,7 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 		}
 		meta = dmeta;
 	}
-	g_assert (index < meta->heap_strings.size);
-	g_return_val_if_fail (index < meta->heap_strings.size, "");
-	return meta->heap_strings.data + index;
+	return mono_metadata_string_heap_raw (meta, index);
 }
 
 /**
@@ -1216,11 +1225,9 @@ dword_align (const unsigned char *ptr)
 void
 mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
 {
-	guint32 bitfield = t->size_bitfield;
-	int i, count = mono_metadata_table_count (bitfield);
-	const char *data;
 	MonoImage *base = NULL; 
 
+#if 0
 	if (G_UNLIKELY (base = mono_table_info_get_base_image (t))) {
 		/* EnC case */
 
@@ -1246,12 +1253,23 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 			}
 			t = table_memberref;
 			/* update those fields */
-			bitfield = t->size_bitfield;
-			count = mono_metadata_table_count (bitfield);
 
 			g_slist_free (list);
 		}
 	}
+#endif
+	mono_metadata_decode_row_raw (t, idx, res, res_size);
+}
+
+/**
+ * same as mono_metadata_decode_row, but ignores potential delta images
+ */
+void
+mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
+{
+	guint32 bitfield = t->size_bitfield;
+	int i, count = mono_metadata_table_count (bitfield);
+	const char *data;
 
 	g_assert (idx <= t->rows);
 	g_assert (idx >= 0);
