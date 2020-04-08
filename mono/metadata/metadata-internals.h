@@ -899,6 +899,9 @@ mono_install_image_loader (const MonoImageLoader *loader);
 void
 mono_image_append_class_to_reflection_info_set (MonoClass *klass);
 
+int
+mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
+
 void
 mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, const char *dmeta_path, gconstpointer dmeta, uint32_t dmeta_len, const char *dil_path);
 

@@ -1064,17 +1064,21 @@ mono_metadata_string_heap_raw (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
+#if 0
 	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
 		/* EnC: iterate through existing delta images associated with the base image. */
 		GSList *list = meta->delta_image;
 		MonoImage *dmeta = list->data;
-		while (index >= dmeta->heap_strings.size) {
+		int rindex = mono_image_relative_delta_index (dmeta, index);
+		while (rindex >= dmeta->heap_strings.size) {
 			list = list->next;
 			g_assertf (!!list, "Could not find token=0x%08x in strings heap of assembly=%s and its delta images", index, meta && meta->name ? meta->name : "unknown image");
 			dmeta = list->data;
+			rindex = mono_image_relative_delta_index (dmeta, index);
 		}
 		meta = dmeta;
 	}
+#endif
 	return mono_metadata_string_heap_raw (meta, index);
 }
 
@@ -1131,6 +1135,8 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 {
+#if 0
+	/* TODO: shouldn't be needed, as blob heap is merged */
 	if (G_UNLIKELY (meta->delta_image)) {
 		/* EnC: iterate through existing delta images associated with the base image. */
 		GSList *list = g_slist_copy (meta->delta_image);
@@ -1145,6 +1151,7 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		g_slist_free (list);
 	}
+#endif
 	/* Some tools can produce assemblies with a size 0 Blob stream. If a
 	 * blob value is optional, if the index == 0 and heap_blob.size == 0
 	 * assertion is hit, consider updating caller to use
@@ -1227,37 +1234,37 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 {
 	MonoImage *base = NULL; 
 
-#if 0
-	if (G_UNLIKELY (base = mono_table_info_get_base_image (t))) {
+	if (G_UNLIKELY (idx >= t->rows)) {
 		/* EnC case */
+		base = mono_table_info_get_base_image (t);
 
 		printf ("found base=%p\n", base);
 		printf ("found base->delta_image=%p\n", base->delta_image);
 		if (base && base->delta_image) {
-			GSList *list = g_slist_copy (base->delta_image);
-			list = g_slist_prepend (list, base);
-			list = g_slist_reverse (list);
-			MonoImage *dmeta = list->data;
+			GSList *list = base->delta_image;
+			MonoImage *dmeta;
+			int ridx;
+			MonoTableInfo *table;
 
 			/* Invariant: `t` must be a `MonoTableInfo` of the base image. */
 			g_assert (base->tables < t && t < &base->tables [MONO_TABLE_LAST]);
-			/* TODO: wtf, why (2 * sizeof (gpointer)) */
-			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / (2 * sizeof (gpointer));
 
-			MonoTableInfo *table_memberref = &dmeta->tables [tbl_index];
-			while (idx > table_memberref->rows) {
-				list = list->next;
-				// g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
+			size_t s = ALIGN_TO (sizeof (MonoTableInfo), sizeof (gpointer));
+			int tbl_index = ((intptr_t) t - (intptr_t) base->tables) / s;
+
+			do {
+				g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
 				dmeta = list->data;
-				table_memberref = &dmeta->tables [idx];
-			}
-			t = table_memberref;
-			/* update those fields */
+				list = list->next;
+				table = &dmeta->tables [tbl_index];
+				ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, idx));
+			} while (ridx <= 0 || ridx > table->rows);
 
-			g_slist_free (list);
+			printf ("concluded: %s: idx=0x%08x -> ridx=0x%08x\n", dmeta->filename, idx, ridx);
+			t = table;
+			idx = ridx - 1;
 		}
 	}
-#endif
 	mono_metadata_decode_row_raw (t, idx, res, res_size);
 }
 

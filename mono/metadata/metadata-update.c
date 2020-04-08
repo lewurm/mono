@@ -35,7 +35,7 @@ typedef struct _EncRecs {
  * mapping the base image MonoTableInfos to the base MonoImage.  We don't need
  * this for deltas.
  */
-static GHashTable *table_to_image;
+static GHashTable *table_to_image, *delta_image_to_encrecs;
 static MonoCoopMutex table_to_image_mutex;
 
 static void
@@ -55,6 +55,7 @@ table_to_image_init (void)
 {
 	mono_coop_mutex_init (&table_to_image_mutex);
 	table_to_image = g_hash_table_new (NULL, NULL);
+	delta_image_to_encrecs = g_hash_table_new (NULL, NULL);
 }
 
 static gboolean
@@ -215,11 +216,7 @@ mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, con
 	dmeta_image->generation = generation;
 
 	/* base_image takes ownership of 1 refcount ref of dmeta_image */
-	if (dmeta_image->minimal_delta) {
-		/* tables will be patched and heaps will be merged */
-	} else {
-		mono_image_append_delta (base_image, dmeta_image);
-	}
+	mono_image_append_delta (base_image, dmeta_image);
 
 	return dmeta_image;
 }
@@ -253,7 +250,7 @@ mono_dil_file_destroy (MonoDilFile *dil)
 }
 
 static void
-dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, EncRecs *enc_recs)
+dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 {
 	int rows;
 
@@ -271,6 +268,14 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, EncRecs *enc
 		const char *scope = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_SCOPE]);
 		const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAME]);
 		const char *namespace = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAMESPACE]);
+
+		if (!scope)
+			scope = "<N/A>";
+		if (!name)
+			name = "<N/A>";
+		if (!namespace)
+			namespace = "<N/A>";
+
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  typeref i=%d (token=0x%08x) -> scope=%s, namespace=%s, name=%s", i, MONO_TOKEN_TYPE_REF | i, scope, namespace, name);
 	}
 	if (!image_dmeta->minimal_delta) {
@@ -305,8 +310,7 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, EncRecs *enc
 			mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
 			const char *name = mono_metadata_string_heap (image_base, cols [MONO_METHOD_NAME]);
 			guint32 rva = cols [MONO_METHOD_RVA];
-			int new_token = enc_recs->enc_recs [MONO_TABLE_METHOD] + i;
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta method i=%d (token=0x%08x => new_token=0x%08x), rva=%d/0x%04x, name=%s", i, MONO_TOKEN_METHOD_DEF | i, MONO_TOKEN_METHOD_DEF | new_token, rva, rva, name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta method i=%d (token=0x%08x), rva=%d/0x%04x, name=%s", i, MONO_TOKEN_METHOD_DEF | i, rva, rva, name);
 		}
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
@@ -350,12 +354,16 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, EncRecs *enc
  * BTW, `enc_recs` is just a pre-computed map to make the lookup for the
  * relative index faster.
  */
-static int
-relative_delta_index (MonoImage *image_dmeta, EncRecs *enc_recs, int token)
+int
+mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 {
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
+
 	if (!encmap->rows || !image_dmeta->minimal_delta)
 		return token;
+
+	EncRecs *enc_recs = g_hash_table_lookup (delta_image_to_encrecs, image_dmeta);
+	g_assert (enc_recs);
 
 	int table = mono_metadata_token_table (token);
 	int index = mono_metadata_token_index (token);
@@ -375,15 +383,18 @@ relative_delta_index (MonoImage *image_dmeta, EncRecs *enc_recs, int token)
 }
 
 static void
-start_encmap (MonoImage *image_dmeta, EncRecs *enc_recs)
+start_encmap (MonoImage *image_dmeta)
 {
-	memset (enc_recs, 0, sizeof (*enc_recs));
 	MonoTableInfo *encmap = &image_dmeta->tables [MONO_TABLE_ENCMAP];
-	int table;
-	int prev_table = -1;
+	int table, prev_table = -1, idx;
+
+	g_assert (!g_hash_table_lookup (delta_image_to_encrecs, image_dmeta));
+
 	if (!encmap->rows)
 		return;
-	int idx;
+
+	EncRecs *enc_recs = g_malloc0 (sizeof (EncRecs));
+
 	for (idx = 1; idx <= encmap->rows; ++idx) {
 		guint32 cols[MONO_ENCMAP_SIZE];
 		mono_metadata_decode_row (encmap, idx - 1, cols, MONO_ENCMAP_SIZE);
@@ -415,6 +426,8 @@ start_encmap (MonoImage *image_dmeta, EncRecs *enc_recs)
 		if (image_dmeta->tables [i].base)
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enc_recs [%02x] / %s = 0x%02x", i, mono_meta_table_name (i), enc_recs->enc_recs[i]);
 	}
+
+	g_hash_table_insert (delta_image_to_encrecs, image_dmeta, enc_recs);
 }
 
 static gboolean
@@ -513,8 +526,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	if (table_enclog->rows)
 		table_to_image_add (image_base);
 
-	EncRecs enc_recs;
-	start_encmap (image_dmeta, &enc_recs);
+	start_encmap (image_dmeta);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  guid: %s", image_base->guid);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);
@@ -525,7 +537,9 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	if (image_dmeta->minimal_delta) {
 		/* (1) patch cols in base table */
 		
-		/* TODO: patch me! */
+		/* TODO: patch me!
+		 * TODO2: not sure actually.  maybe we can get around with encmap and the regular delta image list trick everywhere
+		 * */
 
 		/* (2) append heaps (blob heap. any others?) */
 		append_heap (&image_base->heap_blob, &image_dmeta->heap_blob);
@@ -538,7 +552,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	}
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
-		dump_update_summary (image_base, image_dmeta, &enc_recs);
+		dump_update_summary (image_base, image_dmeta);
 
 #if 0
 	printf ("table_enclog->rows: %d\n", table_enclog->rows);
