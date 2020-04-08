@@ -332,6 +332,24 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta, EncRecs *enc
 
 }
 
+/*
+ * The ENCMAP table contains the base of the relative offset.
+ *
+ * Example:
+ * Say you have a base image with a METHOD table having 5 entries.  The minimal
+ * delta image adds another one, so it would be indexed with token
+ * `MONO_TOKEN_METHOD_DEF | 6`. However, the minimal delta image only has this
+ * single entry, and thus this would be an out-of-bounds access. That's where
+ * the ENCMAP table comes into play: It will have an entry
+ * `MONO_TOKEN_METHOD_DEF | 5`, so before accessing the new entry in the
+ * minimal delta image, it has to be substracted. Thus the new relative index
+ * is `1`, and no out-of-bounds acccess anymore.
+ *
+ * One can assume that ENCMAP is sorted (todo: verify this claim).
+ *
+ * BTW, `enc_recs` is just a pre-computed map to make the lookup for the
+ * relative index faster.
+ */
 static int
 relative_delta_index (MonoImage *image_dmeta, EncRecs *enc_recs, int token)
 {
@@ -377,6 +395,8 @@ start_encmap (MonoImage *image_dmeta, EncRecs *enc_recs)
 		/* FIXME: this function is cribbed from CMiniMdRW::StartENCMap
 		 * https://github.com/dotnet/runtime/blob/4f9ae42d861fcb4be2fcd5d3d55d5f227d30e723/src/coreclr/src/md/enc/metamodelenc.cpp#L389
 		 * but for some reason the following assertion table >= prev_table fails.
+		 *
+		 * TODO: outdated comment?
 		 */
 		g_assert (table >= prev_table);
 		if (table == prev_table)
