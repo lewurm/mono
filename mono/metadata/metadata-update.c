@@ -287,8 +287,8 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 			mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_TYPEREF], i - 1, cols, MONO_TYPEREF_SIZE);
 			const char *scope = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_SCOPE]);
 			const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAME]);
-			const char *namespace = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAMESPACE]);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta typeref i=%d (token=0x%08x) -> scope=%s, namespace=%s, name=%s", i, MONO_TOKEN_TYPE_REF | i, scope, namespace, name);
+			const char *nspace = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAMESPACE]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta typeref i=%d (token=0x%08x) -> scope=%s, nspace=%s, name=%s", i, MONO_TOKEN_TYPE_REF | i, scope, nspace, name);
 		}
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
@@ -504,14 +504,15 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	g_assert (status == MONO_IMAGE_OK);
 
 	if (image_dmeta->minimal_delta) {
-		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE],
-							    0, MONO_MODULE_NAME);
+		guint32 idx = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_MODULE], 0, MONO_MODULE_NAME);
 
-		/* FIXME: for the 2nd update to the same image, we should decrement idx by the sum of all the previous
-		 * heap segments.
-		 */
-		g_assert (idx >= image_base->heap_strings.size);
-		const char *module_name = mono_metadata_string_heap (image_dmeta, idx - image_base->heap_strings.size);
+		/* TODO: hmm. */
+		const char *module_name = NULL;
+		if (idx >= image_base->heap_strings.size) {
+			module_name = mono_metadata_string_heap (image_dmeta, idx - image_base->heap_strings.size);
+		} else {
+			module_name = mono_metadata_string_heap (image_base, idx);
+		}
 
 		/* Set the module name now that we know the base String heap size */
 		g_assert (!image_dmeta->module_name);
@@ -546,14 +547,18 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 		 * 			do delta image list trick, and use encmap to determine proper relative index.
 		 * */
 
-		/* (2) append heaps (blob heap. any others?) */
-		append_heap (&image_base->heap_blob, &image_dmeta->heap_blob);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap addr (merged): %p", image_base->heap_blob.data);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap size (merged): 0x%08x", image_base->heap_blob.size);
-		
+		/* (2) append heaps */
 		append_heap (&image_base->heap_strings, &image_dmeta->heap_strings);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image strings heap addr (merged): %p", image_base->heap_strings.data);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image strings heap size (merged): 0x%08x", image_base->heap_strings.size);
+
+		append_heap (&image_base->heap_us, &image_dmeta->heap_us);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string heap addr (merged): %p", image_base->heap_us.data);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image user string heap size (merged): 0x%08x", image_base->heap_us.size);
+
+		append_heap (&image_base->heap_blob, &image_dmeta->heap_blob);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap addr (merged): %p", image_base->heap_blob.data);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap size (merged): 0x%08x", image_base->heap_blob.size);
 	}
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))

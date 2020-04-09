@@ -1238,8 +1238,6 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 		/* EnC case */
 		base = mono_table_info_get_base_image (t);
 
-		printf ("found base=%p\n", base);
-		printf ("found base->delta_image=%p\n", base->delta_image);
 		if (base && base->delta_image) {
 			GSList *list = base->delta_image;
 			MonoImage *dmeta;
@@ -1260,7 +1258,6 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 				ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, idx));
 			} while (ridx <= 0 || ridx > table->rows);
 
-			printf ("concluded: %s: idx=0x%08x -> ridx=0x%08x\n", dmeta->filename, idx, ridx);
 			t = table;
 			idx = ridx - 1;
 		}
@@ -1375,8 +1372,6 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 		/* EnC case */
 
 		MonoImage *base = mono_table_info_get_base_image (t);
-		printf ("found base=%p\n", base);
-		printf ("found base->delta_image=%p\n", base->delta_image);
 		if (base && base->delta_image) {
 			GSList *list = base->delta_image;
 			MonoImage *dmeta = list->data;
