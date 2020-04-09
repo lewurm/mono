@@ -21,9 +21,11 @@ public class Sample {
 
 		Calculate (calc);
 
+#if false
 		replacer.Update (assm);
 
 		Calculate (calc);
+#endif
 
 		return 0;
 	}

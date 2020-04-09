@@ -539,6 +539,11 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 		
 		/* TODO: patch me!
 		 * TODO2: not sure actually.  maybe we can get around with encmap and the regular delta image list trick everywhere
+		 * TODO3: hmm, I think it's:
+		 * 		if (index < base_image->rows)
+		 * 			patch_col_in_base_image
+		 * 		else
+		 * 			do delta image list trick, and use encmap to determine proper relative index.
 		 * */
 
 		/* (2) append heaps (blob heap. any others?) */
