@@ -882,6 +882,9 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	switch (class_index) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
+		if (image->delta_image && idx >= tables [MONO_TABLE_MEMBERREF].rows) {
+			nindex += 1; // mkay? FIXME :(
+		}
 		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
 		if (!klass)
 			goto fail;

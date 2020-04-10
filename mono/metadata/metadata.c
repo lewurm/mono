@@ -1256,10 +1256,10 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 				list = list->next;
 				table = &dmeta->tables [tbl_index];
 				ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (tbl_index, idx));
-			} while (ridx <= 0 || ridx > table->rows);
+			} while (ridx < 0 || ridx >= table->rows);
 
 			t = table;
-			idx = ridx - 1;
+			idx = ridx;
 		}
 	}
 	mono_metadata_decode_row_raw (t, idx, res, res_size);

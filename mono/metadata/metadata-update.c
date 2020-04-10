@@ -379,7 +379,7 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 	}
 
 	/* this is the index into the minimal delta image */
-	return index_map - enc_recs->enc_recs [table] + 1;
+	return index_map - enc_recs->enc_recs [table];
 }
 
 static void
