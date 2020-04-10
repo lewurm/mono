@@ -124,7 +124,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	guint32 idx;
 	const char *name, *nspace;
 	MonoClass *res = NULL;
-	MonoImage *module;
+	MonoImage *module, *base_image = image;
 
 	error_init (error);
 
@@ -198,8 +198,29 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 	}
 
 	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
-		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
-		return NULL;
+		if (image->delta_image) {
+#if 0
+			GSList *list = image->delta_image;
+			MonoImage *dmeta;
+			int ridx;
+
+			do {
+				g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
+				dmeta = list->data;
+				list = list->next;
+				ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (MONO_TABLE_ASSEMBLYREF, idx));
+			} while (ridx <= 0 || ridx > image->tables [MONO_TABLE_ASSEMBLYREF].rows);
+			idx = ridx;
+
+			/* meh: I think the right approach would be to update `image->references` to have a big enough N for its delta images too */
+			/* TODO: remove this dmeta hack */
+			// image = dmeta;
+#endif
+			// TODO: hmm.
+		} else {
+			mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
+			return NULL;
+		}
 	}
 
 	if (!image->references || !image->references [idx - 1])
@@ -211,11 +232,11 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		MonoAssemblyName aname;
 		char *human_name;
 		
-		mono_assembly_get_assemblyref (image, idx - 1, &aname);
+		mono_assembly_get_assemblyref (base_image, idx - 1, &aname);
 		human_name = mono_stringify_assembly_name (&aname);
 		gboolean refonly = FALSE;
-		if (image->assembly)
-			refonly = mono_asmctx_get_kind (&image->assembly->context) == MONO_ASMCTX_REFONLY;
+		if (base_image->assembly)
+			refonly = mono_asmctx_get_kind (&base_image->assembly->context) == MONO_ASMCTX_REFONLY;
 		mono_error_set_simple_file_not_found (error, human_name, refonly);
 		g_free (human_name);
 		return NULL;

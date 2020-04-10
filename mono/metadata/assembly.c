@@ -1744,8 +1744,12 @@ mono_assembly_get_assemblyref_checked (MonoImage *image, int index, MonoAssembly
 
 	t = &image->tables [MONO_TABLE_ASSEMBLYREF];
 
+#if 0
 	if (!mono_metadata_decode_row_checked (image, t, index, cols, MONO_ASSEMBLYREF_SIZE, error))
 		return FALSE;
+#else
+	mono_metadata_decode_row (t, index, cols, MONO_ASSEMBLYREF_SIZE);
+#endif
 
 	// ECMA-335: II.22.5 - AssemblyRef
 	// HashValue can be null or non-null.  If non-null it's an index into the blob heap

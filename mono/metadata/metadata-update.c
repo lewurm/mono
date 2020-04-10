@@ -436,6 +436,7 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_enclog->rows;
 
+	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
 		guint32 cols [MONO_ENCLOG_SIZE];
 		mono_metadata_decode_row (table_enclog, i, cols, MONO_ENCLOG_SIZE);
@@ -454,7 +455,24 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 				break;
 		}
 
-		if (table_index == MONO_TABLE_METHOD) {
+		if (!assemblyref_updated && table_index == MONO_TABLE_ASSEMBLYREF) {
+			assemblyref_updated = TRUE;
+
+			int old_rows = image_base->tables [MONO_TABLE_ASSEMBLYREF].rows;
+			int new_rows = image_dmeta->tables [MONO_TABLE_ASSEMBLYREF].rows;
+
+			g_assert (new_rows > 0);
+
+			MonoAssembly **old_array = image_base->references;
+			// TODO: won't be true on second update?
+			g_assert (image_base->nreferences == old_rows);
+
+			image_base->references = g_new0 (MonoAssembly *, old_rows + new_rows + 1);
+			memcpy (image_base->references, old_array, old_rows + 1);
+			image_base->nreferences = old_rows + new_rows;
+
+			g_free (old_array);
+		} else if (table_index == MONO_TABLE_METHOD) {
 			if (!image_base->delta_index)
 				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
