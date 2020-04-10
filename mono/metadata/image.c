@@ -2444,8 +2444,11 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->references && !image_is_dynamic (image)) {
 		for (i = 0; i < image->nreferences; i++) {
 			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
+#if 0
+				// FIXME: shutdown bug?
 				if (!mono_assembly_close_except_image_pools (image->references [i]))
 					image->references [i] = NULL;
+#endif
 			}
 		}
 	} else {
@@ -2619,8 +2622,12 @@ mono_image_close_finish (MonoImage *image)
 
 	if (image->references && !image_is_dynamic (image)) {
 		for (i = 0; i < image->nreferences; i++) {
-			if (image->references [i] && image->references [i] != REFERENCE_MISSING)
+			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
+#if 0
+				// FIXME: shutdown bug?
 				mono_assembly_close_finish (image->references [i]);
+#endif
+			}
 		}
 
 		g_free (image->references);

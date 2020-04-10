@@ -21,7 +21,7 @@ public class Sample {
 
 		Calculate (calc);
 
-#if true
+#if false
 		replacer.Update (assm);
 
 		Calculate (calc);
@@ -86,6 +86,7 @@ public class Replacer {
 	}
 
 	public void Update (Assembly assm) {
+		Console.WriteLine ("Apply Delta Update");
 		UpdateMethod.Invoke (null, new object [] { assm });
 	}
 }

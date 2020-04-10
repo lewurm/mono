@@ -450,6 +450,9 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 		switch (func_code) {
 			case 0: /* default */
 				break;
+			case 1: /* add method */
+				// TODO: only static methods are supported, check that.
+				break;
 			default:
 				g_error ("EnC: FuncCode %d not supported (token=0x%08x)", func_code, log_token);
 				break;
@@ -465,7 +468,7 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 
 			MonoAssembly **old_array = image_base->references;
 			// TODO: won't be true on second update?
-			g_assert (image_base->nreferences == old_rows);
+			// g_assert (image_base->nreferences == old_rows);
 
 			image_base->references = g_new0 (MonoAssembly *, old_rows + new_rows + 1);
 			memcpy (image_base->references, old_array, old_rows + 1);
@@ -477,11 +480,13 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int token_idx = mono_metadata_token_index (log_token);
-			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], token_idx - 1, MONO_METHOD_RVA);
+			g_error ("needs zeh column patch");
+			int rva = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_METHOD], token_idx - 1, MONO_METHOD_RVA);
 
 			g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_idx), (gpointer) (dil->il + rva));
 		} else {
-			g_print ("todo: do something about this table index: 0x%02x\n", table_index);
+			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
+				g_print ("todo: do something about this table index: 0x%02x\n", table_index);
 		}
 	}
 	return TRUE;
