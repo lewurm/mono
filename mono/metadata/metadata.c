@@ -1368,7 +1368,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 	const char *data;
 	int n;
 
-	if (G_UNLIKELY (idx >= t->rows)) {
+	if (G_UNLIKELY (idx > t->rows)) {
 		/* EnC case */
 
 		MonoImage *base = mono_table_info_get_base_image (t);

@@ -487,10 +487,13 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_d
 			if (!image_base->delta_index)
 				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], token_index - 1, MONO_METHOD_RVA);
-			g_assert (rva < dil_length);
-			char *il_address = ((char *) dil_data) + rva;
-			g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
+			int rva = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_METHOD], token_index - 1, MONO_METHOD_RVA);
+			if (rva < dil_length) {
+				char *il_address = ((char *) dil_data) + rva;
+				g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
+			} else {
+				/* rva points into image_base IL stream. that's the default behaviour, this is covered by loader.c, so let it handle it. */
+			}
 		} else {
 			g_assert (token_index > image_base->tables [token_table].rows);
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
