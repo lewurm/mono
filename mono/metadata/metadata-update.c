@@ -301,17 +301,15 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 		guint32 rva = cols [MONO_METHOD_RVA];
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  method i=%d (token=0x%08x), rva=%d/0x%04x, name=%s", i, MONO_TOKEN_METHOD_DEF | i, rva, rva, name);
 	}
-	if (!image_dmeta->minimal_delta) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
 
-		rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_METHOD);
-		for (int i = 1; i <= rows ; ++i) {
-			guint32 cols [MONO_METHOD_SIZE];
-			mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
-			const char *name = mono_metadata_string_heap (image_base, cols [MONO_METHOD_NAME]);
-			guint32 rva = cols [MONO_METHOD_RVA];
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta method i=%d (token=0x%08x), rva=%d/0x%04x, name=%s", i, MONO_TOKEN_METHOD_DEF | i, rva, rva, name);
-		}
+	rows = mono_image_get_table_rows (image_dmeta, MONO_TABLE_METHOD);
+	for (int i = 1; i <= rows ; ++i) {
+		guint32 cols [MONO_METHOD_SIZE];
+		mono_metadata_decode_row_raw (&image_dmeta->tables [MONO_TABLE_METHOD], i - 1, cols, MONO_METHOD_SIZE);
+		const char *name = mono_metadata_string_heap (image_base, cols [MONO_METHOD_NAME]);
+		guint32 rva = cols [MONO_METHOD_RVA];
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta method i=%d (token=0x%08x), rva=%d/0x%04x, name=%s", i, MONO_TOKEN_METHOD_DEF | i, rva, rva, name);
 	}
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "================================");
 
@@ -487,12 +485,14 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_d
 			if (!image_base->delta_index)
 				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-			int rva = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_METHOD], token_index - 1, MONO_METHOD_RVA);
+			int mapped_token = mono_image_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token, MONO_METHOD_RVA);
 			if (rva < dil_length) {
 				char *il_address = ((char *) dil_data) + rva;
 				g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
 			} else {
-				/* rva points into image_base IL stream. that's the default behaviour, this is covered by loader.c, so let it handle it. */
+				/* rva points probably into image_base IL stream. can this ever happen? */
+				g_print ("TODO: this case is still a bit WTF. token=0x%08x with rva=0x%04x\n", log_token, rva);
 			}
 		} else {
 			g_assert (token_index > image_base->tables [token_table].rows);

@@ -1,12 +1,12 @@
 include ../common_mixed.mk
 
 ROSLYNILDIFF ?=/Users/lewurm/work/roslynildiff/bin/Debug/roslynildiff.exe
-TESTS_REGULAR := Sample3.dll
+TESTS_REGULAR := ReplaceMethod.dll
 
-DEBUG_FLAGS=MONO_LOG_MASK=metadata-update MONO_LOG_LEVEL=debug MONO_VERBOSE_METHOD=DiffTestMethod1
+# DEBUG_FLAGS=MONO_LOG_MASK=metadata-update MONO_LOG_LEVEL=debug MONO_VERBOSE_METHOD=DiffTestMethod1
 
 check: $(TESTS_REGULAR)
-	failed=0; \
+	@failed=0; \
 	passed=0; \
 	failed_tests=""; \
 	for i in $(TESTS_REGULAR); do \
@@ -16,7 +16,8 @@ check: $(TESTS_REGULAR)
 		else \
 			failed=`expr $${failed} + 1`; \
 			failed_tests="$${failed_tests} $$i"; \
-		fi \
+		fi;  \
+		echo "========= $$i done ========== "; \
 	done; \
 	echo "$${passed} test(s) passed. $${failed} test(s) did not pass.";
 

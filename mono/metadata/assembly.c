@@ -1894,7 +1894,6 @@ commit_reference:
 		reference = (MonoAssembly *)REFERENCE_MISSING;
 	}	
 
-	printf ("image: access image->references with index=%d (is it ever 0? %d)\n", index, index == 0);
 	if (!image->references [index]) {
 		if (reference != REFERENCE_MISSING){
 			mono_assembly_addref (reference);

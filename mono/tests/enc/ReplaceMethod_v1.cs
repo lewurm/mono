@@ -4,25 +4,31 @@ using System.Runtime.CompilerServices;
 using MonoEnc;
 
 public class Sample3 {
-	public static void Main (string []args) {
+	public static int Main (string []args) {
 		Assembly assm = typeof (Sample3).Assembly;
 		var replacer = EncHelper.Make ();
 
-		DiffTestMethod1 (3, 8);
+		int res = DiffTestMethod1 (3, 8);
+		if (res != (3 + 1))
+			return 1;
+
 		replacer.Update (assm);
-		DiffTestMethod1 (3, 8);
+
+		res = DiffTestMethod1 (3, 8);
+		if (res != (8 + 2))
+			return 2;
+
+		return 0;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int DiffTestMethod1 (int x, int y) {
-		Console.WriteLine ("Hello old World");
-		SecondMethod ();
-		return x;
+		return y + SecondMethod ();;
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	public static void SecondMethod () {
-		Console.WriteLine ("Print something old-worldish");
+	public static int SecondMethod () {
+		Console.WriteLine ("HELLO NEW WORLD");
+		return 2;
 	}
 }
-
