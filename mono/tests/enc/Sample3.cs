@@ -6,7 +6,7 @@ using MonoEnc;
 public class Sample3 {
 	public static void Main (string []args) {
 		Assembly assm = typeof (Sample3).Assembly;
-		var replacer = EncHelper.Replacer.Make ();
+		var replacer = EncHelper.Make ();
 
 		DiffTestMethod1 (3, 8);
 		replacer.Update (assm);

@@ -1,19 +1,29 @@
 include ../common_mixed.mk
 
-TESTS_REGULAR := 
+ROSLYNILDIFF ?=/Users/lewurm/work/roslynildiff/bin/Debug/roslynildiff.exe
+TESTS_REGULAR := Sample3.dll
 
-../test-runner.exe:
-	make -C .. test-runner.exe
-
-
-check: ../test-runner.exe compile-tests
-	$(TOOLS_RUNTIME) --debug ../test-runner.exeA -j 1 --testsuite-name "enc-runtime" --timeout 300 $(TESTS_REGULAR)
+check: $(TESTS_REGULAR)
+	failed=0; \
+	passed=0; \
+	failed_tests=""; \
+	for i in $(TESTS_REGULAR); do \
+		if ../../mini/mono $(TEST_RUNTIME_ARGS) --interpreter $$i ; \
+		then \
+			passed=`expr $${passed} + 1`; \
+		else \
+			failed=`expr $${failed} + 1`; \
+			failed_tests="$${failed_tests} $$i"; \
+		fi \
+	done; \
+	echo "$${passed} test(s) passed. $${failed} test(s) did not pass.";
 
 EncHelper.dll: EncHelper.cs
 	$(MCS)  -target:library -out:$@ $<
 
-%.exe: %.cs EncHelper.dll
-	$(TOOLS_RUNTIME) roslynildiff.exe $< $(basename $<)*_v?.cs
+%.dll: %.cs EncHelper.dll
+# bash -c "$(TOOLS_RUNTIME) $(ROSLYNILDIFF) $< $(basename $<)*_v?.cs"
+	bash -x -c "mono --debug $(ROSLYNILDIFF) -l:EncHelper.dll $< $(basename $<)*_v?.cs"
 	
 
 #tests.exe: $(srcdir)/tests.cs TestDriver.dll interponly.dll

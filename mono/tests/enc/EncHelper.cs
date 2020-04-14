@@ -1,3 +1,8 @@
+using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+
 namespace MonoEnc {
 	public class EncHelper {
 #if false
@@ -18,11 +23,11 @@ namespace MonoEnc {
 			return _updateMethod;
 		}
 
-		Replacer () { }
+		EncHelper () { }
 
-		public static Replacer Make ()
+		public static EncHelper Make ()
 		{
-			return new Replacer ();
+			return new EncHelper ();
 		}
 
 		private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
