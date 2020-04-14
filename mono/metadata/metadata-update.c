@@ -267,16 +267,16 @@ dump_update_summary (MonoImage *image_base, MonoImage *image_dmeta)
 		mono_metadata_decode_row (&image_base->tables [MONO_TABLE_TYPEREF], i - 1, cols, MONO_TYPEREF_SIZE);
 		const char *scope = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_SCOPE]);
 		const char *name = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAME]);
-		const char *namespace = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAMESPACE]);
+		const char *nspace = mono_metadata_string_heap (image_base, cols [MONO_TYPEREF_NAMESPACE]);
 
 		if (!scope)
 			scope = "<N/A>";
 		if (!name)
 			name = "<N/A>";
-		if (!namespace)
-			namespace = "<N/A>";
+		if (!nspace)
+			nspace = "<N/A>";
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  typeref i=%d (token=0x%08x) -> scope=%s, namespace=%s, name=%s", i, MONO_TOKEN_TYPE_REF | i, scope, namespace, name);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  typeref i=%d (token=0x%08x) -> scope=%s, namespace=%s, name=%s", i, MONO_TOKEN_TYPE_REF | i, scope, nspace, name);
 	}
 	if (!image_dmeta->minimal_delta) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "--------------------------------");
@@ -403,12 +403,6 @@ start_encmap (MonoImage *image_dmeta)
 		g_assert (table >= 0 && table < MONO_TABLE_NUM);
 		g_assert (table != MONO_TABLE_ENCLOG);
 		g_assert (table != MONO_TABLE_ENCMAP);
-		/* FIXME: this function is cribbed from CMiniMdRW::StartENCMap
-		 * https://github.com/dotnet/runtime/blob/4f9ae42d861fcb4be2fcd5d3d55d5f227d30e723/src/coreclr/src/md/enc/metamodelenc.cpp#L389
-		 * but for some reason the following assertion table >= prev_table fails.
-		 *
-		 * TODO: outdated comment?
-		 */
 		g_assert (table >= prev_table);
 		if (table == prev_table)
 			continue;
@@ -444,8 +438,9 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 		int log_token = cols [MONO_ENCLOG_TOKEN];
 		int func_code = cols [MONO_ENCLOG_FUNC_CODE];
 
-		int table_index = mono_metadata_token_table (log_token);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d", i, log_token, mono_meta_table_name (table_index), func_code);
+		int token_table = mono_metadata_token_table (log_token);
+		int token_index = mono_metadata_token_index (log_token);
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d", i, log_token, mono_meta_table_name (token_table), func_code);
 
 		switch (func_code) {
 			case 0: /* default */
@@ -458,35 +453,46 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 				break;
 		}
 
-		if (!assemblyref_updated && table_index == MONO_TABLE_ASSEMBLYREF) {
+		if (token_table == MONO_TABLE_ASSEMBLYREF) {
+			g_assert (token_index > image_base->tables [token_table].rows);
+
+			if (assemblyref_updated)
+				continue;
+
 			assemblyref_updated = TRUE;
 
 			int old_rows = image_base->tables [MONO_TABLE_ASSEMBLYREF].rows;
+			for (GSList *l = image_base->delta_image; l; l = l->next) {
+				MonoImage *delta_child = l->data;
+				old_rows += delta_child->tables [MONO_TABLE_ASSEMBLYREF].rows;
+			}
 			int new_rows = image_dmeta->tables [MONO_TABLE_ASSEMBLYREF].rows;
 
+			old_rows -= new_rows;
 			g_assert (new_rows > 0);
 
+			/* TODO: this can end bad with code around assembly.c:mono_assembly_load_reference */
+			mono_image_lock (image_base);
 			MonoAssembly **old_array = image_base->references;
-			// TODO: won't be true on second update?
-			// g_assert (image_base->nreferences == old_rows);
+			g_assert (image_base->nreferences == old_rows);
 
 			image_base->references = g_new0 (MonoAssembly *, old_rows + new_rows + 1);
 			memcpy (image_base->references, old_array, old_rows + 1);
 			image_base->nreferences = old_rows + new_rows;
+			mono_image_unlock (image_base);
 
 			g_free (old_array);
-		} else if (table_index == MONO_TABLE_METHOD) {
+		} else if (token_table == MONO_TABLE_METHOD) {
+			g_assert (token_index <= image_base->tables [token_table].rows);
 			if (!image_base->delta_index)
 				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-			int token_idx = mono_metadata_token_index (log_token);
-			g_error ("needs zeh column patch");
-			int rva = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_METHOD], token_idx - 1, MONO_METHOD_RVA);
-
-			g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_idx), (gpointer) (dil->il + rva));
+			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], token_index - 1, MONO_METHOD_RVA);
+			g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) (dil->il + rva));
 		} else {
+			g_assert (token_index > image_base->tables [token_table].rows);
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
-				g_print ("todo: do something about this table index: 0x%02x\n", table_index);
+				g_print ("todo: do something about this table index: 0x%02x\n", token_table);
 		}
 	}
 	return TRUE;
