@@ -627,7 +627,7 @@ load_tables (MonoImage *image)
 			g_warning("bits in valid must be zero above 0x37 (II - 23.1.6)");
 		} else {
 			image->tables [table].rows = read32 (rows);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "found %s in image %s with rows = %d\n", mono_meta_table_name (table), image->assembly_name, image->tables [table].rows);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "found %s in image %s with rows = %d", mono_meta_table_name (table), image->assembly_name, image->tables [table].rows);
 		}
 		rows++;
 		valid++;

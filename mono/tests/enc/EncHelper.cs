@@ -33,8 +33,6 @@ namespace MonoEnc {
 		private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
 
 		public void Update (Assembly assm) {
-			Console.WriteLine ("Apply Delta Update");
-
 			int count;
 			if (!assembly_count.TryGetValue (assm, out count))
 				count = 1;
@@ -43,6 +41,8 @@ namespace MonoEnc {
 			assembly_count [assm] = count;
 
 			string basename = assm.Location;
+			Console.WriteLine ($"Apply Delta Update for {basename}, revision {count}");
+
 			string dmeta_name = $"{basename}.{count}.dmeta";
 			string dil_name = $"{basename}.{count}.dil";
 			byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);

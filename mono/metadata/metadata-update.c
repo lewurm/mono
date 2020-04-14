@@ -409,6 +409,7 @@ start_encmap (MonoImage *image_dmeta)
 			enc_recs->enc_recs [prev_table] = idx;
 		}
 	}
+	g_assert (prev_table < MONO_TABLE_NUM);
 	while (prev_table < MONO_TABLE_NUM) {
 		prev_table++;
 		enc_recs->enc_recs [prev_table] = idx;
