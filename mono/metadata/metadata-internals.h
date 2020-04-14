@@ -591,7 +591,7 @@ struct _MonoImage {
 	/* Contains 1 based indexes */
 	GHashTable *weak_field_indexes;
 
-	GHashTable *delta_index; /* EnC index for method updates */
+	GHashTable *method_table_delta_index; /* EnC index for method updates */
 
 	/* List of MonoImages of deltas.  Parent image owns 1 refcount ref of the delta image */
 	GSList *delta_image;
@@ -948,6 +948,9 @@ mono_metadata_clean_generic_classes_for_image (MonoImage *image);
 
 MONO_API void
 mono_metadata_cleanup (void);
+
+gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index);
 
 const char *   mono_meta_table_name              (int table);
 void           mono_metadata_compute_table_bases (MonoImage *meta);

@@ -376,7 +376,9 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 		map_entry = cols [MONO_ENCMAP_TOKEN];
 	}
 
-	/* this is the index into the minimal delta image */
+	if (mono_metadata_token_table (map_entry) == table)
+		g_assert (mono_metadata_token_index (map_entry) == index);
+
 	return index_map - enc_recs->enc_recs [table];
 }
 
@@ -483,14 +485,14 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_d
 			g_free (old_array);
 		} else if (token_table == MONO_TABLE_METHOD) {
 			g_assert (token_index <= image_base->tables [token_table].rows);
-			if (!image_base->delta_index)
-				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!image_base->method_table_delta_index)
+				image_base->method_table_delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int mapped_token = mono_image_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
 			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token, MONO_METHOD_RVA);
 			if (rva < dil_length) {
 				char *il_address = ((char *) dil_data) + rva;
-				g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
+				g_hash_table_insert (image_base->method_table_delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
 			} else {
 				/* rva points probably into image_base IL stream. can this ever happen? */
 				g_print ("TODO: this case is still a bit WTF. token=0x%08x with rva=0x%04x\n", log_token, rva);

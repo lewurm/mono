@@ -197,30 +197,9 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		break;
 	}
 
-	if (idx > image->tables [MONO_TABLE_ASSEMBLYREF].rows) {
-		if (image->delta_image) {
-#if 0
-			GSList *list = image->delta_image;
-			MonoImage *dmeta;
-			int ridx;
-
-			do {
-				g_assertf (!!list, "couldn't find idx=0x%08x in assembly=%s", idx, dmeta && dmeta->name ? dmeta->name : "unknown image");
-				dmeta = list->data;
-				list = list->next;
-				ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (MONO_TABLE_ASSEMBLYREF, idx));
-			} while (ridx <= 0 || ridx > image->tables [MONO_TABLE_ASSEMBLYREF].rows);
-			idx = ridx;
-
-			/* meh: I think the right approach would be to update `image->references` to have a big enough N for its delta images too */
-			/* TODO: remove this dmeta hack */
-			// image = dmeta;
-#endif
-			// TODO: hmm.
-		} else {
-			mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
-			return NULL;
-		}
+	if (mono_metadata_table_bounds_check (image, MONO_TABLE_ASSEMBLYREF, idx)) {
+		mono_error_set_bad_image (error, image, "Image with invalid assemblyref token %08x.", idx);
+		return NULL;
 	}
 
 	if (!image->references || !image->references [idx - 1])

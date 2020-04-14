@@ -612,6 +612,13 @@ load_tables (MonoImage *image)
 	image->idx_string_wide = ((heap_sizes & 0x01) == 1);
 	image->idx_guid_wide   = ((heap_sizes & 0x02) == 2);
 	image->idx_blob_wide   = ((heap_sizes & 0x04) == 4);
+
+	if (image->minimal_delta) {
+		/* sanity check */
+		g_assert (image->idx_string_wide);
+		g_assert (image->idx_guid_wide);
+		g_assert (image->idx_blob_wide);
+	}
 	
 	valid_mask = read64 (heap_tables + 8);
 	rows = (const guint32 *) (heap_tables + 24);
@@ -2444,11 +2451,8 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->references && !image_is_dynamic (image)) {
 		for (i = 0; i < image->nreferences; i++) {
 			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
-#if 0
-				// FIXME: shutdown bug?
 				if (!mono_assembly_close_except_image_pools (image->references [i]))
 					image->references [i] = NULL;
-#endif
 			}
 		}
 	} else {
@@ -2617,12 +2621,8 @@ mono_image_close_finish (MonoImage *image)
 
 	if (image->references && !image_is_dynamic (image)) {
 		for (i = 0; i < image->nreferences; i++) {
-			if (image->references [i] && image->references [i] != REFERENCE_MISSING) {
-#if 0
-				// FIXME: shutdown bug?
+			if (image->references [i] && image->references [i] != REFERENCE_MISSING)
 				mono_assembly_close_finish (image->references [i]);
-#endif
-			}
 		}
 
 		g_free (image->references);

@@ -988,6 +988,30 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	return size;
 }
 
+/* returns true if given index is not in bounds with provided table/index pair */
+gboolean
+mono_metadata_table_bounds_check (MonoImage *image, int table_index, int token_index)
+{
+	if (token_index <= image->tables [table_index].rows)
+		return FALSE;
+
+	GSList *list = image->delta_image;
+	MonoImage *dmeta;
+	MonoTableInfo *table;
+	int ridx;
+
+	do {
+		if (!list)
+			return TRUE;
+		dmeta = list->data;
+		list = list->next;
+		table = &dmeta->tables [table_index];
+		ridx = mono_image_relative_delta_index (dmeta, mono_metadata_make_token (table_index, token_index));
+	} while (ridx < 0 || ridx >= table->rows);
+
+	return FALSE;
+}
+
 /**
  * mono_metadata_compute_table_bases:
  * \param meta metadata context to compute table values
@@ -1182,6 +1206,7 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 {
 	MonoImage *base = NULL; 
 
+	/* Hmm, everywhere else it's `idx >= t->rows` ? */
 	if (G_UNLIKELY (idx >= t->rows)) {
 		/* EnC case */
 		base = mono_table_info_get_base_image (t);
@@ -1223,7 +1248,7 @@ mono_metadata_decode_row_raw (const MonoTableInfo *t, int idx, guint32 *res, int
 	int i, count = mono_metadata_table_count (bitfield);
 	const char *data;
 
-	g_assert (idx <= t->rows);
+	g_assert (idx < t->rows);
 	g_assert (idx >= 0);
 	data = t->base + idx * t->row_size;
 	
@@ -4509,18 +4534,12 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 	}
 
 	if (local_var_sig_tok) {
-		int idx = (local_var_sig_tok & 0xffffff)-1;
-		if (idx >= t->rows || idx < 0) {
-			// TODO: add helper for overflow dmeta check.
-
-			if (!m->delta_image) {
-				mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%8x", idx);
-				goto fail;
-			} else {
-				/* likely it's fine, but need more precise check */
-			}
+		int idx = mono_metadata_token_index (local_var_sig_tok) - 1; // (local_var_sig_tok & 0xff__ffff)-1;
+		if (mono_metadata_table_bounds_check (m, MONO_TABLE_STANDALONESIG, idx)) {
+			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", idx);
+			goto fail;
 		}
-		mono_metadata_decode_row (t, idx, cols, 1);
+		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 
 		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], error))
 			goto fail;
