@@ -600,9 +600,6 @@ struct _MonoImage {
 
 	/* Metadata delta images only */
 	uint32_t generation;
-	/* Metadata delta images only. This is the corresponding IL file */
-	MonoDilFile *delta_il;
-
 
 	/*
 	 * No other runtime locks must be taken while holding this lock.
@@ -903,7 +900,7 @@ int
 mono_image_relative_delta_index (MonoImage *image_dmeta, int token);
 
 void
-mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, const char *dmeta_path, gconstpointer dmeta, uint32_t dmeta_len, const char *dil_path);
+mono_image_load_enc_delta (MonoDomain *domain, MonoImage *base_image, gconstpointer dmeta, uint32_t dmeta_len, gconstpointer dil, uint32_t dil_len);
 
 gpointer
 mono_image_set_alloc  (MonoImageSet *set, guint size);

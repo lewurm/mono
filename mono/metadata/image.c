@@ -2572,11 +2572,6 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->delta_image)
 		mono_image_close_except_pools_all_list (image->delta_image);
 
-	if (image->delta_il) {
-		mono_dil_file_close (image->delta_il);
-		mono_dil_file_destroy (image->delta_il);
-	}
-
 	mono_os_mutex_destroy (&image->szarray_cache_lock);
 	mono_os_mutex_destroy (&image->lock);
 

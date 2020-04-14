@@ -269,20 +269,27 @@ namespace Mono {
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private static unsafe extern void LoadMetadataUpdate_internal (Assembly base_assm, string dmeta_path, string dil_path, byte* dmeta_bytes, int dmeta_length);
+		private static unsafe extern void LoadMetadataUpdate_internal (Assembly base_assm, byte* dmeta_bytes, int dmeta_length, byte *dil_bytes, int dil_length);
 
-		private static int count;
+		private static Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
 
-		public static void LoadMetadataUpdate (Assembly assm) {
-			count++;
+		public static void LoadMetadataUpdate (Assembly assm, byte[] dmeta_data, byte[] dil_data) {
+			int count;
+			if (!assembly_count.TryGetValue (assm, out count))
+				count = 1;
+			else
+				count++;
+			assembly_count [assm] = count;
+
 			string basename = assm.Location;
 			string dmeta_name = $"{basename}.{count}.dmeta";
-			string dil_name = $"{basename}.{count}.dil";
+			// string dil_name = $"{basename}.{count}.dil";
 
-			byte[] dmeta = System.IO.File.ReadAllBytes (dmeta_name);
+			// byte[] dmeta = System.IO.File.ReadAllBytes (dmeta_name);
 			unsafe {
-				fixed (byte* dmeta_bytes = dmeta) {
-				       LoadMetadataUpdate_internal (assm, dmeta_name, dil_name, dmeta_bytes, dmeta.Length);
+				fixed (byte* dmeta_bytes = dmeta_data)
+				fixed (byte* dil_bytes = dil_data) {
+				       LoadMetadataUpdate_internal (assm, dmeta_bytes, dmeta_data.Length, dil_bytes, dil_data.Length);
 				}
 			}
 		}

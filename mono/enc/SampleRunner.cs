@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 public class Sample {
 	public static int Main (string[] args) {
@@ -85,8 +86,24 @@ public class Replacer {
 		return new Replacer ();
 	}
 
+	private Dictionary<Assembly, int> assembly_count = new Dictionary<Assembly, int> ();
+
 	public void Update (Assembly assm) {
 		Console.WriteLine ("Apply Delta Update");
-		UpdateMethod.Invoke (null, new object [] { assm });
+
+		int count;
+		if (!assembly_count.TryGetValue (assm, out count))
+			count = 1;
+		else
+			count++;
+		assembly_count [assm] = count;
+
+		string basename = assm.Location;
+		string dmeta_name = $"{basename}.{count}.dmeta";
+		string dil_name = $"{basename}.{count}.dil";
+		byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);
+		byte[] dil_data = System.IO.File.ReadAllBytes (dmeta_name);
+
+		UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data});
 	}
 }

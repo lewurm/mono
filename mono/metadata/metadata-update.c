@@ -101,7 +101,7 @@ mono_table_info_get_base_image (const MonoTableInfo *t)
 }
 
 MonoImage*
-mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, const char *dmeta_name, gconstpointer dmeta_bytes, uint32_t dmeta_len, MonoImageOpenStatus *status);
+mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_len, MonoImageOpenStatus *status);
 
 MonoDilFile *
 mono_dil_file_open (const char *dil_path);
@@ -208,10 +208,10 @@ mono_image_append_delta (MonoImage *base, MonoImage *delta)
 }
 
 MonoImage*
-mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, const char *dmeta_name, gconstpointer dmeta_bytes, uint32_t dmeta_len, MonoImageOpenStatus *status)
+mono_image_open_dmeta_from_data (MonoImage *base_image, uint32_t generation, gconstpointer dmeta_bytes, uint32_t dmeta_len, MonoImageOpenStatus *status)
 {
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (base_image);
-	MonoImage *dmeta_image = mono_image_open_from_data_internal (alc, (char*)dmeta_bytes, dmeta_len, TRUE, status, FALSE, TRUE, dmeta_name);
+	MonoImage *dmeta_image = mono_image_open_from_data_internal (alc, (char*)dmeta_bytes, dmeta_len, TRUE, status, FALSE, TRUE, NULL);
 
 	dmeta_image->generation = generation;
 
@@ -425,7 +425,7 @@ start_encmap (MonoImage *image_dmeta)
 }
 
 static gboolean
-apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, MonoError *error)
+apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_enclog->rows;
@@ -488,7 +488,9 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, MonoDilFile *dil, M
 				image_base->delta_index = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], token_index - 1, MONO_METHOD_RVA);
-			g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) (dil->il + rva));
+			g_assert (rva < dil_length);
+			char *il_address = ((char *) dil_data) + rva;
+			g_hash_table_insert (image_base->delta_index, GUINT_TO_POINTER (token_index), (gpointer) il_address);
 		} else {
 			g_assert (token_index > image_base->tables [token_table].rows);
 			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
@@ -510,11 +512,16 @@ append_heap (MonoStreamHeader *base, MonoStreamHeader *appendix)
 }
 
 void
-mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char *dmeta_name, gconstpointer dmeta_bytes, uint32_t dmeta_len, const char *dil_path)
+mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpointer dmeta_bytes, uint32_t dmeta_len, gconstpointer dil_bytes, uint32_t dil_length)
 {
 	const char *basename = image_base->filename;
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "LOADING basename=%s, dmeta=%s, dil=%s", basename, dmeta_name, dil_path);
+	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
+		g_print ("LOADING basename=%s delta update.\ndelta image:", basename);
+		mono_dump_mem (dmeta_bytes, dmeta_len);
+		g_print ("dil:");
+		mono_dump_mem (dil_bytes, dil_length);
+	}
 
 	uint32_t generation = mono_metadata_update_prepare (domain);
 
@@ -524,7 +531,7 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image blob heap size: 0x%08x", image_base->heap_blob.size);
 
 	MonoImageOpenStatus status;
-	MonoImage *image_dmeta = mono_image_open_dmeta_from_data (image_base, generation, dmeta_name, dmeta_bytes, dmeta_len, &status);
+	MonoImage *image_dmeta = mono_image_open_dmeta_from_data (image_base, generation, dmeta_bytes, dmeta_len, &status);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image string size: 0x%08x", image_dmeta->heap_strings.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image user string size: 0x%08x", image_dmeta->heap_us.size);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "delta image blob heap addr: %p", image_dmeta->heap_blob.data);
@@ -561,9 +568,6 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base  guid: %s", image_base->guid);
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);
 
-	MonoDilFile *dil = mono_dil_file_open (dil_path);
-	image_dmeta->delta_il = dil;
-
 	if (image_dmeta->minimal_delta) {
 		/* (1) patch cols in base table */
 		
@@ -598,14 +602,14 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	printf ("table_encmap->rows: %d\n", table_encmap->rows);
 #endif
 	if (!table_enclog->rows && !table_encmap->rows) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "No enclog or encmap in delta image %s, nothing to do", dmeta_name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "No enclog or encmap in delta image for base=%s, nothing to do", basename);
 		mono_metadata_update_cancel (generation);
 		return;
 	}
 
 	ERROR_DECL (error);
-	if (!apply_enclog (image_base, image_dmeta, dil, error)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image %s, due to: %s", dmeta_name, mono_error_get_message (error));
+	if (!apply_enclog (image_base, image_dmeta, dil_bytes, dil_length, error)) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Error applying delta image to base=%s, due to: %s", basename, mono_error_get_message (error));
 		mono_error_cleanup (error);
 		mono_metadata_update_cancel (generation);
 		return;
@@ -615,5 +619,5 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, const char
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
 	mono_metadata_update_publish (domain, alc, generation);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta %s (generation %d) applied", dmeta_name, generation);
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, ">>> EnC delta for base=%s (generation %d) applied", basename, generation);
 }
