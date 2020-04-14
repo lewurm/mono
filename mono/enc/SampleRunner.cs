@@ -102,7 +102,7 @@ public class Replacer {
 		string dmeta_name = $"{basename}.{count}.dmeta";
 		string dil_name = $"{basename}.{count}.dil";
 		byte[] dmeta_data = System.IO.File.ReadAllBytes (dmeta_name);
-		byte[] dil_data = System.IO.File.ReadAllBytes (dmeta_name);
+		byte[] dil_data = System.IO.File.ReadAllBytes (dil_name);
 
 		UpdateMethod.Invoke (null, new object [] { assm, dmeta_data, dil_data});
 	}

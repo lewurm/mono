@@ -517,9 +517,9 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	const char *basename = image_base->filename;
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
-		g_print ("LOADING basename=%s delta update.\ndelta image:", basename);
+		g_print ("LOADING basename=%s delta update.\ndelta image=%p & dil=%p\n", basename, dmeta_bytes, dil_bytes);
+		/* TODO: add a non-async version of mono_dump_mem */
 		mono_dump_mem (dmeta_bytes, dmeta_len);
-		g_print ("dil:");
 		mono_dump_mem (dil_bytes, dil_length);
 	}
 
