@@ -882,6 +882,11 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 
 	switch (class_index) {
 	case MONO_MEMBERREF_PARENT_TYPEREF:
+#if 1
+		/* FIXME EnC: terrible hack :-( */
+		if (image->delta_image && idx >= tables [MONO_TABLE_MEMBERREF].rows)
+			nindex += 1;
+#endif
 		klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
 		if (!klass)
 			goto fail;
@@ -2024,6 +2029,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 {
 	int idx;
 	guint32 rva;
+	gboolean from_dmeta_image = FALSE;
 	MonoImage* img;
 	gpointer loc = NULL;
 	MonoGenericContainer *container;
@@ -2075,6 +2081,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	if (G_UNLIKELY (img->method_table_delta_index)) {
 		/* pre-computed rva pointer into delta IL image */
 		loc = g_hash_table_lookup (img->method_table_delta_index, GUINT_TO_POINTER (idx));
+		from_dmeta_image = !!loc;
 	}
 
 	if (!loc) {
@@ -2098,7 +2105,7 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	container = mono_method_get_generic_container (method);
 	if (!container)
 		container = mono_class_try_get_generic_container (method->klass);
-	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
+	return mono_metadata_parse_mh_full (img, container, (const char *)loc, from_dmeta_image, error);
 }
 
 MonoMethodHeader*

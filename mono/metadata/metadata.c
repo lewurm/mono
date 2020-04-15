@@ -1206,7 +1206,6 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 {
 	MonoImage *base = NULL; 
 
-	/* Hmm, everywhere else it's `idx >= t->rows` ? */
 	if (G_UNLIKELY (idx >= t->rows)) {
 		/* EnC case */
 		base = mono_table_info_get_base_image (t);
@@ -4473,7 +4472,7 @@ mono_method_get_header_summary (MonoMethod *method, MonoMethodHeaderSummary *sum
  * Returns: a transient MonoMethodHeader allocated from the heap.
  */
 MonoMethodHeader *
-mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr, MonoError *error)
+mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, const char *ptr, gboolean from_dmeta_image, MonoError *error)
 {
 	MonoMethodHeader *mh = NULL;
 	unsigned char flags = *(const unsigned char *) ptr;
@@ -4492,6 +4491,15 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 		mono_error_set_bad_image (error, m, "Method header with null pointer");
 		return NULL;
 	}
+	/* check out what
+	 * src/libraries/System.Reflection.Metadata/src/System/Reflection/PortableExecutable/ManagedPEBuilder.cs
+	 * is doing (not in roslyn code) */
+
+	/* and more specifically,
+	 * Metadata/Ecma335/Encoding/MethodBodyStreamEncoder.cs
+	 *
+	 * what token is used for `local_var_sig_tok` in the EnC case?
+	 */
 
 	switch (format) {
 	case METHOD_HEADER_TINY_FORMAT:
@@ -4539,7 +4547,8 @@ mono_metadata_parse_mh_full (MonoImage *m, MonoGenericContainer *container, cons
 			mono_error_set_bad_image (error, m, "Invalid method header local vars signature token 0x%08x", idx);
 			goto fail;
 		}
-		mono_metadata_decode_row (t, idx, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
+		/* FIXME: most amazing hack @ from_dmeta_image */
+		mono_metadata_decode_row (t, idx + !!from_dmeta_image, cols, MONO_STAND_ALONE_SIGNATURE_SIZE);
 
 		if (!mono_verifier_verify_standalone_signature (m, cols [MONO_STAND_ALONE_SIGNATURE], error))
 			goto fail;
@@ -4601,7 +4610,7 @@ MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 {
 	ERROR_DECL (error);
-	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, error);
+	MonoMethodHeader *header = mono_metadata_parse_mh_full (m, NULL, ptr, FALSE, error);
 	mono_error_cleanup (error);
 	return header;
 }

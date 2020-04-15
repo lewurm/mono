@@ -376,8 +376,14 @@ mono_image_relative_delta_index (MonoImage *image_dmeta, int token)
 		map_entry = cols [MONO_ENCMAP_TOKEN];
 	}
 
-	if (mono_metadata_token_table (map_entry) == table)
+	if (mono_metadata_token_table (map_entry) == table) {
+#if 0
 		g_assert (mono_metadata_token_index (map_entry) == index);
+#endif
+		if (mono_metadata_token_index (map_entry) != index)
+			if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
+				g_print ("warning: map_entry=0x%08x != index=0x%08x. is this a problem?\n", map_entry, index);
+	}
 
 	return index_map - enc_recs->enc_recs [table];
 }
@@ -471,6 +477,7 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_d
 
 			old_rows -= new_rows;
 			g_assert (new_rows > 0);
+			g_assert (old_rows > 0);
 
 			/* TODO: this can end bad with code around assembly.c:mono_assembly_load_reference */
 			mono_image_lock (image_base);
@@ -478,7 +485,7 @@ apply_enclog (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer dil_d
 			g_assert (image_base->nreferences == old_rows);
 
 			image_base->references = g_new0 (MonoAssembly *, old_rows + new_rows + 1);
-			memcpy (image_base->references, old_array, old_rows + 1);
+			memcpy (image_base->references, old_array, sizeof (gpointer) * (old_rows + 1));
 			image_base->nreferences = old_rows + new_rows;
 			mono_image_unlock (image_base);
 
@@ -575,18 +582,6 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "dmeta guid: %s", image_dmeta->guid);
 
 	if (image_dmeta->minimal_delta) {
-		/* (1) patch cols in base table */
-		
-		/* TODO: patch me!
-		 * TODO2: not sure actually.  maybe we can get around with encmap and the regular delta image list trick everywhere
-		 * TODO3: hmm, I think it's:
-		 * 		if (index < base_image->rows)
-		 * 			patch_col_in_base_image
-		 * 		else
-		 * 			do delta image list trick, and use encmap to determine proper relative index.
-		 * */
-
-		/* (2) append heaps */
 		append_heap (&image_base->heap_strings, &image_dmeta->heap_strings);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image strings heap addr (merged): %p", image_base->heap_strings.data);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "base image strings heap size (merged): 0x%08x", image_base->heap_strings.size);
@@ -603,10 +598,6 @@ mono_image_load_enc_delta (MonoDomain *domain, MonoImage *image_base, gconstpoin
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE))
 		dump_update_summary (image_base, image_dmeta);
 
-#if 0
-	printf ("table_enclog->rows: %d\n", table_enclog->rows);
-	printf ("table_encmap->rows: %d\n", table_encmap->rows);
-#endif
 	if (!table_enclog->rows && !table_encmap->rows) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "No enclog or encmap in delta image for base=%s, nothing to do", basename);
 		mono_metadata_update_cancel (generation);
