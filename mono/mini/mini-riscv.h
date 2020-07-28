@@ -10,8 +10,10 @@
 
 #ifdef TARGET_RISCV64
 #define MONO_RISCV_ARCHITECTURE "riscv64"
+#define RISCV_XLEN 64
 #else
 #define MONO_RISCV_ARCHITECTURE "riscv32"
+#define RISCV_XLEN 32
 #endif
 
 #if defined (RISCV_FPABI_SOFT)
@@ -158,6 +160,17 @@
 // #define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED (1)
 
 typedef struct {
+	CallInfo *cinfo;
+	int saved_gregs_offset;
+	/* Points to arguments received on the stack */
+	int args_reg;
+	gboolean cond_branch_islands;
+	MonoInst *vret_addr_loc;
+	MonoInst *seq_point_info_var;
+	MonoInst *ss_tramp_var;
+	MonoInst *bp_tramp_var;
+	guint8 *thunks;
+	int thunks_size;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) \
@@ -198,6 +211,57 @@ enum {
 	MONO_R_RISCV_BGE  = 6,
 	MONO_R_RISCV_BLTU = 7,
 	MONO_R_RISCV_BGEU = 8,
+};
+
+typedef enum {
+	ArgInIReg,
+	ArgInFReg,
+	ArgInFRegR4,
+	ArgOnStack,
+	ArgOnStackR8,
+	ArgOnStackR4,
+	/*
+	 * Vtype passed in consecutive int registers.
+	 * ainfo->reg is the firs register,
+	 * ainfo->nregs is the number of registers,
+	 * ainfo->size is the size of the structure.
+	 */
+	ArgVtypeInIRegs,
+	ArgVtypeByRef,
+	ArgVtypeByRefOnStack,
+	ArgVtypeOnStack,
+	ArgHFA,
+	ArgNone
+} ArgStorage;
+
+typedef struct {
+	ArgStorage storage;
+	int reg;
+	/* ArgOnStack */
+	int offset;
+	/* ArgVtypeInIRegs/ArgHFA */
+	int nregs, size;
+	/* ArgHFA */
+	int esize;
+	/* ArgHFA */
+	/* The offsets of the float values inside the arg */
+	guint16 foffsets [4];
+	/* ArgOnStack */
+	int slot_size;
+	/* hfa */
+	int nfregs_to_skip;
+	gboolean sign;
+	gboolean gsharedvt;
+	gboolean hfa;
+} ArgInfo;
+
+struct CallInfo {
+	int nargs;
+	int gr, fr, stack_usage;
+	gboolean pinvoke;
+	ArgInfo ret;
+	ArgInfo sig_cookie;
+	ArgInfo args [1];
 };
 
 __attribute__ ((warn_unused_result)) guint8 *

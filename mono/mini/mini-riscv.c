@@ -442,10 +442,247 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 #endif
 
+static void
+add_general (CallInfo *cinfo, ArgInfo *ainfo, int size, gboolean sign)
+{
+	if (cinfo->gr >= RISCV_A0 + RISCV_N_GAREGS) {
+		ainfo->storage = ArgOnStack;
+		size = RISCV_XLEN / 8;
+		sign = FALSE;
+		cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, size);
+		ainfo->offset = cinfo->stack_usage;
+		ainfo->slot_size = size;
+		ainfo->sign = sign;
+		cinfo->stack_usage += size;
+	} else {
+		ainfo->storage = ArgInIReg;
+		ainfo->reg = cinfo->gr;
+		cinfo->gr ++;
+	}
+}
+
+static void
+add_fp (CallInfo *cinfo, ArgInfo *ainfo, gboolean single)
+{
+	// int size = single ? 4 : 8;
+
+	if (cinfo->fr >= RISCV_FA0 + RISCV_N_FAREGS) {
+		ainfo->storage = single ? ArgOnStackR4 : ArgOnStackR8;
+		ainfo->offset = cinfo->stack_usage;
+		/* TODO: verify that for float and double, each on RV32 and RV64 */
+		ainfo->slot_size = 8;
+		/* Put arguments into 8 byte aligned stack slots */
+		cinfo->stack_usage += 8;
+	} else {
+		if (single)
+			ainfo->storage = ArgInFRegR4;
+		else
+			ainfo->storage = ArgInFReg;
+		ainfo->reg = cinfo->fr;
+		cinfo->fr ++;
+	}
+}
+
+static void
+add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
+{
+	MonoType *ptype;
+
+	ptype = mini_get_underlying_type (t);
+	switch (ptype->type) {
+	case MONO_TYPE_I1:
+		add_general (cinfo, ainfo, 1, TRUE);
+		break;
+	case MONO_TYPE_U1:
+		add_general (cinfo, ainfo, 1, FALSE);
+		break;
+	case MONO_TYPE_I2:
+		add_general (cinfo, ainfo, 2, TRUE);
+		break;
+	case MONO_TYPE_U2:
+		add_general (cinfo, ainfo, 2, FALSE);
+		break;
+#ifdef TARGET_RISCV32
+	case MONO_TYPE_I:
+#endif
+	case MONO_TYPE_I4:
+		add_general (cinfo, ainfo, 4, TRUE);
+		break;
+#ifdef TARGET_RISCV32
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_OBJECT:
+#endif
+	case MONO_TYPE_U4:
+		add_general (cinfo, ainfo, 4, FALSE);
+		break;
+#ifdef TARGET_RISCV64
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_OBJECT:
+#endif
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		add_general (cinfo, ainfo, 8, FALSE);
+		break;
+	case MONO_TYPE_R8:
+		add_fp (cinfo, ainfo, FALSE);
+		break;
+	case MONO_TYPE_R4:
+		add_fp (cinfo, ainfo, TRUE);
+		break;
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_TYPEDBYREF:
+		NOT_IMPLEMENTED;
+		// add_valuetype (cinfo, ainfo, ptype);
+		break;
+	case MONO_TYPE_VOID:
+		ainfo->storage = ArgNone;
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (ptype)) {
+			add_general (cinfo, ainfo, 8, FALSE);
+		} else if (mini_is_gsharedvt_variable_type (ptype)) {
+			/*
+			 * Treat gsharedvt arguments as large vtypes
+			 */
+			ainfo->storage = ArgVtypeByRef;
+			ainfo->gsharedvt = TRUE;
+		} else {
+			NOT_IMPLEMENTED;
+			// add_valuetype (cinfo, ainfo, ptype);
+		}
+		break;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR:
+		g_assert (mini_is_gsharedvt_type (ptype));
+		ainfo->storage = ArgVtypeByRef;
+		ainfo->gsharedvt = TRUE;
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
+/*
+ * get_call_info:
+ *
+ *  Obtain information about a call according to the calling convention.
+ */
+static CallInfo*
+get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
+{
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	int n, pstart, pindex;
+
+	n = sig->hasthis + sig->param_count;
+
+	if (mp)
+		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+	else
+		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+
+	cinfo->nargs = n;
+	cinfo->pinvoke = sig->pinvoke;
+
+	/* Return value */
+	add_param (cinfo, &cinfo->ret, sig->ret);
+	if (cinfo->ret.storage == ArgVtypeByRef)
+		cinfo->ret.reg = RISCV_A0;
+	/* Reset state */
+	cinfo->gr = RISCV_A0;
+	cinfo->fr = RISCV_FA0;
+	cinfo->stack_usage = 0;
+
+	/* Parameters */
+	if (sig->hasthis)
+		add_general (cinfo, cinfo->args + 0, 8, FALSE);
+	pstart = 0;
+	for (pindex = pstart; pindex < sig->param_count; ++pindex) {
+		ainfo = cinfo->args + sig->hasthis + pindex;
+
+		if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)) {
+			/* Prevent implicit arguments and sig_cookie from
+			   being passed in registers */
+			cinfo->gr = RISCV_A0 + RISCV_N_GAREGS;
+			cinfo->fr = RISCV_FA0 + RISCV_N_FAREGS;
+			/* Emit the signature cookie just before the implicit arguments */
+			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
+		}
+
+		add_param (cinfo, ainfo, sig->params [pindex]);
+		if (ainfo->storage == ArgVtypeByRef) {
+			/* Pass the argument address in the next register */
+			if (cinfo->gr >= RISCV_A0 + RISCV_N_GAREGS) {
+				ainfo->storage = ArgVtypeByRefOnStack;
+				cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, RISCV_XLEN / 8);
+				ainfo->offset = cinfo->stack_usage;
+				cinfo->stack_usage += RISCV_XLEN / 8;
+			} else {
+				ainfo->reg = cinfo->gr;
+				cinfo->gr ++;
+			}
+		}
+	}
+
+	/* Handle the case where there are no implicit arguments */
+	if ((sig->call_convention == MONO_CALL_VARARG) && (pindex == sig->sentinelpos)) {
+		/* Prevent implicit arguments and sig_cookie from
+		   being passed in registers */
+		cinfo->gr = RISCV_A0 + RISCV_N_GAREGS;
+		cinfo->fr = RISCV_FA0 + RISCV_N_FAREGS;
+		/* Emit the signature cookie just before the implicit arguments */
+		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
+	}
+
+	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
+
+	return cinfo;
+}
+
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoMethodSignature *sig;
+	CallInfo *cinfo;
+
+	sig = mono_method_signature_internal (cfg->method);
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = cfg->arch.cinfo;
+
+	if (cinfo->ret.storage == ArgVtypeByRef) {
+		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		cfg->vret_addr->flags |= MONO_INST_VOLATILE;
+	}
+
+	if (cfg->gen_sdb_seq_points) {
+		MonoInst *ins;
+
+		if (cfg->compile_aot) {
+			ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+			ins->flags |= MONO_INST_VOLATILE;
+			cfg->arch.seq_point_info_var = ins;
+		}
+
+		ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		ins->flags |= MONO_INST_VOLATILE;
+		cfg->arch.ss_tramp_var = ins;
+
+		ins = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		ins->flags |= MONO_INST_VOLATILE;
+		cfg->arch.bp_tramp_var = ins;
+	}
+
+	if (cfg->method->save_lmf) {
+		cfg->create_lmf_var = TRUE;
+		cfg->lmf_ir = TRUE;
+	}
 }
 
 MonoInst *
