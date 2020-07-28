@@ -207,6 +207,10 @@ g_assertion_message (const gchar *format, ...)
 	failure_assertion = g_logv_nofree (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
 
 	va_end (args);
+#ifdef HOST_RISCV
+	// workaround for https://github.com/riscv/riscv-binutils-gdb/issues/223
+	__asm__ ("ebreak;\n\t");
+#endif
 	exit (0);
 }
 

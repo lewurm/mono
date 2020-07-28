@@ -25,6 +25,7 @@
 	do { \
 		if (G_UNLIKELY (!(expr))) { \
 			fprintf (stderr, "* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #expr); \
+			__asm__ ("ebreak\n\t"); \
 			abort (); \
 		} \
 	} while (0)
