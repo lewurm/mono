@@ -20,6 +20,12 @@ static gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c,
                 riscv_stdext_p, riscv_stdext_q, riscv_stdext_t,
                 riscv_stdext_v;
 
+/* The single step trampoline */
+static gpointer ss_trampoline;
+
+/* The breakpoint trampoline */
+static gpointer bp_trampoline;
+
 void
 mono_arch_cpu_init (void)
 {
@@ -33,6 +39,9 @@ mono_arch_init (void)
 	riscv_stdext_d = mono_hwcap_riscv_has_stdext_d;
 	riscv_stdext_f = mono_hwcap_riscv_has_stdext_f;
 	riscv_stdext_m = mono_hwcap_riscv_has_stdext_m;
+
+	if (!mono_aot_only)
+		bp_trampoline = mini_get_breakpoint_trampoline ();
 }
 
 void
@@ -1357,10 +1366,187 @@ mono_riscv_emit_store (guint8 *code, int rs1, int rs2, gint32 imm)
 	return code;
 }
 
+// May clobber t1.
+guint8 *
+mono_riscv_emit_add_imm (guint8 *code, int rd, int rs1, gint32 imm)
+{
+	if (RISCV_VALID_S_IMM (imm)) {
+		riscv_addi (code, rd, rs1, imm);
+	} else {
+		code = mono_riscv_emit_imm (code, RISCV_T1, imm);
+		riscv_add (code, rd, rs1, RISCV_T1);
+	}
+
+	return code;
+}
+
+/*
+ * emit_setup_lmf:
+ *
+ *   Emit code to initialize an LMF structure at LMF_OFFSET.
+ */
+static guint8*
+emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offset)
+{
+	/*
+	 * The LMF should contain all the state required to be able to reconstruct the machine state
+	 * at the current point of execution. Since the LMF is only read during EH, only callee
+	 * saved etc. registers need to be saved.
+	 * FIXME: Save callee saved fp regs, JITted code doesn't use them, but native code does, and they
+	 * need to be restored during EH.
+	 */
+
+	NOT_IMPLEMENTED;
+#if 0
+	/* pc */
+	arm_adrx (code, ARMREG_LR, code);
+	code = emit_strx (code, ARMREG_LR, ARMREG_FP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, pc));
+	/* gregs + fp + sp */
+	/* Don't emit unwind info for sp/fp, they are already handled in the prolog */
+	code = emit_store_regset_cfa (cfg, code, MONO_ARCH_LMF_REGS, ARMREG_FP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, gregs), cfa_offset, (1 << ARMREG_FP) | (1 << ARMREG_SP));
+
+#endif
+	return code;
+}
+
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoMethod *method = cfg->method;
+	MonoMethodSignature *sig;
+	MonoBasicBlock *bb;
+	guint8 *code;
+	int cfa_offset, max_offset;
+
+	sig = mono_method_signature_internal (method);
+	cfg->code_size = 256 + sig->param_count * 64;
+	code = cfg->native_code = g_malloc (cfg->code_size);
+
+	/* This can be unaligned */
+	cfg->stack_offset = ALIGN_TO (cfg->stack_offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/*
+	 * - Setup frame
+	 */
+	cfa_offset = 0;
+	mono_emit_unwind_op_def_cfa (cfg, code, RISCV_SP, 0);
+
+	/* Setup frame */
+	riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->stack_offset);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, RISCV_XLEN / 8);
+	cfa_offset += cfg->stack_offset;
+	mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+	mono_emit_unwind_op_offset (cfg, code, RISCV_FP, (- cfa_offset) + 0);
+	mono_emit_unwind_op_offset (cfg, code, RISCV_RA, (- cfa_offset) + RISCV_XLEN / 8);
+	riscv_addi (code, RISCV_FP, RISCV_SP, 0);
+	mono_emit_unwind_op_def_cfa_reg (cfg, code, RISCV_FP);
+
+	if (cfg->param_area) {
+		NOT_IMPLEMENTED;
+		// ???
+		/* The param area is below the frame pointer */
+		// code = emit_subx_sp_imm (code, cfg->param_area);
+	}
+
+	if (cfg->method->save_lmf) {
+		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset, cfa_offset);
+	} else {
+		/* Save gregs */
+		code = emit_store_regset_cfa (cfg, code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, ARMREG_FP, cfg->arch.saved_gregs_offset, cfa_offset, 0);
+	}
+
+	/* Setup args reg */
+	if (cfg->arch.args_reg) {
+		/* The register was already saved above */
+		code = mono_riscv_emit_add_imm (code, cfg->arch.args_reg, RISCV_FP, cfg->stack_offset);
+	}
+
+	/* Save return area addr received in R8 */
+	if (cfg->vret_addr) {
+		NOT_IMPLEMENTED;
+#if 0
+		MonoInst *ins = cfg->vret_addr;
+
+		g_assert (ins->opcode == OP_REGOFFSET);
+		code = emit_strx (code, ARMREG_R8, ins->inst_basereg, ins->inst_offset);
+#endif
+	}
+
+	/* Save mrgctx received in MONO_ARCH_RGCTX_REG */
+	if (cfg->rgctx_var) {
+		NOT_IMPLEMENTED;
+#if 0
+		MonoInst *ins = cfg->rgctx_var;
+
+		g_assert (ins->opcode == OP_REGOFFSET);
+
+		code = emit_strx (code, MONO_ARCH_RGCTX_REG, ins->inst_basereg, ins->inst_offset); 
+
+		mono_add_var_location (cfg, cfg->rgctx_var, TRUE, MONO_ARCH_RGCTX_REG, 0, 0, code - cfg->native_code);
+		mono_add_var_location (cfg, cfg->rgctx_var, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
+#endif
+	}
+		
+	/*
+	 * Move arguments to their registers/stack locations.
+	 */
+	code = emit_move_args (cfg, code);
+
+	/* Initialize seq_point_info_var */
+	if (cfg->arch.seq_point_info_var) {
+		NOT_IMPLEMENTED;
+#if 0
+		MonoInst *ins = cfg->arch.seq_point_info_var;
+
+		/* Initialize the variable from a GOT slot */
+		code = emit_aotconst (cfg, code, ARMREG_IP0, MONO_PATCH_INFO_SEQ_POINT_INFO, cfg->method);
+		g_assert (ins->opcode == OP_REGOFFSET);
+		code = emit_strx (code, ARMREG_IP0, ins->inst_basereg, ins->inst_offset);
+
+		/* Initialize ss_tramp_var */
+		ins = cfg->arch.ss_tramp_var;
+		g_assert (ins->opcode == OP_REGOFFSET);
+
+		code = emit_ldrx (code, ARMREG_IP1, ARMREG_IP0, MONO_STRUCT_OFFSET (SeqPointInfo, ss_tramp_addr));
+		code = emit_strx (code, ARMREG_IP1, ins->inst_basereg, ins->inst_offset);
+#endif
+	} else {
+		MonoInst *ins;
+
+		if (cfg->arch.ss_tramp_var) {
+			/* Initialize ss_tramp_var */
+			ins = cfg->arch.ss_tramp_var;
+			g_assert (ins->opcode == OP_REGOFFSET);
+
+			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)&ss_trampoline);
+			code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg, ins->inst_offset);
+		}
+
+		if (cfg->arch.bp_tramp_var) {
+			/* Initialize bp_tramp_var */
+			ins = cfg->arch.bp_tramp_var;
+			g_assert (ins->opcode == OP_REGOFFSET);
+
+			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)&bp_trampoline);
+			code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg, ins->inst_offset);
+		}
+	}
+
+	max_offset = 0;
+	if (cfg->opt & MONO_OPT_BRANCH) {
+		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+			MonoInst *ins;
+			bb->max_offset = max_offset;
+
+			MONO_BB_FOR_EACH_INS (bb, ins) {
+				max_offset += ins_get_size (ins->opcode);
+			}
+		}
+	}
+	if (max_offset > 0x3ffff * 4)
+		cfg->arch.cond_branch_islands = TRUE;
+
+	return code;
 }
 
 void
@@ -1413,13 +1599,13 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 void
 mono_arch_start_single_stepping (void)
 {
-	NOT_IMPLEMENTED;
+	ss_trampoline = mini_get_single_step_trampoline ();
 }
 
 void
 mono_arch_stop_single_stepping (void)
 {
-	NOT_IMPLEMENTED;
+	ss_trampoline = NULL;
 }
 
 gboolean
