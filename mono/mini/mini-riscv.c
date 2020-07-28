@@ -6,6 +6,7 @@
 #include <mono/utils/mono-hwcap.h>
 
 #include "mini-runtime.h"
+#include "ir-emit.h"
 
 #ifdef TARGET_RISCV64
 #include "cpu-riscv64.h"
@@ -692,10 +693,190 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
 	return NULL;
 }
 
+static void
+add_outarg_reg (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int reg, MonoInst *arg)
+{
+	MonoInst *ins;
+
+	switch (storage) {
+	case ArgInIReg:
+		MONO_INST_NEW (cfg, ins, OP_MOVE);
+		ins->dreg = mono_alloc_ireg_copy (cfg, arg->dreg);
+		ins->sreg1 = arg->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, FALSE);
+		break;
+	case ArgInFReg:
+		MONO_INST_NEW (cfg, ins, OP_FMOVE);
+		ins->dreg = mono_alloc_freg (cfg);
+		ins->sreg1 = arg->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, TRUE);
+		break;
+	case ArgInFRegR4:
+		if (COMPILE_LLVM (cfg))
+			MONO_INST_NEW (cfg, ins, OP_FMOVE);
+		else if (cfg->r4fp)
+			MONO_INST_NEW (cfg, ins, OP_RMOVE);
+		else
+			NOT_IMPLEMENTED;
+			// MONO_INST_NEW (cfg, ins, OP_ARM_SETFREG_R4);
+		ins->dreg = mono_alloc_freg (cfg);
+		ins->sreg1 = arg->dreg;
+		MONO_ADD_INS (cfg->cbb, ins);
+		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, reg, TRUE);
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+}
+
+static void
+emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
+{
+	MonoMethodSignature *tmp_sig;
+	int sig_reg;
+
+	if (MONO_IS_TAILCALL_OPCODE (call))
+		NOT_IMPLEMENTED;
+
+	g_assert (cinfo->sig_cookie.storage == ArgOnStack);
+			
+	/*
+	 * mono_ArgIterator_Setup assumes the signature cookie is 
+	 * passed first and all the arguments which were before it are
+	 * passed on the stack after the signature. So compensate by 
+	 * passing a different signature.
+	 */
+	tmp_sig = mono_metadata_signature_dup (call->signature);
+	tmp_sig->param_count -= call->signature->sentinelpos;
+	tmp_sig->sentinelpos = 0;
+	memcpy (tmp_sig->params, call->signature->params + call->signature->sentinelpos, tmp_sig->param_count * sizeof (MonoType*));
+
+	sig_reg = mono_alloc_ireg (cfg);
+	MONO_EMIT_NEW_SIGNATURECONST (cfg, sig_reg, tmp_sig);
+
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, cinfo->sig_cookie.offset, sig_reg);
+}
+
 void
 mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 {
-	NOT_IMPLEMENTED;
+	MonoMethodSignature *sig;
+	MonoInst *arg, *vtarg;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	int i;
+
+	sig = call->signature;
+
+	cinfo = get_call_info (cfg->mempool, sig);
+
+	switch (cinfo->ret.storage) {
+	case ArgVtypeInIRegs:
+	case ArgHFA:
+		if (MONO_IS_TAILCALL_OPCODE (call))
+			break;
+		/*
+		 * The vtype is returned in registers, save the return area address in a local, and save the vtype into
+		 * the location pointed to by it after call in emit_move_return_value ().
+		 */
+		if (!cfg->arch.vret_addr_loc) {
+			cfg->arch.vret_addr_loc = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+			/* Prevent it from being register allocated or optimized away */
+			cfg->arch.vret_addr_loc->flags |= MONO_INST_VOLATILE;
+		}
+
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->arch.vret_addr_loc->dreg, call->vret_var->dreg);
+		break;
+	case ArgVtypeByRef:
+		/* Pass the vtype return address in R8 */
+		g_assert (!MONO_IS_TAILCALL_OPCODE (call) || call->vret_var == cfg->vret_addr);
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+		vtarg->sreg1 = call->vret_var->dreg;
+		vtarg->dreg = mono_alloc_preg (cfg);
+		MONO_ADD_INS (cfg->cbb, vtarg);
+
+		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->ret.reg, FALSE);
+		break;
+	default:
+		break;
+	}
+
+	for (i = 0; i < cinfo->nargs; ++i) {
+		ainfo = cinfo->args + i;
+		arg = call->args [i];
+
+		if ((sig->call_convention == MONO_CALL_VARARG) && (i == sig->sentinelpos)) {
+			/* Emit the signature cookie just before the implicit arguments */
+			emit_sig_cookie (cfg, call, cinfo);
+		}
+
+		switch (ainfo->storage) {
+		case ArgInIReg:
+		case ArgInFReg:
+		case ArgInFRegR4:
+			add_outarg_reg (cfg, call, ainfo->storage, ainfo->reg, arg);
+			break;
+		case ArgOnStack:
+			switch (ainfo->slot_size) {
+			case 8:
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+				break;
+			case 4:
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+				break;
+			case 2:
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+				break;
+			case 1:
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		case ArgOnStackR8:
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+			break;
+		case ArgOnStackR4:
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, RISCV_SP, ainfo->offset, arg->dreg);
+			break;
+		case ArgVtypeInIRegs:
+		case ArgVtypeByRef:
+		case ArgVtypeByRefOnStack:
+		case ArgVtypeOnStack:
+		case ArgHFA: {
+			MonoInst *ins;
+			guint32 align;
+			guint32 size;
+
+			size = mono_class_value_size (arg->klass, &align);
+
+			MONO_INST_NEW (cfg, ins, OP_OUTARG_VT);
+			ins->sreg1 = arg->dreg;
+			ins->klass = arg->klass;
+			ins->backend.size = size;
+			ins->inst_p0 = call;
+			ins->inst_p1 = mono_mempool_alloc (cfg->mempool, sizeof (ArgInfo));
+			memcpy (ins->inst_p1, ainfo, sizeof (ArgInfo));
+			MONO_ADD_INS (cfg->cbb, ins);
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+	}
+
+	/* Handle the case where there are no implicit arguments */
+	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG) && (cinfo->nargs == sig->sentinelpos))
+		emit_sig_cookie (cfg, call, cinfo);
+
+	call->call_info = cinfo;
+	call->stack_usage = cinfo->stack_usage;
 }
 
 void
@@ -727,13 +908,364 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 void
 mono_arch_allocate_vars (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoMethodSignature *sig;
+	MonoInst *ins;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	int i, offset, size, align;
+	guint32 locals_stack_size, locals_stack_align;
+	gint32 *offsets;
+
+	/*
+	 * Allocate arguments and locals to either register (OP_REGVAR) or to a stack slot (OP_REGOFFSET).
+	 * Compute cfg->stack_offset and update cfg->used_int_regs.
+	 */
+
+	sig = mono_method_signature_internal (cfg->method);
+
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = cfg->arch.cinfo;
+
+	/*
+	 * The ARM64 ABI always uses a frame pointer.
+	 * The instruction set prefers positive offsets, so fp points to the bottom of the
+	 * frame, and stack slots are at positive offsets.
+	 * If some arguments are received on the stack, their offsets relative to fp can
+	 * not be computed right now because the stack frame might grow due to spilling
+	 * done by the local register allocator. To solve this, we reserve a register
+	 * which points to them.
+	 * The stack frame looks like this:
+	 * args_reg -> <bottom of parent frame>
+	 *             <locals etc>
+	 *       fp -> <saved fp+lr>
+     *       sp -> <localloc/params area>
+	 */
+	cfg->frame_reg = RISCV_FP;
+	cfg->flags |= MONO_CFG_HAS_SPILLUP;
+	offset = 0;
+
+	/* Saved fp+lr */
+	offset += 16;
+
+	if (cinfo->stack_usage) {
+		/* TODO: check if this is needed for RISC-V */
+		g_assert (!(cfg->used_int_regs & (1 << RISCV_X28)));
+		cfg->arch.args_reg = RISCV_X28;
+		cfg->used_int_regs |= 1 << RISCV_X28;
+	}
+
+	if (cfg->method->save_lmf) {
+		/* The LMF var is allocated normally */
+	} else {
+		/* Callee saved regs */
+		cfg->arch.saved_gregs_offset = offset;
+		for (i = 0; i < 32; ++i)
+			if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) && (cfg->used_int_regs & (1 << i)))
+				offset += 8;
+	}
+
+	/* Return value */
+	switch (cinfo->ret.storage) {
+	case ArgNone:
+		break;
+	case ArgInIReg:
+	case ArgInFReg:
+	case ArgInFRegR4:
+		cfg->ret->opcode = OP_REGVAR;
+		cfg->ret->dreg = cinfo->ret.reg;
+		break;
+	case ArgVtypeInIRegs:
+	case ArgHFA:
+		/* TODO: remove for RISC-V? */
+		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
+		cfg->ret->opcode = OP_REGOFFSET;
+		cfg->ret->inst_basereg = cfg->frame_reg;
+		cfg->ret->inst_offset = offset;
+		if (cinfo->ret.storage == ArgHFA)
+			// FIXME:
+			offset += 64;
+		else
+			offset += 16;
+		break;
+	case ArgVtypeByRef:
+		/* This variable will be initalized in the prolog from R8 */
+		cfg->vret_addr->opcode = OP_REGOFFSET;
+		cfg->vret_addr->inst_basereg = cfg->frame_reg;
+		cfg->vret_addr->inst_offset = offset;
+		offset += 8;
+		if (G_UNLIKELY (cfg->verbose_level > 1)) {
+			printf ("vret_addr =");
+			mono_print_ins (cfg->vret_addr);
+		}
+		break;
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	/* Arguments */
+	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
+		ainfo = cinfo->args + i;
+
+		ins = cfg->args [i];
+		if (ins->opcode == OP_REGVAR)
+			continue;
+
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = cfg->frame_reg;
+
+		switch (ainfo->storage) {
+		case ArgInIReg:
+		case ArgInFReg:
+		case ArgInFRegR4:
+			// FIXME: Use nregs/size
+			/* These will be copied to the stack in the prolog */
+			ins->inst_offset = offset;
+			offset += 8;
+			break;
+		case ArgOnStack:
+		case ArgOnStackR4:
+		case ArgOnStackR8:
+		case ArgVtypeOnStack:
+			/* These are in the parent frame */
+			g_assert (cfg->arch.args_reg);
+			ins->inst_basereg = cfg->arch.args_reg;
+			ins->inst_offset = ainfo->offset;
+			break;
+		case ArgVtypeInIRegs:
+		case ArgHFA:
+			/* TODO: remove for RISC-V? */
+			ins->opcode = OP_REGOFFSET;
+			ins->inst_basereg = cfg->frame_reg;
+			/* These arguments are saved to the stack in the prolog */
+			ins->inst_offset = offset;
+			if (cfg->verbose_level >= 2)
+				printf ("arg %d allocated to %s+0x%0x.\n", i, mono_arch_regname (ins->inst_basereg), (int)ins->inst_offset);
+			if (ainfo->storage == ArgHFA)
+				// FIXME:
+				offset += 64;
+			else
+				offset += 16;
+			break;
+		case ArgVtypeByRefOnStack: {
+			MonoInst *vtaddr;
+
+			if (ainfo->gsharedvt) {
+				ins->opcode = OP_REGOFFSET;
+				ins->inst_basereg = cfg->arch.args_reg;
+				ins->inst_offset = ainfo->offset;
+				break;
+			}
+
+			/* The vtype address is in the parent frame */
+			g_assert (cfg->arch.args_reg);
+			MONO_INST_NEW (cfg, vtaddr, 0);
+			vtaddr->opcode = OP_REGOFFSET;
+			vtaddr->inst_basereg = cfg->arch.args_reg;
+			vtaddr->inst_offset = ainfo->offset;
+
+			/* Need an indirection */
+			ins->opcode = OP_VTARG_ADDR;
+			ins->inst_left = vtaddr;
+			break;
+		}
+		case ArgVtypeByRef: {
+			MonoInst *vtaddr;
+
+			if (ainfo->gsharedvt) {
+				ins->opcode = OP_REGOFFSET;
+				ins->inst_basereg = cfg->frame_reg;
+				ins->inst_offset = offset;
+				offset += 8;
+				break;
+			}
+
+			/* The vtype address is in a register, will be copied to the stack in the prolog */
+			MONO_INST_NEW (cfg, vtaddr, 0);
+			vtaddr->opcode = OP_REGOFFSET;
+			vtaddr->inst_basereg = cfg->frame_reg;
+			vtaddr->inst_offset = offset;
+			offset += 8;
+
+			/* Need an indirection */
+			ins->opcode = OP_VTARG_ADDR;
+			ins->inst_left = vtaddr;
+			break;
+		}
+		default:
+			g_assert_not_reached ();
+			break;
+		}
+	}
+
+	/* Allocate these first so they have a small offset, OP_SEQ_POINT depends on this */
+	// FIXME: Allocate these to registers
+	ins = cfg->arch.seq_point_info_var;
+	if (ins) {
+		size = 8;
+		align = 8;
+		offset += align - 1;
+		offset &= ~(align - 1);
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = cfg->frame_reg;
+		ins->inst_offset = offset;
+		offset += size;
+	}
+	ins = cfg->arch.ss_tramp_var;
+	if (ins) {
+		size = 8;
+		align = 8;
+		offset += align - 1;
+		offset &= ~(align - 1);
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = cfg->frame_reg;
+		ins->inst_offset = offset;
+		offset += size;
+	}
+	ins = cfg->arch.bp_tramp_var;
+	if (ins) {
+		size = 8;
+		align = 8;
+		offset += align - 1;
+		offset &= ~(align - 1);
+		ins->opcode = OP_REGOFFSET;
+		ins->inst_basereg = cfg->frame_reg;
+		ins->inst_offset = offset;
+		offset += size;
+	}
+
+	/* Locals */
+	offsets = mono_allocate_stack_slots (cfg, FALSE, &locals_stack_size, &locals_stack_align);
+	if (locals_stack_align)
+		offset = ALIGN_TO (offset, locals_stack_align);
+
+	for (i = cfg->locals_start; i < cfg->num_varinfo; i++) {
+		if (offsets [i] != -1) {
+			ins = cfg->varinfo [i];
+			ins->opcode = OP_REGOFFSET;
+			ins->inst_basereg = cfg->frame_reg;
+			ins->inst_offset = offset + offsets [i];
+			// printf ("allocated local %d to ", i); mono_print_ins (ins);
+		}
+	}
+	offset += locals_stack_size;
+
+	offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	cfg->stack_offset = offset;
 }
 
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	NOT_IMPLEMENTED;
+	MonoInst *ins, *temp, *last_ins = NULL;
+
+	MONO_BB_FOR_EACH_INS (bb, ins) {
+		switch (ins->opcode) {
+		case OP_SBB:
+		case OP_ISBB:
+		case OP_SUBCC:
+		case OP_ISUBCC:
+			NOT_IMPLEMENTED;
+			break;
+		case OP_IDIV_IMM:
+		case OP_IREM_IMM:
+		case OP_IDIV_UN_IMM:
+		case OP_IREM_UN_IMM:
+		case OP_LREM_IMM:
+			mono_decompose_op_imm (cfg, bb, ins);
+			break;
+		case OP_LOCALLOC_IMM:
+			if (ins->inst_imm > 32) {
+#define ADD_NEW_INS(cfg,dest,op) do {       \
+		MONO_INST_NEW ((cfg), (dest), (op)); \
+        mono_bblock_insert_before_ins (bb, ins, (dest)); \
+	} while (0)
+				ADD_NEW_INS (cfg, temp, OP_ICONST);
+				temp->inst_c0 = ins->inst_imm;
+				temp->dreg = mono_alloc_ireg (cfg);
+				ins->sreg1 = temp->dreg;
+				ins->opcode = mono_op_imm_to_op (ins->opcode);
+			}
+			break;
+		case OP_ICOMPARE_IMM:
+			NOT_IMPLEMENTED;
+			if (ins->inst_imm == 0 && ins->next && ins->next->opcode == OP_IBEQ) {
+				// ins->next->opcode = OP_ARM64_CBZW;
+				ins->next->sreg1 = ins->sreg1;
+				NULLIFY_INS (ins);
+			} else if (ins->inst_imm == 0 && ins->next && ins->next->opcode == OP_IBNE_UN) {
+				// ins->next->opcode = OP_ARM64_CBNZW;
+				ins->next->sreg1 = ins->sreg1;
+				NULLIFY_INS (ins);
+			}
+			break;
+		case OP_LCOMPARE_IMM:
+		case OP_COMPARE_IMM:
+			NOT_IMPLEMENTED;
+			if (ins->inst_imm == 0 && ins->next && ins->next->opcode == OP_LBEQ) {
+				// ins->next->opcode = OP_ARM64_CBZX;
+				ins->next->sreg1 = ins->sreg1;
+				NULLIFY_INS (ins);
+			} else if (ins->inst_imm == 0 && ins->next && ins->next->opcode == OP_LBNE_UN) {
+				// ins->next->opcode = OP_ARM64_CBNZX;
+				ins->next->sreg1 = ins->sreg1;
+				NULLIFY_INS (ins);
+			}
+			break;
+		case OP_FCOMPARE:
+		case OP_RCOMPARE: {
+			NOT_IMPLEMENTED;
+			gboolean swap = FALSE;
+			int reg;
+
+			if (!ins->next) {
+				/* Optimized away */
+				NULLIFY_INS (ins);
+				break;
+			}
+
+			/*
+			 * FP compares with unordered operands set the flags
+			 * to NZCV=0011, which matches some non-unordered compares
+			 * as well, like LE, so have to swap the operands.
+			 */
+			switch (ins->next->opcode) {
+			case OP_FBLT:
+				ins->next->opcode = OP_FBGT;
+				swap = TRUE;
+				break;
+			case OP_FBLE:
+				ins->next->opcode = OP_FBGE;
+				swap = TRUE;
+				break;
+			case OP_RBLT:
+				ins->next->opcode = OP_RBGT;
+				swap = TRUE;
+				break;
+			case OP_RBLE:
+				ins->next->opcode = OP_RBGE;
+				swap = TRUE;
+				break;
+			default:
+				break;
+			}
+			if (swap) {
+				reg = ins->sreg1;
+				ins->sreg1 = ins->sreg2;
+				ins->sreg2 = reg;
+			}
+			break;
+		}
+		default:
+			break;
+		}
+
+		last_ins = ins;
+	}
+	bb->last_ins = last_ins;
+	bb->max_vreg = cfg->next_vreg;
 }
 
 void

@@ -26,3 +26,16 @@
 #
 #     a    a0
 #     c    all caller-saved registers
+add_imm: dest:i src1:i len:12
+i8const: len:16 dest:i
+iconst: len:16 dest:i
+il_seq_point: len:0
+load_membase: dest:i src1:i len:20
+localloc: dest:i src1:i len:96
+localloc_imm: dest:i len:64
+move: dest:i src1:i len:4
+nop: len:4
+store_membase_imm: dest:i len:20
+store_membase_reg: dest:i src1:i len:20
+voidcall: len:32 clob:c
+
