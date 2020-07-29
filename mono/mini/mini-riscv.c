@@ -40,8 +40,10 @@ mono_arch_init (void)
 	riscv_stdext_f = mono_hwcap_riscv_has_stdext_f;
 	riscv_stdext_m = mono_hwcap_riscv_has_stdext_m;
 
+#if 0
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
+#endif
 }
 
 void
@@ -1408,6 +1410,155 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 #endif
 	return code;
 }
+/* Same as emit_store_regset, but emit unwind info too */
+/* CFA_OFFSET is the offset between the CFA and basereg */
+static __attribute__ ((__warn_unused_result__)) guint8*
+emit_store_regset_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg, int offset, int cfa_offset, guint64 no_cfa_regset)
+{
+	int i, j, pos, nregs;
+	guint32 cfa_regset = regs & ~no_cfa_regset;
+
+	pos = 0;
+	for (i = 0; i < RISCV_N_GREGS; ++i) {
+		nregs = 1;
+		if (regs & (1 << i)) {
+			code = mono_riscv_emit_store (code, i, basereg, offset + (pos * RISCV_XLEN / 8));
+			if (i == RISCV_SP) {
+				// TODO: does this need any special casing?
+				NOT_IMPLEMENTED;
+			}
+
+			for (j = 0; j < nregs; ++j) {
+				if (cfa_regset & (1 << (i + j)))
+					mono_emit_unwind_op_offset (cfg, code, i + j, (- cfa_offset) + offset + ((pos + j) * 8));
+			}
+
+			i += nregs - 1;
+			pos += nregs;
+		}
+	}
+	return code;
+}
+
+
+static guint8*
+emit_move_args (MonoCompile *cfg, guint8 *code)
+{
+	MonoInst *ins;
+	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	int i, part;
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
+
+	cinfo = cfg->arch.cinfo;
+	g_assert (cinfo);
+	for (i = 0; i < cinfo->nargs; ++i) {
+		ainfo = cinfo->args + i;
+		ins = cfg->args [i];
+
+		if (ins->opcode == OP_REGVAR) {
+			switch (ainfo->storage) {
+			case ArgInIReg:
+				riscv_addi (code, ins->dreg, ainfo->reg, 0);
+				if (i == 0 && sig->hasthis) {
+					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+					mono_add_var_location (cfg, ins, TRUE, ins->dreg, 0, code - cfg->native_code, 0);
+				}
+				break;
+			case ArgOnStack:
+				NOT_IMPLEMENTED;
+#if 0
+				switch (ainfo->slot_size) {
+				case 1:
+					if (ainfo->sign)
+						code = emit_ldrsbx (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					else
+						code = emit_ldrb (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					break;
+				case 2:
+					if (ainfo->sign)
+						code = emit_ldrshx (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					else
+						code = emit_ldrh (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					break;
+				case 4:
+					if (ainfo->sign)
+						code = emit_ldrswx (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					else
+						code = emit_ldrw (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					break;
+				default:
+					code = emit_ldrx (code, ins->dreg, cfg->arch.args_reg, ainfo->offset);
+					break;
+				}
+				break;
+#endif
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		} else {
+			if (ainfo->storage != ArgVtypeByRef && ainfo->storage != ArgVtypeByRefOnStack)
+				g_assert (ins->opcode == OP_REGOFFSET);
+
+			switch (ainfo->storage) {
+			case ArgInIReg:
+				/* Stack slots for arguments have size 8 */
+				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				if (i == 0 && sig->hasthis) {
+					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+					mono_add_var_location (cfg, ins, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
+				}
+				break;
+#if 0
+			case ArgInFReg:
+				code = emit_strfpx (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				break;
+			case ArgInFRegR4:
+				code = emit_strfpw (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				break;
+			case ArgOnStack:
+			case ArgOnStackR4:
+			case ArgOnStackR8:
+			case ArgVtypeByRefOnStack:
+			case ArgVtypeOnStack:
+				break;
+			case ArgVtypeByRef: {
+				MonoInst *addr_arg = ins->inst_left;
+
+				if (ainfo->gsharedvt) {
+					g_assert (ins->opcode == OP_GSHAREDVT_ARG_REGOFFSET);
+					arm_strx (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				} else {
+					g_assert (ins->opcode == OP_VTARG_ADDR);
+					g_assert (addr_arg->opcode == OP_REGOFFSET);
+					arm_strx (code, ainfo->reg, addr_arg->inst_basereg, addr_arg->inst_offset);
+				}
+				break;
+			}
+			case ArgVtypeInIRegs:
+				for (part = 0; part < ainfo->nregs; part ++) {
+					code = emit_strx (code, ainfo->reg + part, ins->inst_basereg, ins->inst_offset + (part * 8));
+				}
+				break;
+			case ArgHFA:
+				for (part = 0; part < ainfo->nregs; part ++) {
+					if (ainfo->esize == 4)
+						code = emit_strfpw (code, ainfo->reg + part, ins->inst_basereg, ins->inst_offset + ainfo->foffsets [part]);
+					else
+						code = emit_strfpx (code, ainfo->reg + part, ins->inst_basereg, ins->inst_offset + ainfo->foffsets [part]);
+				}
+				break;
+#endif
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+		}
+	}
+
+	return code;
+}
 
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
@@ -1452,7 +1603,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset, cfa_offset);
 	} else {
 		/* Save gregs */
-		code = emit_store_regset_cfa (cfg, code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, ARMREG_FP, cfg->arch.saved_gregs_offset, cfa_offset, 0);
+		code = emit_store_regset_cfa (cfg, code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_SP, cfg->arch.saved_gregs_offset, cfa_offset, 0);
 	}
 
 	/* Setup args reg */

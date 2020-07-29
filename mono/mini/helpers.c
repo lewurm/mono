@@ -196,6 +196,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define DIS_CMD "dis"
 #elif defined(TARGET_X86)
 #define DIS_CMD "objdump -l -d"
+#elif defined(TARGET_RISC)
+  #define DIS_CMD "riscv64-unknown-linux-gnu-objdump -l -d -M numeric,no-aliases"
 #elif defined(TARGET_AMD64)
   #if defined(HOST_WIN32)
   #define DIS_CMD "x86_64-w64-mingw32-objdump.exe -M x86-64 -d"
