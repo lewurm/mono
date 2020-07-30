@@ -1709,7 +1709,103 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	NOT_IMPLEMENTED;
+	MonoInst *ins;
+	MonoCallInst *call;
+	guint8 *code = cfg->native_code + cfg->code_len;
+	int start_offset, max_len, dreg, sreg1, sreg2;
+	target_mgreg_t imm;
+
+	if (cfg->verbose_level > 2)
+		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
+
+	start_offset = code - cfg->native_code;
+	g_assert (start_offset <= cfg->code_size);
+
+	MONO_BB_FOR_EACH_INS (bb, ins) {
+		guint offset = code - cfg->native_code;
+		set_code_cursor (cfg, code);
+		max_len = ins_get_size (ins->opcode);
+		code = realloc_code (cfg, max_len);
+
+		mono_debug_record_line_number (cfg, ins, offset);
+
+		dreg = ins->dreg;
+		sreg1 = ins->sreg1;
+		sreg2 = ins->sreg2;
+		imm = ins->inst_imm;
+
+		switch (ins->opcode) {
+		case OP_ICONST:
+		case OP_I8CONST:
+			code = mono_riscv_emit_imm (code, dreg, ins->inst_c0);
+			break;
+		case OP_LOCALLOC: {
+			guint8 *buf [16];
+
+			riscv_addi (code, RISCV_T0, sreg1, (MONO_ARCH_FRAME_ALIGNMENT - 1));
+#if 1
+			code = mono_riscv_emit_imm (code, RISCV_T1, sreg1, -MONO_ARCH_FRAME_ALIGNMENT));
+			riscv_and (code, RISCV_T0, RISCV_T0, RISCV_T1);
+#else
+			// TODO: does proper sign extending work?
+			riscv_andi (code, RISCV_T0, RISCV_T0, -MONO_ARCH_FRAME_ALIGNMENT);
+#endif
+			riscv_sub (code, RISCV_SP, RISCV_SP, RISCV_T0);
+			riscv_addi (code, RISCV_T1, RISCV_SP, 0);
+
+			/* Init */
+			/* t1 = pointer, t0 = end */
+			riscv_add (code, RISCV_T0, RISCV_T1, RISCV_T0);
+
+			buf [0] = code;
+			// TODO: patch me!
+			riscv_beq (code, RISCV_T1, RISCV_T0, 0); // if true, branch is taken
+
+			// wrong branch here
+			buf [1] = code;
+			arm_bcc (code, ARMCOND_EQ, 0);
+			arm_stpx (code, ARMREG_RZR, ARMREG_RZR, RISCV_T1, 0);
+			arm_addx_imm (code, RISCV_T1, RISCV_T1, 16);
+			arm_b (code, buf [0]);
+			arm_patch_rel (buf [1], code, MONO_R_ARM64_BCC);
+			// true branch here
+
+			arm_movspx (code, dreg, ARMREG_SP);
+			if (cfg->param_area)
+				code = emit_subx_sp_imm (code, cfg->param_area);
+			break;
+		}
+		case OP_LOCALLOC_IMM: {
+			int imm, offset;
+
+			imm = ALIGN_TO (ins->inst_imm, MONO_ARCH_FRAME_ALIGNMENT);
+			g_assert (arm_is_arith_imm (imm));
+			arm_subx_imm (code, ARMREG_SP, ARMREG_SP, imm);
+
+			/* Init */
+			g_assert (MONO_ARCH_FRAME_ALIGNMENT == 16);
+			offset = 0;
+			while (offset < imm) {
+				arm_stpx (code, ARMREG_RZR, ARMREG_RZR, ARMREG_SP, offset);
+				offset += 16;
+			}
+			arm_movspx (code, dreg, ARMREG_SP);
+			if (cfg->param_area)
+				code = emit_subx_sp_imm (code, cfg->param_area);
+			break;
+		}
+		default:
+			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
+			g_assert_not_reached ();
+		}
+
+		if ((cfg->opt & MONO_OPT_BRANCH) && ((code - cfg->native_code - offset) > max_len)) {
+			g_warning ("wrong maximal instruction length of instruction %s (expected %d, got %d)",
+				   mono_inst_name (ins->opcode), max_len, code - cfg->native_code - offset);
+			g_assert_not_reached ();
+		}
+	}
+	set_code_cursor (cfg, code);
 }
 
 void
